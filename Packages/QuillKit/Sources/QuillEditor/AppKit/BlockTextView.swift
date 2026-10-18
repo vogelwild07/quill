@@ -1,6 +1,7 @@
 #if canImport(AppKit)
 import AppKit
 import QuillDesign
+import QuillModel
 
 /// Kopf mit eigener Höhenberechnung (z. B. ein `NSHostingView` mit mehrzeiligem Titel).
 @MainActor
@@ -242,10 +243,36 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     override func draggingUpdated(_ sender: any NSDraggingInfo) -> NSDragOperation {
         guard handlesDrop(sender) else { return super.draggingUpdated(sender) }
         guard let target = dropTarget(for: sender) else { return [] }
-        let left = textContainerOrigin.x
-        dropIndicator.frame = CGRect(x: left, y: target.y - 1, width: bounds.width - 2 * left, height: 2)
+        autoscrollForDrag(at: convert(sender.draggingLocation, from: nil))
+        dropIndicator.frame = dropIndicatorFrame(index: target.index, y: target.y)
         dropIndicator.isHidden = false
         return isBlockDrag(sender) ? .move : .copy
+    }
+
+    /// Einfügelinie ab dem Textbeginn des Zielblocks (Einrückung, Listenmarker), nicht über die volle Breite.
+    func dropIndicatorFrame(index: Int, y: CGFloat) -> CGRect {
+        let padding = textContainer?.lineFragmentPadding ?? 5
+        let right = textContainerOrigin.x + (textContainer?.size.width ?? bounds.width) - padding
+        var left = textContainerOrigin.x + padding
+        if let editor, let block = index < editor.document.count ? editor.document[index] : editor.document.blocks.last {
+            left += BlockStyle.textInset(kind: block.kind, indent: block.indent)
+                - (block.kind.isListItem ? QuillDesign.Spacing.indentStep : 0)
+        }
+        return CGRect(x: left, y: y - 1, width: max(20, right - left), height: 2)
+    }
+
+    /// Beim Ziehen nah am oberen oder unteren Rand mitscrollen. `draggingUpdated`
+    /// kommt auch ohne Mausbewegung regelmäßig, so scrollt es weiter.
+    func autoscrollForDrag(at point: NSPoint) {
+        let visible = visibleRect
+        let edge: CGFloat = 40, step: CGFloat = 20
+        var y = visible.minY
+        if point.y < visible.minY + edge {
+            y = max(0, visible.minY - step)
+        } else if point.y > visible.maxY - edge {
+            y = min(bounds.height - visible.height, visible.minY + step)
+        }
+        if y != visible.minY { scroll(NSPoint(x: visible.minX, y: y)) }
     }
 
     override func draggingExited(_ sender: (any NSDraggingInfo)?) {
@@ -301,6 +328,9 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         editor?.convertSelectedBlocks(to: request.kind)
     }
     @objc func quillToggleChecked(_ sender: Any?) { editor?.toggleCheckedInSelection() }
+    @objc func quillMoveBlockUp(_ sender: Any?) { editor?.moveSelectedBlocks(by: -1) }
+    @objc func quillMoveBlockDown(_ sender: Any?) { editor?.moveSelectedBlocks(by: 1) }
+    @objc func quillDuplicateBlock(_ sender: Any?) { editor?.duplicateSelectedBlocks() }
 
     // MARK: Zwischenablage
 
@@ -324,7 +354,8 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     }
 }
 
-/// Griff ⋮⋮ links neben einem Block; startet das Ziehen.
+/// Griff ⋮⋮ links neben einem Block: Ziehen verschiebt, Klick wählt den Block aus,
+/// Rechtsklick öffnet das Kontextmenü (Löschen, Duplizieren, Umwandeln in …).
 final class BlockHandleView: NSView, NSDraggingSource {
     weak var textView: BlockTextView?
     var characterOffset = 0
@@ -340,6 +371,20 @@ final class BlockHandleView: NSView, NSDraggingSource {
         setAccessibilityElement(true)
         setAccessibilityRole(.handle)
         setAccessibilityLabel(String(localized: "Block verschieben", bundle: .module))
+        setAccessibilityCustomActions([
+            NSAccessibilityCustomAction(name: String(localized: "Nach oben verschieben", bundle: .module)) { [weak self] in
+                self?.perform { $0.moveSelectedBlocks(by: -1) } ?? false
+            },
+            NSAccessibilityCustomAction(name: String(localized: "Nach unten verschieben", bundle: .module)) { [weak self] in
+                self?.perform { $0.moveSelectedBlocks(by: 1) } ?? false
+            },
+            NSAccessibilityCustomAction(name: String(localized: "Duplizieren", bundle: .module)) { [weak self] in
+                self?.perform { $0.duplicateSelectedBlocks() } ?? false
+            },
+            NSAccessibilityCustomAction(name: String(localized: "Löschen", bundle: .module)) { [weak self] in
+                self?.perform { $0.deleteSelectedBlocks() } ?? false
+            },
+        ])
     }
 
     @available(*, unavailable)
@@ -381,7 +426,71 @@ final class BlockHandleView: NSView, NSDraggingSource {
         addCursorRect(bounds, cursor: .openHand)
     }
 
+    /// Klick ohne Ziehen wählt die Blöcke aus; erst ab ein paar Punkten Bewegung wird gezogen.
     override func mouseDown(with event: NSEvent) {
+        let start = event.locationInWindow
+        while let next = window?.nextEvent(matching: [.leftMouseUp, .leftMouseDragged]) {
+            if next.type == .leftMouseUp {
+                perform { _ in }
+                return
+            }
+            if hypot(next.locationInWindow.x - start.x, next.locationInWindow.y - start.y) > 3 {
+                beginBlockDrag(with: event)
+                return
+            }
+        }
+    }
+
+    /// Wählt die Blöcke des Griffs aus und führt dann die Aktion auf der Auswahl aus.
+    @discardableResult
+    func perform(_ action: (BlockEditorController) -> Void) -> Bool {
+        guard let textView, let editor = textView.editor else { return false }
+        editor.selectBlocks(editor.handleBlockRange(atCharacter: characterOffset))
+        textView.window?.makeFirstResponder(textView)
+        action(editor)
+        return true
+    }
+
+    // MARK: Kontextmenü
+
+    override func menu(for event: NSEvent) -> NSMenu? { makeMenu() }
+
+    override func accessibilityPerformShowMenu() -> Bool {
+        makeMenu().popUp(positioning: nil, at: CGPoint(x: 0, y: bounds.maxY), in: self)
+        return true
+    }
+
+    func makeMenu() -> NSMenu {
+        let menu = NSMenu()
+        menu.addItem(withTitle: String(localized: "Löschen", bundle: .module), action: #selector(deleteBlocks(_:)), keyEquivalent: "").target = self
+        menu.addItem(withTitle: String(localized: "Duplizieren", bundle: .module), action: #selector(duplicateBlocks(_:)), keyEquivalent: "d").target = self
+        menu.addItem(.separator())
+        let convert = NSMenuItem(title: String(localized: "Umwandeln in", bundle: .module), action: nil, keyEquivalent: "")
+        let submenu = NSMenu()
+        for command in BlockConversion.commands {
+            let item = NSMenuItem(title: command.title, action: #selector(convertBlocks(_:)), keyEquivalent: "")
+            if let digit = BlockConversion.shortcutDigit(for: command.kind) {
+                item.keyEquivalent = String(digit)
+                item.keyEquivalentModifierMask = [.command, .option]
+            }
+            item.image = NSImage(systemSymbolName: command.symbol, accessibilityDescription: nil)
+            item.representedObject = command.kind.rawValue
+            item.target = self
+            submenu.addItem(item)
+        }
+        convert.submenu = submenu
+        menu.addItem(convert)
+        return menu
+    }
+
+    @objc private func deleteBlocks(_ sender: Any?) { perform { $0.deleteSelectedBlocks() } }
+    @objc private func duplicateBlocks(_ sender: Any?) { perform { $0.duplicateSelectedBlocks() } }
+    @objc func convertBlocks(_ sender: NSMenuItem) {
+        guard let kind = (sender.representedObject as? String).flatMap(BlockKind.init(rawValue:)) else { return }
+        perform { $0.convertSelectedBlocks(to: kind) }
+    }
+
+    private func beginBlockDrag(with event: NSEvent) {
         guard let textView, let editor = textView.editor else { return }
         let blocks = editor.dragBlocks(forHandleAtCharacter: characterOffset)
         guard !blocks.ids.isEmpty, let data = try? JSONEncoder().encode(blocks.ids) else { return }

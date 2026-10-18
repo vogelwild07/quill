@@ -5,14 +5,7 @@ import AppKit
 extension BlockEditorController {
     /// Zu ziehende Blöcke: die ausgewählten, wenn der Griff zur Auswahl gehört, sonst der eine Block.
     func dragBlocks(forHandleAtCharacter location: Int) -> (ids: [UUID], markdown: String, viewFrame: CGRect) {
-        let handleBlock = blockIndex(atCharacter: location)
-        let selection = textView.selectedRange()
-        var range = handleBlock...handleBlock
-        if selection.length > 0 {
-            let first = blockIndex(atCharacter: selection.location)
-            let last = blockIndex(atCharacter: NSMaxRange(selection) - 1)
-            if (first...last).contains(handleBlock) { range = first...last }
-        }
+        let range = handleBlockRange(atCharacter: location)
         let ids = range.map { document[$0].id }
         let markdown = MarkdownSerializer.markdown(for: document, blocks: range.lowerBound..<(range.upperBound + 1))
 

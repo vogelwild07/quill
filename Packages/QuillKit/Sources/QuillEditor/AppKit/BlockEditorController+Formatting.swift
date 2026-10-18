@@ -15,6 +15,9 @@ import SwiftUI
     /// `sender` ist ein `BlockKindRequest`.
     func quillSetBlockKind(_ sender: Any?)
     func quillToggleChecked(_ sender: Any?)
+    func quillMoveBlockUp(_ sender: Any?)
+    func quillMoveBlockDown(_ sender: Any?)
+    func quillDuplicateBlock(_ sender: Any?)
 }
 
 /// Absender für `quillSetBlockKind`: welche Blockart (Menü, Kontextmenü am Griff).

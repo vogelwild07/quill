@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillDesign
 import QuillModel
 import Testing
 @testable import QuillEditor
@@ -335,6 +336,141 @@ struct BlockKindCommandTests {
         #expect(digits == ["0", "1", "2", "3", "4", "5", "6", "7"])
         #expect(!digits.contains("8"))
         #expect(BlockConversion.commands.map(\.kind) == [.paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .todo, .quote, .code])
+    }
+}
+
+@MainActor
+@Suite("Editor: Block-Aktionen (Verschieben, Duplizieren, Löschen, Griff)", .serialized)
+struct BlockActionTests {
+    private func abc() -> Harness {
+        Harness([EditorBlock(text: "A"), EditorBlock(text: "Bb"), EditorBlock(text: "C")])
+    }
+
+    @Test func moveWithKeyboardKeepsCaret() {
+        let h = abc()
+        h.caret(at: 1, 1)
+        #expect(h.editor.moveSelectedBlocks(by: -1))
+        #expect(h.texts == ["Bb", "A", "C"])
+        #expect(h.caretPosition == BlockPosition(block: 0, offset: 1))
+        #expect(!h.editor.moveSelectedBlocks(by: -1))
+        h.flushUndoGroup()
+        #expect(h.editor.moveSelectedBlocks(by: 1))
+        h.flushUndoGroup()
+        #expect(h.editor.moveSelectedBlocks(by: 1))
+        #expect(h.texts == ["A", "C", "Bb"])
+        #expect(!h.editor.moveSelectedBlocks(by: 1))
+        h.undo()
+        #expect(h.texts == ["A", "Bb", "C"])
+        h.expectConsistent()
+    }
+
+    @Test func moveSelectionMovesAllItsBlocks() {
+        let h = abc()
+        let start = h.editor.characterLocation(of: BlockPosition(block: 0, offset: 0))
+        let end = h.editor.characterLocation(of: BlockPosition(block: 1, offset: 1))
+        h.textView.setSelectedRange(NSRange(location: start, length: end - start))
+        #expect(h.editor.moveSelectedBlocks(by: 1))
+        #expect(h.texts == ["C", "A", "Bb"])
+        #expect(h.textView.selectedRange().length == end - start)
+    }
+
+    @Test func dividerMovedToEndGetsParagraphAfter() {
+        let h = Harness([EditorBlock(kind: .divider), EditorBlock(text: "A")])
+        h.caret(at: 0, 0)
+        #expect(h.editor.moveSelectedBlocks(by: 1))
+        #expect(h.kinds == [.paragraph, .divider, .paragraph])
+        h.expectConsistent()
+    }
+
+    @Test func duplicateInsertsCopyBelowAndSelectsIt() {
+        let h = abc()
+        h.caret(at: 1, 0)
+        h.editor.duplicateSelectedBlocks()
+        #expect(h.texts == ["A", "Bb", "Bb", "C"])
+        #expect(h.document[1].id != h.document[2].id)
+        let copy = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 0))
+        #expect(h.textView.selectedRange() == NSRange(location: copy, length: 2))
+        h.undo()
+        #expect(h.texts == ["A", "Bb", "C"])
+        h.expectConsistent()
+    }
+
+    @Test func deleteRemovesBlocksAndNeverEmptiesDocument() {
+        let h = abc()
+        h.textView.setSelectedRange(NSRange(location: 0, length: h.editor.characterLocation(of: BlockPosition(block: 1, offset: 1))))
+        h.editor.deleteSelectedBlocks()
+        #expect(h.texts == ["C"])
+        h.flushUndoGroup()
+        h.textView.setSelectedRange(NSRange(location: 0, length: 1))
+        h.editor.deleteSelectedBlocks()
+        #expect(h.texts == [""])
+        #expect(h.kinds == [.paragraph])
+        h.undo()
+        #expect(h.texts == ["C"])
+        h.expectConsistent()
+    }
+
+    @Test func handleClickSelectsItsBlock() {
+        let h = abc()
+        let handle = h.editor.textView.handle
+        handle.characterOffset = h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0))
+        handle.perform { _ in }
+        #expect(h.textView.selectedRange() == NSRange(location: handle.characterOffset, length: 2))
+    }
+
+    @Test func contextMenuConvertsAndDuplicatesHandleBlock() throws {
+        let h = abc()
+        let handle = h.editor.textView.handle
+        handle.characterOffset = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 0))
+        let menu = handle.makeMenu()
+        #expect(menu.items.map(\.title) == ["Löschen", "Duplizieren", "", "Umwandeln in"])
+        #expect(menu.items[1].keyEquivalent == "d")
+        let submenu = try #require(menu.items[3].submenu)
+        #expect(submenu.items.map(\.title) == BlockConversion.commands.map(\.title))
+        #expect(submenu.items[1].keyEquivalent == "1" && submenu.items[1].keyEquivalentModifierMask == [.command, .option])
+
+        submenu.performActionForItem(at: 6)
+        #expect(h.kinds == [.paragraph, .paragraph, .todo])
+        menu.performActionForItem(at: 1)
+        #expect(h.texts == ["A", "Bb", "C", "C"])
+        #expect(h.kinds == [.paragraph, .paragraph, .todo, .todo])
+        menu.performActionForItem(at: 0)
+        h.expectConsistent()
+    }
+
+    @Test func handleOffersAccessibilityActions() {
+        let h = abc()
+        let handle = h.editor.textView.handle
+        let names = (handle.accessibilityCustomActions() ?? []).map(\.name)
+        #expect(names == ["Nach oben verschieben", "Nach unten verschieben", "Duplizieren", "Löschen"])
+        handle.characterOffset = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 0))
+        _ = handle.accessibilityCustomActions()?.first?.handler?()
+        #expect(h.texts == ["A", "C", "Bb"])
+    }
+
+    @Test func dropIndicatorStartsAtTargetIndent() {
+        let h = Harness([EditorBlock(text: "A"), EditorBlock(kind: .bulleted, text: "B", indent: 1), EditorBlock(kind: .bulleted, text: "C")])
+        let view = h.editor.textView
+        let paragraph = view.dropIndicatorFrame(index: 0, y: 10)
+        let nested = view.dropIndicatorFrame(index: 1, y: 10)
+        let list = view.dropIndicatorFrame(index: 2, y: 10)
+        #expect(nested.minX - list.minX == QuillDesign.Spacing.indentStep)
+        #expect(list.minX == paragraph.minX)
+        #expect(nested.maxX == paragraph.maxX)
+    }
+
+    @Test func dragNearBottomScrolls() {
+        let h = Harness(SampleDocuments.large(blockCount: 300).blocks)
+        let view = h.editor.textView
+        view.layoutSubtreeIfNeeded()
+        let before = view.visibleRect
+        view.autoscrollForDrag(at: NSPoint(x: before.midX, y: before.maxY - 5))
+        #expect(view.visibleRect.minY > before.minY)
+        let after = view.visibleRect
+        view.autoscrollForDrag(at: NSPoint(x: after.midX, y: after.midY))
+        #expect(view.visibleRect.minY == after.minY)
+        view.autoscrollForDrag(at: NSPoint(x: after.midX, y: after.minY + 5))
+        #expect(view.visibleRect.minY < after.minY)
     }
 }
 

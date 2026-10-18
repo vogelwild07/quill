@@ -204,6 +204,32 @@ final class EditorUITests: XCTestCase {
         app.typeKey(.escape, modifierFlags: [])
     }
 
+    /// ⌥⌘↓ verschiebt, Kontextmenü am Griff dupliziert, ⌘D dupliziert die Auswahl.
+    func testMoveAndDuplicateBlocks() throws {
+        createPage("Blöcke")
+        app.typeText("\r")
+        waitForFocus(editor)
+        app.typeText("Eins\rZwei")
+        app.typeKey(.upArrow, modifierFlags: .command)
+        app.typeKey(.downArrow, modifierFlags: [.command, .option])
+        assertEditorText("Zwei\nEins\n")
+
+        title.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 1)).withOffset(CGVector(dx: 0, dy: 24)).hover()
+        let handle = app.windows.firstMatch.handles.firstMatch
+        XCTAssertTrue(handle.waitForExistence(timeout: 5), "Kein Griff bei Hover")
+        handle.rightClick()
+        let duplicate = app.menuItems["Duplizieren"]
+        XCTAssertTrue(duplicate.waitForExistence(timeout: 5), "Kein Kontextmenü am Griff")
+        XCTAssertTrue(app.menuItems["Umwandeln in"].exists)
+        duplicate.click()
+        assertEditorText("Zwei\nZwei\nEins\n")
+
+        app.typeKey("d", modifierFlags: .command)
+        assertEditorText("Zwei\nZwei\nZwei\nEins\n")
+        app.typeKey("z", modifierFlags: .command)
+        assertEditorText("Zwei\nZwei\nEins\n")
+    }
+
     // MARK: - Hilfen
 
     /// ⌘A, ⌘C im Editor; liest Markdown aus der eigenen Zwischenablage. Danach steht

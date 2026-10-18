@@ -259,6 +259,7 @@ enum UndoAction {
     static var toggleChecked: String { String(localized: "Abhaken", bundle: .module) }
     static var changeKind: String { String(localized: "Blockart ändern", bundle: .module) }
     static var moveBlocks: String { String(localized: "Blöcke verschieben", bundle: .module) }
+    static var duplicate: String { String(localized: "Duplizieren", bundle: .module) }
     static var cut: String { String(localized: "Ausschneiden", bundle: .module) }
     static var paste: String { String(localized: "Einsetzen", bundle: .module) }
     static var format: String { String(localized: "Formatieren", bundle: .module) }

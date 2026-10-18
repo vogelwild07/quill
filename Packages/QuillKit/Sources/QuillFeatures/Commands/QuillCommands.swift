@@ -84,6 +84,14 @@ public struct QuillCommands: Commands {
             }
             formatButton("Abhaken", #selector(EditorFormattingActions.quillToggleChecked(_:)))
                 .keyboardShortcut(.return)
+            Divider()
+            // ⌥⌘↑/↓ statt ⌥⇧↑/↓: Das erweitert in Textfeldern die Auswahl absatzweise.
+            formatButton("Block nach oben", #selector(EditorFormattingActions.quillMoveBlockUp(_:)))
+                .keyboardShortcut(.upArrow, modifiers: [.command, .option])
+            formatButton("Block nach unten", #selector(EditorFormattingActions.quillMoveBlockDown(_:)))
+                .keyboardShortcut(.downArrow, modifiers: [.command, .option])
+            formatButton("Block duplizieren", #selector(EditorFormattingActions.quillDuplicateBlock(_:)))
+                .keyboardShortcut("d")
         }
 
         CommandMenu(String(localized: "Seite", bundle: .module)) {
