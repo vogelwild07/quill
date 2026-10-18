@@ -2,7 +2,7 @@ import QuillModel
 import SwiftData
 import SwiftUI
 
-/// Sidebar eines Fensters: Seitenbaum, „Neue Seite“ und Papierkorb.
+/// Sidebar eines Fensters: Favoriten, Seitenbaum, „Neue Seite“ und Papierkorb.
 struct SidebarView: View {
     @Binding var selection: UUID?
     @Binding var renameRequest: UUID?
@@ -14,16 +14,12 @@ struct SidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Seiten", bundle: .module)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 4)
-
             #if canImport(AppKit)
+            let entries = pages.map(PageTree.Entry.init)
+            let tree = PageTree.build(entries)
             PageOutlineView(
-                nodes: PageTree.build(pages.map(PageTree.Entry.init)),
+                nodes: tree,
+                favorites: PageTree.favorites(entries, in: tree),
                 selection: $selection,
                 renameRequest: $renameRequest,
                 actions: actions

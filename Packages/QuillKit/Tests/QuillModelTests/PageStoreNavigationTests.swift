@@ -52,6 +52,19 @@ struct PageStoreNavigationTests {
         #expect(try favoriteTitles() == ["C", "B", "A"])
     }
 
+    @Test func favoritePositionRestoresPlaceAfterRemoval() async throws {
+        let a = try await page("A"), b = try await page("B"), c = try await page("C")
+        for id in [a, b, c] { try await store.setFavorite(id, true) }
+        #expect(try await store.favoritePosition(of: a) == .first)
+        let old = try await store.favoritePosition(of: b)
+        #expect(old == .after(a))
+
+        try await store.setFavorite(b, false)
+        #expect(try await store.favoritePosition(of: b) == nil)
+        try await store.setFavorite(b, true, at: old ?? .last)
+        #expect(try favoriteTitles() == ["A", "B", "C"])
+    }
+
     @Test func favoriteWithoutKeyIsRepaired() async throws {
         let a = try await page("A"), b = try await page("B")
         let context = ModelContext(container)

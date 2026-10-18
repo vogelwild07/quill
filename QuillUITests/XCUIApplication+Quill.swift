@@ -18,3 +18,15 @@ extension XCUIApplication {
         return app
     }
 }
+
+extension XCUIElement {
+    /// Zeilen des Seitenbaums in der Sidebar, ohne Gruppen und Favoriten (ADR-017).
+    var pageRows: XCUIElementQuery {
+        outlineRows.containing(.textField, identifier: "sidebar.page")
+    }
+
+    /// Zeilen im Abschnitt „Favoriten“.
+    var favoriteRows: XCUIElementQuery {
+        outlineRows.containing(.textField, identifier: "sidebar.favorite")
+    }
+}

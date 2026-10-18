@@ -66,13 +66,14 @@ extension Page {
 extension PageStore {
     // MARK: Favoriten
 
-    /// Neue Favoriten kommen ans Ende. Die Reihenfolge (`favoriteSortKey`) bleibt
-    /// beim Entfernen erhalten, damit Undo den alten Platz findet.
-    public func setFavorite(_ pageID: UUID, _ isFavorite: Bool) throws {
+    /// Neue Favoriten kommen ans Ende oder an `position`. Die Reihenfolge
+    /// (`favoriteSortKey`) bleibt beim Entfernen stehen; Undo setzt den alten Platz
+    /// über `position` (siehe `favoritePosition(of:)`).
+    public func setFavorite(_ pageID: UUID, _ isFavorite: Bool, at position: SiblingPosition = .last) throws {
         let page = try fetchPage(pageID)
         guard page.isFavorite != isFavorite else { return }
         if isFavorite {
-            page.favoriteSortKey = try favoriteKey(at: .last, excluding: page)
+            page.favoriteSortKey = try favoriteKey(at: position, excluding: page)
         }
         page.isFavorite = isFavorite
         page.updatedAt = .now
@@ -88,11 +89,23 @@ extension PageStore {
         try save()
     }
 
+    /// Platz eines Favoriten relativ zum vorigen, `nil` ohne Favorit (für Undo).
+    public func favoritePosition(of pageID: UUID) throws -> SiblingPosition? {
+        let page = try fetchPage(pageID)
+        guard page.isFavorite else { return nil }
+        let before = try favorites(excluding: page).filter { favoriteOrder($0) < favoriteOrder(page) }
+        return before.last.map { .after($0.id) } ?? .first
+    }
+
     /// Favoriten in Anzeigereihenfolge, inklusive Papierkorb (wie Geschwister, ADR-009).
     private func favorites(excluding page: Page) throws -> [Page] {
         try modelContext.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.isFavorite }))
             .filter { $0.id != page.id }
-            .sorted { ($0.favoriteSortKey ?? "", $0.createdAt, $0.id.uuidString) < ($1.favoriteSortKey ?? "", $1.createdAt, $1.id.uuidString) }
+            .sorted { favoriteOrder($0) < favoriteOrder($1) }
+    }
+
+    private func favoriteOrder(_ page: Page) -> (String, Date, String) {
+        (page.favoriteSortKey ?? "", page.createdAt, page.id.uuidString)
     }
 
     private func favoriteKey(at position: SiblingPosition, excluding page: Page) throws -> String {

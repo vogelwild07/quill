@@ -66,6 +66,45 @@ struct PageOperations {
         }
     }
 
+    /// Hinzufügen an `position` oder Entfernen; Undo stellt den alten Platz wieder her.
+    func setFavorite(_ id: UUID, _ isFavorite: Bool, at position: SiblingPosition = .last) {
+        let name = if isFavorite {
+            String(localized: "Zu Favoriten hinzufügen", bundle: .module)
+        } else {
+            String(localized: "Aus Favoriten entfernen", bundle: .module)
+        }
+        perform {
+            let old = try await store.favoritePosition(of: id)
+            try await store.setFavorite(id, isFavorite, at: position)
+            register(name,
+                     undo: { try await restoreFavorite(id, at: old) },
+                     redo: { try await restoreFavorite(id, at: isFavorite ? position : nil) })
+        }
+    }
+
+    func moveFavorite(_ id: UUID, at position: SiblingPosition) {
+        perform {
+            guard let old = try await store.favoritePosition(of: id) else { return }
+            try await store.moveFavorite(id, at: position)
+            register(String(localized: "Favorit verschieben", bundle: .module),
+                     undo: { try await store.moveFavorite(id, at: old) },
+                     redo: { try await store.moveFavorite(id, at: position) })
+        }
+    }
+
+    /// `nil`: kein Favorit. Fehlt der Nachbar inzwischen, ans Ende.
+    private func restoreFavorite(_ id: UUID, at position: SiblingPosition?) async throws {
+        guard let position else {
+            try await store.setFavorite(id, false)
+            return
+        }
+        do {
+            try await store.setFavorite(id, true, at: position)
+        } catch PageStoreError.siblingNotFound {
+            try await store.setFavorite(id, true, at: .last)
+        }
+    }
+
     // MARK: - Hilfen
 
     private func perform(_ operation: @escaping @MainActor () async throws -> Void) {

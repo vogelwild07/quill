@@ -103,6 +103,17 @@ public struct QuillCommands: Commands {
             Button(String(localized: "In neuem Fenster öffnen", bundle: .module)) { actions?.openInWindow() }
                 .disabled(actions?.selection == nil)
             Divider()
+            // Ohne Kürzel: ⌃⌘D (Wörterbuch) und ⌃⌘F (Vollbild) sind belegt.
+            Button {
+                actions?.toggleFavorite()
+            } label: {
+                if actions?.isFavorite == true {
+                    Text("Aus Favoriten entfernen", bundle: .module)
+                } else {
+                    Text("Zu Favoriten hinzufügen", bundle: .module)
+                }
+            }
+            .disabled(actions?.selection == nil)
             // Ohne Kürzel: ⌘⌫ löscht in Textfeldern bis zum Zeilenanfang. In der
             // Sidebar legt ⌘⌫ die Seite in den Papierkorb (PageOutlineView).
             Button(String(localized: "In den Papierkorb legen", bundle: .module)) { actions?.trash() }

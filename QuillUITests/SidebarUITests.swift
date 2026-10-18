@@ -129,7 +129,65 @@ final class SidebarUITests: XCTestCase {
         assertTitles([])
     }
 
+    /// Favoriten (ADR-017): Stern, Menü „Seite“, Kontextmenü, Undo und Papierkorb.
+    func testFavorites() throws {
+        createPage("Eins")
+        createPage("Zwei")
+        assertTitles(["Eins", "Zwei"])
+        assertFavorites([])
+        XCTAssertEqual(groupTitles(), ["Seiten"], "Ohne Favoriten kein Abschnitt")
+
+        // Stern in der Symbolleiste.
+        row(1).click()
+        app.windows.firstMatch.buttons["page.favorite"].click()
+        assertFavorites(["Zwei"])
+        XCTAssertEqual(groupTitles(), ["Favoriten", "Seiten"])
+
+        // Menü „Seite“.
+        row(0).click()
+        app.menuBars.menuBarItems["Seite"].click()
+        app.menuBars.menuItems["Zu Favoriten hinzufügen"].click()
+        assertFavorites(["Zwei", "Eins"])
+
+        // Kontextmenü am ersten Favoriten; ⌘Z holt ihn an seinen Platz zurück,
+        // ein weiteres ⌘Z nimmt das Hinzufügen von „Eins“ zurück.
+        outline.favoriteRows.element(boundBy: 0).rightClick()
+        outline.menuItems["Aus Favoriten entfernen"].click()
+        assertFavorites(["Eins"])
+        app.typeKey("z", modifierFlags: .command)
+        assertFavorites(["Zwei", "Eins"])
+        app.typeKey("z", modifierFlags: .command)
+        assertFavorites(["Zwei"])
+
+        // Klick auf den Favoriten öffnet die Seite.
+        outline.favoriteRows.element(boundBy: 0).click()
+        XCTAssertEqual(app.windows.firstMatch.title, "Zwei")
+
+        // Im Papierkorb verschwindet der Favorit, wiederhergestellt ist er zurück.
+        row(1).click()
+        app.typeKey(.delete, modifierFlags: .command)
+        assertTitles(["Eins"])
+        assertFavorites([])
+        app.typeKey("z", modifierFlags: .command)
+        assertTitles(["Eins", "Zwei"])
+        assertFavorites(["Zwei"])
+    }
+
     // MARK: - Hilfen
+
+    private func favoriteTitles() -> [String] {
+        outline.favoriteRows.allElementsBoundByIndex.map { $0.textFields.firstMatch.value as? String ?? "" }
+    }
+
+    private func groupTitles() -> [String] {
+        outline.staticTexts.matching(identifier: "sidebar.group").allElementsBoundByIndex.map { $0.value as? String ?? "" }
+    }
+
+    private func assertFavorites(_ expected: [String], file: StaticString = #filePath, line: UInt = #line) {
+        let matches = NSPredicate { _, _ in self.favoriteTitles() == expected }
+        let result = XCTWaiter.wait(for: [expectation(for: matches, evaluatedWith: nil)], timeout: 5)
+        XCTAssertEqual(result, .completed, "Favoriten: \(favoriteTitles()) statt \(expected)", file: file, line: line)
+    }
 
     private var trashRows: XCUIElementQuery {
         app.windows.firstMatch.descendants(matching: .any).matching(identifier: "trash.row")
@@ -156,20 +214,20 @@ final class SidebarUITests: XCTestCase {
     }
 
     private func row(_ index: Int) -> XCUIElement {
-        outline.outlineRows.element(boundBy: index)
+        outline.pageRows.element(boundBy: index)
     }
 
     private func titles() -> [String] {
-        outline.outlineRows.allElementsBoundByIndex.map { row in
+        outline.pageRows.allElementsBoundByIndex.map { row in
             row.textFields.firstMatch.value as? String ?? ""
         }
     }
 
     /// ⌘N bzw. ⇧⌘N, dann Titel tippen (der Fokus liegt danach im Titelfeld).
     private func createPage(_ title: String, subpage: Bool = false) {
-        let count = outline.outlineRows.count
+        let count = outline.pageRows.count
         app.typeKey("n", modifierFlags: subpage ? [.command, .shift] : .command)
-        let added = NSPredicate { _, _ in self.outline.outlineRows.count == count + 1 }
+        let added = NSPredicate { _, _ in self.outline.pageRows.count == count + 1 }
         wait(for: [expectation(for: added, evaluatedWith: nil)], timeout: 5)
 
         let field = app.windows.firstMatch.descendants(matching: .any)["detail.title"]

@@ -26,14 +26,21 @@ public enum PageTree {
         public let icon: String?
         public let sortKey: String
         public let createdAt: Date
+        public let isFavorite: Bool
+        public let favoriteSortKey: String?
 
-        public init(id: UUID, parentID: UUID?, title: String, icon: String?, sortKey: String, createdAt: Date) {
+        public init(
+            id: UUID, parentID: UUID?, title: String, icon: String?, sortKey: String, createdAt: Date,
+            isFavorite: Bool = false, favoriteSortKey: String? = nil
+        ) {
             self.id = id
             self.parentID = parentID
             self.title = title
             self.icon = icon
             self.sortKey = sortKey
             self.createdAt = createdAt
+            self.isFavorite = isFavorite
+            self.favoriteSortKey = favoriteSortKey
         }
 
         @MainActor
@@ -44,7 +51,9 @@ public enum PageTree {
                 title: page.title,
                 icon: page.icon,
                 sortKey: page.sortKey,
-                createdAt: page.createdAt
+                createdAt: page.createdAt,
+                isFavorite: page.isFavorite,
+                favoriteSortKey: page.favoriteSortKey
             )
         }
     }
@@ -61,6 +70,15 @@ public enum PageTree {
                 .map { PageNode(id: $0.id, title: $0.title, icon: $0.icon, children: nodes(under: $0.id)) }
         }
         return nodes(under: nil)
+    }
+
+    /// Favoriten in ihrer Reihenfolge, flach. Nur Seiten aus `tree`: Was (auch über
+    /// eine Elternseite) im Papierkorb liegt, fehlt und kommt beim Wiederherstellen zurück.
+    public static func favorites(_ entries: [Entry], in tree: [PageNode]) -> [PageNode] {
+        entries
+            .filter { $0.isFavorite && find($0.id, in: tree) != nil }
+            .sorted { ($0.favoriteSortKey ?? "", $0.createdAt, $0.id.uuidString) < ($1.favoriteSortKey ?? "", $1.createdAt, $1.id.uuidString) }
+            .map { PageNode(id: $0.id, title: $0.title, icon: $0.icon) }
     }
 
     /// Stelle für einen Drop an `index` unter Geschwistern `siblings` (wie angezeigt,
@@ -94,5 +112,57 @@ public enum PageTree {
             if let found = find(id, in: node.children) { return found }
         }
         return nil
+    }
+}
+
+/// Was ein Drop in der Sidebar bewirkt (ADR-017). Seiten aus dem Baum lassen sich
+/// verschieben oder zu den Favoriten ziehen; Favoriten nur innerhalb der Favoriten.
+public enum SidebarDrop: Equatable, Sendable {
+    case movePage(parentID: UUID?, position: SiblingPosition)
+    case addFavorite(SiblingPosition)
+    case moveFavorite(SiblingPosition)
+
+    /// Woher die gezogene Seite kommt.
+    public enum Source: Sendable { case page, favorite }
+
+    /// Worauf oder wohinein abgelegt wird.
+    public enum Target: Sendable, Equatable {
+        case favorites
+        case favorite(UUID)
+        case pages
+        case page(UUID)
+    }
+
+    /// `childIndex` ist `nil` für einen Drop auf das Ziel selbst. `nil` als Ergebnis:
+    /// nicht erlaubt (Zyklus, Favorit in den Baum, Favorit auf sich selbst).
+    public static func resolve(
+        _ dragged: UUID, from source: Source, onto target: Target, childIndex: Int?,
+        favorites: [UUID], tree: [PageNode]
+    ) -> SidebarDrop? {
+        switch target {
+        case .favorites:
+            guard let childIndex else {
+                return source == .page && !favorites.contains(dragged) ? .addFavorite(.last) : nil
+            }
+            return favoriteDrop(dragged, at: childIndex, favorites: favorites)
+        case .favorite(let id):
+            // Auf einen Favoriten: davor einordnen.
+            guard id != dragged, let index = favorites.firstIndex(of: id) else { return nil }
+            return favoriteDrop(dragged, at: index, favorites: favorites)
+        case .pages:
+            guard source == .page else { return nil }
+            let position = childIndex.map { PageTree.dropPosition(of: dragged, into: tree.map(\.id), at: $0) } ?? .last
+            return .movePage(parentID: nil, position: position)
+        case .page(let id):
+            guard source == .page, !PageTree.isSelfOrDescendant(id, of: dragged, in: tree) else { return nil }
+            let siblings = PageTree.find(id, in: tree)?.children.map(\.id) ?? []
+            let position = childIndex.map { PageTree.dropPosition(of: dragged, into: siblings, at: $0) } ?? .last
+            return .movePage(parentID: id, position: position)
+        }
+    }
+
+    private static func favoriteDrop(_ dragged: UUID, at index: Int, favorites: [UUID]) -> SidebarDrop {
+        let position = PageTree.dropPosition(of: dragged, into: favorites, at: index)
+        return favorites.contains(dragged) ? .moveFavorite(position) : .addFavorite(position)
     }
 }

@@ -76,7 +76,7 @@ final class EditorUITests: XCTestCase {
 
         app.typeKey("z", modifierFlags: .command)
         assertEditorText("\n")
-        XCTAssertEqual(outline.outlineRows.count, 1, "⌘Z im Editor darf keine Seite entfernen")
+        XCTAssertEqual(outline.pageRows.count, 1, "⌘Z im Editor darf keine Seite entfernen")
     }
 
     func testBoldShortcutAndFormatMenu() throws {
@@ -257,14 +257,14 @@ final class EditorUITests: XCTestCase {
     }
 
     private func row(_ index: Int) -> XCUIElement {
-        outline.outlineRows.element(boundBy: index)
+        outline.pageRows.element(boundBy: index)
     }
 
     /// ⌘N, dann Titel tippen (der Fokus liegt danach im Titelfeld).
     private func createPage(_ name: String) {
-        let count = outline.outlineRows.count
+        let count = outline.pageRows.count
         app.typeKey("n", modifierFlags: .command)
-        let added = NSPredicate { _, _ in self.outline.outlineRows.count == count + 1 }
+        let added = NSPredicate { _, _ in self.outline.pageRows.count == count + 1 }
         wait(for: [expectation(for: added, evaluatedWith: nil)], timeout: 5)
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         waitForFocus(title)

@@ -46,6 +46,11 @@ public struct RootView: View {
                     setIcon: { id, icon in Task { try? await store.setIcon(id, to: icon) } }
                 )
                 .id(selection)
+                .toolbar {
+                    ToolbarItem {
+                        favoriteButton(selection, operations: operations)
+                    }
+                }
             } else {
                 ContentUnavailableView {
                     Label(String(localized: "Keine Seite ausgewählt", bundle: .module), systemImage: "doc.text")
@@ -92,6 +97,8 @@ public struct RootView: View {
             rename: { operations.rename($0, to: $1, from: $2) },
             move: { operations.move($0, to: $1, at: $2) },
             trash: { operations.trash($0, selectionAfter: selectionAfterTrashing($0)) },
+            setFavorite: { operations.setFavorite($0, $1, at: $2) },
+            moveFavorite: { operations.moveFavorite($0, at: $1) },
             openInTab: { open($0, asTab: true) },
             openInWindow: { open($0, asTab: false) }
         )
@@ -100,6 +107,7 @@ public struct RootView: View {
     private func pageActions(_ operations: PageOperations) -> PageActions {
         PageActions(
             selection: selection,
+            isFavorite: isFavorite(selection),
             newPage: { operations.create(in: nil) },
             newSubpage: { if let selection { operations.create(in: selection) } },
             rename: { renameRequest = selection },
@@ -108,9 +116,31 @@ public struct RootView: View {
                     operations.trash(selection, selectionAfter: selectionAfterTrashing(selection))
                 }
             },
+            toggleFavorite: { if let selection { operations.setFavorite(selection, !isFavorite(selection)) } },
             openInTab: { if let selection { open(selection, asTab: true) } },
             openInWindow: { if let selection { open(selection, asTab: false) } }
         )
+    }
+
+    private func isFavorite(_ pageID: UUID?) -> Bool {
+        activePages.first { $0.id == pageID }?.isFavorite ?? false
+    }
+
+    /// Stern in der Symbolleiste: Seite zu den Favoriten (ADR-017).
+    @ViewBuilder
+    private func favoriteButton(_ pageID: UUID, operations: PageOperations?) -> some View {
+        let favorite = isFavorite(pageID)
+        Button {
+            operations?.setFavorite(pageID, !favorite)
+        } label: {
+            if favorite {
+                Label(String(localized: "Aus Favoriten entfernen", bundle: .module), systemImage: "star.fill")
+            } else {
+                Label(String(localized: "Zu Favoriten hinzufügen", bundle: .module), systemImage: "star")
+            }
+        }
+        .accessibilityIdentifier("page.favorite")
+        .accessibilityAddTraits(favorite ? .isSelected : [])
     }
 
     private func open(_ pageID: UUID, asTab: Bool) {
