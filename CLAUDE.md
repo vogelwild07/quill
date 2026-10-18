@@ -36,6 +36,23 @@ Apple HIG, Liquid Glass nur für Sidebar/Toolbars/Popover, nicht für Inhalt. SF
 - **Notion-MCP:** nur lesend (`search`, `fetch`). Nie etwas im Notion des Nutzers anlegen, ändern oder löschen.
 - Kein Notion-Code, keine Notion-Assets, -Marken, -Texte oder -Designs kopieren.
 
+<!-- graphify-rules-start (managed by `graphify init`) -->
+## Use Graphify before grep
+
+This repository is indexed by Graphify: a code graph over its call, dependency, and test structure, exposed through a connected Graphify MCP server. Before reaching for grep or reading files, use the Graphify tools your MCP client lists (their exact names and descriptions are in the server's tool list) for what the graph knows and a text search does not:
+
+- find where a symbol, function, or class is defined (instead of grepping for it)
+- understand how something works, or where a behavior is handled
+- find who calls a function, or what it calls
+- see what a change affects (its blast radius) and which tests cover it
+- map a file's dependencies and dependents
+
+Fall back to grep or file reads only for what the graph does not model: literal string or comment matches, non-indexed files, or reading a file you have already located. If no Graphify tools are listed, check the MCP server connection.
+<!-- graphify-rules-end -->
+
+- Graphify ist ein externer Dienst und liest vom GitHub-Stand, nicht vom lokalen Mac. Ungepushte Änderungen fehlen dort, dann lokal lesen.
+- Nur Code und Doku aus diesem Repo. Nie Inhalte aus meinem echten Store, Backups, Notion, Secrets oder Dateien außerhalb des Repos. Im Zweifel vorher fragen.
+
 ## Git
 - Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`), kleine Commits.
 - Auf `main` nur gebauter, getesteter Stand. Größere Änderungen: Branch + PR.
