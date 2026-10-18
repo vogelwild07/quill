@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import ImageIO
 import QuillModel
 import Testing
 @testable import QuillEditor
@@ -85,7 +86,7 @@ struct ImageBlockSnapshotTests {
     func fragmentDrawsScaledImageBetweenParagraphs(_ appearance: NSAppearance.Name) throws {
         let id = UUID()
         let image = Self.solidImage(width: 1200, height: 600)
-        EditorImageCache.shared.store(.init(pixelSize: CGSize(width: 1200, height: 600), image: image), for: id)
+        EditorImageCache.shared.store(.init(pointSize: CGSize(width: 1200, height: 600), image: image), for: id)
         let document = EditorDocument(blocks: [
             EditorBlock(text: "Oben"),
             EditorBlock(kind: .image, properties: BlockProperties(assetID: id)),
@@ -113,10 +114,28 @@ struct ImageBlockSnapshotTests {
 
     @Test func smallImagesKeepTheirSize() throws {
         let id = UUID()
-        EditorImageCache.shared.store(.init(pixelSize: CGSize(width: 80, height: 40), image: Self.solidImage(width: 80, height: 40)), for: id)
+        EditorImageCache.shared.store(.init(pointSize: CGSize(width: 80, height: 40), image: Self.solidImage(width: 80, height: 40)), for: id)
         let bitmap = try render(EditorDocument(blocks: [EditorBlock(kind: .image, properties: BlockProperties(assetID: id)), EditorBlock()]), appearance: .aqua)
         let red = try #require(bitmap.boundingBox { $0.r > 0.75 && $0.g < 0.3 && $0.b < 0.3 && $0.a > 0.9 })
         // Bitmap in Pixeln, Fenster in Punkten: Faktor der Bildschirmauflösung.
+        let scale = Double(bitmap.width) / 640
+        #expect(abs(Double(red.width) / scale - 80) <= 2)
+        #expect(abs(Double(red.height) / scale - 40) <= 2)
+    }
+
+    @Test func retinaImagesAppearInScreenSize() throws {
+        let id = UUID()
+        // 160 × 80 Pixel bei 144 DPI wie ein Retina-Bildschirmfoto: 80 × 40 Punkte.
+        let output = NSMutableData()
+        let destination = CGImageDestinationCreateWithData(output, "public.png" as CFString, 1, nil)!
+        CGImageDestinationAddImage(destination, Self.solidImage(width: 160, height: 80), [
+            kCGImagePropertyDPIWidth: 144, kCGImagePropertyDPIHeight: 144,
+        ] as CFDictionary)
+        CGImageDestinationFinalize(destination)
+        EditorImageCache.shared.store(try #require(EditorImageCache.decode(output as Data)), for: id)
+
+        let bitmap = try render(EditorDocument(blocks: [EditorBlock(kind: .image, properties: BlockProperties(assetID: id)), EditorBlock()]), appearance: .aqua)
+        let red = try #require(bitmap.boundingBox { $0.r > 0.75 && $0.g < 0.3 && $0.b < 0.3 && $0.a > 0.9 })
         let scale = Double(bitmap.width) / 640
         #expect(abs(Double(red.width) / scale - 80) <= 2)
         #expect(abs(Double(red.height) / scale - 40) <= 2)

@@ -8,7 +8,9 @@ import UniformTypeIdentifiers
 ///   andere Formate (z. B. TIFF aus der Zwischenablage) werden PNG.
 /// - Größere Bilder werden auf höchstens `maxPixelSize` Pixel Kantenlänge
 ///   heruntergerechnet, nie abgelehnt.
-/// - GPS-Daten werden immer entfernt; Ausrichtung und übrige Metadaten bleiben.
+/// - GPS-Daten werden immer entfernt; Ausrichtung, Auflösung (DPI) und übrige
+///   Metadaten bleiben. Beim Verkleinern wird die DPI mitskaliert, damit das Bild
+///   in derselben Größe erscheint.
 ///   Standortangaben in der MakerNote des Herstellers oder in eigenen XMP-Feldern
 ///   kann ImageIO nicht filtern.
 public enum ImageImport {
@@ -78,6 +80,11 @@ public enum ImageImport {
         let hasAlpha = ![.none, .noneSkipFirst, .noneSkipLast].contains(image.alphaInfo)
         let type = hasAlpha ? UTType.png.identifier : UTType.jpeg.identifier
         var kept = withoutGPS(properties)
+        let (originalWidth, originalHeight) = displaySize(properties)
+        let factor = Double(max(image.width, image.height)) / Double(max(originalWidth, originalHeight, 1))
+        for key in [kCGImagePropertyDPIWidth, kCGImagePropertyDPIHeight] {
+            if let dpi = (properties[key] as? NSNumber)?.doubleValue { kept[key] = dpi * factor }
+        }
         kept[kCGImagePropertyOrientation] = 1
         kept[kCGImagePropertyTIFFDictionary] = (kept[kCGImagePropertyTIFFDictionary] as? [CFString: Any])?
             .filter { $0.key != kCGImagePropertyTIFFOrientation }
@@ -98,6 +105,21 @@ public enum ImageImport {
 
     private static func withoutGPS(_ properties: [CFString: Any]) -> [CFString: Any] {
         properties.filter { $0.key != kCGImagePropertyGPSDictionary }
+    }
+
+    /// Natürliche Größe in Punkten wie in Apple-Apps: 144 DPI = 2 Pixel pro Punkt.
+    /// Ohne oder mit unplausibler DPI (unter 72) gilt 1 Pixel = 1 Punkt.
+    public static func pointSize(_ properties: [CFString: Any]) -> CGSize {
+        let (width, height) = displaySize(properties)
+        func scale(_ key: CFString) -> Double {
+            let dpi = (properties[key] as? NSNumber)?.doubleValue ?? 72
+            return dpi >= 72 ? dpi / 72 : 1
+        }
+        // Die DPI-Angaben beziehen sich aufs gespeicherte Bild; bei 90° gedreht tauschen.
+        let rotated = (properties[kCGImagePropertyOrientation] as? Int ?? 1) >= 5
+        let scaleX = scale(rotated ? kCGImagePropertyDPIHeight : kCGImagePropertyDPIWidth)
+        let scaleY = scale(rotated ? kCGImagePropertyDPIWidth : kCGImagePropertyDPIHeight)
+        return CGSize(width: Double(width) / scaleX, height: Double(height) / scaleY)
     }
 
     /// Ausrichtungen 5–8 drehen um 90°: Breite und Höhe tauschen.

@@ -86,7 +86,7 @@ struct ImageBlockEditorTests {
         let imported = try await store.importImage(Self.png(width: 200, height: 100))
         editor.load(EditorDocument(blocks: [EditorBlock(kind: .image, properties: BlockProperties(assetID: imported.assetID)), EditorBlock()]))
         try await waitUntil { EditorImageCache.shared.entry(for: imported.assetID) != nil }
-        #expect(EditorImageCache.shared.entry(for: imported.assetID)?.pixelSize == CGSize(width: 200, height: 100))
+        #expect(EditorImageCache.shared.entry(for: imported.assetID)?.pointSize == CGSize(width: 200, height: 100))
 
         editor.textView.layoutSubtreeIfNeeded()
         var height: CGFloat = 0

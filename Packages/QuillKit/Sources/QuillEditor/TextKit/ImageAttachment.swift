@@ -4,6 +4,7 @@ import AppKit
 import UIKit
 #endif
 import ImageIO
+import QuillModel
 import Synchronization
 
 /// Bild-Block: reserviert Platz in der Größe des Bildes, skaliert auf die Textbreite.
@@ -22,14 +23,15 @@ final class ImageAttachment: NSTextAttachment {
 
     required init?(coder: NSCoder) { fatalError("nicht unterstützt") }
 
-    /// Größe in Punkten: ein Pixel = ein Punkt, höchstens so breit wie der Text.
-    static func displaySize(pixelSize: CGSize?, availableWidth: CGFloat) -> CGSize {
+    /// Anzeigegröße: natürliche Größe in Punkten (DPI berücksichtigt), höchstens so
+    /// breit wie der Text.
+    static func displaySize(pointSize: CGSize?, availableWidth: CGFloat) -> CGSize {
         let width = max(availableWidth, 10)
-        guard let pixelSize, pixelSize.width > 0, pixelSize.height > 0 else {
+        guard let pointSize, pointSize.width > 0, pointSize.height > 0 else {
             return CGSize(width: width, height: placeholderHeight)
         }
-        let scale = min(1, width / pixelSize.width)
-        return CGSize(width: (pixelSize.width * scale).rounded(), height: (pixelSize.height * scale).rounded())
+        let scale = min(1, width / pointSize.width)
+        return CGSize(width: (pointSize.width * scale).rounded(), height: (pointSize.height * scale).rounded())
     }
 
     override func attachmentBounds(
@@ -39,8 +41,8 @@ final class ImageAttachment: NSTextAttachment {
         proposedLineFragment: CGRect,
         position: CGPoint
     ) -> CGRect {
-        let pixelSize = assetID.flatMap { EditorImageCache.shared.entry(for: $0)?.pixelSize }
-        let size = Self.displaySize(pixelSize: pixelSize, availableWidth: proposedLineFragment.width - 4)
+        let pointSize = assetID.flatMap { EditorImageCache.shared.entry(for: $0)?.pointSize }
+        let size = Self.displaySize(pointSize: pointSize, availableWidth: proposedLineFragment.width - 4)
         return CGRect(origin: .zero, size: size)
     }
 
@@ -65,8 +67,8 @@ final class EditorImageCache: Sendable {
     static let shared = EditorImageCache()
 
     struct Entry: @unchecked Sendable {
-        /// Größe des Originals, wie es angezeigt wird (Ausrichtung berücksichtigt).
-        let pixelSize: CGSize
+        /// Natürliche Größe in Punkten (Ausrichtung und DPI berücksichtigt).
+        let pointSize: CGSize
         /// Für die Anzeige verkleinert; `CGImage` ist unveränderlich.
         let image: CGImage
     }
@@ -100,10 +102,6 @@ final class EditorImageCache: Sendable {
             kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
         ] as CFDictionary
         guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options) else { return nil }
-        let width = properties[kCGImagePropertyPixelWidth] as? Int ?? image.width
-        let height = properties[kCGImagePropertyPixelHeight] as? Int ?? image.height
-        let rotated = (properties[kCGImagePropertyOrientation] as? Int ?? 1) >= 5
-        let size = rotated ? CGSize(width: height, height: width) : CGSize(width: width, height: height)
-        return Entry(pixelSize: size, image: image)
+        return Entry(pointSize: ImageImport.pointSize(properties), image: image)
     }
 }

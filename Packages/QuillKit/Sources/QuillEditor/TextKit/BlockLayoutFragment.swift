@@ -171,7 +171,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     /// Rechteck des Bildes: auf der Grundlinie, wo das Attachment Platz reserviert hat.
     var imageRect: CGRect {
         let entry = assetID.flatMap { EditorImageCache.shared.entry(for: $0) }
-        let size = ImageAttachment.displaySize(pixelSize: entry?.pixelSize, availableWidth: contentMaxX - markerOriginX - 4)
+        let size = ImageAttachment.displaySize(pointSize: entry?.pointSize, availableWidth: contentMaxX - markerOriginX - 4)
         return CGRect(x: markerOriginX, y: firstBaseline - size.height, width: size.width, height: size.height)
     }
 

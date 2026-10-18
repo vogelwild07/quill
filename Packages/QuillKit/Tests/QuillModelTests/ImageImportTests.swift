@@ -99,6 +99,42 @@ struct ImageImportTests {
         #expect(prepared.uti == UTType.png.identifier)
     }
 
+    // MARK: Auflösung (DPI)
+
+    @Test func pointSizeFollowsDPI() {
+        let retina: [CFString: Any] = [kCGImagePropertyPixelWidth: 200, kCGImagePropertyPixelHeight: 100,
+                                       kCGImagePropertyDPIWidth: 144, kCGImagePropertyDPIHeight: 144]
+        #expect(ImageImport.pointSize(retina) == CGSize(width: 100, height: 50))
+        let plain: [CFString: Any] = [kCGImagePropertyPixelWidth: 200, kCGImagePropertyPixelHeight: 100]
+        #expect(ImageImport.pointSize(plain) == CGSize(width: 200, height: 100))
+        var implausible = retina
+        implausible[kCGImagePropertyDPIWidth] = 1
+        implausible[kCGImagePropertyDPIHeight] = 1
+        #expect(ImageImport.pointSize(implausible) == CGSize(width: 200, height: 100))
+        var rotated = retina
+        rotated[kCGImagePropertyOrientation] = 6
+        #expect(ImageImport.pointSize(rotated) == CGSize(width: 50, height: 100))
+    }
+
+    @Test func importKeepsDPI() throws {
+        let screenshot = TestImages.make(width: 200, height: 100, type: .png, properties: [
+            kCGImagePropertyDPIWidth: 144, kCGImagePropertyDPIHeight: 144,
+        ])
+        let prepared = try ImageImport.prepare(screenshot)
+        #expect(ImageImport.pointSize(TestImages.properties(of: prepared.data)) == CGSize(width: 100, height: 50))
+    }
+
+    @Test func downscalingKeepsPointSize() throws {
+        let large = TestImages.make(width: 5000, height: 100, type: .png, properties: [
+            kCGImagePropertyDPIWidth: 144, kCGImagePropertyDPIHeight: 144,
+        ])
+        let prepared = try ImageImport.prepare(large, maxOriginalBytes: 1000)
+        #expect(prepared.pixelWidth == ImageImport.maxPixelSize)
+        let size = ImageImport.pointSize(TestImages.properties(of: prepared.data))
+        #expect(abs(size.width - 2500) < 2)
+        #expect(abs(size.height - 50) < 2)
+    }
+
     @Test func unreadableDataThrows() {
         #expect(throws: ImageImport.Failure.unreadable) { try ImageImport.prepare(Data("kein Bild".utf8)) }
     }
