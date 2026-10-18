@@ -91,7 +91,24 @@ Gemessen im Release-Build, echtes Fenster, 1000 Blöcke:
 
 Der Code in `QuillEditorSpike` und `Spikes/EditorSpike` ist Wegwerf-Code. Was davon in Phase 3 nach `QuillEditor` überführt wird und wann der Spike gelöscht wird, legt ADR-007 fest.
 
+## Persistenz und Fenster (Phase 2)
+
+- **Start:** `AppDelegate` ruft `QuillPersistence.open()` vor dem ersten Fenster auf: Backup vor dem Öffnen (ADR-010), `ModelContainer` mit `QuillMigrationPlan`, danach `markOpened()`. Scheitert das Backup vor einer Migration, wird nicht geöffnet. Lässt sich der Store nicht öffnen, zeigt das Fenster `PersistenceErrorView`; es wird nie auf einen leeren Store ausgewichen. Beim Beenden `backupOnQuit()`.
+- **Schreiben:** `PageStore` (`@ModelActor`) über `EnvironmentValues.pageStore`; Schnittstelle nur mit `UUID`s. `PageOperations` registriert Undo/Redo für Anlegen, Umbenennen (Sidebar), Verschieben und Papierkorb.
+- **Lesen:** `@Query` in `RootView`, `SidebarView` und `PageDetailView`. `PageTree` baut daraus einen unveränderlichen Baum (`PageNode`), plattformneutral und getestet.
+- **Sidebar:** `PageOutlineView` = `NSOutlineView` in `NSViewRepresentable` (ADR-012). Aufklappzustand in `UserDefaults`. Ein Klick in die Sidebar holt den Tastaturfokus dorthin (sonst blieben ↩ und ⌘⌫ im Titelfeld).
+- **Fenster:** eine `WindowGroup(id: "main")`. Ausgewählte Seite pro Fenster in `@SceneStorage`. `WindowRouter` übergibt einem neuen Fenster die Startseite und hängt es bei ⌘T bzw. „In neuem Tab öffnen“ als Tab an.
+- **Menüleiste:** `QuillCommands` mit `@FocusedValue(\.pageActions)` des aktiven Fensters.
+
+| Kürzel | Befehl |
+|---|---|
+| ⌘N / ⇧⌘N | Neue Seite / Neue Unterseite der ausgewählten Seite |
+| ⌥⌘N / ⌘T | Neues Fenster / Neuer Tab |
+| ↩ (Sidebar) | Umbenennen |
+| ⌘⌫ (Sidebar) | In den Papierkorb legen (Menüpunkt ohne Kürzel, siehe ADR-012) |
+| ⌘Z / ⇧⌘Z | Rückgängig / Wiederholen |
+
 ## Tests
 
-- Unit: Swift Testing pro Modul. `EditorDocument` und Exporter mit Golden Files, `PageStore` mit In-Memory-`ModelContainer`.
-- UI: XCUITest (Seite anlegen, tippen, Slash-Menü, ⌘K, Papierkorb).
+- Unit: Swift Testing pro Modul. `EditorDocument` und Exporter mit Golden Files, `PageStore` mit In-Memory-`ModelContainer`, Backups und Migrationen mit Stores im Temp-Ordner (ADR-010, ADR-011), `PageTree` ohne SwiftData.
+- UI: XCUITest, immer über `XCUIApplication.quill()` (ohne Fensterzustand, Store nur im Arbeitsspeicher). Phase 2: Seite anlegen und umbenennen, Unterseite, Papierkorb mit Undo, Tabs. Der Test „Ziehen zum Verschachteln“ ist übersprungen (`XCTSkip`): Synthetische Drags von XCUITest starten in der `NSOutlineView` kein Ziehen; die Logik ist per Unit-Test abgedeckt, das Ziehen selbst wird von Hand geprüft. Später: Tippen, Slash-Menü, ⌘K. Vor dem Lauf darf keine andere Quill-Instanz laufen (z. B. aus ⌘R), sonst kann XCTest sie nicht beenden.
