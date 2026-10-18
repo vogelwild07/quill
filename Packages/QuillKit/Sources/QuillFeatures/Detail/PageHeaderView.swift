@@ -17,6 +17,7 @@ struct PageHeaderView: View {
     @Query private var pages: [Page]
     @State private var title = ""
     @State private var icon = ""
+    @State private var titleSelection: TextSelection?
     @FocusState private var focusedField: Field?
 
     private enum Field { case title, icon }
@@ -59,6 +60,7 @@ struct PageHeaderView: View {
             TextField(
                 String(localized: "Titel", bundle: .module),
                 text: $title,
+                selection: $titleSelection,
                 prompt: Text("Ohne Titel", bundle: .module),
                 axis: .vertical
             )
@@ -74,7 +76,11 @@ struct PageHeaderView: View {
         .onChange(of: title) { if let page, title != page.title { rename(pageID, title) } }
         .onChange(of: icon) { applyIcon() }
         .onChange(of: focus.titleRequest, initial: true) {
-            if focus.titleRequest > 0 { focusedField = .title }
+            guard focus.titleRequest > 0 else { return }
+            // Cursor ans Ende statt alles markieren: Weitertippen ergänzt den Titel.
+            // Das Feld markiert beim Fokussieren alles; deshalb einen Durchlauf später.
+            focusedField = .title
+            Task { titleSelection = TextSelection(insertionPoint: title.endIndex) }
         }
     }
 
