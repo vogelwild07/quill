@@ -64,6 +64,36 @@ struct PageEditorSessionTests {
         #expect(try ModelContext(container).fetchCount(FetchDescriptor<Block>()) == 0)
     }
 
+    /// Fehler 5 aus dem Review: Schließen und sofort wieder Öffnen zeigt den neuesten Stand.
+    @Test func reopeningImmediatelyShowsLatestText() async throws {
+        let (session, _) = await openSession()
+        type("gerade getippt", in: session)
+        session.close()
+
+        let (reopened, _) = await openSession()
+        #expect(reopened.controller.document.blocks.map(\.text) == ["gerade getippt"])
+    }
+
+    /// Fehler 2 aus dem Review: Der Hinweis „Nicht gespeichert“ hängt an `lastError`.
+    @Test func saveProblemIsVisibleUntilSaved() async throws {
+        let (session, _) = await openSession()
+        let context = ModelContext(container)
+        let page = try #require(try context.fetch(FetchDescriptor<Page>()).first)
+        context.delete(page)
+        try context.save()
+
+        type("x", in: session)
+        #expect(await session.bridge.flush() == false)
+        #expect(session.bridge.lastError != nil)
+
+        let restored = Page(title: "Notizen")
+        restored.id = pageID
+        context.insert(restored)
+        try context.save()
+        #expect(await session.bridge.flush())
+        #expect(session.bridge.lastError == nil)
+    }
+
     @Test func headerIsAccessibleInsideTheTextView() async throws {
         let (session, _) = await openSession()
         let header = try #require(session.controller.header)

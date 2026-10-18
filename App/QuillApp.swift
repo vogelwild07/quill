@@ -32,8 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard EditorPersistenceBridge.hasAnyUnsavedChanges else { return .terminateNow }
         Task {
-            await EditorPersistenceBridge.flushAll()
-            sender.reply(toApplicationShouldTerminate: true)
+            sender.reply(toApplicationShouldTerminate: await QuitGuard.shouldTerminate())
         }
         return .terminateLater
     }

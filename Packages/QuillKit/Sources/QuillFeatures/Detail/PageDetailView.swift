@@ -63,6 +63,12 @@ struct PageDetailView: View {
             applyTitleFocusRequest()
             await session.load()
         }
+        .overlay(alignment: .topTrailing) {
+            if let error = session?.bridge.lastError {
+                SaveProblemBadge(error: error)
+                    .padding(12)
+            }
+        }
         .onDisappear { session?.close() }
         .onChange(of: titleFocusRequest) { applyTitleFocusRequest() }
     }

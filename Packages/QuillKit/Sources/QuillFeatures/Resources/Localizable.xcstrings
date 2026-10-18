@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "de",
   "strings" : {
+    "Abbrechen" : {
+
+    },
     "Backups im Finder zeigen" : {
 
     },
@@ -52,6 +55,9 @@
     "Neues Fenster" : {
 
     },
+    "Nicht gespeichert" : {
+
+    },
     "Ohne Titel" : {
 
     },
@@ -76,13 +82,25 @@
     "Titel" : {
 
     },
+    "Trotzdem beenden" : {
+
+    },
     "Umbenennen" : {
 
     },
     "Verschieben" : {
 
     },
+    "Wenn du Quill jetzt beendest, gehen diese Änderungen verloren. Solange Quill geöffnet bleibt, wird das Speichern weiter versucht.\n\n%@" : {
+
+    },
     "Wähle links eine Seite oder lege mit ⌘N eine neue an." : {
+
+    },
+    "Änderungen konnten nicht gespeichert werden" : {
+
+    },
+    "Änderungen konnten nicht gespeichert werden. Quill versucht es automatisch erneut.\n%@" : {
 
     }
   },
