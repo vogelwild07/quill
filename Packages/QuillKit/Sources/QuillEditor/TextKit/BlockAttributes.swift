@@ -49,5 +49,6 @@ enum StorageCharacter {
     static let paragraphEnd: unichar = 0x0A
     /// Weicher Umbruch (⇧↩, Code) – im Modell `\n`.
     static let softBreak = "\u{2028}"
+    static let softBreakUnit: unichar = 0x2028
     static let attachment = "\u{FFFC}"
 }

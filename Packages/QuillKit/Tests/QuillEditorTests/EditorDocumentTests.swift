@@ -251,6 +251,35 @@ struct MarkdownShortcutTests {
         #expect(cursor == pos(0, 0))
     }
 
+    @Test(arguments: [BlockKind.heading2, .quote, .todo, .bulleted])
+    func tripleDashMakesDividerInTextBlocks(_ kind: BlockKind) {
+        var document = doc(EditorBlock(kind: kind, text: "---"))
+        let cursor = document.applyMarkdownShortcut(at: pos(0, 3))
+        #expect(document.blocks.map(\.kind) == [.divider, .paragraph])
+        #expect(cursor == pos(1, 0))
+    }
+
+    @Test func tripleDashWithTextBehindStaysText() {
+        var document = doc(EditorBlock(kind: .heading1, text: "---Titel"))
+        #expect(document.applyMarkdownShortcut(at: pos(0, 3)) == nil)
+        #expect(document[0].kind == .heading1)
+    }
+
+    @Test func emptyBracketsUncheckCheckedTodo() {
+        var document = doc(EditorBlock(kind: .todo, text: "[] Aufgabe", isChecked: true))
+        _ = document.applyMarkdownShortcut(at: pos(0, 3))
+        #expect(document[0].kind == .todo)
+        #expect(!document[0].isChecked)
+        #expect(document[0].text == "Aufgabe")
+    }
+
+    @Test func xBracketsCheckOpenTodo() {
+        var document = doc(EditorBlock(kind: .todo, text: "[x] Aufgabe"))
+        _ = document.applyMarkdownShortcut(at: pos(0, 4))
+        #expect(document[0].isChecked)
+        #expect(document[0].text == "Aufgabe")
+    }
+
     @Test func listKeepsIndentWhenSwitchingListKind() {
         var document = doc(EditorBlock(kind: .bulleted, text: "1. A", indent: 1))
         _ = document.applyMarkdownShortcut(at: pos(0, 3))

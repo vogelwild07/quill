@@ -30,6 +30,11 @@ enum BlockStyle {
         return inset
     }
 
+    /// Linker Rand samt Listenmarker: Dort enden Griff und ＋, dort beginnt die Einfügelinie.
+    static func leadingInset(kind: BlockKind, indent: Int) -> CGFloat {
+        textInset(kind: kind, indent: indent) - (kind.isListItem ? S.indentStep : 0)
+    }
+
     static func paragraphStyle(kind: BlockKind, indent: Int) -> NSParagraphStyle {
         let style = NSMutableParagraphStyle()
         let inset = textInset(kind: kind, indent: indent)

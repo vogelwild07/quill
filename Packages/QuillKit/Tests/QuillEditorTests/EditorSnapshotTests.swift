@@ -127,6 +127,15 @@ struct InlineCodeSnapshotTests {
         #expect(wrapped.count == 2)
         if wrapped.count == 2 { #expect(wrapped[0].maxY <= wrapped[1].minY) }
     }
+
+    /// Ein weicher Umbruch am Ende des Inline-Codes wird nicht mit unterlegt.
+    @Test func trailingSoftBreakIsNotUnderlaid() throws {
+        let marked = try render(SampleDocuments.inlineCodeBeforeSoftBreak(markingBreak: true), appearance: .aqua)
+        let plain = try render(SampleDocuments.inlineCodeBeforeSoftBreak(markingBreak: false), appearance: .aqua)
+        let rects = try #require(marked.fragments.first).inlineCodeRects
+        #expect(rects.count == 1)
+        #expect(rects == (try #require(plain.fragments.first).inlineCodeRects))
+    }
 }
 
 @MainActor

@@ -110,7 +110,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
                 guard overlap.length > 0 else { continue }
                 // Abschließenden Zeilenumbruch nicht mit unterlegen.
                 var end = NSMaxRange(overlap)
-                while end > overlap.location, [0x0A, 0x2028].contains(text.character(at: end - 1)) { end -= 1 }
+                while end > overlap.location, [StorageCharacter.paragraphEnd, StorageCharacter.softBreakUnit].contains(text.character(at: end - 1)) { end -= 1 }
                 guard end > overlap.location else { continue }
                 let startX = line.locationForCharacter(at: overlap.location).x
                 let endX = line.locationForCharacter(at: end).x

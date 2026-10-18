@@ -40,6 +40,14 @@ enum SampleDocuments {
         ])
     }
 
+    /// Inline-Code direkt vor einem weichen Umbruch (⇧↩), mit oder ohne den Umbruch
+    /// in der Markierung.
+    static func inlineCodeBeforeSoftBreak(markingBreak: Bool) -> EditorDocument {
+        EditorDocument(blocks: [
+            EditorBlock(text: "code\nweiter", spans: [InlineSpan(0..<(markingBreak ? 5 : 4), marks: [.code])]),
+        ])
+    }
+
     /// Kurzes gemischtes Dokument für Zwischenablage und Verschieben.
     static let mixed: [EditorBlock] = [
         EditorBlock(kind: .heading1, text: "Titel"),

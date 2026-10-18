@@ -188,8 +188,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         let frame = viewFrame(of: fragment)
         let lineTop = fragment.textLineFragments.first.map { $0.typographicBounds.minY } ?? 0
         let lineHeight = fragment.textLineFragments.first.map { $0.typographicBounds.height } ?? 20
-        let x = textContainerOrigin.x + BlockStyle.textInset(kind: fragment.kind, indent: fragment.indent)
-            - (fragment.kind.isListItem ? QuillDesign.Spacing.indentStep : 0) - 26
+        let x = textContainerOrigin.x + BlockStyle.leadingInset(kind: fragment.kind, indent: fragment.indent) - 26
         let y = frame.minY + lineTop + (lineHeight - 22) / 2
         // „⋮⋮ ＋ Text“: der ＋ direkt vor dem Text, der Griff links daneben.
         insertButton.frame = CGRect(x: x, y: y, width: 20, height: 22)
@@ -255,8 +254,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         let right = textContainerOrigin.x + (textContainer?.size.width ?? bounds.width) - padding
         var left = textContainerOrigin.x + padding
         if let editor, let block = index < editor.document.count ? editor.document[index] : editor.document.blocks.last {
-            left += BlockStyle.textInset(kind: block.kind, indent: block.indent)
-                - (block.kind.isListItem ? QuillDesign.Spacing.indentStep : 0)
+            left += BlockStyle.leadingInset(kind: block.kind, indent: block.indent)
         }
         return CGRect(x: left, y: y - 1, width: max(20, right - left), height: 2)
     }
@@ -475,7 +473,7 @@ final class BlockHandleView: NSView, NSDraggingSource {
                 item.keyEquivalentModifierMask = [.command, .option]
             }
             item.image = NSImage(systemSymbolName: command.symbol, accessibilityDescription: nil)
-            item.representedObject = command.kind.rawValue
+            item.representedObject = BlockKindRequest(command.kind)
             item.target = self
             submenu.addItem(item)
         }
@@ -487,8 +485,8 @@ final class BlockHandleView: NSView, NSDraggingSource {
     @objc private func deleteBlocks(_ sender: Any?) { perform { $0.deleteSelectedBlocks() } }
     @objc private func duplicateBlocks(_ sender: Any?) { perform { $0.duplicateSelectedBlocks() } }
     @objc func convertBlocks(_ sender: NSMenuItem) {
-        guard let kind = (sender.representedObject as? String).flatMap(BlockKind.init(rawValue:)) else { return }
-        perform { $0.convertSelectedBlocks(to: kind) }
+        guard let request = sender.representedObject as? BlockKindRequest else { return }
+        perform { $0.convertSelectedBlocks(to: request.kind) }
     }
 
     private func beginBlockDrag(with event: NSEvent) {

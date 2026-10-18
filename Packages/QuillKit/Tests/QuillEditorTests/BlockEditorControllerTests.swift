@@ -470,6 +470,8 @@ struct BlockActionTests {
         let submenu = try #require(menu.items[3].submenu)
         #expect(submenu.items.map(\.title) == BlockConversion.commands.map(\.title))
         #expect(submenu.items[1].keyEquivalent == "1" && submenu.items[1].keyEquivalentModifierMask == [.command, .option])
+        // Derselbe Auftrag wie Format › Blockart.
+        #expect(submenu.items.compactMap { ($0.representedObject as? BlockKindRequest)?.kind } == BlockConversion.commands.map(\.kind))
 
         submenu.performActionForItem(at: 6)
         #expect(h.kinds == [.paragraph, .paragraph, .todo])
@@ -712,7 +714,8 @@ struct ClipboardAndMoveTests {
         let board = pasteboard()
         defer { board.releaseGlobally() }
         board.clearContents()
-        board.setData(try #require(BlockClipboard.encode([EditorBlock(kind: .divider), EditorBlock(kind: .divider)])), forType: .quillBlocks)
+        let data: Data = try #require(BlockClipboard.encode([EditorBlock(kind: .divider), EditorBlock(kind: .divider)]))
+        board.setData(data, forType: .quillBlocks)
         h.caret(at: 2, 1)
         #expect(h.editor.paste(from: board))
         #expect(h.kinds == [.paragraph, .divider, .paragraph, .divider, .divider, .paragraph])
