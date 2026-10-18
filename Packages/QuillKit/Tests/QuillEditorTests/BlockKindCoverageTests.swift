@@ -6,6 +6,8 @@ import Testing
 /// Jede Blockart muss überall behandelt werden, wo Blöcke ankommen. Eine neue Art in
 /// `BlockKind` lässt diese Tests scheitern, bis sie in Renderer, Slash-Menü und
 /// Markdown berücksichtigt ist (oder bewusst in `notInSlashMenu` steht).
+// Rendert (`NSFont`): nur auf dem Main Actor, siehe `BlockRendererTests`.
+@MainActor
 @Suite("BlockKind: jede Art überall behandelt")
 struct BlockKindCoverageTests {
     /// Arten, die (noch) nicht im Slash-Menü stehen, mit Grund.
