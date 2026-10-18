@@ -125,13 +125,13 @@ public actor PageStore {
 
     // MARK: - Hilfen
 
-    private func save() throws {
+    func save() throws {
         if modelContext.hasChanges {
             try modelContext.save()
         }
     }
 
-    private func fetchPage(_ id: UUID) throws -> Page {
+    func fetchPage(_ id: UUID) throws -> Page {
         var descriptor = FetchDescriptor<Page>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
         guard let page = try modelContext.fetch(descriptor).first else {

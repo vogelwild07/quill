@@ -49,6 +49,16 @@ public enum FractionalIndex {
         return keys
     }
 
+    /// `count` aufsteigende Schlüssel zwischen `lower` und `upper`. Halbiert rekursiv,
+    /// damit auch viele Schlüssel in einer engen Lücke kurz bleiben (Tiefe log₂ n).
+    public static func keys(count: Int, between lower: String?, and upper: String?) throws(Error) -> [String] {
+        guard count > 0 else { return [] }
+        let middle = try key(between: lower, and: upper)
+        let left = try keys(count: (count - 1) / 2, between: lower, and: middle)
+        let right = try keys(count: count - 1 - left.count, between: middle, and: upper)
+        return left + [middle] + right
+    }
+
     /// Ob `key` ein gültiger, nicht leerer Schlüssel ist.
     public static func isValid(_ key: String) -> Bool {
         guard !key.isEmpty, let values = try? digitValues(key) else { return false }
