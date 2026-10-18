@@ -7,12 +7,15 @@ import XCTest
 /// Ein Bild-Block steht im Text der Bedienungshilfen als U+FFFC.
 /// Die Dateiauswahl (Slash-Menü „Bild“) läuft in der Sandbox außerhalb der App und
 /// wird von Hand geprüft; hier nur der Eintrag im Menü.
+@MainActor
 final class ImageBlockUITests: XCTestCase {
     private var app: XCUIApplication!
     private let pasteboard = NSPasteboard(name: NSPasteboard.Name("de.vogel.quill.uitests.\(UUID().uuidString)"))
     private let image = "\u{FFFC}"
 
-    override func setUpWithError() throws {
+    // Die async-Varianten laufen auf dem Main Actor wie die XCUITest-APIs;
+    // `setUpWithError`/`tearDownWithError` wären nonisolated.
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication.quill()
         app.launchArguments += ["-QuillPasteboardName", pasteboard.name.rawValue]
@@ -21,14 +24,13 @@ final class ImageBlockUITests: XCTestCase {
         app.windows.firstMatch.click()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         app.terminate()
         pasteboard.releaseGlobally()
     }
 
     // MARK: - Tests
 
-    @MainActor
     func testPastedImageIsUndoableAndSurvivesPageSwitch() throws {
         let generalChangeCount = NSPasteboard.general.changeCount
         createPage("Bilder")
@@ -51,7 +53,6 @@ final class ImageBlockUITests: XCTestCase {
         XCTAssertEqual(NSPasteboard.general.changeCount, generalChangeCount, "Allgemeine Zwischenablage wurde verändert")
     }
 
-    @MainActor
     func testPastingImageOverSelectionIsOneUndoStep() throws {
         createPage("Auswahl")
         app.typeText("\r")
@@ -66,7 +67,6 @@ final class ImageBlockUITests: XCTestCase {
         assertEditorText("Hallo Welt\n")
     }
 
-    @MainActor
     func testHeavyImageShowsDownscaleNotice() throws {
         createPage("Groß")
         app.typeText("\r")
@@ -82,7 +82,6 @@ final class ImageBlockUITests: XCTestCase {
         XCTAssertEqual(notice.label, "Bild wurde verkleinert")
     }
 
-    @MainActor
     func testSlashMenuOffersImage() throws {
         createPage("Slash")
         app.typeText("\r")

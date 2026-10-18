@@ -14,6 +14,7 @@ Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-A
 - Editor: eigener Block-Editor auf TextKit 2 / `NSTextView` (siehe `docs/architecture.md`).
 - Tests: Swift Testing (Unit), XCUITest (UI). Bundle-ID `de.vogel.quill`.
 - UI-Tests starten die App immer über `XCUIApplication.quill()` (ignoriert gespeicherten Fensterzustand, ADR-008; Store nur im Arbeitsspeicher via `-QuillInMemoryStore YES`). Tests nie gegen den echten Store laufen lassen. Tests mit Kopieren/Einsetzen nutzen eine eigene Zwischenablage (`-QuillPasteboardName`), nie die allgemeine.
+- Build und Tests (App, Package, alle Test-Targets) bleiben **ohne Compiler-Warnungen**; neue Warnungen im selben Schritt beheben, nicht stummschalten. UI-Testklassen sind `@MainActor` und nutzen `setUp()`/`tearDown()` als `async throws` (die `…WithError`-Varianten sind nonisolated).
 - UI-Strings lokalisierbar (`Localizable.xcstrings`), Ausgangssprache Deutsch.
 
 ## Datenmodell-Regeln (CloudKit-tauglich)

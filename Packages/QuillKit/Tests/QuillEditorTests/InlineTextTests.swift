@@ -97,14 +97,14 @@ struct InlineDocumentTests {
 
     @Test func backspaceJoinsFormatting() {
         var document = EditorDocument(blocks: [EditorBlock(text: "ab", spans: [InlineSpan(0..<2, marks: bold)]), formatted()])
-        document.deleteBackwardAtStart(of: 1)
+        #expect(document.deleteBackwardAtStart(of: 1) == BlockPosition(block: 0, offset: 2))
         #expect(document[0].text == "abHallo Welt")
         #expect(document[0].spans == [InlineSpan(0..<7, marks: bold), InlineSpan(8..<12, marks: [.italic])])
     }
 
     @Test func joiningIntoCodeDropsMarks() {
         var document = EditorDocument(blocks: [EditorBlock(kind: .code, text: "x"), formatted()])
-        document.deleteBackwardAtStart(of: 1)
+        #expect(document.deleteBackwardAtStart(of: 1) == BlockPosition(block: 0, offset: 1))
         #expect(document.count == 1)
         #expect(document[0].text == "xHallo Welt")
         #expect(document[0].spans.isEmpty)

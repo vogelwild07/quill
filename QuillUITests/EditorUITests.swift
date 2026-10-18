@@ -4,12 +4,15 @@ import XCTest
 /// Block-Editor in der Seite: Tippen, Titel ↔ Text, Formatieren, Speichern beim
 /// Seitenwechsel. Daten nur im Arbeitsspeicher (`quill()`); Speichern über einen
 /// Neustart ist damit nicht prüfbar und wird von `EditorPersistenceBridgeTests` abgedeckt.
+@MainActor
 final class EditorUITests: XCTestCase {
     private var app: XCUIApplication!
     /// Eigene Zwischenablage statt der des Nutzers (`-QuillPasteboardName`).
     private let pasteboard = NSPasteboard(name: NSPasteboard.Name("de.vogel.quill.uitests.\(UUID().uuidString)"))
 
-    override func setUpWithError() throws {
+    // Die async-Varianten laufen auf dem Main Actor wie die XCUITest-APIs;
+    // `setUpWithError`/`tearDownWithError` wären nonisolated.
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication.quill()
         app.launchArguments += ["-QuillPasteboardName", pasteboard.name.rawValue]
@@ -18,14 +21,13 @@ final class EditorUITests: XCTestCase {
         app.windows.firstMatch.click()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         app.terminate()
         pasteboard.releaseGlobally()
     }
 
     // MARK: - Tests
 
-    @MainActor
     func testTypingBlocksAndMarkdownShortcuts() throws {
         createPage("Notizen")
         app.typeText("\r")
@@ -36,7 +38,6 @@ final class EditorUITests: XCTestCase {
         assertEditorText("Ziele\nPunkt\nAufgabe\nText\n")
     }
 
-    @MainActor
     func testTitleAndEditorNavigation() throws {
         createPage("Reise")
         app.typeText("\r")
@@ -54,7 +55,6 @@ final class EditorUITests: XCTestCase {
         assertEditorText("xPackliste\n")
     }
 
-    @MainActor
     func testTextSurvivesPageSwitch() throws {
         createPage("Erste")
         app.typeText("\r")
@@ -68,7 +68,6 @@ final class EditorUITests: XCTestCase {
         assertEditorText("Bleibt erhalten\nZweiter Block\n")
     }
 
-    @MainActor
     func testUndoInEditorDoesNotTouchSidebar() throws {
         createPage("Seite")
         app.typeText("\r")
@@ -80,7 +79,6 @@ final class EditorUITests: XCTestCase {
         XCTAssertEqual(outline.outlineRows.count, 1, "⌘Z im Editor darf keine Seite entfernen")
     }
 
-    @MainActor
     func testBoldShortcutAndFormatMenu() throws {
         // Nur der Zähler, nie der Inhalt der Zwischenablage des Nutzers.
         let generalChangeCount = NSPasteboard.general.changeCount
@@ -102,7 +100,6 @@ final class EditorUITests: XCTestCase {
         XCTAssertEqual(NSPasteboard.general.changeCount, generalChangeCount, "Allgemeine Zwischenablage wurde verändert")
     }
 
-    @MainActor
     func testLinkPopover() throws {
         createPage("Links")
         app.typeText("\r")
