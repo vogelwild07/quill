@@ -1,6 +1,7 @@
 #if canImport(AppKit)
 import AppKit
 import QuillDesign
+import QuillModel
 
 /// Kopf mit eigener Höhenberechnung (z. B. ein `NSHostingView` mit mehrzeiligem Titel).
 @MainActor
@@ -14,6 +15,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     weak var editor: BlockEditorController?
 
     let handle = BlockHandleView()
+    let insertButton = BlockInsertButton()
     private let dropIndicator = NSView()
     private var hoverTrackingArea: NSTrackingArea?
 
@@ -22,6 +24,9 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         handle.isHidden = true
         handle.textView = self
         addSubview(handle)
+        insertButton.isHidden = true
+        insertButton.textView = self
+        addSubview(insertButton)
         dropIndicator.wantsLayer = true
         dropIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
         dropIndicator.layer?.cornerRadius = 1
@@ -89,7 +94,19 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         if let headerView, !children.contains(where: { ($0 as AnyObject) === headerView }) {
             children.insert(headerView, at: 0)
         }
+        // Griff und ＋ nur, solange sie zu sehen sind.
+        for view in [handle, insertButton] as [NSView] where !view.isHidden
+            && !children.contains(where: { ($0 as AnyObject) === view }) {
+            children.append(view)
+        }
         return children
+    }
+
+    /// Fokus woanders (Sidebar, anderer Tab): Slash-Menü schließen.
+    override func resignFirstResponder() -> Bool {
+        let resigned = super.resignFirstResponder()
+        if resigned { editor?.slashMenu.close() }
+        return resigned
     }
 
     // MARK: Auswahl nie hinter das abschließende `\n` des letzten Blocks
@@ -141,7 +158,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         super.mouseDown(with: event)
     }
 
-    // MARK: Griff bei Hover
+    // MARK: Griff und ＋ bei Hover
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -159,33 +176,50 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
         let point = convert(event.locationInWindow, from: nil)
-        if !handle.frame.insetBy(dx: -8, dy: -8).contains(point) { handle.isHidden = true }
+        if !handle.frame.union(insertButton.frame).insetBy(dx: -8, dy: -8).contains(point) { setHoverControlsHidden(true) }
     }
 
     func updateHandle(for point: NSPoint) {
         guard let fragment = fragment(atViewPoint: CGPoint(x: textContainerOrigin.x + 1, y: point.y)),
               let offset = characterOffset(of: fragment) else {
-            handle.isHidden = true
+            setHoverControlsHidden(true)
             return
         }
         let frame = viewFrame(of: fragment)
         let lineTop = fragment.textLineFragments.first.map { $0.typographicBounds.minY } ?? 0
         let lineHeight = fragment.textLineFragments.first.map { $0.typographicBounds.height } ?? 20
-        let x = textContainerOrigin.x + BlockStyle.textInset(kind: fragment.kind, indent: fragment.indent)
-            - (fragment.kind.isListItem ? QuillDesign.Spacing.indentStep : 0) - 26
-        handle.frame = CGRect(x: x, y: frame.minY + lineTop + (lineHeight - 22) / 2, width: 20, height: 22)
+        let x = textContainerOrigin.x + BlockStyle.leadingInset(kind: fragment.kind, indent: fragment.indent) - 26
+        let y = frame.minY + lineTop + (lineHeight - 22) / 2
+        // „⋮⋮ ＋ Text“: der ＋ direkt vor dem Text, der Griff links daneben.
+        insertButton.frame = CGRect(x: x, y: y, width: 20, height: 22)
+        handle.frame = CGRect(x: x - 20, y: y, width: 20, height: 22)
         handle.characterOffset = offset
-        handle.isHidden = false
+        insertButton.characterOffset = offset
+        setHoverControlsHidden(false)
+    }
+
+    private func setHoverControlsHidden(_ hidden: Bool) {
+        handle.isHidden = hidden
+        insertButton.isHidden = hidden
     }
 
     // MARK: Ziehen und Ablegen von Blöcken
 
     override var acceptableDragTypes: [NSPasteboard.PasteboardType] {
-        super.acceptableDragTypes + [.quillBlockDrag]
+        super.acceptableDragTypes + [.quillBlockDrag, .fileURL] + BlockEditorController.imageDataTypes
     }
 
     private func isBlockDrag(_ info: any NSDraggingInfo) -> Bool {
         info.draggingPasteboard.availableType(from: [.quillBlockDrag]) != nil
+    }
+
+    /// Bilder aus dem Finder oder anderen Apps; werden als Bild-Blöcke zwischen Blöcken abgelegt.
+    private func isImageDrop(_ info: any NSDraggingInfo) -> Bool {
+        !isBlockDrag(info) && BlockEditorController.hasImages(info.draggingPasteboard)
+    }
+
+    private func handlesDrop(_ info: any NSDraggingInfo) -> Bool {
+        isBlockDrag(info) || isImageDrop(info)
     }
 
     /// Zielindex (Block) und y-Position der Einfügelinie.
@@ -202,16 +236,41 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     }
 
     override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
-        isBlockDrag(sender) ? draggingUpdated(sender) : super.draggingEntered(sender)
+        handlesDrop(sender) ? draggingUpdated(sender) : super.draggingEntered(sender)
     }
 
     override func draggingUpdated(_ sender: any NSDraggingInfo) -> NSDragOperation {
-        guard isBlockDrag(sender) else { return super.draggingUpdated(sender) }
+        guard handlesDrop(sender) else { return super.draggingUpdated(sender) }
         guard let target = dropTarget(for: sender) else { return [] }
-        let left = textContainerOrigin.x
-        dropIndicator.frame = CGRect(x: left, y: target.y - 1, width: bounds.width - 2 * left, height: 2)
+        autoscrollForDrag(at: convert(sender.draggingLocation, from: nil))
+        dropIndicator.frame = dropIndicatorFrame(index: target.index, y: target.y)
         dropIndicator.isHidden = false
-        return .move
+        return isBlockDrag(sender) ? .move : .copy
+    }
+
+    /// Einfügelinie ab dem Textbeginn des Zielblocks (Einrückung, Listenmarker), nicht über die volle Breite.
+    func dropIndicatorFrame(index: Int, y: CGFloat) -> CGRect {
+        let padding = textContainer?.lineFragmentPadding ?? 5
+        let right = textContainerOrigin.x + (textContainer?.size.width ?? bounds.width) - padding
+        var left = textContainerOrigin.x + padding
+        if let editor, let block = index < editor.document.count ? editor.document[index] : editor.document.blocks.last {
+            left += BlockStyle.leadingInset(kind: block.kind, indent: block.indent)
+        }
+        return CGRect(x: left, y: y - 1, width: max(20, right - left), height: 2)
+    }
+
+    /// Beim Ziehen nah am oberen oder unteren Rand mitscrollen. `draggingUpdated`
+    /// kommt auch ohne Mausbewegung regelmäßig, so scrollt es weiter.
+    func autoscrollForDrag(at point: NSPoint) {
+        let visible = visibleRect
+        let edge: CGFloat = 40, step: CGFloat = 20
+        var y = visible.minY
+        if point.y < visible.minY + edge {
+            y = max(0, visible.minY - step)
+        } else if point.y > visible.maxY - edge {
+            y = min(bounds.height - visible.height, visible.minY + step)
+        }
+        if y != visible.minY { scroll(NSPoint(x: visible.minX, y: y)) }
     }
 
     override func draggingExited(_ sender: (any NSDraggingInfo)?) {
@@ -221,10 +280,21 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     /// `NSTextView` lehnt unbekannte Typen hier ab; Block-Drags erledigt `performDragOperation`.
     override func prepareForDragOperation(_ sender: any NSDraggingInfo) -> Bool {
-        isBlockDrag(sender) ? true : super.prepareForDragOperation(sender)
+        handlesDrop(sender) ? true : super.prepareForDragOperation(sender)
     }
 
     override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
+        if isImageDrop(sender) {
+            dropIndicator.isHidden = true
+            guard let editor, let target = dropTarget(for: sender) else { return false }
+            let images = BlockEditorController.imageSources(from: sender.draggingPasteboard)
+            guard !images.isEmpty else { return false }
+            let position = target.index < editor.document.count
+                ? BlockPosition(block: target.index, offset: 0)
+                : BlockPosition(block: editor.document.count - 1, offset: editor.document[editor.document.count - 1].length)
+            editor.insertImages(images, from: position, to: position)
+            return true
+        }
         guard isBlockDrag(sender) else { return super.performDragOperation(sender) }
         dropIndicator.isHidden = true
         guard let target = dropTarget(for: sender),
@@ -251,6 +321,14 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     @objc func quillToggleInlineCode(_ sender: Any?) { editor?.toggleMark(.code) }
     @objc func quillToggleStrikethrough(_ sender: Any?) { editor?.toggleMark(.strikethrough) }
     @objc func quillEditLink(_ sender: Any?) { editor?.editLink() }
+    @objc func quillSetBlockKind(_ sender: Any?) {
+        guard let request = sender as? BlockKindRequest else { return }
+        editor?.convertSelectedBlocks(to: request.kind)
+    }
+    @objc func quillToggleChecked(_ sender: Any?) { editor?.toggleCheckedInSelection() }
+    @objc func quillMoveBlockUp(_ sender: Any?) { editor?.moveSelectedBlocks(by: -1) }
+    @objc func quillMoveBlockDown(_ sender: Any?) { editor?.moveSelectedBlocks(by: 1) }
+    @objc func quillDuplicateBlock(_ sender: Any?) { editor?.duplicateSelectedBlocks() }
 
     // MARK: Zwischenablage
 
@@ -274,7 +352,8 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     }
 }
 
-/// Griff ⋮⋮ links neben einem Block; startet das Ziehen.
+/// Griff ⋮⋮ links neben einem Block: Ziehen verschiebt, Klick wählt den Block aus,
+/// Rechtsklick öffnet das Kontextmenü (Löschen, Duplizieren, Umwandeln in …).
 final class BlockHandleView: NSView, NSDraggingSource {
     weak var textView: BlockTextView?
     var characterOffset = 0
@@ -290,6 +369,20 @@ final class BlockHandleView: NSView, NSDraggingSource {
         setAccessibilityElement(true)
         setAccessibilityRole(.handle)
         setAccessibilityLabel(String(localized: "Block verschieben", bundle: .module))
+        setAccessibilityCustomActions([
+            NSAccessibilityCustomAction(name: String(localized: "Nach oben verschieben", bundle: .module)) { [weak self] in
+                self?.perform { $0.moveSelectedBlocks(by: -1) } ?? false
+            },
+            NSAccessibilityCustomAction(name: String(localized: "Nach unten verschieben", bundle: .module)) { [weak self] in
+                self?.perform { $0.moveSelectedBlocks(by: 1) } ?? false
+            },
+            NSAccessibilityCustomAction(name: String(localized: "Duplizieren", bundle: .module)) { [weak self] in
+                self?.perform { $0.duplicateSelectedBlocks() } ?? false
+            },
+            NSAccessibilityCustomAction(name: String(localized: "Löschen", bundle: .module)) { [weak self] in
+                self?.perform { $0.deleteSelectedBlocks() } ?? false
+            },
+        ])
     }
 
     @available(*, unavailable)
@@ -331,7 +424,72 @@ final class BlockHandleView: NSView, NSDraggingSource {
         addCursorRect(bounds, cursor: .openHand)
     }
 
+    /// Klick ohne Ziehen wählt die Blöcke aus; erst ab ein paar Punkten Bewegung wird gezogen.
     override func mouseDown(with event: NSEvent) {
+        let start = event.locationInWindow
+        while let next = window?.nextEvent(matching: [.leftMouseUp, .leftMouseDragged]) {
+            if next.type == .leftMouseUp {
+                perform { _ in }
+                return
+            }
+            if hypot(next.locationInWindow.x - start.x, next.locationInWindow.y - start.y) > 3 {
+                beginBlockDrag(with: event)
+                return
+            }
+        }
+    }
+
+    /// Wählt die Blöcke des Griffs aus und führt dann die Aktion auf der Auswahl aus.
+    @discardableResult
+    func perform(_ action: (BlockEditorController) -> Void) -> Bool {
+        // Bei markiertem Text (IME) nie eingreifen, auch nicht in die Auswahl.
+        guard let textView, let editor = textView.editor, !textView.hasMarkedText() else { return false }
+        editor.selectBlocks(editor.handleBlockRange(atCharacter: characterOffset))
+        textView.window?.makeFirstResponder(textView)
+        action(editor)
+        return true
+    }
+
+    // MARK: Kontextmenü
+
+    override func menu(for event: NSEvent) -> NSMenu? { makeMenu() }
+
+    override func accessibilityPerformShowMenu() -> Bool {
+        makeMenu().popUp(positioning: nil, at: CGPoint(x: 0, y: bounds.maxY), in: self)
+        return true
+    }
+
+    func makeMenu() -> NSMenu {
+        let menu = NSMenu()
+        menu.addItem(withTitle: String(localized: "Löschen", bundle: .module), action: #selector(deleteBlocks(_:)), keyEquivalent: "").target = self
+        menu.addItem(withTitle: String(localized: "Duplizieren", bundle: .module), action: #selector(duplicateBlocks(_:)), keyEquivalent: "d").target = self
+        menu.addItem(.separator())
+        let convert = NSMenuItem(title: String(localized: "Umwandeln in", bundle: .module), action: nil, keyEquivalent: "")
+        let submenu = NSMenu()
+        for command in BlockConversion.commands {
+            let item = NSMenuItem(title: command.title, action: #selector(convertBlocks(_:)), keyEquivalent: "")
+            if let digit = BlockConversion.shortcutDigit(for: command.kind) {
+                item.keyEquivalent = String(digit)
+                item.keyEquivalentModifierMask = [.command, .option]
+            }
+            item.image = NSImage(systemSymbolName: command.symbol, accessibilityDescription: nil)
+            item.representedObject = BlockKindRequest(command.kind)
+            item.target = self
+            submenu.addItem(item)
+        }
+        convert.submenu = submenu
+        menu.addItem(convert)
+        return menu
+    }
+
+    @objc private func deleteBlocks(_ sender: Any?) { perform { $0.deleteSelectedBlocks() } }
+    @objc private func duplicateBlocks(_ sender: Any?) { perform { $0.duplicateSelectedBlocks() } }
+    @objc func convertBlocks(_ sender: NSMenuItem) {
+        guard let request = sender.representedObject as? BlockKindRequest else { return }
+        perform { $0.convertSelectedBlocks(to: request.kind) }
+    }
+
+    private func beginBlockDrag(with event: NSEvent) {
         guard let textView, let editor = textView.editor else { return }
         let blocks = editor.dragBlocks(forHandleAtCharacter: characterOffset)
         guard !blocks.ids.isEmpty, let data = try? JSONEncoder().encode(blocks.ids) else { return }

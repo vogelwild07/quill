@@ -128,3 +128,45 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Für CloudKit-Sync reicht „letzte Speicherung pro Block gewinnt“ nicht. Dort kommen Änderungen verzögert und von mehreren Geräten; es braucht eine echte Konfliktlösung (mindestens pro Block mit `updatedAt` und sichtbarem Konfliktfall, besser Zusammenführen innerhalb eines Blocks). Das wird vor dem Sync entschieden.
 - Undo-Schritte im Editor überleben keinen Seitenwechsel.
 - `richText` ist plattformneutral und vom Markdown-Export lesbar; Änderungen am Format brauchen eine neue `version`.
+
+## ADR-014: Block-Felder gebündelt in `BlockProperties` (2026-10-18)
+
+**Kontext:** `indent`, `isChecked` und `codeLanguage` waren an zehn Stellen einzeln aufgezählt (Snapshot, `Block.snapshot`/`apply`, `EditorBlock` samt Codable, Bridge, `BlockStyle`, `BlockRenderer.parse`, `BlockLayoutFragment`, Regeln in `EditorDocument`). Der Bild-Block bringt weitere Felder.
+**Entscheidung:**
+- `BlockProperties` (`QuillModel`) bündelt die einfachen Felder neben Art und Text. `BlockSnapshot` und `EditorBlock` tragen `properties`; `EditorBlock` reicht die Felder per `@dynamicMemberLookup` durch (`block.indent`).
+- `Block.properties` ist die einzige Abbildung auf die SwiftData-Spalten. `SchemaV1` bleibt unverändert (kein Schemawechsel).
+- Welche Felder zu welcher Blockart passen, regelt `BlockProperties.normalized(for:)` in `QuillEditor`; `EditorDocument.setKind` nutzt es.
+- **Textspeicher: weiter ein Schlüssel pro Feld**, gesetzt und gelesen nur über `BlockProperties.textAttributes` / `init(textAttributes:)`. Ein einzelnes Attribut mit dem Struct als Wert wurde geprüft: Gleichheit nach dem Bridging, Attributläufe und Undo in `NSTextView` funktionieren, aber `NSKeyedArchiver` kann einen Attributstring mit Struct-Wert nicht archivieren. AppKit archiviert Text an Stellen, die wir nicht steuern (Ziehen, Dienste, Pasteboard-Typen der Text-View); dort ginge der Wert verloren oder es käme zu einer Exception. Werte bleiben deshalb `Int`, `Bool`, `String`.
+- **Zwischenablage:** Quill-Blöcke als `{"version":2,"blocks":[…]}` (`BlockClipboard`). Version 1 (bloßes Array, flache Felder), unbekannte Versionen und unlesbare Daten werden nicht als Blöcke gelesen; eingesetzt wird dann der Klartext.
+- **`BlockKind` nur in `QuillModel`.** `QuillEditor` hatte eine zweite, gleich lautende Definition; jetzt ergänzt es nur Verhalten per `extension` (`isListItem`, `isAtomic` …). Switches über die Blockart in Renderer, Fragment, Serializer und `EditorDocument` haben kein `default:` mehr, damit der Compiler bei einer neuen Art anhält. `BlockKindCoverageTests` prüft per `CaseIterable` Snapshot, Renderer, Slash-Menü (Ausnahmen mit Grund in `notInSlashMenu`, derzeit `.image`) und Markdown.
+- `BlockPropertiesRoundTripTests` schickt ein Exemplar mit lauter Nicht-Standardwerten durch Store, Snapshot, Editor, Textspeicher und Zwischenablage und prüft per `Mirror`, dass die Testdaten jedes Feld belegen.
+**Konsequenzen:** Ein neues einfaches Feld braucht `BlockProperties`, `Block.properties` (mit neuer Schema-Version, ADR-011), einen Schlüssel in `textAttributes`, ggf. eine Regel in `normalized(for:)` und einen Testwert. Fehlt etwas davon, schlägt der Vollständigkeitstest fehl. Blöcke, die mit einem Build vor Phase 4 kopiert wurden, werden als Klartext eingesetzt.
+
+## ADR-015: Bild-Block, Assets und Aufräumen (2026-10-18)
+
+**Kontext:** Phase 4 bringt Bilder in den Editor. `SchemaV1` hat bereits `Asset` (Daten als `externalStorage`, `Block.asset` 1:1 mit Löschregel `cascade`). Offen waren Darstellung in TextKit 2, Import, Undo nach dem Löschen und Datenschutz.
+**Entscheidung:**
+- **Darstellung A:** `ImageAttachment` reserviert Platz in der natürlichen Größe (DPI aus den Metadaten wie in Apple-Apps: 144 DPI = 2 Pixel pro Punkt; ohne oder unter 72 DPI ein Pixel = ein Punkt; höchstens Textbreite), das Bild zeichnet `BlockLayoutFragment` aus `EditorImageCache` (wie beim Trenner; TextKit 2 zeichnet Attachment-Bilder nicht zuverlässig). Ein Prüftest (`ImageBlockSnapshotTests`) hat bestätigt: Bild an der reservierten Stelle, auf Textbreite skaliert, Text darüber und darunter, hell und dunkel. Kein `NSTextAttachmentViewProvider`: nur AppKit, schwerer per Snapshot zu prüfen. Bis ein Bild geladen ist, zeigt der Block eine Fläche in `quaternaryFill`; dekodiert wird verkleinert (≤ 2048 px) außerhalb des Main Threads.
+- **Verknüpfung:** `BlockProperties.assetID`; die Daten reisen nie durch Snapshots oder die Zwischenablage. `Block.properties` setzt die Beziehung. Gehört ein Asset schon einem anderen Block, bekommt der neue Block eine Kopie, statt es wegzunehmen (Sicherheitsnetz; der Editor kopiert Assets beim Einsetzen selbst über `PageStore.duplicateAsset`, damit seine IDs stimmen).
+- **Import** (`ImageImport`, `PageStore.importImage`): Originale bis 20 MB bleiben erhalten (PNG, JPEG, HEIC, GIF; andere Formate wie TIFF werden PNG). Größere Bilder werden auf höchstens 4096 px Kantenlänge heruntergerechnet (JPEG 0,9, mit Transparenz PNG) und nie abgelehnt; der Editor zeigt dezent „Bild wurde verkleinert“ (auch für VoiceOver angesagt).
+- **Datenschutz:** GPS-Daten werden beim Import immer entfernt (`kCGImageMetadataShouldExcludeGPS`), Ausrichtung und übrige Metadaten bleiben. Dafür müssen die Metadaten der Quelle ausdrücklich mitgegeben werden, sonst verwirft ImageIO alle (per Test gefunden). Grenze laut SDK: Standortangaben in der MakerNote des Herstellers oder in eigenen XMP-Feldern filtert ImageIO nicht.
+- **Löschen und Undo:** `applyEdits` löst das Asset vor dem Löschen eines Blocks (sonst `cascade`), damit Undo das Bild wiederfindet. Verwaiste Assets löscht `removeOrphanedAssets` beim Start nach 30 Tagen ohne Block (wie der Papierkorb), nach dem Start-Backup.
+- **Einfügen:** Slash-Menü „Bild“ (Dateiauswahl), Einsetzen (Bilddateien aus dem Finder, sonst Bilddaten, aber nur ohne Text in der Zwischenablage) und Ablegen zwischen Blöcken. Dateien werden im Hintergrund gelesen und kurz geprüft (`ImageImport.isReadable`, nur Kopf und Eigenschaften); Unlesbares kommt gar nicht erst ins Dokument, also auch nicht über Undo zurück, es gibt nur einen Hinweis. Dauert das Lesen länger als 0,3 s, zeigt eine kleine Ladeanzeige an der Einfügestelle (eigene View über dem Text, nicht im Dokument, nicht im Undo). Für die lesbaren Bilder vergibt der Editor die Asset-ID und fügt den Block mit Platzhalter ein (ein Undo-Schritt, eine ersetzte Auswahl inklusive; wurde beim Lesen weitergetippt, an der Einfügemarke von dann). Der Import läuft danach im Hintergrund unter dieser ID (`importImage(_:assetID:linkTo:)` verknüpft einen schon gespeicherten Block). Weil sich der Block danach nicht mehr ändert, bleiben Undo und Redo auch während des Imports korrekt. Scheitert der Import trotzdem (z. B. beim Speichern), wird der Platzhalter entfernt und der Hinweis nennt die Ursache („nicht gelesen“ bzw. „nicht gespeichert“). Ein Asset, das sich nicht laden lässt, wird nicht bei jeder Änderung erneut geladen. Ein einzeln ausgewählter atomarer Block wird als ganzer Block kopiert; ein Bild zusätzlich als PNG (Anzeigegröße) für andere Apps.
+**Konsequenzen:**
+- Kein Schemawechsel. Bilder stehen als Daten im Store (`.Quill_SUPPORT`) und damit in jedem Backup.
+- Ein und dasselbe Bild auf zwei Seiten belegt doppelt Platz (ein Asset pro Block).
+- Markdown in der Zwischenablage ist für Bilder `![]()`; Pfade unter `assets/` kommen mit dem Export (Phase 6).
+- Beim Verkleinern wird die DPI mitskaliert, damit ein Bild gleich groß erscheint.
+
+## ADR-016: Kurzbefehle und Aktionen für Blöcke (2026-10-18)
+
+**Kontext:** Phase 4 bringt Blockart, Verschieben und Duplizieren auf die Tastatur („Tastatur zuerst“) und ein Kontextmenü an den Griff. Die Tasten dürfen keine Standard-Kürzel von macOS überdecken.
+**Entscheidung:**
+- **Format › Blockart:** ⌥⌘0–7 in Slash-Menü-Reihenfolge (Text, Überschrift 1–3, Aufzählung, Nummerierte Liste, To-do, Zitat). ⌥⌘8 ist „Zoom ein/aus“ der Bedienungshilfen und erreicht die App dann nicht; Code hat deshalb kein Kürzel (Kürzel „``` “ und Menü bleiben). Liste und Ziffern an einer Stelle: `BlockConversion`.
+- **Verschieben:** ⌥⌘↑/↓ statt ⌥⇧↑/↓, das in Textfeldern die Auswahl absatzweise erweitert (`StandardKeyBinding.dict`). Frei laut Standardbelegung; ⌃⌘↓ ist dort Schreibrichtung.
+- **Duplizieren** ⌘D, **Abhaken** ⌘↩: in Quill und der Standardbelegung nicht vergeben.
+- **Griff:** Klick wählt die Blöcke aus, Ziehen ab 3 pt, Rechtsklick öffnet Löschen, Duplizieren, Umwandeln in … (dieselbe Liste wie Format › Blockart). Für VoiceOver dieselben Aktionen als eigene Aktionen am Griff.
+- Alle Aktionen wirken auf die Blöcke der Auswahl (sonst den Block am Cursor bzw. am Griff) und sind ein Undo-Schritt.
+**Konsequenzen:**
+- Die Menüpunkte liegen im Menü „Format“ und laufen über die Responder-Kette wie die Inline-Formate.
+- Markdown-Kürzel greifen in allen Textblöcken außer Code; „## “ in einer Aufzählung macht eine Überschrift daraus.

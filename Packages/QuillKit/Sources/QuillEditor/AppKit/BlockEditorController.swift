@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillModel
 
 /// Verbindet `EditorDocument` mit einem TextKit-2-`NSTextView` (ADR-007).
 ///
@@ -36,6 +37,28 @@ public final class BlockEditorController: NSObject {
     var editedRange: NSRange?
     var editedDelta = 0
     lazy var slashMenu = SlashMenuController(editor: self)
+    /// Letzter Klick auf ＋, solange Escape ihn noch zurücknehmen kann.
+    var pendingInsert: PendingInsert?
+    /// Quelle der Bilder (Laden, Import, Kopien); ohne Store keine Bilder.
+    public var imageStore: PageStore? {
+        didSet {
+            failedImages = []
+            loadMissingImages()
+        }
+    }
+    /// Bilder, die gerade geladen werden.
+    var loadingImages: Set<UUID> = []
+    /// Ladeanzeigen für Bilddateien, deren Lesen länger dauert (nicht im Dokument).
+    var imageLoadingIndicators: [NSProgressIndicator] = []
+    /// Ab dieser Dauer zeigt das Lesen einer Bilddatei eine Ladeanzeige.
+    var imageLoadingIndicatorDelay: Duration = .milliseconds(300)
+    /// Liest eine Bildquelle im Hintergrund; Tests ersetzen es, um langsames Lesen nachzustellen.
+    var readImageSource: @Sendable (ImageSource) -> Data? = { $0.load() }
+    /// Assets, die sich nicht laden ließen; nicht bei jeder Änderung erneut versuchen.
+    var failedImages: Set<UUID> = []
+    /// Eingefügte Bilder, deren Import noch läuft; ihr Block zeigt den Platzhalter.
+    var pendingImports: Set<UUID> = []
+    lazy var noticeView = EditorNoticeView()
 
     public init(document: EditorDocument) {
         self.document = document
@@ -90,6 +113,7 @@ public final class BlockEditorController: NSObject {
         rebuildParagraphStarts()
         textView.setSelectedRange(NSRange(location: 0, length: 0))
         updateTypingAttributes(forCaretAt: BlockPosition(block: 0, offset: 0))
+        loadMissingImages()
     }
 
     /// Ersetzt das gesamte Dokument (z. B. Laden einer anderen Seite). Leert Undo.
@@ -179,6 +203,7 @@ public final class BlockEditorController: NSObject {
             textView.setSelectedRange(NSRange(location: location, length: 0))
             updateTypingAttributes(forCaretAt: cursor)
         }
+        loadMissingImages()
         onChange?(document)
     }
 
@@ -245,9 +270,11 @@ enum UndoAction {
     static var toggleChecked: String { String(localized: "Abhaken", bundle: .module) }
     static var changeKind: String { String(localized: "Blockart ändern", bundle: .module) }
     static var moveBlocks: String { String(localized: "Blöcke verschieben", bundle: .module) }
+    static var duplicate: String { String(localized: "Duplizieren", bundle: .module) }
     static var cut: String { String(localized: "Ausschneiden", bundle: .module) }
     static var paste: String { String(localized: "Einsetzen", bundle: .module) }
     static var format: String { String(localized: "Formatieren", bundle: .module) }
     static var link: String { String(localized: "Link", bundle: .module) }
+    static var insertImage: String { String(localized: "Bild einfügen", bundle: .module) }
 }
 #endif

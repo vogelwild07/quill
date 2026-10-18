@@ -4,6 +4,7 @@ import AppKit
 import UIKit
 #endif
 import QuillDesign
+import QuillModel
 
 /// Typografie und Absatzformate pro Blockart.
 enum BlockStyle {
@@ -16,7 +17,7 @@ enum BlockStyle {
         case .heading2: .systemFont(ofSize: T.heading2Size, weight: .semibold)
         case .heading3: .systemFont(ofSize: T.heading3Size, weight: .semibold)
         case .code: .monospacedSystemFont(ofSize: T.codeSize, weight: .regular)
-        default: .systemFont(ofSize: T.bodySize)
+        case .paragraph, .bulleted, .numbered, .todo, .quote, .divider, .image: .systemFont(ofSize: T.bodySize)
         }
     }
 
@@ -27,6 +28,11 @@ enum BlockStyle {
         if kind == .quote { inset += S.quoteInset }
         if kind == .code { inset += S.codePadding }
         return inset
+    }
+
+    /// Linker Rand samt Listenmarker: Dort enden Griff und ＋, dort beginnt die Einfügelinie.
+    static func leadingInset(kind: BlockKind, indent: Int) -> CGFloat {
+        textInset(kind: kind, indent: indent) - (kind.isListItem ? S.indentStep : 0)
     }
 
     static func paragraphStyle(kind: BlockKind, indent: Int) -> NSParagraphStyle {
@@ -44,7 +50,10 @@ enum BlockStyle {
             style.tailIndent = -S.codePadding
             style.paragraphSpacingBefore = S.codePadding
             style.paragraphSpacing = S.codePadding + S.blockGap
-        default:
+        case .image:
+            style.lineHeightMultiple = T.bodyLineHeight
+            style.paragraphSpacingBefore = S.blockGap
+        case .paragraph, .bulleted, .numbered, .todo, .quote, .divider:
             style.lineHeightMultiple = T.bodyLineHeight
         }
         return style
@@ -57,10 +66,8 @@ enum BlockStyle {
             .paragraphStyle: paragraphStyle(kind: block.kind, indent: block.indent),
             .quillBlockID: block.id.uuidString,
             .quillBlockKind: block.kind.rawValue,
-            .quillIndent: block.indent,
-            .quillChecked: block.isChecked,
         ]
-        if let language = block.codeLanguage { attributes[.quillCodeLanguage] = language }
+        attributes.merge(block.properties.textAttributes) { _, new in new }
         if let ordinal { attributes[.quillOrdinal] = ordinal }
         if block.kind == .quote { attributes[.foregroundColor] = EditorColor.secondaryLabel }
         if block.kind == .todo && block.isChecked {
@@ -87,7 +94,7 @@ enum BlockStyle {
             font = Self.font(font, bold: marks.contains(.bold), italic: marks.contains(.italic))
         }
         if font != base { attributes[.font] = font }
-        if marks.contains(.code) { attributes[.backgroundColor] = EditorColor.quaternaryFill }
+        // Hintergrund von Inline-Code zeichnet `BlockLayoutFragment`.
         if marks.contains(.strikethrough) { attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
         if let link = style.link { attributes[.link] = URL(string: link) ?? link }
         return attributes

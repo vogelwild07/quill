@@ -8,26 +8,20 @@ public struct BlockSnapshot: Identifiable, Equatable, Sendable {
     public var kindRaw: String
     public var text: String
     public var richText: Data?
-    public var indent: Int
-    public var isChecked: Bool
-    public var codeLanguage: String?
+    public var properties: BlockProperties
 
     public init(
         id: UUID,
         kindRaw: String = BlockKind.paragraph.rawValue,
         text: String = "",
         richText: Data? = nil,
-        indent: Int = 0,
-        isChecked: Bool = false,
-        codeLanguage: String? = nil
+        properties: BlockProperties = BlockProperties()
     ) {
         self.id = id
         self.kindRaw = kindRaw
         self.text = text
         self.richText = richText
-        self.indent = indent
-        self.isChecked = isChecked
-        self.codeLanguage = codeLanguage
+        self.properties = properties
     }
 }
 
@@ -50,11 +44,49 @@ public struct BlockEdits: Equatable, Sendable {
 }
 
 extension Block {
+    /// Die einzige Abbildung von `BlockProperties` auf Spalten und Beziehungen des Modells.
+    public var properties: BlockProperties {
+        get { BlockProperties(indent: indent, isChecked: isChecked, codeLanguage: codeLanguage, assetID: asset?.id) }
+        set {
+            indent = newValue.indent
+            isChecked = newValue.isChecked
+            codeLanguage = newValue.codeLanguage
+            if asset?.id != newValue.assetID {
+                linkAsset(newValue.assetID)
+            }
+        }
+    }
+
+    /// Verknüpft das Asset mit dieser ID. Gehört es schon einem anderen Block
+    /// (z. B. eingesetzt auf einer zweiten Seite), bekommt dieser Block eine Kopie,
+    /// statt es dem anderen wegzunehmen. Ein gelöstes Asset bleibt als verwaist
+    /// liegen, bis `PageStore.removeOrphanedAssets` es aufräumt (ADR-015).
+    private func linkAsset(_ id: UUID?) {
+        if let old = asset { old.updatedAt = .now }
+        guard let id, let context = modelContext else {
+            asset = nil
+            return
+        }
+        let found = try? context.fetch(FetchDescriptor<Asset>(predicate: #Predicate { $0.id == id })).first
+        guard let found else {
+            asset = nil
+            return
+        }
+        if let owner = found.block, owner !== self {
+            // Der Editor kennt weiter die ID des Originals. Hat dieser Block schon eine
+            // Kopie davon, bleibt sie; sonst entstünde bei jeder Änderung eine neue.
+            if let current = asset, current.uti == found.uti, current.data == found.data { return }
+            let copy = found.makeCopy()
+            context.insert(copy)
+            asset = copy
+        } else {
+            asset = found
+        }
+        asset?.updatedAt = .now
+    }
+
     var snapshot: BlockSnapshot {
-        BlockSnapshot(
-            id: id, kindRaw: kindRaw, text: text, richText: richText,
-            indent: indent, isChecked: isChecked, codeLanguage: codeLanguage
-        )
+        BlockSnapshot(id: id, kindRaw: kindRaw, text: text, richText: richText, properties: properties)
     }
 
     /// Übernimmt den Inhalt; `true`, wenn sich etwas geändert hat.
@@ -63,9 +95,18 @@ extension Block {
         kindRaw = snapshot.kindRaw
         text = snapshot.text
         richText = snapshot.richText
-        indent = snapshot.indent
-        isChecked = snapshot.isChecked
-        codeLanguage = snapshot.codeLanguage
+        properties = snapshot.properties
         return true
+    }
+}
+
+extension Asset {
+    /// Neues Asset mit denselben Bilddaten (noch nicht eingefügt). Ein Asset gehört
+    /// genau einem Block (ADR-015).
+    func makeCopy() -> Asset {
+        let copy = Asset(data: data, uti: uti)
+        copy.pixelWidth = pixelWidth
+        copy.pixelHeight = pixelHeight
+        return copy
     }
 }

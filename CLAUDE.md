@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-Architekt, Swift-Entwickler.
 
-**Stand:** Phase 3 (Editor Text) abgeschlossen und gemergt (PR #3): Spike nach `QuillEditor` überführt und gelöscht (ADR-007, Tag `editor-spike`), Inline-Formatierung, `EditorPersistenceBridge` mit Retry und Rückfrage beim Beenden, Editor mit Kopf in der Seite (ADR-013). Nächste Phase: 4 (Editor Interaktion), zuerst Block-Felder bündeln. Bekannte Probleme und Plan: `docs/roadmap.md`.
+**Stand:** Phase 3 (Editor Text) abgeschlossen und gemergt (PR #3). Phase 4 (Editor Interaktion) auf `phase-4/editor-interaction` inhaltlich fertig (ADR-014 bis ADR-016), Handtest durch den Nutzer und PR offen. Neue Ideen nur unter „Später“ in `docs/roadmap.md`. Bekannte Probleme und Plan: `docs/roadmap.md`.
 
 ## Kommunikation
 - Immer **Deutsch**. Kurz ist gut; Warnungen, Sicherheit und Entscheidungen in ganzen Sätzen.
@@ -14,6 +14,7 @@ Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-A
 - Editor: eigener Block-Editor auf TextKit 2 / `NSTextView` (siehe `docs/architecture.md`).
 - Tests: Swift Testing (Unit), XCUITest (UI). Bundle-ID `de.vogel.quill`.
 - UI-Tests starten die App immer über `XCUIApplication.quill()` (ignoriert gespeicherten Fensterzustand, ADR-008; Store nur im Arbeitsspeicher via `-QuillInMemoryStore YES`). Tests nie gegen den echten Store laufen lassen. Tests mit Kopieren/Einsetzen nutzen eine eigene Zwischenablage (`-QuillPasteboardName`), nie die allgemeine.
+- Build und Tests (App, Package, alle Test-Targets) bleiben **ohne Compiler-Warnungen**; neue Warnungen im selben Schritt beheben, nicht stummschalten. UI-Testklassen sind `@MainActor` und nutzen `setUp()`/`tearDown()` als `async throws` (die `…WithError`-Varianten sind nonisolated).
 - UI-Strings lokalisierbar (`Localizable.xcstrings`), Ausgangssprache Deutsch.
 
 ## Datenmodell-Regeln (CloudKit-tauglich)
@@ -23,6 +24,8 @@ UUID-`id`, `createdAt`/`updatedAt`, alle Attribute optional oder mit Default, **
 - Ein `NSTextView` pro Seite, ein Absatz = ein Block. Jeder Absatz endet mit `\n`, auch der letzte; Block-Attribute (`.quillBlockID` …) liegen auf **jedem** Zeichen. Weicher Umbruch = U+2028, atomare Blöcke = U+FFFC.
 - Tippen innerhalb eines Absatzes macht die TextView; strukturelle Edits immer über `EditorDocument` und als Diff via `shouldChangeText`/`replaceCharacters`/`didChangeText` (sonst kein Undo). Bei markiertem Text (IME, tote Tasten) nie eingreifen.
 - Fallstricke: Fragment-Koordinaten beginnen am Textanfang (mit `layoutFragmentFrame.minX` umrechnen). TextKit 2 zeichnet `NSTextAttachment.image(for:…)` nicht zuverlässig. `prepareForDragOperation` muss eigene Drag-Typen annehmen. Vor Markdown-Kürzeln `breakUndoCoalescing()`.
+- Neue einfache Block-Felder nur über `BlockProperties` (ADR-014); Textattribute nur mit `Int`/`Bool`/`String`-Werten, kein Struct (AppKit muss archivieren können). `BlockPropertiesRoundTripTests` erzwingt Testwerte für jedes Feld.
+- `BlockKind` nur in `QuillModel`. Switches über die Blockart ohne `default:`; neue Arten müssen `BlockKindCoverageTests` bestehen.
 - Inline-Formatierung: `.quillMarks` und `.link` im Textspeicher sind die Quelle, Schrift/Farbe werden abgeleitet. Gespeichert als `Block.richText` (`RichText`-JSON, `nil` ohne Formatierung). Blöcke schreibt nur die `EditorPersistenceBridge` über `PageStore.applyEdits` (ADR-013).
 - Speichern darf nie still scheitern: Bridge wiederholt mit Backoff, Seite zeigt `lastError`, Beenden fragt über `QuitGuard`. Neuladen aus anderen Fenstern nie bei markiertem Text.
 - Test-Beispieldokumente nur aus `SampleDocuments` (Tests/QuillEditorTests/Fixtures).
@@ -60,6 +63,7 @@ Fall back to grep or file reads only for what the graph does not model: literal 
 - Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`), kleine Commits.
 - Auf `main` nur gebauter, getesteter Stand. Größere Änderungen: Branch + PR.
 - Vor jedem Push `git status` und `git diff --staged` prüfen. Im Zweifel fragen.
+- Gegenproben (absichtlich eingebaute Fehler) nie mit `git checkout`/`git restore` zurücksetzen, sondern aus einer vorher angelegten Kopie der Datei (Scratchpad). Sonst gehen uncommittete Änderungen verloren.
 - Gemergte Phasen-Branches direkt nach dem Merge lokal und auf GitHub löschen (`git branch -d`, `git push origin --delete`), ohne Rückfrage. Nur wenn der Merge bestätigt ist.
 - `DEVELOPMENT_TEAM`-Zeilen in `project.pbxproj` sind lokal (Personal Team des Nutzers) und werden nie committet. `project.pbxproj` deshalb nur gezielt stagen; Xcode-Nebenänderungen (z. B. Scheme-`version`) nicht mitcommitten.
 - Niemals committen: `.env`, Keys, Tokens, Zertifikate, Provisioning-Profile, Datenbanken, Backups, private Notizen.

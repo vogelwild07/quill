@@ -5,9 +5,11 @@ import UIKit
 #endif
 import CoreText
 import QuillDesign
+import QuillModel
 
 /// Zeichnet die Dekoration eines Blocks: Bullet, Nummer, Checkbox, Zitatbalken,
-/// Code-Hintergrund, Trenner. Alles wird aus den Absatz-Attributen abgeleitet.
+/// Code-Hintergrund, Hintergrund von Inline-Code, Trenner. Alles wird aus den
+/// Absatz-Attributen abgeleitet.
 ///
 /// Gezeichnet wird nur über `CGContext` und CoreText, damit iOS die Klasse teilt.
 final class BlockLayoutFragment: NSTextLayoutFragment {
@@ -15,6 +17,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     let indent: Int
     let isChecked: Bool
     let ordinal: Int
+    let assetID: UUID?
 
     override init(textElement: NSTextElement, range rangeInElement: NSTextRange?) {
         let attributes: [NSAttributedString.Key: Any]
@@ -24,9 +27,11 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
             attributes = [:]
         }
         kind = (attributes[.quillBlockKind] as? String).flatMap(BlockKind.init(rawValue:)) ?? .paragraph
-        indent = attributes[.quillIndent] as? Int ?? 0
-        isChecked = attributes[.quillChecked] as? Bool ?? false
+        let properties = BlockProperties(textAttributes: attributes)
+        indent = properties.indent
+        isChecked = properties.isChecked
         ordinal = attributes[.quillOrdinal] as? Int ?? 1
+        assetID = properties.assetID
         super.init(textElement: textElement, range: rangeInElement)
     }
 
@@ -83,11 +88,48 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         )
     }
 
+    /// Hintergrund von Inline-Code, je Zeile ein Rechteck. Höhe aus der Schrift um die
+    /// Grundlinie, nicht aus der Zeile: so bleibt er sicher in seiner Zeile (statt
+    /// `.backgroundColor`, das einmal in die Zeile darüber reichte).
+    var inlineCodeRects: [CGRect] {
+        guard kind.allowsInlineMarks,
+              let string = (textElement as? NSTextParagraph)?.attributedString, string.length > 0 else { return [] }
+        var runs: [(range: NSRange, font: PlatformFont?)] = []
+        string.enumerateAttribute(.quillMarks, in: NSRange(location: 0, length: string.length)) { value, range, _ in
+            guard let marks = value as? String, marks.split(separator: " ").contains(Substring(InlineMark.code.rawValue)) else { return }
+            runs.append((range, string.attribute(.font, at: range.location, effectiveRange: nil) as? PlatformFont))
+        }
+        guard !runs.isEmpty else { return [] }
+        var rects: [CGRect] = []
+        for line in textLineFragments {
+            let lineRange = line.characterRange
+            let baseline = line.typographicBounds.minY + line.glyphOrigin.y
+            for run in runs {
+                let overlap = NSIntersectionRange(run.range, lineRange)
+                guard overlap.length > 0 else { continue }
+                // Ein Umbruch am Zeilenende hat dieselbe Position wie das Zeichen davor,
+                // wird also nicht mit unterlegt (Test `trailingSoftBreakIsNotUnderlaid`).
+                let end = NSMaxRange(overlap)
+                let startX = line.locationForCharacter(at: overlap.location).x
+                let endX = line.locationForCharacter(at: end).x
+                let font = run.font ?? markerFont
+                let padding: CGFloat = 2
+                let bounds = line.typographicBounds
+                let top = max(bounds.minY, baseline - font.ascender - 1)
+                let bottom = min(bounds.maxY, baseline - font.descender + 1)
+                rects.append(CGRect(x: bounds.minX + startX - padding, y: top, width: endX - startX + 2 * padding, height: bottom - top))
+            }
+        }
+        return rects
+    }
+
     override var renderingSurfaceBounds: CGRect {
         var bounds = super.renderingSurfaceBounds
+        for rect in inlineCodeRects { bounds = bounds.union(rect) }
         if kind == .code { bounds = bounds.union(codeBackgroundRect) }
         if kind == .quote { bounds = bounds.union(CGRect(x: markerOriginX, y: 0, width: 8, height: layoutFragmentFrame.height)) }
         if kind.isListItem { bounds = bounds.union(checkboxRect.insetBy(dx: -4, dy: -4)) }
+        if kind == .image { bounds = bounds.union(imageRect) }
         return bounds
     }
 
@@ -99,7 +141,10 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         switch kind {
         case .code: drawCodeBackground(in: context)
         case .quote: drawQuoteBar(in: context)
-        default: break
+        case .paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .todo, .divider, .image: break
+        }
+        for rect in inlineCodeRects {
+            fillRoundedRect(rect, radius: 4, color: EditorColor.quaternaryFill, in: context)
         }
         context.restoreGState()
 
@@ -112,7 +157,8 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         case .numbered: drawNumber(in: context)
         case .todo: drawCheckbox(in: context)
         case .divider: drawDivider(in: context)
-        default: break
+        case .image: drawImage(in: context)
+        case .paragraph, .heading1, .heading2, .heading3, .quote, .code: break
         }
         context.restoreGState()
     }
@@ -160,6 +206,31 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         let line = textLineFragments.first?.typographicBounds ?? CGRect(x: 0, y: 0, width: 0, height: 20)
         context.setFillColor(EditorColor.separator.cgColor)
         context.fill(CGRect(x: markerOriginX, y: line.midY.rounded(.down), width: contentMaxX - markerOriginX, height: 1))
+    }
+
+    /// Rechteck des Bildes: auf der Grundlinie, wo das Attachment Platz reserviert hat.
+    var imageRect: CGRect {
+        let entry = assetID.flatMap { EditorImageCache.shared.entry(for: $0) }
+        let size = ImageAttachment.displaySize(pointSize: entry?.pointSize, availableWidth: contentMaxX - markerOriginX - 4)
+        return CGRect(x: markerOriginX, y: firstBaseline - size.height, width: size.width, height: size.height)
+    }
+
+    /// Bild aus `EditorImageCache`, bis es geladen ist eine Fläche in `quaternaryFill`.
+    private func drawImage(in context: CGContext) {
+        let rect = imageRect
+        guard let image = assetID.flatMap({ EditorImageCache.shared.entry(for: $0)?.image }) else {
+            fillRoundedRect(rect, radius: 6, color: EditorColor.quaternaryFill, in: context)
+            return
+        }
+        // Der Kontext ist gespiegelt (y nach unten), `draw` erwartet y nach oben.
+        context.saveGState()
+        context.addPath(Self.roundedRect(rect, radius: 4))
+        context.clip()
+        context.translateBy(x: rect.minX, y: rect.maxY)
+        context.scaleBy(x: 1, y: -1)
+        context.interpolationQuality = .high
+        context.draw(image, in: CGRect(origin: .zero, size: rect.size))
+        context.restoreGState()
     }
 
     private func drawCheckbox(in context: CGContext) {

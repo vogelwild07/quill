@@ -4,12 +4,15 @@ import XCTest
 /// Block-Editor in der Seite: Tippen, Titel ↔ Text, Formatieren, Speichern beim
 /// Seitenwechsel. Daten nur im Arbeitsspeicher (`quill()`); Speichern über einen
 /// Neustart ist damit nicht prüfbar und wird von `EditorPersistenceBridgeTests` abgedeckt.
+@MainActor
 final class EditorUITests: XCTestCase {
     private var app: XCUIApplication!
     /// Eigene Zwischenablage statt der des Nutzers (`-QuillPasteboardName`).
     private let pasteboard = NSPasteboard(name: NSPasteboard.Name("de.vogel.quill.uitests.\(UUID().uuidString)"))
 
-    override func setUpWithError() throws {
+    // Die async-Varianten laufen auf dem Main Actor wie die XCUITest-APIs;
+    // `setUpWithError`/`tearDownWithError` wären nonisolated.
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication.quill()
         app.launchArguments += ["-QuillPasteboardName", pasteboard.name.rawValue]
@@ -18,14 +21,13 @@ final class EditorUITests: XCTestCase {
         app.windows.firstMatch.click()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         app.terminate()
         pasteboard.releaseGlobally()
     }
 
     // MARK: - Tests
 
-    @MainActor
     func testTypingBlocksAndMarkdownShortcuts() throws {
         createPage("Notizen")
         app.typeText("\r")
@@ -36,7 +38,6 @@ final class EditorUITests: XCTestCase {
         assertEditorText("Ziele\nPunkt\nAufgabe\nText\n")
     }
 
-    @MainActor
     func testTitleAndEditorNavigation() throws {
         createPage("Reise")
         app.typeText("\r")
@@ -54,7 +55,6 @@ final class EditorUITests: XCTestCase {
         assertEditorText("xPackliste\n")
     }
 
-    @MainActor
     func testTextSurvivesPageSwitch() throws {
         createPage("Erste")
         app.typeText("\r")
@@ -68,7 +68,6 @@ final class EditorUITests: XCTestCase {
         assertEditorText("Bleibt erhalten\nZweiter Block\n")
     }
 
-    @MainActor
     func testUndoInEditorDoesNotTouchSidebar() throws {
         createPage("Seite")
         app.typeText("\r")
@@ -80,7 +79,6 @@ final class EditorUITests: XCTestCase {
         XCTAssertEqual(outline.outlineRows.count, 1, "⌘Z im Editor darf keine Seite entfernen")
     }
 
-    @MainActor
     func testBoldShortcutAndFormatMenu() throws {
         // Nur der Zähler, nie der Inhalt der Zwischenablage des Nutzers.
         let generalChangeCount = NSPasteboard.general.changeCount
@@ -102,7 +100,6 @@ final class EditorUITests: XCTestCase {
         XCTAssertEqual(NSPasteboard.general.changeCount, generalChangeCount, "Allgemeine Zwischenablage wurde verändert")
     }
 
-    @MainActor
     func testLinkPopover() throws {
         createPage("Links")
         app.typeText("\r")
@@ -118,7 +115,134 @@ final class EditorUITests: XCTestCase {
         assertEditorText("Apple\n")
     }
 
+    /// ＋ erscheint bei Hover über einem Block und öffnet darunter das Slash-Menü.
+    func testInsertButtonOpensSlashMenu() throws {
+        createPage("Einfügen")
+        app.typeText("\r")
+        waitForFocus(editor)
+        app.typeText("Eins")
+
+        // Erster Block direkt unter dem Titel.
+        title.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 1)).withOffset(CGVector(dx: 0, dy: 24)).hover()
+        let insert = app.windows.firstMatch.buttons["editor.insert"]
+        XCTAssertTrue(insert.waitForExistence(timeout: 5), "Kein ＋ bei Hover")
+        insert.click()
+        assertEditorText("Eins\n/\n")
+        XCTAssertTrue(app.descendants(matching: .any)["slash.heading1"].waitForExistence(timeout: 5), "Slash-Menü nicht offen")
+
+        // Escape nimmt den Klick zurück.
+        app.typeKey(.escape, modifierFlags: [])
+        assertEditorText("Eins\n")
+
+        title.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 1)).withOffset(CGVector(dx: 0, dy: 24)).hover()
+        XCTAssertTrue(insert.waitForExistence(timeout: 5))
+        insert.click()
+        assertEditorText("Eins\n/\n")
+
+        app.typeText("üb\r")
+        assertEditorText("Eins\n\n")
+        app.typeText("Titel")
+        assertEditorText("Eins\nTitel\n")
+    }
+
+    /// Slash-Menü über Bedienungshilfen: Tastatur wählt aus, Klick fügt ein.
+    func testSlashMenuKeyboardAndMouse() throws {
+        createPage("Slash")
+        app.typeText("\r")
+        waitForFocus(editor)
+        app.typeText("/")
+        let menu = app.descendants(matching: .any)["slash.menu"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 5), "Slash-Menü nicht erreichbar")
+        let heading = menu.descendants(matching: .any)["slash.heading1"]
+        XCTAssertTrue(heading.exists)
+        app.typeKey(.downArrow, modifierFlags: [])
+        let selected = NSPredicate { _, _ in heading.isSelected }
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation(for: selected, evaluatedWith: nil)], timeout: 5), .completed, "↓ wählt nicht aus")
+
+        menu.descendants(matching: .any)["slash.divider"].click()
+        assertEditorText("\u{FFFC}\n\n")
+        XCTAssertFalse(menu.exists)
+    }
+
+    /// Klick in die Sidebar schließt das Menü.
+    func testSlashMenuClosesWhenFocusLeaves() throws {
+        createPage("Fokus")
+        app.typeText("\r")
+        waitForFocus(editor)
+        app.typeText("/")
+        let menu = app.descendants(matching: .any)["slash.menu"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 5))
+        row(0).click()
+        let gone = NSPredicate { _, _ in !menu.exists }
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation(for: gone, evaluatedWith: nil)], timeout: 5), .completed, "Menü bleibt offen")
+    }
+
+    /// Format › Blockart (⌥⌘0–7) und Abhaken (⌘↩) über die Menüleiste; Ergebnis als
+    /// Markdown aus der eigenen Zwischenablage.
+    func testBlockKindShortcutsAndCheckOff() throws {
+        createPage("Kürzel")
+        app.typeText("\r")
+        waitForFocus(editor)
+        // Zwei Blöcke: dann kopiert ⌘A blockweise mit Markdown-Präfix.
+        app.typeText("Titel\rEnde")
+        app.typeKey(.upArrow, modifierFlags: .command)
+
+        app.typeKey("1", modifierFlags: [.command, .option])
+        XCTAssertEqual(copiedMarkdown(), "# Titel\n\nEnde")
+        app.typeKey("6", modifierFlags: [.command, .option])
+        app.typeKey(.return, modifierFlags: .command)
+        XCTAssertEqual(copiedMarkdown(), "- [x] Titel\n\nEnde")
+        app.typeKey("0", modifierFlags: [.command, .option])
+        XCTAssertEqual(copiedMarkdown(), "Titel\n\nEnde")
+
+        let blockKinds = app.menuBars.menuBarItems["Format"].menuItems["Blockart"]
+        app.menuBars.menuBarItems["Format"].click()
+        XCTAssertTrue(blockKinds.waitForExistence(timeout: 5))
+        blockKinds.hover()
+        XCTAssertTrue(blockKinds.menuItems["Code"].waitForExistence(timeout: 5))
+        app.typeKey(.escape, modifierFlags: [])
+        app.typeKey(.escape, modifierFlags: [])
+    }
+
+    /// ⌥⌘↓ verschiebt, Kontextmenü am Griff dupliziert, ⌘D dupliziert die Auswahl.
+    func testMoveAndDuplicateBlocks() throws {
+        createPage("Blöcke")
+        app.typeText("\r")
+        waitForFocus(editor)
+        app.typeText("Eins\rZwei")
+        app.typeKey(.upArrow, modifierFlags: .command)
+        app.typeKey(.downArrow, modifierFlags: [.command, .option])
+        assertEditorText("Zwei\nEins\n")
+
+        title.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 1)).withOffset(CGVector(dx: 0, dy: 24)).hover()
+        let handle = app.windows.firstMatch.handles.firstMatch
+        XCTAssertTrue(handle.waitForExistence(timeout: 5), "Kein Griff bei Hover")
+        handle.rightClick()
+        let duplicate = app.menuItems["Duplizieren"]
+        XCTAssertTrue(duplicate.waitForExistence(timeout: 5), "Kein Kontextmenü am Griff")
+        XCTAssertTrue(app.menuItems["Umwandeln in"].exists)
+        duplicate.click()
+        assertEditorText("Zwei\nZwei\nEins\n")
+
+        app.typeKey("d", modifierFlags: .command)
+        assertEditorText("Zwei\nZwei\nZwei\nEins\n")
+        app.typeKey("z", modifierFlags: .command)
+        assertEditorText("Zwei\nZwei\nEins\n")
+    }
+
     // MARK: - Hilfen
+
+    /// ⌘A, ⌘C im Editor; liest Markdown aus der eigenen Zwischenablage. Danach steht
+    /// der Cursor wieder am Anfang.
+    private func copiedMarkdown() -> String? {
+        app.typeKey("a", modifierFlags: .command)
+        let before = pasteboard.changeCount
+        app.typeKey("c", modifierFlags: .command)
+        let copied = NSPredicate { _, _ in self.pasteboard.changeCount != before }
+        _ = XCTWaiter.wait(for: [expectation(for: copied, evaluatedWith: nil)], timeout: 5)
+        app.typeKey(.upArrow, modifierFlags: .command)
+        return pasteboard.string(forType: NSPasteboard.PasteboardType("net.daringfireball.markdown"))
+    }
 
     private var outline: XCUIElement {
         app.windows.firstMatch.outlines["sidebar.pages"]

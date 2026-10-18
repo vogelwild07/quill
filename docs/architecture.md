@@ -44,6 +44,8 @@ Grund: Selektion, Cursorbewegung und Kopieren über Blöcke hinweg, IME, Rechtsc
 
 - Jeder Block ist ein Absatz und endet immer mit `\n`, auch der letzte. Die Auswahl wird vor das letzte `\n` begrenzt.
 - Block-ID, Art, Einrückung, Häkchen, Code-Sprache und Listennummer liegen als eigene Attribute (`.quillBlockID` …) auf **jedem** Zeichen des Absatzes.
+- Einrückung, Häkchen und Code-Sprache sind gebündelt in `BlockProperties` (ADR-014). Auf die Textattribute bildet sie nur `BlockProperties.textAttributes` / `init(textAttributes:)` ab, auf die Spalten nur `Block.properties`. Regeln je Blockart: `normalized(for:)`.
+- `BlockKind` gibt es nur in `QuillModel`; der Editor ergänzt Verhalten per `extension`. Switches über die Blockart ohne `default:`, `BlockKindCoverageTests` prüft jede Art in Renderer, Slash-Menü und Markdown.
 - Weicher Umbruch (Code, ⇧↩) ist U+2028 im Speicher und `\n` im Modell. Atomare Blöcke (Trenner, Bild) sind ein einzelnes U+FFFC mit Attachment.
 - `BlockRenderer.parse` liest den Textspeicher zurück in Blöcke und repariert fehlende oder doppelte IDs.
 
@@ -58,16 +60,16 @@ Grund: Selektion, Cursorbewegung und Kopieren über Blöcke hinweg, IME, Rechtsc
 
 | Schicht | Typ | Plattform |
 |---|---|---|
-| Modell | `EditorDocument`, `EditorBlock`, `MarkdownShortcut`, `MarkdownSerializer`, `SlashCommand` | neutral |
+| Modell | `EditorDocument`, `EditorBlock`, `MarkdownShortcut`, `MarkdownSerializer`, `SlashCommand`, `BlockClipboard` (Format `de.vogel.quill.blocks`, Version 2) | neutral |
 | Abbildung | `BlockRenderer`, `BlockStyle`, Attribut-Schlüssel | neutral (Fonts über `#if`) |
-| Darstellung | `BlockLayoutFragment` zeichnet Bullet, Nummer, Checkbox, Zitatbalken, Code-Hintergrund und Trenner | neutral (TextKit 2) |
+| Darstellung | `BlockLayoutFragment` zeichnet Bullet, Nummer, Checkbox, Zitatbalken, Code-Hintergrund, Trenner und Bilder (`ImageAttachment` reserviert Platz, `EditorImageCache` hält dekodierte Bilder) | neutral (TextKit 2) |
 | Eingabe | `BlockEditorController` (`NSTextViewDelegate`, `NSTextStorageDelegate`) | AppKit, iOS-Gegenstück später |
-| Oberfläche | `BlockTextView` (Griff, Drop, Checkbox-Klick, Zwischenablage), `SlashMenuController` (Glass-Panel), `BlockEditorView` (`NSViewRepresentable`) | AppKit |
+| Oberfläche | `BlockTextView` (Griff ⋮⋮ mit Kontextmenü und Einfügen-Knopf ＋ bei Hover, Drop mit Mitscrollen, Checkbox-Klick, Zwischenablage), `SlashMenuController` (Glass-Panel), `BlockEditorView` (`NSViewRepresentable`) | AppKit |
 | Modell (Inline) | `InlineText`, `InlineSpan`, `InlineMark`, `EditorDocument+Inline` | neutral |
 | Persistenz | `EditorPersistenceBridge`: entprellt (≈ 300 ms), Diffs pro Block über `PageStore.applyEdits` | neutral |
 | Seite | `PageEditorSession`, `PageHeaderView` (Icon, Titel) in `QuillFeatures` | AppKit + SwiftUI |
 
-Der Controller ist auf Erweiterungen verteilt: `+Input` (Tastatur, Kürzel, Slash), `+Sync` (Text ↔ Modell, Undo), `+Clipboard`, `+Drag`, `+Formatting` (⌘B … ⌘K), `+Page` (Kopf, Fokus, Neuladen).
+Der Controller ist auf Erweiterungen verteilt: `+Input` (Tastatur, Kürzel, Slash), `+Sync` (Text ↔ Modell, Undo), `+Clipboard`, `+Drag`, `+Formatting` (⌘B … ⌘K), `+Page` (Kopf, Fokus, Neuladen), `+Images` (Bilder laden, einfügen, Hinweis).
 
 ### Inline-Formatierung
 
@@ -86,7 +88,7 @@ Der Controller ist auf Erweiterungen verteilt: `+Input` (Tastatur, Kürzel, Slas
 ### Erkenntnisse aus dem Spike
 
 - **Fragment-Koordinaten:** Der lokale Ursprung eines `NSTextLayoutFragment` liegt am Textanfang (Padding + Einrückung), nicht am Containerrand. Dekorationen werden in Container-x gerechnet und mit `layoutFragmentFrame.minX` umgerechnet.
-- **Attachments:** TextKit 2 reserviert Platz für ein `NSTextAttachment`, zeichnet aber dessen `image(for:…)` nicht zuverlässig. Der Trenner wird deshalb im Fragment gezeichnet. Für Bilder in Phase 4 einen `NSTextAttachmentViewProvider` prüfen.
+- **Attachments:** TextKit 2 reserviert Platz für ein `NSTextAttachment`, zeichnet aber dessen `image(for:…)` nicht zuverlässig. Trenner und Bilder werden deshalb im Fragment gezeichnet (ADR-015).
 - **Drag & Drop:** `NSTextView.prepareForDragOperation` lehnt eigene Typen ab und muss für Block-Drags überschrieben werden.
 - **Undo-Gruppen:** Vor einem Markdown-Kürzel `breakUndoCoalescing()`, sonst landen Tippen und Umwandeln in einer Gruppe.
 - **VoiceOver:** Text und Zeilen sind über die Bedienungshilfen-Schnittstelle erreichbar. Blockart und Häkchenstatus werden noch nicht angesagt, weil Marker nur gezeichnet sind (Phase 7).
@@ -107,6 +109,22 @@ Gemessen im Release-Build, echtes Fenster, 1000 Blöcke:
 | 8 | IME, VoiceOver-Grundnavigation, Dark Mode | ohne Fehler | Markierter Text per Test ✅; tote Tasten (´e, ^a, ⌥n n) vom Nutzer manuell ✅, gleicher Pfad wie IME; Japanisch nicht manuell geprüft; AX-Text ✅; Dark Mode ✅ |
 
 Der Spike ist in Phase 3 nach `QuillEditor` überführt und gelöscht worden (ADR-007). Letzter Stand: Git-Tag `editor-spike`. `-benchmark` ist jetzt der Performance-Test, `-snapshot` der Snapshot-Test.
+
+### Bild-Block (ADR-015)
+
+- Bilder sind `Asset`s im Store, verknüpft über `BlockProperties.assetID`. Der Editor bekommt den `PageStore` (`imageStore`), lädt fehlende Bilder nach dem Laden, nach strukturellen Edits und nach Undo, dekodiert sie verkleinert außerhalb des Main Threads und erneuert dann das Layout des Absatzes.
+- Einfügen über Slash-Menü (Dateiauswahl), Einsetzen und Ablegen: Dateien werden im Hintergrund gelesen und geprüft (`ImageSource`, nie auf dem Main Thread), danach erscheint der Block mit Platzhalter bis zum Ende des Imports; Unlesbares wird nicht eingefügt. Dauert das Lesen länger als 0,3 s, dreht sich an der Einfügestelle eine kleine Ladeanzeige (`editor.imageLoading`). Import entfernt GPS-Daten und verkleinert Bilder über 20 MB auf 4096 px. Angezeigt wird in natürlicher Größe (DPI).
+- Eingesetzte Bild-Blöcke bekommen eine Kopie ihres Assets (`duplicateAsset`), weil ein Asset genau einem Block gehört.
+
+### Erkenntnisse aus Phase 4
+
+- **Inline-Code-Hintergrund:** Über `.backgroundColor` reichte die Fläche einmal in die Zeile darüber (nicht wieder nachstellbar). Jetzt zeichnet `BlockLayoutFragment` sie selbst (`inlineCodeRects`): je Zeile ein Rechteck aus den Schriftmetriken um die Grundlinie, senkrecht auf die Zeile begrenzt. `InlineCodeSnapshotTests` vergleicht den Absatz darüber pixelgenau mit und ohne Inline-Code.
+- **Zeichnen außerhalb von `renderingSurfaceBounds`** schneidet TextKit ab; wer dekoriert, muss die Fläche dort aufnehmen.
+- **Schriften nur auf dem Main Thread:** `NSFont` lieferte in parallel laufenden Tests sporadisch `nil` (Absturz in `addAttributes`). Tests, die rendern, laufen deshalb auf dem Main Actor.
+- **Auswahländerung vor `textDidChange`:** Beim Tippen meldet sich die Auswahl, bevor die Absätze abgeglichen sind; dort nichts aus `paragraphStarts` lesen.
+- **Zurücknehmen ohne Undo-Schleife:** Escape nach ＋ nutzt Undo nur, wenn „Neuer Block“ genau oben liegt (Dokument unverändert seit dem Klick); sonst entfernt eine eigene Bearbeitung den Block. Nie mehrere Undo-Schritte in einer Schleife: Ein Schritt aus dem Hintergrund (Import, Duplizieren mit Bild) würde sonst mit zurückgenommen.
+- **Asynchron einfügen:** Was erst nach einem `await` eingefügt wird (Bilder lesen, Assets kopieren), nimmt die Einfügemarke von dann, nicht die vom Auslösen.
+- **Asset-Kopien:** Gehört ein Asset schon einem anderen Block, bekommt der Block eine Kopie; der Editor kennt weiter die alte ID. Eine vorhandene Kopie mit denselben Daten bleibt deshalb verknüpft, sonst entstünde bei jeder Änderung eine neue.
 
 ### Erkenntnisse aus Phase 3
 
@@ -136,13 +154,18 @@ Der Spike ist in Phase 3 nach `QuillEditor` überführt und gelöscht worden (AD
 | ⇧⌘M (Editor) | Inline-Code |
 | ⇧⌘X (Editor) | Durchgestrichen |
 | ⌘K (Editor) | Link einfügen oder bearbeiten |
+| ⌥⌘0–7 (Editor) | Blockart: Text, Überschrift 1–3, Aufzählung, Nummerierte Liste, To-do, Zitat (ADR-016) |
+| ⌘↩ (Editor) | To-dos der Auswahl abhaken |
+| ⌥⌘↑ / ⌥⌘↓ (Editor) | Block bzw. ausgewählte Blöcke verschieben |
+| ⌘D (Editor) | Block bzw. ausgewählte Blöcke duplizieren |
+| Rechtsklick auf ⋮⋮ | Löschen, Duplizieren, Umwandeln in … |
 | ⌘O | Schnell öffnen: Suche nach Titel und Volltext (Phase 5) |
 
-⌘K ist bewusst der Link wie in Pages, Mail und Notizen; die Suche liegt deshalb auf ⌘O. ⌘E bleibt frei für den Standard „Auswahl für Suche verwenden“ (HIG), Inline-Code liegt deshalb auf ⇧⌘M. Nicht verwenden: ⇧⌘C („Farben einblenden“).
+⌘K ist bewusst der Link wie in Pages, Mail und Notizen; die Suche liegt deshalb auf ⌘O. ⌘E bleibt frei für den Standard „Auswahl für Suche verwenden“ (HIG), Inline-Code liegt deshalb auf ⇧⌘M. Nicht verwenden: ⇧⌘C („Farben einblenden“), ⌥⌘8 (Zoom der Bedienungshilfen), ⌥⇧↑/↓ (Auswahl absatzweise erweitern).
 
 ## Tests
 
 - Unit: Swift Testing pro Modul. `EditorDocument` und Exporter mit Golden Files, Editor-Controller mit Offscreen-Fenster (Tastatureingaben, Undo, Zwischenablage, Formatieren), `EditorPersistenceBridge` gegen In-Memory-Store, `PageStore` mit In-Memory-`ModelContainer`, Backups und Migrationen mit Stores im Temp-Ordner (ADR-010, ADR-011), `PageTree` ohne SwiftData.
-- UI: XCUITest, immer über `XCUIApplication.quill()` (ohne Fensterzustand, Store nur im Arbeitsspeicher). Phase 2: Seite anlegen und umbenennen, Unterseite, Papierkorb mit Undo, Tabs. Der Test „Ziehen zum Verschachteln“ ist übersprungen (`XCTSkip`): Synthetische Drags von XCUITest starten in der `NSOutlineView` kein Ziehen; die Logik ist per Unit-Test abgedeckt, das Ziehen selbst wird von Hand geprüft. Phase 3 (`EditorUITests`): Tippen mit Markdown-Kürzeln, Titel ↔ Text, Text bleibt beim Seitenwechsel, Undo im Editor getrennt von der Sidebar, ⌘B und Menü Format, Link-Popover. Die App nutzt dabei per `-QuillPasteboardName` eine eigene Zwischenablage; die allgemeine bleibt unberührt (geprüft über `changeCount`). Später: Slash-Menü, Schnell öffnen (⌘O). Vor dem Lauf darf keine andere Quill-Instanz laufen (z. B. aus ⌘R), sonst kann XCTest sie nicht beenden.
+- UI: XCUITest, immer über `XCUIApplication.quill()` (ohne Fensterzustand, Store nur im Arbeitsspeicher). Phase 2: Seite anlegen und umbenennen, Unterseite, Papierkorb mit Undo, Tabs. Der Test „Ziehen zum Verschachteln“ ist übersprungen (`XCTSkip`): Synthetische Drags von XCUITest starten in der `NSOutlineView` kein Ziehen; die Logik ist per Unit-Test abgedeckt, das Ziehen selbst wird von Hand geprüft. Phase 3 (`EditorUITests`): Tippen mit Markdown-Kürzeln, Titel ↔ Text, Text bleibt beim Seitenwechsel, Undo im Editor getrennt von der Sidebar, ⌘B und Menü Format, Link-Popover, ＋ bei Hover öffnet das Slash-Menü im neuen Block (Escape nimmt es zurück), Slash-Menü per Tastatur und Maus über AX-Kennungen (`slash.menu`, `slash.<blockart>`), Schließen bei Fokusverlust, Format › Blockart und ⌘↩ (geprüft über das Markdown der eigenen Zwischenablage), ⌥⌘↓, Kontextmenü am Griff und ⌘D. Die App nutzt dabei per `-QuillPasteboardName` eine eigene Zwischenablage; die allgemeine bleibt unberührt (geprüft über `changeCount`). Phase 4 (`ImageBlockUITests`): Bild per ⌘V mit Undo/Redo, bleibt beim Seitenwechsel, Einsetzen über eine Auswahl als ein Undo-Schritt, Hinweis „Bild wurde verkleinert“ (AX-Gruppe `editor.notice`), Eintrag „Bild“ im Slash-Menü; Testbilder werden im Test erzeugt. Die Dateiauswahl (`NSOpenPanel`) läuft in der Sandbox außerhalb der App und wird von Hand geprüft. Später: Schnell öffnen (⌘O). Vor dem Lauf darf keine andere Quill-Instanz laufen (z. B. aus ⌘R), sonst kann XCTest sie nicht beenden.
 - Darstellung: `EditorSnapshotTests` rendert den Editor hell und dunkel über `cacheDisplay` (keine Bildschirmfotos) und prüft, dass im Dunkelmodus nichts dunkler als der Hintergrund gezeichnet wird; PNGs in `$TMPDIR/QuillEditorSnapshots/`.
 - Performance: `EditorBenchmark` im Test-Target, p95 < 16 ms pro Tastendruck bei 1000 Blöcken (Debug-Build).

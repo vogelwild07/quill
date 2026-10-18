@@ -68,6 +68,30 @@ public struct QuillCommands: Commands {
             Divider()
             formatButton("Link …", #selector(EditorFormattingActions.quillEditLink(_:)))
                 .keyboardShortcut("k")
+            Divider()
+            // ⌥⌘0–7 in Slash-Menü-Reihenfolge; ⌥⌘8 gehört dem Zoom der Bedienungshilfen.
+            Menu(String(localized: "Blockart", bundle: .module)) {
+                ForEach(BlockConversion.commands) { command in
+                    let button = Button(command.title) {
+                        NSApp.sendAction(#selector(EditorFormattingActions.quillSetBlockKind(_:)), to: nil, from: BlockKindRequest(command.kind))
+                    }
+                    if let digit = BlockConversion.shortcutDigit(for: command.kind) {
+                        button.keyboardShortcut(KeyEquivalent(digit), modifiers: [.command, .option])
+                    } else {
+                        button
+                    }
+                }
+            }
+            formatButton("Abhaken", #selector(EditorFormattingActions.quillToggleChecked(_:)))
+                .keyboardShortcut(.return)
+            Divider()
+            // ⌥⌘↑/↓ statt ⌥⇧↑/↓: Das erweitert in Textfeldern die Auswahl absatzweise.
+            formatButton("Block nach oben", #selector(EditorFormattingActions.quillMoveBlockUp(_:)))
+                .keyboardShortcut(.upArrow, modifiers: [.command, .option])
+            formatButton("Block nach unten", #selector(EditorFormattingActions.quillMoveBlockDown(_:)))
+                .keyboardShortcut(.downArrow, modifiers: [.command, .option])
+            formatButton("Block duplizieren", #selector(EditorFormattingActions.quillDuplicateBlock(_:)))
+                .keyboardShortcut("d")
         }
 
         CommandMenu(String(localized: "Seite", bundle: .module)) {

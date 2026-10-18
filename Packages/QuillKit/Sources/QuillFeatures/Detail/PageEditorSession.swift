@@ -28,6 +28,7 @@ final class PageEditorSession {
         setIcon: @escaping @MainActor (UUID, String?) -> Void
     ) {
         bridge = EditorPersistenceBridge(pageID: pageID, store: store)
+        controller.imageStore = store
         controller.topPadding = 96
         controller.isEditable = false
         let header = PageHeaderView(

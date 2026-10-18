@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillModel
 import SwiftUI
 
 /// Aktionen des Menüs „Format“. Die Menüleiste schickt sie über die Responder-Kette
@@ -11,6 +12,21 @@ import SwiftUI
     func quillToggleInlineCode(_ sender: Any?)
     func quillToggleStrikethrough(_ sender: Any?)
     func quillEditLink(_ sender: Any?)
+    /// `sender` ist ein `BlockKindRequest`.
+    func quillSetBlockKind(_ sender: Any?)
+    func quillToggleChecked(_ sender: Any?)
+    func quillMoveBlockUp(_ sender: Any?)
+    func quillMoveBlockDown(_ sender: Any?)
+    func quillDuplicateBlock(_ sender: Any?)
+}
+
+/// Absender für `quillSetBlockKind`: welche Blockart (Menü, Kontextmenü am Griff).
+@objc public final class BlockKindRequest: NSObject {
+    public let kind: BlockKind
+
+    public init(_ kind: BlockKind) {
+        self.kind = kind
+    }
 }
 
 /// Inline-Formatierung: Marks umschalten und Links bearbeiten.
@@ -39,6 +55,43 @@ extension BlockEditorController {
         textView.breakUndoCoalescing()
         apply(newDocument, cursor: nil, actionName: UndoAction.format)
         textView.setSelectedRange(selection)
+    }
+
+    /// Format › Blockart: alle Blöcke der Auswahl umwandeln, ein Undo-Schritt.
+    func convertSelectedBlocks(to kind: BlockKind) {
+        guard !textView.hasMarkedText(), !kind.isAtomic else { return }
+        let selection = textView.selectedRange()
+        let blocks = selectedBlockRange()
+        var newDocument = document
+        for index in blocks where !newDocument[index].kind.isAtomic {
+            newDocument.setKind(kind, at: index)
+        }
+        guard newDocument != document else { return }
+        textView.breakUndoCoalescing()
+        apply(newDocument, cursor: nil, actionName: UndoAction.changeKind)
+        textView.setSelectedRange(selection)
+    }
+
+    /// ⌘↩: Häkchen der To-dos in der Auswahl umschalten. Gemischt: alle abhaken.
+    func toggleCheckedInSelection() {
+        guard !textView.hasMarkedText() else { return }
+        let todos = selectedBlockRange().filter { document[$0].kind == .todo }
+        guard !todos.isEmpty else { return }
+        let check = !todos.allSatisfy { document[$0].isChecked }
+        let selection = textView.selectedRange()
+        var newDocument = document
+        for index in todos { newDocument.blocks[index].isChecked = check }
+        textView.breakUndoCoalescing()
+        apply(newDocument, cursor: nil, actionName: UndoAction.toggleChecked)
+        textView.setSelectedRange(selection)
+    }
+
+    /// Blöcke, die die Auswahl berührt (ohne Auswahl der Block am Cursor).
+    func selectedBlockRange() -> ClosedRange<Int> {
+        let selection = textView.selectedRange()
+        let first = blockIndex(atCharacter: selection.location)
+        let last = selection.length > 0 ? blockIndex(atCharacter: NSMaxRange(selection) - 1) : first
+        return first...max(first, last)
     }
 
     /// Ziel eines Links für ⌘K: die Auswahl, sonst der Link am Cursor.

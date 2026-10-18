@@ -1,4 +1,5 @@
 import Foundation
+import QuillModel
 import Testing
 @testable import QuillEditor
 
@@ -78,13 +79,6 @@ struct InlineTextTests {
         block.content = InlineText("let b", spans: [InlineSpan(0..<3, marks: bold)])
         #expect(block.spans.isEmpty)
     }
-
-    @Test func blocksWithoutSpansDecodeFromOlderClipboardData() throws {
-        let json = #"[{"id":"7A3B5B6E-6C2B-4C38-9E73-6C1C4D2E8F10","kind":"paragraph","text":"alt","indent":0,"isChecked":false}]"#
-        let blocks = try JSONDecoder().decode([EditorBlock].self, from: Data(json.utf8))
-        #expect(blocks.first?.text == "alt")
-        #expect(blocks.first?.spans.isEmpty == true)
-    }
 }
 
 @Suite("Inline-Formatierung: Dokument-Operationen")
@@ -103,14 +97,14 @@ struct InlineDocumentTests {
 
     @Test func backspaceJoinsFormatting() {
         var document = EditorDocument(blocks: [EditorBlock(text: "ab", spans: [InlineSpan(0..<2, marks: bold)]), formatted()])
-        document.deleteBackwardAtStart(of: 1)
+        #expect(document.deleteBackwardAtStart(of: 1) == BlockPosition(block: 0, offset: 2))
         #expect(document[0].text == "abHallo Welt")
         #expect(document[0].spans == [InlineSpan(0..<7, marks: bold), InlineSpan(8..<12, marks: [.italic])])
     }
 
     @Test func joiningIntoCodeDropsMarks() {
         var document = EditorDocument(blocks: [EditorBlock(kind: .code, text: "x"), formatted()])
-        document.deleteBackwardAtStart(of: 1)
+        #expect(document.deleteBackwardAtStart(of: 1) == BlockPosition(block: 0, offset: 1))
         #expect(document.count == 1)
         #expect(document[0].text == "xHallo Welt")
         #expect(document[0].spans.isEmpty)

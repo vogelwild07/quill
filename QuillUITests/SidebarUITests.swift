@@ -1,10 +1,13 @@
 import XCTest
 
 /// Seitenbaum, Menüleiste und Tabs. Daten nur im Arbeitsspeicher (`quill()`).
+@MainActor
 final class SidebarUITests: XCTestCase {
     private var app: XCUIApplication!
 
-    override func setUpWithError() throws {
+    // Die async-Varianten laufen auf dem Main Actor wie die XCUITest-APIs;
+    // `setUpWithError`/`tearDownWithError` wären nonisolated.
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication.quill()
         app.launch()
@@ -14,7 +17,6 @@ final class SidebarUITests: XCTestCase {
 
     // MARK: - Tests
 
-    @MainActor
     func testCreateAndRenamePage() throws {
         createPage("Inbox")
         assertTitles(["Inbox"])
@@ -28,7 +30,6 @@ final class SidebarUITests: XCTestCase {
         XCTAssertEqual(app.windows.firstMatch.title, "Eingang")
     }
 
-    @MainActor
     func testSubpageTrashAndUndo() throws {
         createPage("Projekte")
         createPage("Quill", subpage: true)
@@ -47,9 +48,8 @@ final class SidebarUITests: XCTestCase {
     /// auch langsam und per Koordinate auf dem Icon) starten in der `NSOutlineView`
     /// kein Ziehen; von Hand funktioniert es (geprüft 2026-10-18). Abgedeckt durch
     /// `PageTreeTests` (Drop-Position, Zyklen) und `PageStoreTests` (Verschieben, Undo-Ort).
-    @MainActor
     func testDragOntoPageNestsIt() throws {
-        throw XCTSkip("XCUITest-Drags erreichen die NSOutlineView nicht, siehe Kommentar.")
+        try XCTSkipIf(true, "XCUITest-Drags erreichen die NSOutlineView nicht, siehe Kommentar.")
         createPage("Ziel")
         createPage("Gezogen")
         assertTitles(["Ziel", "Gezogen"])
@@ -66,7 +66,6 @@ final class SidebarUITests: XCTestCase {
         wait(for: [expectation(for: flat, evaluatedWith: nil)], timeout: 5)
     }
 
-    @MainActor
     func testNewTabAndOpenPageInTab() throws {
         createPage("Reise")
         app.typeKey("t", modifierFlags: .command)

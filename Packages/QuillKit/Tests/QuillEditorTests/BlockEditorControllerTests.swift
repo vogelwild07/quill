@@ -1,5 +1,7 @@
 #if canImport(AppKit)
 import AppKit
+import QuillDesign
+import QuillModel
 import Testing
 @testable import QuillEditor
 
@@ -245,6 +247,19 @@ struct SlashMenuIntegrationTests {
         h.expectConsistent()
     }
 
+    /// Nicht nur im letzten Block: Die Auswahl ändert sich vor dem Abgleich der Absätze.
+    @Test func staysOpenWhileTypingInMiddleBlock() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.caret(at: 0, 4)
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        h.type("/üb")
+        #expect(h.editor.slashMenu.isVisible)
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        #expect(h.kinds == [.paragraph, .heading1, .paragraph])
+        #expect(h.texts == ["Eins", "", "Zwei"])
+        h.expectConsistent()
+    }
+
     @Test func escapeClosesAndKeepsText() {
         let h = Harness()
         h.type("/h")
@@ -253,11 +268,416 @@ struct SlashMenuIntegrationTests {
         #expect(h.texts == ["/h", ""])
     }
 
+    @Test func losingFocusCloses() {
+        let h = Harness()
+        h.type("/")
+        #expect(h.editor.slashMenu.isVisible)
+        h.window.makeFirstResponder(nil)
+        #expect(!h.editor.slashMenu.isVisible)
+    }
+
+    @Test func arrowsWrapAround() {
+        let h = Harness()
+        h.type("/")
+        h.press(#selector(NSResponder.moveUp(_:)))
+        #expect(h.editor.slashMenu.selection == SlashCommand.all.count - 1)
+        h.press(#selector(NSResponder.moveDown(_:)))
+        #expect(h.editor.slashMenu.selection == 0)
+    }
+
     @Test func slashInsideWordDoesNotOpen() {
         let h = Harness()
         h.type("und/oder")
         h.press(#selector(NSResponder.insertNewline(_:)))
         #expect(h.texts == ["und/oder", ""])
+    }
+}
+
+@MainActor
+@Suite("Editor: Blockart per Menü und ⌘↩", .serialized)
+struct BlockKindCommandTests {
+    @Test func menuConvertsAllSelectedBlocksInOneStep() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(kind: .divider), EditorBlock(text: "Zwei"), EditorBlock(text: "Drei")])
+        let start = h.editor.characterLocation(of: BlockPosition(block: 0, offset: 1))
+        let end = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 2))
+        h.textView.setSelectedRange(NSRange(location: start, length: end - start))
+        // Wie die Menüleiste: über die Responder-Kette.
+        #expect(NSApp.sendAction(#selector(EditorFormattingActions.quillSetBlockKind(_:)), to: h.textView, from: BlockKindRequest(.todo)))
+        #expect(h.kinds == [.todo, .divider, .todo, .paragraph])
+        #expect(h.textView.selectedRange() == NSRange(location: start, length: end - start))
+        h.undo()
+        #expect(h.kinds == [.paragraph, .divider, .paragraph, .paragraph])
+        h.expectConsistent()
+    }
+
+    @Test func menuWithoutSelectionConvertsBlockAtCursor() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.caret(at: 1, 2)
+        h.editor.convertSelectedBlocks(to: .heading2)
+        #expect(h.kinds == [.paragraph, .heading2])
+        #expect(h.caretPosition == BlockPosition(block: 1, offset: 2))
+    }
+
+    @Test func commandReturnTogglesTodos() {
+        let h = Harness([EditorBlock(kind: .todo, text: "A"), EditorBlock(kind: .todo, text: "B", isChecked: true), EditorBlock(text: "C")])
+        h.textView.setSelectedRange(NSRange(location: 0, length: h.editor.characterLocation(of: BlockPosition(block: 2, offset: 1))))
+        h.editor.toggleCheckedInSelection()
+        // Gemischt: alle abhaken; Absatz bleibt Absatz.
+        #expect(h.document.blocks.map(\.isChecked) == [true, true, false])
+        h.flushUndoGroup()
+        h.editor.toggleCheckedInSelection()
+        #expect(h.document.blocks.map(\.isChecked) == [false, false, false])
+        h.undo()
+        #expect(h.document.blocks.map(\.isChecked) == [true, true, false])
+    }
+
+    @Test func shortcutsAreUniqueAndSkipZoom() {
+        let digits = BlockConversion.commands.compactMap { BlockConversion.shortcutDigit(for: $0.kind) }
+        #expect(digits == ["0", "1", "2", "3", "4", "5", "6", "7"])
+        #expect(!digits.contains("8"))
+        #expect(BlockConversion.commands.map(\.kind) == [.paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .todo, .quote, .code])
+    }
+}
+
+@MainActor
+@Suite("Editor: Block-Aktionen (Verschieben, Duplizieren, Löschen, Griff)", .serialized)
+struct BlockActionTests {
+    private func abc() -> Harness {
+        Harness([EditorBlock(text: "A"), EditorBlock(text: "Bb"), EditorBlock(text: "C")])
+    }
+
+    /// CLAUDE.md: bei markiertem Text (IME, tote Tasten) nie eingreifen.
+    @Test func blockActionsLeaveMarkedTextAlone() {
+        let actions: [(String, (Harness) -> Void)] = [
+            ("Duplizieren", { $0.editor.duplicateSelectedBlocks() }),
+            ("Löschen", { $0.editor.deleteSelectedBlocks() }),
+            ("Abhaken", { $0.editor.toggleCheckedInSelection() }),
+            ("Verschieben", { _ = $0.editor.moveSelectedBlocks(by: 1) }),
+            ("Umwandeln", { $0.editor.convertSelectedBlocks(to: .heading1) }),
+            ("Griff", { h in
+                h.editor.textView.handle.characterOffset = 0
+                #expect(!h.editor.textView.handle.perform { $0.deleteSelectedBlocks() })
+            }),
+        ]
+        for (name, action) in actions {
+            let h = Harness([EditorBlock(kind: .todo, text: "A"), EditorBlock(text: "B")])
+            h.caret(at: 0, 1)
+            h.textView.setMarkedText("か", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: NSNotFound, length: 0))
+            let storage = h.textView.string
+            action(h)
+            #expect(h.textView.hasMarkedText(), "\(name)")
+            #expect(h.textView.string == storage, "\(name)")
+            #expect(h.kinds == [.todo, .paragraph], "\(name)")
+            #expect(!h.document[0].isChecked, "\(name)")
+        }
+    }
+
+    /// Hinter einem Trenner am Ende steht immer ein Absatz zum Weiterschreiben.
+    @Test func blockActionsKeepEditableEnd() {
+        let moved = Harness([EditorBlock(kind: .divider), EditorBlock(text: "A")])
+        moved.caret(at: 1, 1)
+        #expect(moved.editor.moveSelectedBlocks(by: -1))
+        #expect(moved.kinds == [.paragraph, .divider, .paragraph])
+
+        let deleted = Harness([EditorBlock(text: "A"), EditorBlock(kind: .divider), EditorBlock(text: "B")])
+        deleted.caret(at: 2, 1)
+        deleted.editor.deleteSelectedBlocks()
+        #expect(deleted.kinds == [.paragraph, .divider, .paragraph])
+        #expect(deleted.texts == ["A", "", ""])
+        moved.expectConsistent()
+        deleted.expectConsistent()
+    }
+
+    @Test func moveWithKeyboardKeepsCaret() {
+        let h = abc()
+        h.caret(at: 1, 1)
+        #expect(h.editor.moveSelectedBlocks(by: -1))
+        #expect(h.texts == ["Bb", "A", "C"])
+        #expect(h.caretPosition == BlockPosition(block: 0, offset: 1))
+        #expect(!h.editor.moveSelectedBlocks(by: -1))
+        h.flushUndoGroup()
+        #expect(h.editor.moveSelectedBlocks(by: 1))
+        h.flushUndoGroup()
+        #expect(h.editor.moveSelectedBlocks(by: 1))
+        #expect(h.texts == ["A", "C", "Bb"])
+        #expect(!h.editor.moveSelectedBlocks(by: 1))
+        h.undo()
+        #expect(h.texts == ["A", "Bb", "C"])
+        h.expectConsistent()
+    }
+
+    @Test func moveSelectionMovesAllItsBlocks() {
+        let h = abc()
+        let start = h.editor.characterLocation(of: BlockPosition(block: 0, offset: 0))
+        let end = h.editor.characterLocation(of: BlockPosition(block: 1, offset: 1))
+        h.textView.setSelectedRange(NSRange(location: start, length: end - start))
+        #expect(h.editor.moveSelectedBlocks(by: 1))
+        #expect(h.texts == ["C", "A", "Bb"])
+        #expect(h.textView.selectedRange().length == end - start)
+    }
+
+    @Test func dividerMovedToEndGetsParagraphAfter() {
+        let h = Harness([EditorBlock(kind: .divider), EditorBlock(text: "A")])
+        h.caret(at: 0, 0)
+        #expect(h.editor.moveSelectedBlocks(by: 1))
+        #expect(h.kinds == [.paragraph, .divider, .paragraph])
+        h.expectConsistent()
+    }
+
+    @Test func duplicateInsertsCopyBelowAndSelectsIt() {
+        let h = abc()
+        h.caret(at: 1, 0)
+        h.editor.duplicateSelectedBlocks()
+        #expect(h.texts == ["A", "Bb", "Bb", "C"])
+        #expect(h.document[1].id != h.document[2].id)
+        let copy = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 0))
+        #expect(h.textView.selectedRange() == NSRange(location: copy, length: 2))
+        h.undo()
+        #expect(h.texts == ["A", "Bb", "C"])
+        h.expectConsistent()
+    }
+
+    @Test func deleteRemovesBlocksAndNeverEmptiesDocument() {
+        let h = abc()
+        h.textView.setSelectedRange(NSRange(location: 0, length: h.editor.characterLocation(of: BlockPosition(block: 1, offset: 1))))
+        h.editor.deleteSelectedBlocks()
+        #expect(h.texts == ["C"])
+        h.flushUndoGroup()
+        h.textView.setSelectedRange(NSRange(location: 0, length: 1))
+        h.editor.deleteSelectedBlocks()
+        #expect(h.texts == [""])
+        #expect(h.kinds == [.paragraph])
+        h.undo()
+        #expect(h.texts == ["C"])
+        h.expectConsistent()
+    }
+
+    @Test func handleClickSelectsItsBlock() {
+        let h = abc()
+        let handle = h.editor.textView.handle
+        handle.characterOffset = h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0))
+        handle.perform { _ in }
+        #expect(h.textView.selectedRange() == NSRange(location: handle.characterOffset, length: 2))
+    }
+
+    @Test func contextMenuConvertsAndDuplicatesHandleBlock() throws {
+        let h = abc()
+        let handle = h.editor.textView.handle
+        handle.characterOffset = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 0))
+        let menu = handle.makeMenu()
+        #expect(menu.items.map(\.title) == ["Löschen", "Duplizieren", "", "Umwandeln in"])
+        #expect(menu.items[1].keyEquivalent == "d")
+        let submenu = try #require(menu.items[3].submenu)
+        #expect(submenu.items.map(\.title) == BlockConversion.commands.map(\.title))
+        #expect(submenu.items[1].keyEquivalent == "1" && submenu.items[1].keyEquivalentModifierMask == [.command, .option])
+        // Derselbe Auftrag wie Format › Blockart.
+        #expect(submenu.items.compactMap { ($0.representedObject as? BlockKindRequest)?.kind } == BlockConversion.commands.map(\.kind))
+
+        submenu.performActionForItem(at: 6)
+        #expect(h.kinds == [.paragraph, .paragraph, .todo])
+        menu.performActionForItem(at: 1)
+        #expect(h.texts == ["A", "Bb", "C", "C"])
+        #expect(h.kinds == [.paragraph, .paragraph, .todo, .todo])
+        menu.performActionForItem(at: 0)
+        h.expectConsistent()
+    }
+
+    @Test func handleOffersAccessibilityActions() {
+        let h = abc()
+        let handle = h.editor.textView.handle
+        let names = (handle.accessibilityCustomActions() ?? []).map(\.name)
+        #expect(names == ["Nach oben verschieben", "Nach unten verschieben", "Duplizieren", "Löschen"])
+        handle.characterOffset = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 0))
+        _ = handle.accessibilityCustomActions()?.first?.handler?()
+        #expect(h.texts == ["A", "C", "Bb"])
+    }
+
+    @Test func dropIndicatorStartsAtTargetIndent() {
+        let h = Harness([EditorBlock(text: "A"), EditorBlock(kind: .bulleted, text: "B", indent: 1), EditorBlock(kind: .bulleted, text: "C")])
+        let view = h.editor.textView
+        let paragraph = view.dropIndicatorFrame(index: 0, y: 10)
+        let nested = view.dropIndicatorFrame(index: 1, y: 10)
+        let list = view.dropIndicatorFrame(index: 2, y: 10)
+        #expect(nested.minX - list.minX == QuillDesign.Spacing.indentStep)
+        #expect(list.minX == paragraph.minX)
+        #expect(nested.maxX == paragraph.maxX)
+    }
+
+    @Test func dragNearBottomScrolls() {
+        let h = Harness(SampleDocuments.large(blockCount: 300).blocks)
+        let view = h.editor.textView
+        view.layoutSubtreeIfNeeded()
+        let before = view.visibleRect
+        view.autoscrollForDrag(at: NSPoint(x: before.midX, y: before.maxY - 5))
+        #expect(view.visibleRect.minY > before.minY)
+        let after = view.visibleRect
+        view.autoscrollForDrag(at: NSPoint(x: after.midX, y: after.midY))
+        #expect(view.visibleRect.minY == after.minY)
+        view.autoscrollForDrag(at: NSPoint(x: after.midX, y: after.minY + 5))
+        #expect(view.visibleRect.minY < after.minY)
+    }
+}
+
+@MainActor
+@Suite("Editor: Einfügen-Knopf ＋", .serialized)
+struct InsertButtonTests {
+    private func location(_ h: Harness, _ block: Int) -> Int {
+        h.editor.characterLocation(of: BlockPosition(block: block, offset: 1))
+    }
+
+    @Test func insertsBelowWithOpenSlashMenu() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: false)
+        #expect(h.texts == ["Eins", "/", "Zwei"])
+        #expect(h.caretPosition == BlockPosition(block: 1, offset: 1))
+        #expect(h.editor.slashMenu.isVisible)
+
+        h.type("üb")
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        #expect(h.kinds == [.paragraph, .heading1, .paragraph])
+        #expect(h.texts == ["Eins", "", "Zwei"])
+        h.expectConsistent()
+    }
+
+    @Test func optionInsertsAbove() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: true)
+        #expect(h.texts == ["/", "Eins", "Zwei"])
+        #expect(h.editor.slashMenu.isVisible)
+        h.expectConsistent()
+    }
+
+    @Test func emptyParagraphIsUsedItself() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock()])
+        h.editor.insertBlockWithMenu(nearCharacter: h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0)), above: false)
+        #expect(h.texts == ["Eins", "/"])
+        #expect(h.editor.slashMenu.isVisible)
+    }
+
+    @Test func isOneUndoStep() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 1), above: false)
+        // Menü schließt ohne Escape (z. B. Klick woanders): „/“ bleibt, Undo nimmt alles.
+        h.editor.slashMenu.close()
+        #expect(h.texts == ["Eins", "Zwei", "/"])
+        h.undo()
+        #expect(h.texts == ["Eins", "Zwei"])
+        h.redo()
+        #expect(h.texts == ["Eins", "Zwei", "/"])
+        h.expectConsistent()
+    }
+
+    @Test func escapeRemovesInsertedBlock() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.caret(at: 1, 2)
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: false)
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Eins", "Zwei"])
+        #expect(!h.editor.slashMenu.isVisible)
+        #expect(h.caretPosition == BlockPosition(block: 1, offset: 2))
+        // Kein Rest im Undo-Verlauf.
+        h.undo()
+        #expect(h.texts == ["Eins", "Zwei"])
+        h.expectConsistent()
+    }
+
+    @Test func escapeAfterFilterRemovesBlockAndFilter() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: true)
+        h.type("üb")
+        #expect(h.texts == ["/üb", "Eins", "Zwei"])
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Eins", "Zwei"])
+        h.expectConsistent()
+    }
+
+    @Test func escapeKeepsReusedEmptyParagraphEmpty() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock()])
+        h.editor.insertBlockWithMenu(nearCharacter: h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0)), above: false)
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Eins", ""])
+        #expect(h.kinds == [.paragraph, .paragraph])
+        h.expectConsistent()
+    }
+
+    @Test func escapeDoesNotUndoEarlierTyping() {
+        let h = Harness([EditorBlock(text: "Eins")])
+        h.caret(at: 0, 4)
+        h.type("!")
+        h.flushUndoGroup()
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: false)
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Eins!"])
+    }
+
+    @Test func escapeAfterMenuClosedWithoutMatchesStillReverts() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: false)
+        h.type("abcd")
+        #expect(!h.editor.slashMenu.isVisible)
+        #expect(h.texts == ["Eins", "/abcd", "Zwei"])
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Eins", "Zwei"])
+        h.expectConsistent()
+    }
+
+    @Test func escapeAfterLeavingTheBlockKeepsIt() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: false)
+        h.type("abcd")
+        h.caret(at: 0, 2)
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Eins", "/abcd", "Zwei"])
+    }
+
+    @Test func escapeAfterChoosingKeepsBlock() {
+        let h = Harness([EditorBlock(text: "Eins")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: false)
+        h.type("üb")
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.kinds == [.paragraph, .heading1])
+    }
+
+    /// Ein fremder Schritt liegt über „Neuer Block“ (z. B. ein Import im Hintergrund):
+    /// Escape entfernt den Block als eigene Bearbeitung und lässt den Schritt stehen.
+    @Test func escapeWithForeignStepOnTopUndoesNothingElse() {
+        let h = Harness([EditorBlock(kind: .todo, text: "Aufgabe"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 1), above: false)
+        h.flushUndoGroup()
+        h.editor.toggleChecked(atCharacter: location(h, 0))
+        h.flushUndoGroup()
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Aufgabe", "Zwei"])
+        #expect(h.document[0].isChecked)
+        h.flushUndoGroup()
+        h.undo()
+        #expect(h.texts == ["Aufgabe", "Zwei", "/"])
+        #expect(h.document[0].isChecked)
+        h.expectConsistent()
+    }
+
+    @Test func escapeWithFilterAndForeignStepKeepsReusedParagraphEmpty() {
+        let h = Harness([EditorBlock(kind: .todo, text: "Aufgabe"), EditorBlock()])
+        h.editor.insertBlockWithMenu(nearCharacter: h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0)), above: false)
+        h.type("ü")
+        h.flushUndoGroup()
+        h.editor.toggleChecked(atCharacter: location(h, 0))
+        h.flushUndoGroup()
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Aufgabe", ""])
+        #expect(h.document[0].isChecked)
+        h.expectConsistent()
+    }
+
+    @Test func buttonActsOnItsBlock() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(kind: .divider), EditorBlock(text: "Zwei")])
+        let button = h.editor.textView.insertButton
+        button.characterOffset = h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0))
+        #expect(button.accessibilityPerformPress())
+        #expect(h.kinds == [.paragraph, .divider, .paragraph, .paragraph])
+        #expect(h.texts == ["Eins", "", "/", "Zwei"])
+        #expect(button.accessibilityLabel() == "Block einfügen")
     }
 }
 
@@ -285,8 +705,22 @@ struct ClipboardAndMoveTests {
         #expect(board.string(forType: .markdown) == "# tel\n\n- [x] Aufgabe\n1. eins")
         #expect(board.string(forType: .string) == "tel\nAufgabe\neins")
         let data = try #require(board.data(forType: .quillBlocks))
-        let blocks = try JSONDecoder().decode([EditorBlock].self, from: data)
+        let blocks = try #require(BlockClipboard.decode(data))
         #expect(blocks.map(\.kind) == [.heading1, .todo, .numbered])
+    }
+
+    @Test func pastingDividerAtEndKeepsEditableParagraph() throws {
+        let h = Harness([EditorBlock(text: "A"), EditorBlock(kind: .divider), EditorBlock(text: "B")])
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        board.clearContents()
+        let data: Data = try #require(BlockClipboard.encode([EditorBlock(kind: .divider), EditorBlock(kind: .divider)]))
+        board.setData(data, forType: .quillBlocks)
+        h.caret(at: 2, 1)
+        #expect(h.editor.paste(from: board))
+        #expect(h.kinds == [.paragraph, .divider, .paragraph, .divider, .divider, .paragraph])
+        #expect(h.caretPosition == BlockPosition(block: 5, offset: 0))
+        h.expectConsistent()
     }
 
     @Test func pastingQuillBlocksKeepsKindsWithNewIDs() {
@@ -301,6 +735,23 @@ struct ClipboardAndMoveTests {
         #expect(h.editor.paste(from: board))
         #expect(h.kinds == [.heading1, .todo, .numbered, .paragraph, .todo, .numbered])
         #expect(Set(h.document.blocks.map(\.id)).count == 6)
+        h.expectConsistent()
+    }
+
+    @Test func pastingOlderQuillBlocksFallsBackToPlainText() {
+        let h = sample()
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        let item = NSPasteboardItem()
+        let version1 = #"[{"id":"7A3B5B6E-6C2B-4C38-9E73-6C1C4D2E8F10","kind":"heading1","text":"alt","indent":0,"isChecked":false}]"#
+        item.setData(Data(version1.utf8), forType: .quillBlocks)
+        item.setString("alt", forType: .string)
+        board.clearContents()
+        board.writeObjects([item])
+        h.caret(at: 3, 4)
+        #expect(h.editor.paste(from: board))
+        #expect(h.kinds == [.heading1, .todo, .numbered, .paragraph])
+        #expect(h.texts[3] == "Endealt")
         h.expectConsistent()
     }
 

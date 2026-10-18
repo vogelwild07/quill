@@ -62,7 +62,8 @@ final class SlashMenuController {
         }
         let matches = SlashCommand.matching(query)
         if matches.isEmpty && query.count > 3 {
-            close()
+            // Ohne Treffer zu; Escape kann einen Klick auf ＋ danach noch zurücknehmen.
+            close(keepingInsert: true)
             return
         }
         model.commands = matches
@@ -76,10 +77,12 @@ final class SlashMenuController {
         case #selector(NSResponder.moveDown(_:)):
             guard !model.commands.isEmpty else { return true }
             model.selection = (model.selection + 1) % model.commands.count
+            announceSelection()
             return true
         case #selector(NSResponder.moveUp(_:)):
             guard !model.commands.isEmpty else { return true }
             model.selection = (model.selection - 1 + model.commands.count) % model.commands.count
+            announceSelection()
             return true
         case #selector(NSResponder.insertNewline(_:)), #selector(NSResponder.insertTab(_:)):
             guard model.commands.indices.contains(model.selection) else {
@@ -89,11 +92,24 @@ final class SlashMenuController {
             choose(model.commands[model.selection])
             return true
         case #selector(NSResponder.cancelOperation(_:)):
-            close()
+            close(keepingInsert: true)
+            editor.revertInsertBlockWithMenu()
             return true
         default:
             return false
         }
+    }
+
+    /// Index der gewählten Zeile (für Tests).
+    var selection: Int { model.selection }
+
+    /// VoiceOver bleibt im Text; die gewählte Zeile wird angesagt.
+    private func announceSelection() {
+        guard model.commands.indices.contains(model.selection) else { return }
+        NSAccessibility.post(element: editor.textView, notification: .announcementRequested, userInfo: [
+            .announcement: model.commands[model.selection].title,
+            .priority: NSAccessibilityPriorityLevel.high.rawValue,
+        ])
     }
 
     func choose(_ command: SlashCommand) {
@@ -101,11 +117,17 @@ final class SlashMenuController {
         let caret = max(editor.caretLocation, slashLocation + 1)
         close()
         editor.deleteText(in: NSRange(location: slashLocation, length: caret - slashLocation))
-        editor.setKind(command.kind, ofBlockAtCharacter: slashLocation)
+        if command.kind == .image {
+            editor.chooseImages(at: slashLocation)
+        } else {
+            editor.setKind(command.kind, ofBlockAtCharacter: slashLocation)
+        }
     }
 
-    func close() {
+    /// `keepingInsert`: ein Klick auf ＋ bleibt für Escape zurücknehmbar.
+    func close(keepingInsert: Bool = false) {
         slashLocation = nil
+        if !keepingInsert { editor.pendingInsert = nil }
         if let panel {
             panel.parent?.removeChildWindow(panel)
             panel.orderOut(nil)
@@ -131,8 +153,9 @@ final class SlashMenuController {
 
     private func resizePanel() {
         guard let panel else { return }
-        let rows = max(1, min(model.commands.count, 8))
-        let height = CGFloat(rows) * 34 + 46
+        let rows = CGFloat(max(1, model.commands.count)) * 34
+        let headers = CGFloat(Set(model.commands.map(\.group)).count) * 24
+        let height = min(rows + headers + 58, 400)
         var frame = panel.frame
         frame.origin.y += frame.height - height
         frame.size = CGSize(width: 280, height: height)
@@ -169,11 +192,22 @@ struct SlashMenuView: View {
             }
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(spacing: 2) {
-                        ForEach(Array(model.commands.enumerated()), id: \.element.id) { index, command in
-                            row(command, isSelected: index == model.selection)
-                                .id(index)
-                                .onTapGesture { model.onChoose(command) }
+                    VStack(alignment: .leading, spacing: 2) {
+                        // `commands` ist nach Abschnitten geordnet; Indizes bleiben die der Liste.
+                        ForEach(SlashCommand.Group.allCases, id: \.self) { group in
+                            let items = Array(model.commands.enumerated()).filter { $0.element.group == group }
+                            if !items.isEmpty {
+                                Text(group.title.uppercased())
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 8)
+                                    .frame(height: 22, alignment: .bottom)
+                                    .accessibilityAddTraits(.isHeader)
+                                ForEach(items, id: \.element.id) { index, command in
+                                    row(command, index: index)
+                                        .id(index)
+                                }
+                            }
                         }
                     }
                     .padding(6)
@@ -189,12 +223,15 @@ struct SlashMenuView: View {
         }
         .frame(width: 280)
         .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("slash.menu")
     }
 
     private static let selectedText = Color(nsColor: .alternateSelectedControlTextColor)
 
-    private func row(_ command: SlashCommand, isSelected: Bool) -> some View {
-        HStack(spacing: 10) {
+    private func row(_ command: SlashCommand, index: Int) -> some View {
+        let isSelected = index == model.selection
+        return HStack(spacing: 10) {
             Image(systemName: command.symbol)
                 .frame(width: 22)
                 .foregroundStyle(isSelected ? Self.selectedText : Color.secondary)
@@ -211,6 +248,16 @@ struct SlashMenuView: View {
         .foregroundStyle(isSelected ? Self.selectedText : Color.primary)
         .background(isSelected ? Color.accentColor : Color.clear, in: .rect(cornerRadius: 8))
         .contentShape(.rect)
+        .onTapGesture { model.onChoose(command) }
+        // Nur echte Mausbewegung wählt aus, nicht das Scrollen per Tastatur.
+        .onContinuousHover { phase in
+            if case .active = phase, model.selection != index { model.selection = index }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(command.title)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityIdentifier("slash.\(command.kind.rawValue)")
+        .accessibilityAction { model.onChoose(command) }
     }
 }
 #endif

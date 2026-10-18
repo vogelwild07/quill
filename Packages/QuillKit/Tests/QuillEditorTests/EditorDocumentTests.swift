@@ -1,4 +1,5 @@
 import Foundation
+import QuillModel
 import Testing
 @testable import QuillEditor
 
@@ -81,6 +82,15 @@ struct BackspaceTests {
         let cursor = document.deleteBackwardAtStart(of: 1)
         #expect(document.blocks.map(\.kind) == [.paragraph, .paragraph])
         #expect(document.count == 2)
+        #expect(cursor == pos(1, 0))
+    }
+
+    @Test(arguments: [BlockKind.heading1, .heading2, .heading3, .quote, .todo, .numbered, .code])
+    func textBlockBecomesParagraphKeepingText(kind: BlockKind) {
+        var document = doc(EditorBlock(text: "A"), EditorBlock(kind: kind, text: "B"))
+        let cursor = document.deleteBackwardAtStart(of: 1)
+        #expect(document.blocks.map(\.kind) == [.paragraph, .paragraph])
+        #expect(document.blocks.map(\.text) == ["A", "B"])
         #expect(cursor == pos(1, 0))
     }
 
@@ -229,10 +239,59 @@ struct MarkdownShortcutTests {
         #expect(document[0].kind == .paragraph)
     }
 
-    @Test func onlyInParagraphs() {
-        var document = doc(EditorBlock(kind: .heading1, text: "- "))
+    @Test(arguments: [
+        (BlockKind.bulleted, "## ", BlockKind.heading2), (.heading1, "- ", .bulleted), (.todo, "> ", .quote),
+        (.quote, "[] ", .todo), (.heading3, "# ", .heading1), (.numbered, "``` ", .code),
+    ])
+    func worksInEveryTextBlock(from: BlockKind, prefix: String, to: BlockKind) {
+        var document = doc(EditorBlock(kind: from, text: prefix + "Text"))
+        let cursor = document.applyMarkdownShortcut(at: pos(0, prefix.utf16.count))
+        #expect(document[0].kind == to)
+        #expect(document[0].text == "Text")
+        #expect(cursor == pos(0, 0))
+    }
+
+    @Test(arguments: [BlockKind.heading2, .quote, .todo, .bulleted])
+    func tripleDashMakesDividerInTextBlocks(_ kind: BlockKind) {
+        var document = doc(EditorBlock(kind: kind, text: "---"))
+        let cursor = document.applyMarkdownShortcut(at: pos(0, 3))
+        #expect(document.blocks.map(\.kind) == [.divider, .paragraph])
+        #expect(cursor == pos(1, 0))
+    }
+
+    @Test func tripleDashWithTextBehindStaysText() {
+        var document = doc(EditorBlock(kind: .heading1, text: "---Titel"))
+        #expect(document.applyMarkdownShortcut(at: pos(0, 3)) == nil)
+        #expect(document[0].kind == .heading1)
+    }
+
+    @Test func emptyBracketsUncheckCheckedTodo() {
+        var document = doc(EditorBlock(kind: .todo, text: "[] Aufgabe", isChecked: true))
+        _ = document.applyMarkdownShortcut(at: pos(0, 3))
+        #expect(document[0].kind == .todo)
+        #expect(!document[0].isChecked)
+        #expect(document[0].text == "Aufgabe")
+    }
+
+    @Test func xBracketsCheckOpenTodo() {
+        var document = doc(EditorBlock(kind: .todo, text: "[x] Aufgabe"))
+        _ = document.applyMarkdownShortcut(at: pos(0, 4))
+        #expect(document[0].isChecked)
+        #expect(document[0].text == "Aufgabe")
+    }
+
+    @Test func listKeepsIndentWhenSwitchingListKind() {
+        var document = doc(EditorBlock(kind: .bulleted, text: "1. A", indent: 1))
+        _ = document.applyMarkdownShortcut(at: pos(0, 3))
+        #expect(document[0].kind == .numbered)
+        #expect(document[0].indent == 1)
+    }
+
+    @Test func notInCode() {
+        var document = doc(EditorBlock(kind: .code, text: "- "))
         let cursor = document.applyMarkdownShortcut(at: pos(0, 2))
         #expect(cursor == nil)
+        #expect(document[0].kind == .code)
     }
 }
 
@@ -316,6 +375,15 @@ struct SerializerTests {
         #expect(SlashCommand.matching("h2").first?.kind == .heading2)
         #expect(SlashCommand.matching("todo").first?.kind == .todo)
         #expect(SlashCommand.matching("").count == SlashCommand.all.count)
+    }
+
+    @Test func slashMatchesAreGroupedBySection() {
+        // „li“: Liste (Grundblöcke) und Linie (Weitere).
+        #expect(SlashCommand.matching("li").map(\.kind) == [.bulleted, .numbered, .divider])
+        for query in ["", "e", "o", "bild", "t"] {
+            let groups = SlashCommand.matching(query).map(\.group)
+            #expect(!groups.drop { $0 == .basic }.contains(.basic), "\(query)")
+        }
     }
 }
 

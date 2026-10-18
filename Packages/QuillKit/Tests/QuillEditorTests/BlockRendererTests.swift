@@ -2,6 +2,9 @@ import Foundation
 import Testing
 @testable import QuillEditor
 
+// Rendern erzeugt Schriften (`NSFont`); das ist nur auf dem Main Thread zuverlässig,
+// parallel auf anderen Threads kam sporadisch `nil` zurück.
+@MainActor
 @Suite("Abbildung Modell ↔ Textspeicher")
 struct BlockRendererTests {
     private let blocks = [

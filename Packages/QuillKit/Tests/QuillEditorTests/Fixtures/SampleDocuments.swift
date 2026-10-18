@@ -25,6 +25,29 @@ enum SampleDocuments {
         EditorBlock(text: "Ziehe Blöcke am Griff links, markiere über mehrere Blöcke und kopiere mit ⌘C."),
     ])
 
+    /// Inline-Code direkt unter einem zweizeiligen Absatz (bekanntes Problem aus
+    /// Phase 3) und ein Inline-Code, der über zwei Zeilen umbricht. Ohne `code`
+    /// derselbe Text ohne Formatierung, zum Vergleich.
+    static func inlineCode(withCode: Bool = true) -> EditorDocument {
+        let long = "Ein Absatz, der in einem schmalen Fenster über zwei Zeilen läuft, damit der Inline-Code darunter direkt an eine umbrochene Zeile grenzt."
+        let wrapped = "Davor steht etwas Text und dann folgt ein ziemlich langer Abschnitt in Code, der am Zeilenende umbricht."
+        let code = (wrapped as NSString).range(of: "ziemlich langer Abschnitt in Code")
+        return EditorDocument(blocks: [
+            EditorBlock(text: long),
+            EditorBlock(text: "Code am Zeilenanfang, wie hinter „```“.", spans: withCode ? [InlineSpan(0..<4, marks: [.code])] : []),
+            EditorBlock(text: wrapped, spans: withCode ? [InlineSpan(code.location..<NSMaxRange(code), marks: [.code])] : []),
+            EditorBlock(text: "Ende"),
+        ])
+    }
+
+    /// Inline-Code direkt vor einem weichen Umbruch (⇧↩), mit oder ohne den Umbruch
+    /// in der Markierung.
+    static func inlineCodeBeforeSoftBreak(markingBreak: Bool) -> EditorDocument {
+        EditorDocument(blocks: [
+            EditorBlock(text: "code\nweiter", spans: [InlineSpan(0..<(markingBreak ? 5 : 4), marks: [.code])]),
+        ])
+    }
+
     /// Kurzes gemischtes Dokument für Zwischenablage und Verschieben.
     static let mixed: [EditorBlock] = [
         EditorBlock(kind: .heading1, text: "Titel"),

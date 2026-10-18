@@ -26,7 +26,8 @@ public enum MarkdownSerializer {
             switch block.kind {
             case .divider: "---"
             case .image: ""
-            default: block.text
+            case .paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .todo, .quote, .code:
+                block.text
             }
         }
         .joined(separator: "\n")

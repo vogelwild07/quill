@@ -1,12 +1,8 @@
 import Foundation
+import QuillModel
 
-/// Art eines Blocks. Rohwerte entsprechen `Block.kindRaw` im Datenmodell.
-public enum BlockKind: String, Codable, Sendable, CaseIterable {
-    case paragraph
-    case heading1, heading2, heading3
-    case bulleted, numbered, todo
-    case quote, code, divider, image
-
+/// Verhalten der Blockarten im Editor; die Arten selbst stehen in `QuillModel`.
+extension BlockKind {
     /// Listenartige Blöcke setzen sich bei Enter fort.
     public var isListItem: Bool {
         self == .bulleted || self == .numbered || self == .todo
@@ -33,6 +29,10 @@ public enum BlockKind: String, Codable, Sendable, CaseIterable {
 }
 
 /// Ein Block im Editor. Werttyp; die einzige Wahrheit über Inhalt und Art.
+///
+/// Die einfachen Felder liegen gebündelt in `properties` und sind über
+/// `@dynamicMemberLookup` direkt erreichbar (`block.indent`).
+@dynamicMemberLookup
 public struct EditorBlock: Identifiable, Equatable, Codable, Sendable {
     public var id: UUID
     public var kind: BlockKind
@@ -40,9 +40,21 @@ public struct EditorBlock: Identifiable, Equatable, Codable, Sendable {
     public var text: String
     /// Inline-Formatierung über `text` (UTF-16). Leer in Code-Blöcken und atomaren Blöcken.
     public var spans: [InlineSpan]
-    public var indent: Int
-    public var isChecked: Bool
-    public var codeLanguage: String?
+    public var properties: BlockProperties
+
+    public init(
+        id: UUID = UUID(),
+        kind: BlockKind = .paragraph,
+        text: String = "",
+        spans: [InlineSpan] = [],
+        properties: BlockProperties
+    ) {
+        self.id = id
+        self.kind = kind
+        self.text = text
+        self.spans = kind.allowsInlineMarks ? InlineText.normalized(spans, length: text.utf16.count) : []
+        self.properties = properties
+    }
 
     public init(
         id: UUID = UUID(),
@@ -53,13 +65,22 @@ public struct EditorBlock: Identifiable, Equatable, Codable, Sendable {
         isChecked: Bool = false,
         codeLanguage: String? = nil
     ) {
-        self.id = id
-        self.kind = kind
-        self.text = text
-        self.spans = kind.allowsInlineMarks ? InlineText.normalized(spans, length: text.utf16.count) : []
-        self.indent = indent
-        self.isChecked = isChecked
-        self.codeLanguage = codeLanguage
+        self.init(
+            id: id, kind: kind, text: text, spans: spans,
+            properties: BlockProperties(indent: indent, isChecked: isChecked, codeLanguage: codeLanguage)
+        )
+    }
+
+    public subscript<Value>(dynamicMember keyPath: WritableKeyPath<BlockProperties, Value>) -> Value {
+        get { properties[keyPath: keyPath] }
+        set { properties[keyPath: keyPath] = newValue }
+    }
+
+    /// Kopie mit neuer ID (Einsetzen, Duplizieren); Inhalt und Felder bleiben.
+    public func withNewID() -> EditorBlock {
+        var copy = self
+        copy.id = UUID()
+        return copy
     }
 
     /// Länge in UTF-16-Einheiten, wie `NSString` und `NSTextView` zählen.
@@ -76,21 +97,35 @@ public struct EditorBlock: Identifiable, Equatable, Codable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, kind, text, spans, indent, isChecked, codeLanguage
+        case id, kind, text, spans, properties
     }
 
-    /// `spans` fehlt in Zwischenablage-Daten älterer Versionen.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.init(
             id: try container.decode(UUID.self, forKey: .id),
             kind: try container.decode(BlockKind.self, forKey: .kind),
             text: try container.decode(String.self, forKey: .text),
-            spans: try container.decodeIfPresent([InlineSpan].self, forKey: .spans) ?? [],
-            indent: try container.decode(Int.self, forKey: .indent),
-            isChecked: try container.decode(Bool.self, forKey: .isChecked),
-            codeLanguage: try container.decodeIfPresent(String.self, forKey: .codeLanguage)
+            spans: try container.decode([InlineSpan].self, forKey: .spans),
+            properties: try container.decode(BlockProperties.self, forKey: .properties)
         )
+    }
+}
+
+extension BlockProperties {
+    /// Hält die Regeln ein, welche Felder zu welcher Blockart passen: Häkchen nur
+    /// bei To-dos, Sprache nur bei Code, Bild nur bei Bild-Blöcken, keine Einrückung bei Überschriften, Code,
+    /// Zitaten und atomaren Blöcken.
+    func normalized(for kind: BlockKind) -> BlockProperties {
+        var result = self
+        if kind != .todo { result.isChecked = false }
+        if kind != .code { result.codeLanguage = nil }
+        if kind != .image { result.assetID = nil }
+        if kind.isAtomic || kind.isHeading || kind == .code || kind == .quote {
+            result.indent = 0
+        }
+        result.indent = max(0, min(result.indent, EditorDocument.maxIndent))
+        return result
     }
 }
 

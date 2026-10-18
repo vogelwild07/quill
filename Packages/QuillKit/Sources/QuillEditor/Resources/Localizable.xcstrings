@@ -13,6 +13,27 @@
     "Ausschneiden" : {
 
     },
+    "Bild" : {
+
+    },
+    "Bild einfügen" : {
+
+    },
+    "Bild konnte nicht gelesen werden" : {
+
+    },
+    "Bild konnte nicht gespeichert werden" : {
+
+    },
+    "Bild wird geladen" : {
+
+    },
+    "Bild wurde verkleinert" : {
+
+    },
+    "Block einfügen" : {
+
+    },
     "Block verschieben" : {
 
     },
@@ -25,6 +46,9 @@
     "Code" : {
 
     },
+    "Duplizieren" : {
+
+    },
     "Einrücken" : {
 
     },
@@ -35,6 +59,9 @@
 
     },
     "Formatieren" : {
+
+    },
+    "Grundblöcke" : {
 
     },
     "Keine Treffer" : {
@@ -50,6 +77,15 @@
 
     },
     "Markdown-Kürzel" : {
+
+    },
+    "Mit Wahltaste darüber einfügen" : {
+
+    },
+    "Nach oben verschieben" : {
+
+    },
+    "Nach unten verschieben" : {
 
     },
     "Neuer Block" : {
@@ -68,6 +104,12 @@
 
     },
     "Trenner" : {
+
+    },
+    "Umwandeln in" : {
+
+    },
+    "Weitere" : {
 
     },
     "Zitat" : {

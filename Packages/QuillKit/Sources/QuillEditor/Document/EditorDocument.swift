@@ -1,4 +1,5 @@
 import Foundation
+import QuillModel
 
 /// Dokument eines Editors: geordnete, flache Liste von Blöcken.
 ///
@@ -41,8 +42,7 @@ public struct EditorDocument: Equatable, Sendable {
             if block.indent > 0 {
                 blocks[index].indent -= 1
             } else {
-                blocks[index].kind = .paragraph
-                blocks[index].isChecked = false
+                setKind(.paragraph, at: index)
             }
             return position
         }
@@ -69,7 +69,7 @@ public struct EditorDocument: Equatable, Sendable {
     private static func continuation(of kind: BlockKind) -> BlockKind {
         switch kind {
         case .bulleted, .numbered, .todo, .quote: kind
-        default: .paragraph
+        case .paragraph, .heading1, .heading2, .heading3, .code, .divider, .image: .paragraph
         }
     }
 
@@ -83,9 +83,7 @@ public struct EditorDocument: Equatable, Sendable {
             return deleteBlock(at: index)
         }
         if block.kind != .paragraph {
-            blocks[index].kind = .paragraph
-            blocks[index].isChecked = false
-            blocks[index].codeLanguage = nil
+            setKind(.paragraph, at: index)
             return BlockPosition(block: index, offset: 0)
         }
         if block.indent > 0 {
@@ -189,19 +187,21 @@ public struct EditorDocument: Equatable, Sendable {
 
     public mutating func setKind(_ kind: BlockKind, at index: Int) {
         blocks[index].kind = kind
-        if kind != .todo { blocks[index].isChecked = false }
-        if kind != .code { blocks[index].codeLanguage = nil }
+        blocks[index].properties = blocks[index].properties.normalized(for: kind)
         if !kind.allowsInlineMarks { blocks[index].spans = [] }
         if kind.isAtomic {
             blocks[index].content = InlineText()
-            blocks[index].indent = 0
-            if index == blocks.count - 1 {
-                blocks.append(EditorBlock())
-            }
+            ensureEditableEnd()
         }
-        if kind.isHeading || kind == .code || kind == .quote {
-            blocks[index].indent = 0
-        }
+    }
+
+    /// Hinter einem Trenner oder Bild am Ende muss ein Absatz zum Weiterschreiben
+    /// stehen. `true`, wenn einer angehängt wurde.
+    @discardableResult
+    public mutating func ensureEditableEnd() -> Bool {
+        guard blocks.last?.kind.isAtomic ?? true else { return false }
+        blocks.append(EditorBlock())
+        return true
     }
 
     /// Tab: höchstens eine Stufe tiefer als der vorherige Block.

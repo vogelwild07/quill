@@ -3,6 +3,7 @@ import AppKit
 #elseif canImport(UIKit)
 import UIKit
 #endif
+import QuillModel
 
 /// Übersetzt zwischen `EditorDocument` und dem attributierten Text im Textspeicher.
 ///
@@ -29,9 +30,8 @@ enum BlockRenderer {
         case .divider:
             result.append(NSAttributedString(attachment: DividerAttachment()))
         case .image:
-            // Platzhalter; Bilder mit `NSTextAttachmentViewProvider` folgen in Phase 4.
-            result.append(NSAttributedString(attachment: NSTextAttachment(data: nil, ofType: nil)))
-        default:
+            result.append(NSAttributedString(attachment: ImageAttachment(assetID: block.assetID)))
+        case .paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .todo, .quote, .code:
             let text = block.text.replacingOccurrences(of: "\n", with: StorageCharacter.softBreak)
             result.append(NSAttributedString(string: text))
         }
@@ -94,9 +94,7 @@ enum BlockRenderer {
             if let raw = attributes[.quillBlockKind] as? String, let kind = BlockKind(rawValue: raw) {
                 block.kind = kind
             }
-            block.indent = attributes[.quillIndent] as? Int ?? 0
-            block.isChecked = attributes[.quillChecked] as? Bool ?? false
-            block.codeLanguage = attributes[.quillCodeLanguage] as? String
+            block.properties = BlockProperties(textAttributes: attributes)
             if !block.kind.isAtomic {
                 let body = NSRange(location: start, length: end - start)
                 block.text = string.substring(with: body)

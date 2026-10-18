@@ -125,7 +125,10 @@ public enum PageKind: String, Sendable, CaseIterable {
     case page
 }
 
-public enum BlockKind: String, Sendable, CaseIterable {
+/// Art eines Blocks; Rohwert in `Block.kindRaw`. Die einzige Definition: Editor,
+/// Slash-Menü und Export nutzen diese (`BlockKindCoverageTests` prüft, dass jede Art
+/// dort behandelt wird). Neue Fälle nur anhängen, Rohwerte nie ändern.
+public enum BlockKind: String, Codable, Sendable, CaseIterable {
     case paragraph
     case heading1, heading2, heading3
     case bulleted, numbered, todo

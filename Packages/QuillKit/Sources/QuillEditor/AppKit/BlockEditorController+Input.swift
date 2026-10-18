@@ -1,8 +1,19 @@
 #if canImport(AppKit)
 import AppKit
+import QuillModel
 
 /// Eingabe: Abfangen von Änderungen über Blockgrenzen, Enter, Tab, Backspace,
 /// Markdown-Kürzel und Slash-Menü.
+/// Ein Klick auf ＋, den Escape noch zurücknehmen kann.
+struct PendingInsert {
+    let blockID: UUID
+    /// Ein vorhandener leerer Absatz wurde genutzt: Escape leert ihn nur.
+    let reusedEmptyParagraph: Bool
+    /// Stand direkt nach dem Klick; nur dann liegt „Neuer Block“ oben auf dem Undo-Stapel.
+    let documentAfterInsert: EditorDocument
+    let selectionBefore: NSRange
+}
+
 extension BlockEditorController: NSTextViewDelegate {
     // MARK: Abfangen
 
@@ -77,6 +88,9 @@ extension BlockEditorController: NSTextViewDelegate {
             }
             return true
 
+        case #selector(NSResponder.cancelOperation(_:)):
+            return revertInsertBlockWithMenu()
+
         case #selector(NSResponder.moveUp(_:)):
             guard let onExitTop, isCaretOnFirstLine() else { return false }
             onExitTop()
@@ -147,7 +161,14 @@ extension BlockEditorController: NSTextViewDelegate {
     }
 
     public func textViewDidChangeSelection(_ notification: Notification) {
-        if slashMenu.isVisible { slashMenu.update() }
+        // Beim Tippen kommt die Auswahl vor `textDidChange`; die Absätze sind dann noch
+        // nicht abgeglichen, und `textDidChange` aktualisiert das Menü ohnehin.
+        if slashMenu.isVisible, editedRange == nil { slashMenu.update() }
+        // Cursor verlässt den Block nach ＋: Escape nimmt dann nichts mehr zurück.
+        if let pendingInsert, editedRange == nil, !isApplying, !slashMenu.isVisible,
+           document[blockIndex(atCharacter: caretLocation)].id != pendingInsert.blockID {
+            self.pendingInsert = nil
+        }
     }
 
     // MARK: Aktionen
@@ -159,6 +180,61 @@ extension BlockEditorController: NSTextViewDelegate {
         let selection = textView.selectedRange()
         apply(newDocument, cursor: nil, actionName: UndoAction.toggleChecked)
         textView.setSelectedRange(selection)
+    }
+
+    /// Einfügen-Knopf ＋: neuer leerer Absatz unter dem Block (mit ⌥ darüber), darin
+    /// „/“ mit offenem Slash-Menü. Ein leerer Absatz wird selbst genutzt. Ein Undo-Schritt.
+    func insertBlockWithMenu(nearCharacter location: Int, above: Bool) {
+        let index = blockIndex(atCharacter: location)
+        let reused = document[index].kind == .paragraph && document[index].text.isEmpty
+        var newDocument = document
+        var target = index
+        if !reused {
+            target = above ? index : index + 1
+            newDocument.insertBlock(EditorBlock(), at: target)
+        }
+        let cursor = newDocument.insertText("/", at: BlockPosition(block: target, offset: 0))
+        let selection = textView.selectedRange()
+        textView.breakUndoCoalescing()
+        apply(newDocument, cursor: cursor, actionName: UndoAction.newBlock)
+        textView.breakUndoCoalescing()
+        window?.makeFirstResponder(textView)
+        pendingInsert = PendingInsert(
+            blockID: document[target].id, reusedEmptyParagraph: reused,
+            documentAfterInsert: document, selectionBefore: selection
+        )
+        slashMenu.openIfAllowed(slashLocation: characterLocation(of: BlockPosition(block: target, offset: 0)))
+    }
+
+    /// Escape nach ＋: nimmt den Klick samt getipptem Filter zurück, auch wenn sich das
+    /// Menü ohne Treffer schon geschlossen hat; ein zuvor leerer Absatz bleibt leer.
+    /// Per Undo nur, wenn der Schritt „Neuer Block“ genau oben liegt, sonst als eigene
+    /// Bearbeitung. Nie mehrere Undo-Schritte. `true`, wenn zurückgenommen.
+    @discardableResult
+    func revertInsertBlockWithMenu() -> Bool {
+        guard let pending = pendingInsert else { return false }
+        pendingInsert = nil
+        guard !textView.hasMarkedText(),
+              let index = document.blocks.firstIndex(where: { $0.id == pending.blockID }),
+              document[index].text.hasPrefix("/") else { return false }
+        textView.breakUndoCoalescing()
+        if document == pending.documentAfterInsert, undoManager.canUndo,
+           undoManager.undoActionName == UndoAction.newBlock {
+            undoManager.undo()
+        } else {
+            var newDocument = document
+            if pending.reusedEmptyParagraph {
+                newDocument.blocks[index].content = InlineText()
+            } else {
+                _ = newDocument.deleteBlock(at: index)
+                newDocument.ensureEditableEnd()
+            }
+            apply(newDocument, cursor: nil, actionName: UndoAction.delete)
+        }
+        if NSMaxRange(pending.selectionBefore) < textView.string.utf16.count {
+            textView.setSelectedRange(pending.selectionBefore)
+        }
+        return true
     }
 
     /// Ändert die Art des Blocks am Cursor (Slash-Menü).

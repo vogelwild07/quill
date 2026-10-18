@@ -1,16 +1,17 @@
 import Foundation
+import QuillModel
 
 extension EditorDocument {
     /// Wandelt ein Markdown-Kürzel am Blockanfang um, z. B. `# ` → Überschrift 1.
     ///
     /// Aufrufen, nachdem ein Leerzeichen (oder bei `---` der dritte Strich) eingefügt
-    /// wurde; `position` ist der Cursor danach. Greift nur in normalen Absätzen und
-    /// nur, wenn der Text vor dem Cursor genau das Kürzel ist.
+    /// wurde; `position` ist der Cursor danach. Greift in allen Textblöcken außer Code
+    /// und nur, wenn der Text vor dem Cursor genau das Kürzel ist.
     /// Gibt die neue Cursorposition zurück oder `nil`, wenn kein Kürzel passt.
     public mutating func applyMarkdownShortcut(at position: BlockPosition) -> BlockPosition? {
         let index = position.block
         let block = blocks[index]
-        guard block.kind == .paragraph else { return nil }
+        guard block.kind != .code, !block.kind.isAtomic else { return nil }
         let (prefix, _) = Self.split(block.text, at: position.offset)
         let rest = block.content.split(at: position.offset).1
 
