@@ -28,14 +28,14 @@ Erhebung am 2026-10-18: Der Nutzer hat in Notion kopiert, danach `swift Scripts/
 | Kopierter Inhalt | Typen auf der Zwischenablage |
 |---|---|
 | Ein Wort im Fließtext | `public.utf8-plain-text`, `org.chromium.internal.source-rfh-token`, `org.chromium.source-url` (1 Eintrag). Kein HTML, kein RTF. |
-| Mehrere Blöcke (Überschrift, Liste, To-do) | `public.html` (354 B), `public.utf8-plain-text` (152 B), `org.chromium.web-custom-data` (≈ 25 KB), dazu die beiden Chromium-Metadaten (1 Eintrag). Kein RTF, kein Markdown-Typ. |
+| Mehrere Blöcke | `public.html` (354 B), `public.utf8-plain-text` (152 B), `org.chromium.web-custom-data` (≈ 25 KB), dazu die beiden Chromium-Metadaten (1 Eintrag). Kein RTF, kein Markdown-Typ. |
 | Ein ganzer Block über den Griff | `public.html` (77 B), `org.chromium.web-custom-data` (308 B), dazu die beiden Chromium-Metadaten (1 Eintrag). **Kein Klartext.** |
 
 **Schlüsse (Beobachtung → eigene Folgerung):**
 
 - Notion schreibt nur Formate, die Chromium von sich aus kennt: Klartext, HTML und einen eigenen Container (`org.chromium.web-custom-data`). Den Inhalt des Containers haben wir nicht angesehen; er enthält vermutlich das interne Blockformat.
 - Ein über den Griff kopierter Block hat **keinen Klartext**. In nativen Apps, die nur Text annehmen (Terminal, Textfelder), kommt dann nichts an.
-- Es gibt weder RTF noch einen Markdown-Typ. Markdown entsteht in Notion erst beim Einfügen aus dem Klartext.
+- Es gibt weder RTF noch einen Markdown-Typ.
 - Für Quill heißt das: Immer alle vier Formate schreiben, also Klartext, Markdown, RTF und `de.vogel.quill.blocks`, auch beim Kopieren über den Griff. Beim Einfügen aus Notion `public.html` auswerten (Überschriften, Listen), mit Fallback auf Klartext. Den Chromium-Container ignorieren.
 
 ## Eigene Ideen und Entscheidungen (unabhängig von Notion)
