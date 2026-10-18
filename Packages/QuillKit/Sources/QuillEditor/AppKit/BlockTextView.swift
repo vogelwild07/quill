@@ -13,7 +13,7 @@ protocol HeaderSizing {
 final class BlockTextView: NSTextView, EditorFormattingActions {
     weak var editor: BlockEditorController?
 
-    private let handle = BlockHandleView()
+    let handle = BlockHandleView()
     private let dropIndicator = NSView()
     private var hoverTrackingArea: NSTrackingArea?
 
@@ -162,7 +162,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         if !handle.frame.insetBy(dx: -8, dy: -8).contains(point) { handle.isHidden = true }
     }
 
-    private func updateHandle(for point: NSPoint) {
+    func updateHandle(for point: NSPoint) {
         guard let fragment = fragment(atViewPoint: CGPoint(x: textContainerOrigin.x + 1, y: point.y)),
               let offset = characterOffset(of: fragment) else {
             handle.isHidden = true
@@ -272,14 +272,52 @@ final class BlockHandleView: NSView, NSDraggingSource {
     weak var textView: BlockTextView?
     var characterOffset = 0
 
+    /// Unter dem Mauszeiger kräftiger (Systemfarben, hell und dunkel).
+    var isHovered = false {
+        didSet { if isHovered != oldValue { needsDisplay = true } }
+    }
+    private var hoverTrackingArea: NSTrackingArea?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.handle)
+        setAccessibilityLabel(String(localized: "Block verschieben", bundle: .module))
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("nicht unterstützt") }
+
+    /// ⋮⋮ als 2 × 3 Punkte; SF Symbols hat unter macOS 26 kein passendes Zeichen.
     override func draw(_ dirtyRect: NSRect) {
-        let config = NSImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
-        guard let image = NSImage(systemSymbolName: "line.3.horizontal", accessibilityDescription: String(localized: "Block verschieben", bundle: .module))?
-            .withSymbolConfiguration(config) else { return }
-        NSColor.tertiaryLabelColor.set()
-        let size = image.size
-        let rect = CGRect(x: (bounds.width - size.width) / 2, y: (bounds.height - size.height) / 2, width: size.width, height: size.height)
-        image.draw(in: rect)
+        (isHovered ? NSColor.secondaryLabelColor : NSColor.tertiaryLabelColor).setFill()
+        let diameter: CGFloat = 3, spacing: CGFloat = 4.5
+        let width = diameter + spacing, height = diameter + 2 * spacing
+        let origin = CGPoint(x: ((bounds.width - width) / 2).rounded(), y: ((bounds.height - height) / 2).rounded())
+        for column in 0..<2 {
+            for row in 0..<3 {
+                let dot = CGRect(
+                    x: origin.x + CGFloat(column) * spacing, y: origin.y + CGFloat(row) * spacing,
+                    width: diameter, height: diameter
+                )
+                NSBezierPath(ovalIn: dot).fill()
+            }
+        }
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let hoverTrackingArea { removeTrackingArea(hoverTrackingArea) }
+        let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self)
+        addTrackingArea(area)
+        hoverTrackingArea = area
+    }
+
+    override func mouseEntered(with event: NSEvent) { isHovered = true }
+    override func mouseExited(with event: NSEvent) { isHovered = false }
+
+    override var isHidden: Bool {
+        didSet { if isHidden { isHovered = false } }
     }
 
     override func resetCursorRects() {

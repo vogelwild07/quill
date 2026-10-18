@@ -21,6 +21,8 @@ enum EditorColor {
     static var separator: PlatformColor { .separatorColor }
     static var quaternaryFill: PlatformColor { .quaternarySystemFill }
     static var accent: PlatformColor { .controlAccentColor }
+    /// Vordergrund auf Akzentfläche (Häkchen in der Checkbox).
+    static var onAccent: PlatformColor { .alternateSelectedControlTextColor }
     #elseif canImport(UIKit)
     static var label: PlatformColor { .label }
     static var secondaryLabel: PlatformColor { .secondaryLabel }
@@ -28,5 +30,6 @@ enum EditorColor {
     static var separator: PlatformColor { .separator }
     static var quaternaryFill: PlatformColor { .quaternarySystemFill }
     static var accent: PlatformColor { .tintColor }
+    static var onAccent: PlatformColor { .white }
     #endif
 }

@@ -191,22 +191,24 @@ struct SlashMenuView: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 14))
     }
 
+    private static let selectedText = Color(nsColor: .alternateSelectedControlTextColor)
+
     private func row(_ command: SlashCommand, isSelected: Bool) -> some View {
         HStack(spacing: 10) {
             Image(systemName: command.symbol)
                 .frame(width: 22)
-                .foregroundStyle(isSelected ? Color.white : Color.secondary)
+                .foregroundStyle(isSelected ? Self.selectedText : Color.secondary)
             Text(command.title)
             Spacer()
             if let shortcut = command.shortcut {
                 Text(shortcut)
                     .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(isSelected ? Color.white.opacity(0.8) : Color.secondary)
+                    .foregroundStyle(isSelected ? Self.selectedText.opacity(0.8) : Color.secondary)
             }
         }
         .padding(.horizontal, 8)
         .frame(height: 32)
-        .foregroundStyle(isSelected ? Color.white : Color.primary)
+        .foregroundStyle(isSelected ? Self.selectedText : Color.primary)
         .background(isSelected ? Color.accentColor : Color.clear, in: .rect(cornerRadius: 8))
         .contentShape(.rect)
     }

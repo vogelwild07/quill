@@ -176,7 +176,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
             context.setLineWidth(1.8)
             context.setLineCap(.round)
             context.setLineJoin(.round)
-            context.setStrokeColor(CGColor(gray: 1, alpha: 1))
+            context.setStrokeColor(EditorColor.onAccent.cgColor)
             context.strokePath()
         } else {
             context.addPath(box)
