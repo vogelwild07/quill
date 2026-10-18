@@ -22,6 +22,8 @@ public final class BlockEditorController: NSObject {
     /// Eigener Undo-Stapel pro Editor. `load` leert nur ihn, nicht das Undo des
     /// Fensters (Sidebar-Aktionen).
     let undoManager = UndoManager()
+    /// Undo/Redo-Beobachter (`+Sync`); enden mit dem Controller.
+    var undoObservations: [NotificationObservation] = []
 
     private let layoutDelegate = BlockLayoutDelegate()
     /// Startposition jedes Absatzes im Textspeicher; letzter Eintrag = Gesamtlänge.

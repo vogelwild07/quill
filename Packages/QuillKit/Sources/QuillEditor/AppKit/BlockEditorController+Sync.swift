@@ -15,12 +15,12 @@ extension BlockEditorController: @MainActor NSTextStorageDelegate {
     }
 
     /// Undo/Redo der Text-View löst kein `textDidChange` aus; danach das Modell neu lesen.
+    /// Beobachtet nur den eigenen `undoManager`.
     func observeUndo() {
-        for name in [NSNotification.Name.NSUndoManagerDidUndoChange, .NSUndoManagerDidRedoChange] {
-            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
-                let sender = (note.object as AnyObject?).map(ObjectIdentifier.init)
+        undoObservations = [NSNotification.Name.NSUndoManagerDidUndoChange, .NSUndoManagerDidRedoChange].map { name in
+            NotificationObservation(name, object: undoManager) { [weak self] _ in
                 MainActor.assumeIsolated {
-                    guard let self, let manager = self.textView.undoManager, sender == ObjectIdentifier(manager) else { return }
+                    guard let self else { return }
                     self.slashMenu.close()
                     self.syncFromStorage()
                 }
