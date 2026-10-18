@@ -73,9 +73,10 @@ extension Block {
             return
         }
         if let owner = found.block, owner !== self {
-            let copy = Asset(data: found.data, uti: found.uti)
-            copy.pixelWidth = found.pixelWidth
-            copy.pixelHeight = found.pixelHeight
+            // Der Editor kennt weiter die ID des Originals. Hat dieser Block schon eine
+            // Kopie davon, bleibt sie; sonst entstünde bei jeder Änderung eine neue.
+            if let current = asset, current.uti == found.uti, current.data == found.data { return }
+            let copy = found.makeCopy()
             context.insert(copy)
             asset = copy
         } else {
@@ -96,5 +97,16 @@ extension Block {
         richText = snapshot.richText
         properties = snapshot.properties
         return true
+    }
+}
+
+extension Asset {
+    /// Neues Asset mit denselben Bilddaten (noch nicht eingefügt). Ein Asset gehört
+    /// genau einem Block (ADR-015).
+    func makeCopy() -> Asset {
+        let copy = Asset(data: data, uti: uti)
+        copy.pixelWidth = pixelWidth
+        copy.pixelHeight = pixelHeight
+        return copy
     }
 }

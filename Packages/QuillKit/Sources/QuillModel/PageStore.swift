@@ -419,9 +419,7 @@ extension PageStore {
     /// genau einem Block.
     public func duplicateAsset(_ id: UUID) throws -> UUID? {
         guard let original = try fetchAsset(id) else { return nil }
-        let copy = Asset(data: original.data, uti: original.uti)
-        copy.pixelWidth = original.pixelWidth
-        copy.pixelHeight = original.pixelHeight
+        let copy = original.makeCopy()
         modelContext.insert(copy)
         try save()
         return copy.id

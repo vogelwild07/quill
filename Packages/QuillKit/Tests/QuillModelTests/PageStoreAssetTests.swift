@@ -77,6 +77,29 @@ struct PageStoreAssetTests {
         #expect(secondAsset.data == firstAsset.data)
     }
 
+    /// Der Editor schickt weiter die ID des Originals; wiederholte Änderungen am Block
+    /// dürfen keine weiteren Kopien anlegen: nie mehr als ein Asset pro Bild.
+    @Test func repeatedEditsNeverCreateMoreAssets() async throws {
+        let page = try await store.createPage(title: "Bilder")
+        let imported = try await store.importImage(TestImages.make(width: 4, height: 4, type: .png))
+        let first = imageBlock(imported.assetID)
+        let second = imageBlock(imported.assetID)
+        try await store.applyEdits(page, BlockEdits(upserts: [first, second], order: [first.id, second.id]))
+        let copyID = try #require(try blocks().first { $0.id == second.id }?.asset?.id)
+        #expect(try assets().count == 2)
+
+        for round in 0..<5 {
+            var edited = second
+            edited.properties.indent = round % 2
+            let order = round % 2 == 0 ? [second.id, first.id] : [first.id, second.id]
+            try await store.applyEdits(page, BlockEdits(upserts: [edited, first], order: order))
+            #expect(try assets().count == 2, "Runde \(round)")
+        }
+        let stored = try blocks()
+        #expect(stored.first { $0.id == first.id }?.asset?.id == imported.assetID)
+        #expect(stored.first { $0.id == second.id }?.asset?.id == copyID)
+    }
+
     @Test func importLinksAlreadySavedPlaceholderBlock() async throws {
         let page = try await store.createPage(title: "Bilder")
         let assetID = UUID()
