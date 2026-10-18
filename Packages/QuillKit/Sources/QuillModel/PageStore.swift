@@ -21,6 +21,8 @@ public enum PageStoreError: Error, Equatable {
     case siblingNotFound(UUID)
     /// Eine Seite kann nicht unter sich selbst oder eine eigene Unterseite.
     case cycle
+    /// Endgültig löschen geht nur aus dem Papierkorb.
+    case notInTrash(UUID)
 }
 
 /// Alle Schreibzugriffe auf Seiten. Die UI liest per `@Query`.
@@ -125,13 +127,13 @@ public actor PageStore {
 
     // MARK: - Hilfen
 
-    private func save() throws {
+    func save() throws {
         if modelContext.hasChanges {
             try modelContext.save()
         }
     }
 
-    private func fetchPage(_ id: UUID) throws -> Page {
+    func fetchPage(_ id: UUID) throws -> Page {
         var descriptor = FetchDescriptor<Page>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
         guard let page = try modelContext.fetch(descriptor).first else {
@@ -161,7 +163,8 @@ public actor PageStore {
         return primary
     }
 
-    private func isInTrash(_ page: Page) -> Bool {
+    /// Liegt die Seite selbst oder eine ihrer Elternseiten im Papierkorb?
+    func isInTrash(_ page: Page) -> Bool {
         var current: Page? = page
         while let candidate = current {
             if candidate.trashedAt != nil { return true }
@@ -187,6 +190,15 @@ public actor PageStore {
     /// Neuer Schlüssel für `position`. Sind die Schlüssel der Geschwister doppelt
     /// oder ungültig, werden sie einmal neu vergeben (seltene Reparatur).
     private func sortKey(at position: SiblingPosition, among siblings: [Page]) throws -> String {
+        try fractionalKey(at: position, among: siblings, key: \.sortKey) { $0.sortKey = $1 }
+    }
+
+    /// Schlüssel für `position` in einer nach `key` sortierten Liste (ADR-009), für
+    /// `sortKey` und `favoriteSortKey`.
+    func fractionalKey(
+        at position: SiblingPosition, among siblings: [Page],
+        key: (Page) -> String?, repair: (Page, String) -> Void
+    ) throws -> String {
         let index: Int
         switch position {
         case .first:
@@ -205,8 +217,8 @@ public actor PageStore {
             index = found + 1
         }
 
-        let lower = index > 0 ? siblings[index - 1].sortKey : nil
-        let upper = index < siblings.count ? siblings[index].sortKey : nil
+        let lower = index > 0 ? key(siblings[index - 1]) ?? "" : nil
+        let upper = index < siblings.count ? key(siblings[index]) ?? "" : nil
         if let key = try? FractionalIndex.key(between: lower, and: upper),
            lower.map(FractionalIndex.isValid) ?? true,
            upper.map(FractionalIndex.isValid) ?? true {
@@ -214,8 +226,8 @@ public actor PageStore {
         }
 
         let keys = FractionalIndex.keys(count: siblings.count + 1)
-        for (sibling, key) in zip(siblings, keys.enumerated().filter { $0.offset != index }.map(\.element)) {
-            sibling.sortKey = key
+        for (sibling, newKey) in zip(siblings, keys.enumerated().filter { $0.offset != index }.map(\.element)) {
+            repair(sibling, newKey)
             sibling.updatedAt = .now
         }
         return keys[index]
@@ -224,7 +236,6 @@ public actor PageStore {
 
 // MARK: - Blöcke
 
-/// Hier statt in `BlockEdits.swift`, damit `save()` und `fetchPage` privat bleiben.
 extension PageStore {
     /// Blöcke einer Seite in Anzeigereihenfolge.
     public func blocks(of pageID: UUID) throws -> [BlockSnapshot] {
