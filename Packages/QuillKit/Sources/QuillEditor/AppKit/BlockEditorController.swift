@@ -66,6 +66,7 @@ public final class BlockEditorController: NSObject {
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
         textView.drawsBackground = true
+        textView.setAccessibilityIdentifier("editor.text")
         textView.backgroundColor = .textBackgroundColor
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false
