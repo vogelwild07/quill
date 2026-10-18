@@ -41,10 +41,15 @@ public final class BlockEditorController: NSObject {
     var pendingInsert: PendingInsert?
     /// Quelle der Bilder (Laden, Import, Kopien); ohne Store keine Bilder.
     public var imageStore: PageStore? {
-        didSet { loadMissingImages() }
+        didSet {
+            failedImages = []
+            loadMissingImages()
+        }
     }
     /// Bilder, die gerade geladen werden.
     var loadingImages: Set<UUID> = []
+    /// Assets, die sich nicht laden ließen; nicht bei jeder Änderung erneut versuchen.
+    var failedImages: Set<UUID> = []
     /// Eingefügte Bilder, deren Import noch läuft; ihr Block zeigt den Platzhalter.
     var pendingImports: Set<UUID> = []
     lazy var noticeView = EditorNoticeView()

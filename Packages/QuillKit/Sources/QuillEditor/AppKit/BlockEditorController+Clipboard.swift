@@ -86,33 +86,20 @@ extension BlockEditorController {
 
     /// Fügt Quill-Blöcke verlustfrei ein, sonst Klartext (keine fremden Formate, auch
     /// keine Quill-Blöcke einer anderen Version).
-    /// Ein einzelner Absatz wird in den Text eingefügt und behält seine Formatierung.
     func paste(from pasteboard: NSPasteboard) -> Bool {
         let selection = textView.selectedRange()
         if let data = pasteboard.data(forType: .quillBlocks),
            let blocks = BlockClipboard.decode(data) {
-            if blocks.contains(where: { $0.kind == .image }) {
-                Task { await pasteBlocks(withDuplicatedAssets(blocks), selection: selection) }
+            guard blocks.contains(where: { $0.kind == .image }) else {
+                insertPastedBlocks(blocks, over: selection)
                 return true
             }
-            var newDocument = document
-            var caret = position(atCharacter: selection.location)
-            if blocks.count == 1, blocks[0].kind == .paragraph {
-                let end = position(atCharacter: NSMaxRange(selection))
-                let cursor = newDocument.insertInline(blocks[0].content, from: caret, to: end)
-                apply(newDocument, cursor: cursor, actionName: UndoAction.paste)
-                return true
+            // Bilder bekommen erst eigene Assets; eingesetzt wird an der Auswahl von
+            // dann, falls inzwischen weitergetippt wurde.
+            Task {
+                let copies = await withDuplicatedAssets(blocks)
+                insertPastedBlocks(copies, over: textView.selectedRange())
             }
-            if selection.length > 0 {
-                caret = newDocument.replace(from: caret, to: position(atCharacter: NSMaxRange(selection)), with: "")
-            }
-            let fresh = blocks.map { block -> EditorBlock in
-                var copy = block
-                copy.id = UUID()
-                return copy
-            }
-            let cursor = newDocument.insertBlocks(fresh, at: caret)
-            apply(newDocument, cursor: cursor, actionName: UndoAction.paste)
             return true
         }
         let images = Self.imageSources(from: pasteboard)
@@ -127,22 +114,24 @@ extension BlockEditorController {
         return false
     }
 
-    /// Blöcke mit Bildern, nachdem ihre Assets kopiert sind.
-    private func pasteBlocks(_ blocks: [EditorBlock], selection: NSRange) {
+    /// Quill-Blöcke über die Auswahl einsetzen, mit neuen IDs. Ein einzelner Absatz
+    /// wird in den Text eingefügt und behält seine Formatierung.
+    private func insertPastedBlocks(_ blocks: [EditorBlock], over selection: NSRange) {
         guard !blocks.isEmpty else { return }
         var newDocument = document
-        var caret = position(atCharacter: min(selection.location, paragraphStarts[document.count] - 1))
+        let start = position(atCharacter: min(selection.location, paragraphStarts[document.count] - 1))
+        let end = position(atCharacter: NSMaxRange(selection))
+        if blocks.count == 1, blocks[0].kind == .paragraph {
+            let cursor = newDocument.insertInline(blocks[0].content, from: start, to: end)
+            apply(newDocument, cursor: cursor, actionName: UndoAction.paste)
+            return
+        }
+        var caret = start
         if selection.length > 0 {
-            caret = newDocument.replace(from: caret, to: position(atCharacter: NSMaxRange(selection)), with: "")
+            caret = newDocument.replace(from: start, to: end, with: "")
         }
-        let fresh = blocks.map { block -> EditorBlock in
-            var copy = block
-            copy.id = UUID()
-            return copy
-        }
-        var cursor = newDocument.insertBlocks(fresh, at: caret)
-        if cursor.block == newDocument.count - 1 && newDocument[cursor.block].kind.isAtomic {
-            newDocument.blocks.append(EditorBlock())
+        var cursor = newDocument.insertBlocks(blocks.map { $0.withNewID() }, at: caret)
+        if newDocument.ensureEditableEnd(), cursor.block == newDocument.count - 2 {
             cursor = BlockPosition(block: cursor.block + 1, offset: 0)
         }
         apply(newDocument, cursor: cursor, actionName: UndoAction.paste)

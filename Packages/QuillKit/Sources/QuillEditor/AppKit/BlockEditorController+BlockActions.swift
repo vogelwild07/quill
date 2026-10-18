@@ -31,7 +31,7 @@ extension BlockEditorController {
         let offset = selection.location - paragraphStarts[range.lowerBound]
         var newDocument = document
         let moved = newDocument.moveBlocks(IndexSet(integersIn: range), to: destination)
-        Self.keepEditableEnd(&newDocument)
+        newDocument.ensureEditableEnd()
         textView.breakUndoCoalescing()
         apply(newDocument, cursor: nil, actionName: UndoAction.moveBlocks)
         textView.setSelectedRange(NSRange(location: paragraphStarts[moved.lowerBound] + offset, length: selection.length))
@@ -58,9 +58,7 @@ extension BlockEditorController {
         guard !blocks.isEmpty, let anchor = document.blocks.firstIndex(where: { $0.id == anchorID }) else { return }
         var newDocument = document
         for (offset, block) in blocks.enumerated() {
-            var copy = block
-            copy.id = UUID()
-            newDocument.insertBlock(copy, at: anchor + 1 + offset)
+            newDocument.insertBlock(block.withNewID(), at: anchor + 1 + offset)
         }
         textView.breakUndoCoalescing()
         apply(newDocument, cursor: nil, actionName: UndoAction.duplicate)
@@ -76,16 +74,9 @@ extension BlockEditorController {
         for index in range.reversed() {
             cursor = newDocument.deleteBlock(at: index)
         }
-        Self.keepEditableEnd(&newDocument)
+        newDocument.ensureEditableEnd()
         textView.breakUndoCoalescing()
         apply(newDocument, cursor: cursor, actionName: UndoAction.delete)
-    }
-
-    /// Hinter einem Trenner oder Bild am Ende muss ein Absatz zum Weiterschreiben stehen.
-    static func keepEditableEnd(_ document: inout EditorDocument) {
-        if document.blocks.last?.kind.isAtomic ?? true {
-            document.blocks.append(EditorBlock())
-        }
     }
 }
 #endif

@@ -34,12 +34,22 @@ public enum ImageImport {
         UTType.png.identifier, UTType.jpeg.identifier, UTType.heic.identifier, UTType.gif.identifier,
     ]
 
-    public static func prepare(_ data: Data, maxOriginalBytes: Int = maxOriginalBytes) throws -> Prepared {
+    /// Günstige Prüfung vor dem Einfügen: Kopf und Eigenschaften lesbar, ohne zu dekodieren.
+    public static func isReadable(_ data: Data) -> Bool {
+        readable(data) != nil
+    }
+
+    private static func readable(_ data: Data) -> (source: CGImageSource, type: String, properties: [CFString: Any])? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               let type = CGImageSourceGetType(source) as String?,
               CGImageSourceGetCount(source) > 0,
               let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
-        else { throw Failure.unreadable }
+        else { return nil }
+        return (source, type, properties)
+    }
+
+    public static func prepare(_ data: Data, maxOriginalBytes: Int = maxOriginalBytes) throws -> Prepared {
+        guard let (source, type, properties) = readable(data) else { throw Failure.unreadable }
 
         if data.count > maxOriginalBytes {
             return try downscaled(source, properties: properties)

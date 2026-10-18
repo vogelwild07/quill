@@ -68,8 +68,7 @@ struct ImageBlockEditorTests {
     private var kinds: [BlockKind] { editor.document.blocks.map(\.kind) }
 
     private func insert(_ data: Data, at position: BlockPosition) async throws {
-        editor.insertImages([.data(data)], from: position, to: position)
-        try await waitUntil { editor.pendingImports.isEmpty }
+        await editor.insertImages([.data(data)], from: position, to: position)?.value
     }
 
     /// PNG als Datei im Temp-Ordner des Tests, wie aus dem Finder.
@@ -170,10 +169,88 @@ struct ImageBlockEditorTests {
         #expect(editor.noticeView.text == "Bild wurde verkleinert")
     }
 
-    @Test func unreadableImageRemovesPlaceholderWithNotice() async throws {
+    /// Review PR #4, Punkt 7: Unlesbares kommt nicht ins Dokument, Undo holt keinen
+    /// Platzhalter zurück.
+    @Test func unreadableImageIsNeverInsertedNorUndoable() async throws {
+        editor.load(EditorDocument(blocks: [EditorBlock(text: "Text"), EditorBlock()]))
+        var everInserted = false
+        editor.onChange = { document in everInserted = everInserted || document.blocks.contains { $0.kind == .image } }
         try await insert(Data("kein Bild".utf8), at: BlockPosition(block: 1, offset: 0))
+        #expect(!everInserted)
         #expect(kinds == [.paragraph, .paragraph])
         #expect(!editor.noticeView.isHidden)
+        #expect(editor.noticeView.text == "Bild konnte nicht gelesen werden")
+        undo()
+        #expect(kinds == [.paragraph, .paragraph])
+        #expect(!editor.undoManager.canRedo)
+    }
+
+    /// Punkt 7: Von mehreren Bildern kommen nur die lesbaren ins Dokument.
+    @Test func onlyReadableImagesAreInserted() async throws {
+        let position = BlockPosition(block: 1, offset: 0)
+        await editor.insertImages([.data(Data("kein Bild".utf8)), .data(Self.png(width: 10, height: 10))], from: position, to: position)?.value
+        #expect(kinds == [.paragraph, .image, .paragraph])
+        #expect(editor.noticeView.text == "Bild konnte nicht gelesen werden")
+    }
+
+    /// Punkt 8: Ein Fehler beim Speichern heißt nicht „unlesbar“.
+    @Test func importFailureNoticeNamesTheCause() {
+        struct DiskFull: Error {}
+        #expect(BlockEditorController.importFailureNotice(for: ImageImport.Failure.unreadable) == "Bild konnte nicht gelesen werden")
+        #expect(BlockEditorController.importFailureNotice(for: DiskFull()) == "Bild konnte nicht gespeichert werden")
+    }
+
+    /// Punkt 6: Ein Bild, das sich nicht laden lässt, wird nicht bei jeder Änderung
+    /// erneut geladen.
+    @Test func missingImageIsNotReloadedOnEveryEdit() async throws {
+        let missing = UUID()
+        editor.load(EditorDocument(blocks: [EditorBlock(kind: .image, properties: BlockProperties(assetID: missing)), EditorBlock()]))
+        try await waitUntil { editor.failedImages.contains(missing) }
+        #expect(editor.loadingImages.isEmpty)
+        editor.textView.setSelectedRange(NSRange(location: editor.characterLocation(of: BlockPosition(block: 1, offset: 0)), length: 0))
+        editor.textView.insertText("a", replacementRange: editor.textView.selectedRange())
+        editor.loadMissingImages()
+        #expect(editor.loadingImages.isEmpty)
+        // Ein anderer Store (z. B. neu geöffnet) versucht es wieder.
+        editor.imageStore = store
+        #expect(editor.loadingImages.contains(missing))
+    }
+
+    /// Punkt 5: Während die Assets kopiert werden, wird weitergetippt. Eingesetzt wird
+    /// an der Einfügemarke von dann, der getippte Text bleibt.
+    @Test func pastedImageBlockLandsAtCaretAfterTypingMeanwhile() async throws {
+        try await insert(Self.png(width: 40, height: 20), at: BlockPosition(block: 1, offset: 0))
+        let original = try #require(editor.document[1].assetID)
+        editor.textView.setSelectedRange(NSRange(location: editor.characterLocation(of: BlockPosition(block: 1, offset: 0)), length: 1))
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        #expect(editor.copySelection(to: board))
+
+        editor.textView.setSelectedRange(NSRange(location: editor.characterLocation(of: BlockPosition(block: 2, offset: 0)), length: 0))
+        #expect(editor.paste(from: board))
+        // Noch bevor die Kopie fertig ist: in den ersten Block tippen.
+        let end = editor.characterLocation(of: BlockPosition(block: 0, offset: 4))
+        editor.textView.setSelectedRange(NSRange(location: end, length: 0))
+        editor.textView.insertText("!", replacementRange: editor.textView.selectedRange())
+
+        try await waitUntil { kinds.filter { $0 == .image }.count == 2 }
+        #expect(editor.document.blocks.map(\.text) == ["Text!", "", "", ""])
+        let ids = editor.document.blocks.compactMap(\.assetID)
+        #expect(ids.count == 2 && ids[0] != original && ids[1] == original)
+    }
+
+    /// Punkt 5 (auch für Bilddateien): Wird beim Lesen weitergetippt, gilt die
+    /// Einfügemarke von dann.
+    @Test func imageFileLandsAtCaretAfterTypingMeanwhile() async throws {
+        let position = BlockPosition(block: 1, offset: 0)
+        let task = editor.insertImages([.file(try pngFile())], from: position, to: position)
+        editor.textView.setSelectedRange(NSRange(location: editor.characterLocation(of: BlockPosition(block: 0, offset: 4)), length: 0))
+        editor.textView.insertText("\n", replacementRange: editor.textView.selectedRange())
+        editor.textView.insertText("Zwei", replacementRange: editor.textView.selectedRange())
+        await task?.value
+        // Hinter „Zwei“ (Einfügemarke), nicht an der alten Stelle davor.
+        #expect(editor.document.blocks.map(\.text) == ["Text", "Zwei", "", ""])
+        #expect(kinds == [.paragraph, .paragraph, .image, .paragraph])
     }
 
     // MARK: Platzhalter, Undo während des Imports, Auswahl
@@ -184,13 +261,17 @@ struct ImageBlockEditorTests {
         board.clearContents()
         board.writeObjects([try pngFile() as NSURL])
         editor.textView.setSelectedRange(NSRange(location: editor.characterLocation(of: BlockPosition(block: 1, offset: 0)), length: 0))
+        // Beim Einfügen (Datei gelesen und geprüft) läuft der Import noch: Platzhalter.
+        var placeholderShown = false
+        editor.onChange = { [editor] document in
+            guard let id = document.blocks.first(where: { $0.kind == .image })?.assetID else { return }
+            placeholderShown = placeholderShown || (editor.pendingImports.contains(id) && EditorImageCache.shared.entry(for: id) == nil)
+        }
         #expect(editor.paste(from: board))
-
-        // Sofort da, Datei noch nicht gelesen: Platzhalter.
+        try await waitUntil { kinds.contains(.image) }
+        #expect(placeholderShown)
         #expect(kinds == [.paragraph, .image, .paragraph])
         let id = try #require(editor.document[1].assetID)
-        #expect(editor.pendingImports.contains(id))
-        #expect(EditorImageCache.shared.entry(for: id) == nil)
 
         try await waitUntil { EditorImageCache.shared.entry(for: id) != nil }
         #expect(editor.document[1].assetID == id)
@@ -198,12 +279,16 @@ struct ImageBlockEditorTests {
     }
 
     @Test func undoDuringImportStaysUndone() async throws {
-        editor.insertImages([.file(try pngFile())], from: BlockPosition(block: 1, offset: 0), to: BlockPosition(block: 1, offset: 0))
+        // Großes Bild: Das Verkleinern dauert, Undo kommt sicher während des Imports.
+        let data = await Task.detached { Self.heavyPNG() }.value
+        let task = editor.insertImages([.data(data)], from: BlockPosition(block: 1, offset: 0), to: BlockPosition(block: 1, offset: 0))
+        try await waitUntil { kinds.contains(.image) }
         let id = try #require(editor.document[1].assetID)
+        #expect(editor.pendingImports.contains(id))
         undo()
         #expect(kinds == [.paragraph, .paragraph])
 
-        try await waitUntil { editor.pendingImports.isEmpty }
+        await task?.value
         // Der fertige Import fügt nichts wieder ein …
         #expect(kinds == [.paragraph, .paragraph])
         // … und Redo bringt den Block mit demselben Bild zurück.
@@ -224,6 +309,7 @@ struct ImageBlockEditorTests {
         board.clearContents()
         board.setData(Self.png(width: 20, height: 20), forType: .png)
         #expect(editor.paste(from: board))
+        try await waitUntil { kinds.contains(.image) }
         #expect(kinds == [.paragraph, .image, .paragraph])
         #expect(editor.document.blocks.map(\.text) == ["Hallo ", "", "Zeile"])
         try await waitUntil { editor.pendingImports.isEmpty }

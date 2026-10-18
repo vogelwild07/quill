@@ -33,14 +33,20 @@ extension BlockEditorController {
     func loadMissingImages() {
         guard let imageStore else { return }
         let missing = Set(document.blocks.compactMap { $0.kind == .image ? $0.assetID : nil })
-            .filter { EditorImageCache.shared.entry(for: $0) == nil && !loadingImages.contains($0) && !pendingImports.contains($0) }
+            .filter {
+                EditorImageCache.shared.entry(for: $0) == nil && !loadingImages.contains($0)
+                    && !pendingImports.contains($0) && !failedImages.contains($0)
+            }
         for id in missing {
             loadingImages.insert(id)
             Task {
                 defer { loadingImages.remove(id) }
-                guard let data = try? await imageStore.imageData(id)?.data else { return }
-                let entry = await Task.detached(priority: .userInitiated) { EditorImageCache.decode(data) }.value
-                guard let entry else { return }
+                let data = try? await imageStore.imageData(id)?.data
+                let entry = await Task.detached(priority: .userInitiated) { data.flatMap { EditorImageCache.decode($0) } }.value
+                guard let entry else {
+                    failedImages.insert(id)
+                    return
+                }
                 EditorImageCache.shared.store(entry, for: id)
                 invalidateLayout(ofImage: id)
             }
@@ -63,54 +69,84 @@ extension BlockEditorController {
 
     // MARK: Einfügen
 
-    /// Fügt Bild-Blöcke sofort ein (bis zum Ende des Imports mit Platzhalter) und
-    /// importiert die Bilder im Hintergrund (GPS entfernt, ggf. verkleinert).
+    /// Liest und prüft die Bilder im Hintergrund, fügt die lesbaren als Bild-Blöcke ein
+    /// (bis zum Ende des Imports mit Platzhalter) und importiert sie (GPS entfernt,
+    /// ggf. verkleinert). Unlesbares kommt gar nicht erst ins Dokument, also auch nicht
+    /// über Undo zurück; es gibt nur einen Hinweis.
     ///
     /// Der Bereich `start`…`end` wird ersetzt; Löschen und Einfügen sind ein
-    /// Undo-Schritt. Die Asset-IDs stehen schon beim Einfügen fest, der Block ändert
-    /// sich danach nicht mehr. Deshalb bleibt Undo/Redo auch während des Imports
-    /// korrekt; `PageStore.importImage` verknüpft einen schon gespeicherten Block.
-    func insertImages(_ sources: [ImageSource], from start: BlockPosition, to end: BlockPosition) {
-        guard let imageStore, !sources.isEmpty else { return }
-        let blocks = sources.map { _ in EditorBlock(kind: .image, properties: BlockProperties(assetID: UUID())) }
-        var newDocument = document
-        var caret = start
-        if start != end {
-            caret = newDocument.replace(from: start, to: end, with: "")
-        }
-        let last = newDocument.insertBlocks(blocks, at: caret)
-        if last.block == newDocument.count - 1 { newDocument.blocks.append(EditorBlock()) }
-        let imports = zip(blocks, sources).map { (blockID: $0.id, assetID: $0.assetID!, source: $1) }
-        pendingImports.formUnion(imports.map(\.assetID))
-        apply(newDocument, cursor: BlockPosition(block: last.block + 1, offset: 0), actionName: UndoAction.insertImage)
-
-        Task {
+    /// Undo-Schritt. Wurde inzwischen weitergetippt, gilt die Auswahl von dann. Die
+    /// Asset-IDs stehen schon beim Einfügen fest, der Block ändert sich danach nicht
+    /// mehr. Deshalb bleibt Undo/Redo auch während des Imports korrekt;
+    /// `PageStore.importImage` verknüpft einen schon gespeicherten Block.
+    @discardableResult
+    func insertImages(_ sources: [ImageSource], from start: BlockPosition, to end: BlockPosition) -> Task<Void, Never>? {
+        guard let imageStore, !sources.isEmpty else { return nil }
+        let before = document
+        return Task {
+            let loaded = await Task.detached(priority: .userInitiated) {
+                sources.map { $0.load().flatMap { ImageImport.isReadable($0) ? $0 : nil } }
+            }.value
+            let images = loaded.compactMap { $0 }
+            if images.count < loaded.count {
+                showNotice(String(localized: "Bild konnte nicht gelesen werden", bundle: .module))
+            }
+            guard !images.isEmpty else { return }
+            var range = (start, end)
+            if document != before {
+                let selection = textView.selectedRange()
+                range = (position(atCharacter: selection.location), position(atCharacter: NSMaxRange(selection)))
+            }
+            let imports = placeImageBlocks(count: images.count, from: range.0, to: range.1)
             var downscaled = false
             var failed: Set<UUID> = []
-            for item in imports {
-                let data = await Task.detached(priority: .userInitiated) { item.source.load() }.value
-                var imported: ImportedImage?
-                if let data {
-                    imported = try? await imageStore.importImage(data, assetID: item.assetID, linkTo: item.blockID)
+            var failure: (any Error)?
+            for (item, data) in zip(imports, images) {
+                do {
+                    let imported = try await imageStore.importImage(data, assetID: item.assetID, linkTo: item.blockID)
+                    downscaled = downscaled || imported.wasDownscaled
+                } catch {
+                    failed.insert(item.assetID)
+                    failure = error
                 }
                 pendingImports.remove(item.assetID)
-                if let imported {
-                    downscaled = downscaled || imported.wasDownscaled
-                } else {
-                    failed.insert(item.assetID)
-                }
             }
             loadMissingImages()
-            if !failed.isEmpty { removeImageBlocks(withAssets: failed) }
+            if let failure { removeImageBlocks(withAssets: failed, notice: Self.importFailureNotice(for: failure)) }
             if downscaled {
                 showNotice(String(localized: "Bild wurde verkleinert", bundle: .module))
             }
         }
     }
 
-    /// Unlesbare Bilder: Platzhalter wieder entfernen und Bescheid geben.
-    private func removeImageBlocks(withAssets ids: Set<UUID>) {
-        showNotice(String(localized: "Bild konnte nicht gelesen werden", bundle: .module))
+    /// Bild-Blöcke mit festen Asset-IDs an die Stelle setzen; ein Undo-Schritt.
+    private func placeImageBlocks(count: Int, from start: BlockPosition, to end: BlockPosition) -> [(blockID: UUID, assetID: UUID)] {
+        let blocks = (0..<count).map { _ in EditorBlock(kind: .image, properties: BlockProperties(assetID: UUID())) }
+        var newDocument = document
+        var caret = start
+        if start != end {
+            caret = newDocument.replace(from: start, to: end, with: "")
+        }
+        let last = newDocument.insertBlocks(blocks, at: caret)
+        newDocument.ensureEditableEnd()
+        let imports = blocks.map { (blockID: $0.id, assetID: $0.assetID!) }
+        pendingImports.formUnion(imports.map(\.assetID))
+        apply(newDocument, cursor: BlockPosition(block: last.block + 1, offset: 0), actionName: UndoAction.insertImage)
+        return imports
+    }
+
+    /// Unlesbares Bild oder Fehler beim Speichern: Der Hinweis sagt, was passiert ist.
+    static func importFailureNotice(for error: any Error) -> String {
+        if error as? ImageImport.Failure == .unreadable {
+            String(localized: "Bild konnte nicht gelesen werden", bundle: .module)
+        } else {
+            String(localized: "Bild konnte nicht gespeichert werden", bundle: .module)
+        }
+    }
+
+    /// Import gescheitert: Platzhalter wieder entfernen und Bescheid geben.
+    private func removeImageBlocks(withAssets ids: Set<UUID>, notice: String) {
+        showNotice(notice)
         var newDocument = document
         newDocument.blocks.removeAll { $0.kind == .image && $0.assetID.map(ids.contains) == true }
         guard newDocument.count != document.count else { return }

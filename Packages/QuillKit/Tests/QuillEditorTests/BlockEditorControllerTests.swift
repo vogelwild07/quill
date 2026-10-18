@@ -372,6 +372,22 @@ struct BlockActionTests {
         }
     }
 
+    /// Hinter einem Trenner am Ende steht immer ein Absatz zum Weiterschreiben.
+    @Test func blockActionsKeepEditableEnd() {
+        let moved = Harness([EditorBlock(kind: .divider), EditorBlock(text: "A")])
+        moved.caret(at: 1, 1)
+        #expect(moved.editor.moveSelectedBlocks(by: -1))
+        #expect(moved.kinds == [.paragraph, .divider, .paragraph])
+
+        let deleted = Harness([EditorBlock(text: "A"), EditorBlock(kind: .divider), EditorBlock(text: "B")])
+        deleted.caret(at: 2, 1)
+        deleted.editor.deleteSelectedBlocks()
+        #expect(deleted.kinds == [.paragraph, .divider, .paragraph])
+        #expect(deleted.texts == ["A", "", ""])
+        moved.expectConsistent()
+        deleted.expectConsistent()
+    }
+
     @Test func moveWithKeyboardKeepsCaret() {
         let h = abc()
         h.caret(at: 1, 1)
@@ -689,6 +705,19 @@ struct ClipboardAndMoveTests {
         let data = try #require(board.data(forType: .quillBlocks))
         let blocks = try #require(BlockClipboard.decode(data))
         #expect(blocks.map(\.kind) == [.heading1, .todo, .numbered])
+    }
+
+    @Test func pastingDividerAtEndKeepsEditableParagraph() throws {
+        let h = Harness([EditorBlock(text: "A"), EditorBlock(kind: .divider), EditorBlock(text: "B")])
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        board.clearContents()
+        board.setData(try #require(BlockClipboard.encode([EditorBlock(kind: .divider), EditorBlock(kind: .divider)])), forType: .quillBlocks)
+        h.caret(at: 2, 1)
+        #expect(h.editor.paste(from: board))
+        #expect(h.kinds == [.paragraph, .divider, .paragraph, .divider, .divider, .paragraph])
+        #expect(h.caretPosition == BlockPosition(block: 5, offset: 0))
+        h.expectConsistent()
     }
 
     @Test func pastingQuillBlocksKeepsKindsWithNewIDs() {
