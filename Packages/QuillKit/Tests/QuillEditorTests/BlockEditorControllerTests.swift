@@ -167,6 +167,19 @@ struct TypingTests {
         #expect(h.texts == ["漢"])
         h.expectConsistent()
     }
+
+    /// Neuladen aus einem anderen Fenster greift nie in eine laufende IME-Eingabe ein.
+    @Test func reloadIsRejectedDuringComposition() {
+        let h = Harness([EditorBlock(text: "")])
+        h.textView.setMarkedText("か", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: NSNotFound, length: 0))
+        #expect(h.editor.reload(EditorDocument(blocks: [EditorBlock(text: "fremd")])) == false)
+        #expect(h.textView.hasMarkedText())
+
+        h.textView.insertText("漢", replacementRange: NSRange(location: NSNotFound, length: 0))
+        #expect(h.editor.reload(EditorDocument(blocks: [EditorBlock(text: "fremd")])))
+        #expect(h.texts == ["fremd"])
+        h.expectConsistent()
+    }
 }
 
 @MainActor

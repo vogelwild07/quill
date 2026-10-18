@@ -13,7 +13,8 @@ import SwiftUI
 final class PageEditorSession {
     let controller = BlockEditorController(document: EditorDocument())
     let headerFocus = HeaderFocus()
-    private let bridge: EditorPersistenceBridge
+    /// Beobachtbar: `lastError` zeigt den Hinweis „nicht gespeichert“.
+    let bridge: EditorPersistenceBridge
 
     private static let logger = Logger(subsystem: "de.vogel.quill", category: "editor")
 
@@ -48,7 +49,7 @@ final class PageEditorSession {
             controller.load(document)
             controller.isEditable = true
             controller.onChange = { [bridge] in bridge.documentDidChange($0) }
-            bridge.onExternalChange = { [weak controller] in controller?.reload($0) }
+            bridge.onExternalChange = { [weak controller] in controller?.reload($0) ?? false }
         } catch {
             // Ohne geladene Blöcke bleibt der Editor schreibgeschützt; so wird nichts überschrieben.
             Self.logger.error("Seite konnte nicht geladen werden: \(error, privacy: .public)")

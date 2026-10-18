@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import QuillModel
 
 /// Verbindet einen Editor mit dem `PageStore` (ADR-013).
@@ -6,45 +7,65 @@ import QuillModel
 /// - Lädt die Blöcke einer Seite und merkt sich den gespeicherten Stand (`baseline`).
 /// - Speichert entprellt (≈ 300 ms) nur, was sich gegenüber diesem Stand geändert hat.
 ///   `flush()` speichert sofort (Seitenwechsel, Fenster schließen, Beenden).
-/// - Scheitert das Speichern, bleiben die Änderungen offen und werden beim nächsten
-///   Speichern erneut versucht; nichts wird verworfen.
+/// - Scheitert das Speichern, bleiben die Änderungen offen. `lastError` zeigt das an
+///   (Hinweis in der Seite), und die Bridge versucht es selbst erneut, mit wachsendem
+///   Abstand (`retryDelay` verdoppelt bis `maxRetryDelay`). Nichts wird verworfen.
 /// - Mehrere Fenster mit derselben Seite: Nach dem Speichern meldet die Bridge das
 ///   (`didSave`). Andere Bridges derselben Seite ohne offene Änderungen laden neu.
 ///   Bearbeiten beide, gewinnt pro Block die letzte Speicherung (bewusste
-///   Vereinfachung bis zum CloudKit-Sync).
+///   Vereinfachung bis zum CloudKit-Sync). `load()` speichert vorher offene
+///   Änderungen anderer Bridges derselben Seite, z. B. einer gerade geschlossenen.
 @MainActor
+@Observable
 public final class EditorPersistenceBridge {
     public static let didSave = Notification.Name("de.vogel.quill.editorDidSave")
 
     public let pageID: UUID
-    private let store: PageStore
-    private let delay: Duration
+    @ObservationIgnored private let store: PageStore
+    @ObservationIgnored private let delay: Duration
+    @ObservationIgnored private let retryDelay: Duration
+    @ObservationIgnored private let maxRetryDelay: Duration
 
     /// Gespeicherter Stand aus Sicht dieses Editors.
-    private var baseline: [UUID: EditorBlock] = [:]
-    private var baselineOrder: [UUID] = []
+    @ObservationIgnored private var baseline: [UUID: EditorBlock] = [:]
+    @ObservationIgnored private var baselineOrder: [UUID] = []
     /// Neuester, noch nicht gespeicherter Stand.
-    private var pending: EditorDocument?
-    private var debounceTask: Task<Void, Never>?
-    private var saving: Task<Bool, Never>?
-    private var observer: Task<Void, Never>?
+    @ObservationIgnored private var pending: EditorDocument?
+    @ObservationIgnored private var debounceTask: Task<Void, Never>?
+    @ObservationIgnored private var saving: Task<Bool, Never>?
+    @ObservationIgnored private var observer: Task<Void, Never>?
+    @ObservationIgnored private var retryTask: Task<Void, Never>?
+    @ObservationIgnored private var retryAttempt = 0
+    /// Ein Neuladen wurde abgelehnt (markierter Text); nach dem nächsten Speichern nachholen.
+    @ObservationIgnored private var needsReload = false
 
-    /// Letzter Fehler beim Speichern; `nil` nach erfolgreichem Speichern.
+    /// Letzter Fehler beim Speichern; `nil` nach erfolgreichem Speichern. Beobachtbar
+    /// für den Hinweis „nicht gespeichert“ in der Seite.
     public private(set) var lastError: (any Error)?
     /// Wird aufgerufen, wenn ein anderes Fenster dieselbe Seite gespeichert hat und
-    /// dieser Editor neu geladen werden soll.
-    public var onExternalChange: ((EditorDocument) -> Void)?
+    /// dieser Editor neu geladen werden soll. Gibt zurück, ob der Editor das Dokument
+    /// übernommen hat (nicht bei markiertem Text, z. B. IME).
+    @ObservationIgnored public var onExternalChange: ((EditorDocument) -> Bool)?
 
-    public init(pageID: UUID, store: PageStore, delay: Duration = .milliseconds(300)) {
+    public init(
+        pageID: UUID,
+        store: PageStore,
+        delay: Duration = .milliseconds(300),
+        retryDelay: Duration = .seconds(1),
+        maxRetryDelay: Duration = .seconds(30)
+    ) {
         self.pageID = pageID
         self.store = store
         self.delay = delay
+        self.retryDelay = retryDelay
+        self.maxRetryDelay = maxRetryDelay
         observeOtherBridges()
         Self.live.add(self)
     }
 
     isolated deinit {
         debounceTask?.cancel()
+        retryTask?.cancel()
         observer?.cancel()
     }
 
@@ -52,23 +73,31 @@ public final class EditorPersistenceBridge {
 
     // MARK: Alle Editoren
 
-    private static let live = NSHashTable<EditorPersistenceBridge>.weakObjects()
+    @ObservationIgnored private static let live = NSHashTable<EditorPersistenceBridge>.weakObjects()
 
     /// Ob irgendein Editor noch ungespeicherte Änderungen hat (vor dem Beenden).
     public static var hasAnyUnsavedChanges: Bool {
         live.allObjects.contains { $0.hasUnsavedChanges }
     }
 
-    /// Speichert alle Editoren sofort, z. B. vor dem Beenden der App.
-    public static func flushAll() async {
-        for bridge in live.allObjects {
-            await bridge.flush()
+    /// Speichert alle Editoren sofort, z. B. vor dem Beenden der App. Gibt den ersten
+    /// Fehler zurück, wenn ein Editor nicht speichern konnte, sonst `nil`.
+    @discardableResult
+    public static func flushAll() async -> (any Error)? {
+        var firstError: (any Error)?
+        for bridge in live.allObjects where !(await bridge.flush()) {
+            firstError = firstError ?? bridge.lastError
         }
+        return firstError
     }
 
     /// Lädt die Seite. Eine leere Seite ergibt einen leeren Absatz, der erst beim
     /// ersten Tippen gespeichert wird.
     public func load() async throws -> EditorDocument {
+        // Eine gerade geschlossene Bridge derselben Seite speichert evtl. noch.
+        for other in Self.live.allObjects where other !== self && other.pageID == pageID && other.hasUnsavedChanges {
+            await other.flush()
+        }
         let snapshots = try await store.blocks(of: pageID)
         let blocks = snapshots.map(EditorBlock.init(snapshot:))
         setBaseline(blocks)
@@ -86,8 +115,10 @@ public final class EditorPersistenceBridge {
         }
     }
 
-    /// Speichert offene Änderungen sofort und wartet darauf.
-    public func flush() async {
+    /// Speichert offene Änderungen sofort und wartet darauf. `false`, wenn danach noch
+    /// Änderungen offen sind (Speichern gescheitert; ein neuer Versuch ist geplant).
+    @discardableResult
+    public func flush() async -> Bool {
         debounceTask?.cancel()
         debounceTask = nil
         while true {
@@ -95,7 +126,7 @@ public final class EditorPersistenceBridge {
                 _ = await saving.value
                 continue
             }
-            guard let document = pending else { return }
+            guard let document = pending else { return true }
             pending = nil
             // Die Task setzt `saving` selbst zurück. Sonst sähe ein zweiter Aufrufer
             // von `flush()` die fertige Task weiter und würde sie endlos abfragen.
@@ -105,7 +136,29 @@ public final class EditorPersistenceBridge {
                 return succeeded
             }
             saving = task
-            guard await task.value else { return }
+            guard await task.value else {
+                scheduleRetry()
+                return false
+            }
+            retryAttempt = 0
+            retryTask?.cancel()
+            retryTask = nil
+            if needsReload, pending == nil {
+                needsReload = false
+                await reloadIfUnchanged()
+            }
+        }
+    }
+
+    /// Nächster Versuch nach `retryDelay`, dann doppelt so lange, höchstens `maxRetryDelay`.
+    private func scheduleRetry() {
+        let wait = min(retryDelay * (1 << min(retryAttempt, 16)), maxRetryDelay)
+        retryAttempt += 1
+        retryTask?.cancel()
+        retryTask = Task { [weak self] in
+            try? await Task.sleep(for: wait)
+            guard !Task.isCancelled else { return }
+            await self?.flush()
         }
     }
 
@@ -167,8 +220,13 @@ public final class EditorPersistenceBridge {
               let snapshots = try? await store.blocks(of: pageID),
               !hasUnsavedChanges else { return }
         let blocks = snapshots.map(EditorBlock.init(snapshot:))
+        // Lehnt der Editor ab, bleibt der alte Stand die Vergleichsbasis: Sonst würden
+        // seine veralteten Blöcke beim nächsten Speichern als Änderung gelten.
+        guard onExternalChange(EditorDocument(blocks: blocks)) else {
+            needsReload = true
+            return
+        }
         setBaseline(blocks)
-        onExternalChange(EditorDocument(blocks: blocks))
     }
 }
 

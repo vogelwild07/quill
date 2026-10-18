@@ -32,13 +32,17 @@ extension BlockEditorController {
 
     /// Ersetzt das Dokument nach einer Änderung aus einem anderen Fenster.
     /// Die Auswahl bleibt an derselben Stelle, soweit es sie noch gibt.
-    public func reload(_ newDocument: EditorDocument) {
-        guard newDocument != document else { return }
+    /// Bei markiertem Text (IME, tote Tasten) wird nicht eingegriffen: `false`.
+    @discardableResult
+    public func reload(_ newDocument: EditorDocument) -> Bool {
+        guard !textView.hasMarkedText() else { return false }
+        guard newDocument != document else { return true }
         let selection = textView.selectedRange()
         load(newDocument)
         let limit = max(0, (textView.textStorage?.length ?? 1) - 1)
         let location = min(selection.location, limit)
         textView.setSelectedRange(NSRange(location: location, length: min(selection.length, limit - location)))
+        return true
     }
 
     /// `true`, wenn der Cursor in der ersten Zeile des Dokuments steht (↑ geht dann in den Titel).

@@ -145,9 +145,9 @@ struct EditorPersistenceBridgeTests {
         var busyDocument = try await busy.load()
 
         var received: EditorDocument?
-        reader.onExternalChange = { received = $0 }
+        reader.onExternalChange = { received = $0; return true }
         var busyReceived = false
-        busy.onExternalChange = { _ in busyReceived = true }
+        busy.onExternalChange = { _ in busyReceived = true; return true }
         busyDocument[0].text = "eigene Änderung"
         busy.documentDidChange(busyDocument)
 
@@ -157,6 +157,101 @@ struct EditorPersistenceBridgeTests {
 
         #expect(received?.blocks.map(\.text) == ["aus Fenster A"])
         #expect(!busyReceived)
+    }
+
+    // MARK: Review-Fehler
+
+    private func deletePage() throws {
+        let context = ModelContext(container)
+        for page in try context.fetch(FetchDescriptor<Page>()) { context.delete(page) }
+        try context.save()
+    }
+
+    private func recreatePage() throws {
+        let context = ModelContext(container)
+        let page = Page(title: "Test")
+        page.id = pageID
+        context.insert(page)
+        try context.save()
+    }
+
+    /// Fehler 2: Nach einem Fehler versucht die Bridge es selbst erneut, mit Backoff.
+    @Test func failedSaveIsRetriedAutomatically() async throws {
+        let bridge = EditorPersistenceBridge(
+            pageID: pageID, store: store, delay: .seconds(60),
+            retryDelay: .milliseconds(20), maxRetryDelay: .milliseconds(80)
+        )
+        _ = try await bridge.load()
+        try deletePage()
+
+        bridge.documentDidChange(EditorDocument(blocks: [EditorBlock(text: "nicht verlieren")]))
+        #expect(await bridge.flush() == false)
+        #expect(bridge.lastError != nil)
+        #expect(bridge.hasUnsavedChanges)
+
+        try recreatePage()
+        try await Task.sleep(for: .milliseconds(600))
+        #expect(bridge.lastError == nil)
+        #expect(!bridge.hasUnsavedChanges)
+        #expect(try storedBlocks().map(\.text) == ["nicht verlieren"])
+    }
+
+    /// Fehler 1 (Teil): `flushAll` meldet, wenn etwas nicht gespeichert werden konnte.
+    @Test func flushAllReportsFailure() async throws {
+        let bridge = bridge()
+        _ = try await bridge.load()
+        try deletePage()
+        bridge.documentDidChange(EditorDocument(blocks: [EditorBlock(text: "x")]))
+        #expect(await EditorPersistenceBridge.flushAll() != nil)
+
+        try recreatePage()
+        #expect(await EditorPersistenceBridge.flushAll() == nil)
+    }
+
+    /// Fehler 5: Eine geschlossene Bridge speichert evtl. noch; die neue lädt erst danach.
+    @Test func loadWaitsForPendingChangesOfSamePage() async throws {
+        var closed: EditorPersistenceBridge? = bridge()
+        _ = try await closed?.load()
+        closed?.documentDidChange(EditorDocument(blocks: [EditorBlock(text: "vor dem Schließen")]))
+        let flushing = closed.map { bridge in Task { await bridge.flush() } }
+        closed = nil
+
+        let reopened = try await bridge().load()
+        #expect(reopened.blocks.map(\.text) == ["vor dem Schließen"])
+        _ = await flushing?.value
+    }
+
+    /// Markierter Text: Lehnt der Editor das Neuladen ab, bleiben fremde Änderungen
+    /// erhalten und werden nach dem eigenen Speichern nachgeladen.
+    @Test func rejectedReloadKeepsForeignChanges() async throws {
+        let writer = bridge()
+        let reader = bridge()
+        let first = EditorBlock(text: "eins")
+        let second = EditorBlock(text: "zwei")
+        _ = try await writer.load()
+        writer.documentDidChange(EditorDocument(blocks: [first, second]))
+        await writer.flush()
+        var readerDocument = try await reader.load()
+
+        var accepts = false
+        var received: EditorDocument?
+        reader.onExternalChange = { document in
+            if accepts { received = document }
+            return accepts
+        }
+        var writerDocument = EditorDocument(blocks: [first, second])
+        writerDocument[0].text = "eins aus A"
+        writer.documentDidChange(writerDocument)
+        await writer.flush()
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(received == nil)
+
+        accepts = true
+        readerDocument[1].text = "zwei aus B"
+        reader.documentDidChange(readerDocument)
+        await reader.flush()
+        #expect(try storedBlocks().map(\.text) == ["eins aus A", "zwei aus B"])
+        #expect(received?.blocks.map(\.text) == ["eins aus A", "zwei aus B"])
     }
 }
 
@@ -172,8 +267,8 @@ struct EditorPersistenceBridgeConcurrencyTests {
         _ = try await bridge.load()
         bridge.documentDidChange(EditorDocument(blocks: [EditorBlock(text: "x")]))
 
-        async let first: Void = bridge.flush()
-        async let second: Void = bridge.flush()
+        async let first: Bool = bridge.flush()
+        async let second: Bool = bridge.flush()
         _ = await (first, second)
         #expect(!bridge.hasUnsavedChanges)
         #expect(try ModelContext(container).fetch(FetchDescriptor<Block>()).map(\.text) == ["x"])
