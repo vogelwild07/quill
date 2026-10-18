@@ -48,6 +48,12 @@ public final class BlockEditorController: NSObject {
     }
     /// Bilder, die gerade geladen werden.
     var loadingImages: Set<UUID> = []
+    /// Ladeanzeigen für Bilddateien, deren Lesen länger dauert (nicht im Dokument).
+    var imageLoadingIndicators: [NSProgressIndicator] = []
+    /// Ab dieser Dauer zeigt das Lesen einer Bilddatei eine Ladeanzeige.
+    var imageLoadingIndicatorDelay: Duration = .milliseconds(300)
+    /// Liest eine Bildquelle im Hintergrund; Tests ersetzen es, um langsames Lesen nachzustellen.
+    var readImageSource: @Sendable (ImageSource) -> Data? = { $0.load() }
     /// Assets, die sich nicht laden ließen; nicht bei jeder Änderung erneut versuchen.
     var failedImages: Set<UUID> = []
     /// Eingefügte Bilder, deren Import noch läuft; ihr Block zeigt den Platzhalter.

@@ -113,7 +113,7 @@ Der Spike ist in Phase 3 nach `QuillEditor` überführt und gelöscht worden (AD
 ### Bild-Block (ADR-015)
 
 - Bilder sind `Asset`s im Store, verknüpft über `BlockProperties.assetID`. Der Editor bekommt den `PageStore` (`imageStore`), lädt fehlende Bilder nach dem Laden, nach strukturellen Edits und nach Undo, dekodiert sie verkleinert außerhalb des Main Threads und erneuert dann das Layout des Absatzes.
-- Einfügen über Slash-Menü (Dateiauswahl), Einsetzen und Ablegen: Dateien werden im Hintergrund gelesen und geprüft (`ImageSource`, nie auf dem Main Thread), danach erscheint der Block mit Platzhalter bis zum Ende des Imports; Unlesbares wird nicht eingefügt. Import entfernt GPS-Daten und verkleinert Bilder über 20 MB auf 4096 px. Angezeigt wird in natürlicher Größe (DPI).
+- Einfügen über Slash-Menü (Dateiauswahl), Einsetzen und Ablegen: Dateien werden im Hintergrund gelesen und geprüft (`ImageSource`, nie auf dem Main Thread), danach erscheint der Block mit Platzhalter bis zum Ende des Imports; Unlesbares wird nicht eingefügt. Dauert das Lesen länger als 0,3 s, dreht sich an der Einfügestelle eine kleine Ladeanzeige (`editor.imageLoading`). Import entfernt GPS-Daten und verkleinert Bilder über 20 MB auf 4096 px. Angezeigt wird in natürlicher Größe (DPI).
 - Eingesetzte Bild-Blöcke bekommen eine Kopie ihres Assets (`duplicateAsset`), weil ein Asset genau einem Block gehört.
 
 ### Erkenntnisse aus Phase 4

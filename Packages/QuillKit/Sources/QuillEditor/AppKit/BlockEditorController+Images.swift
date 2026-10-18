@@ -83,10 +83,20 @@ extension BlockEditorController {
     func insertImages(_ sources: [ImageSource], from start: BlockPosition, to end: BlockPosition) -> Task<Void, Never>? {
         guard let imageStore, !sources.isEmpty else { return nil }
         let before = document
+        let anchor = characterLocation(of: start)
         return Task {
+            // Dauert das Lesen, zeigt eine Ladeanzeige an der Einfügestelle, dass etwas kommt.
+            let delay = imageLoadingIndicatorDelay
+            let indicator = Task {
+                try? await Task.sleep(for: delay)
+                return Task.isCancelled ? nil : showImageLoadingIndicator(atCharacter: anchor)
+            }
+            let read = readImageSource
             let loaded = await Task.detached(priority: .userInitiated) {
-                sources.map { $0.load().flatMap { ImageImport.isReadable($0) ? $0 : nil } }
+                sources.map { read($0).flatMap { ImageImport.isReadable($0) ? $0 : nil } }
             }.value
+            indicator.cancel()
+            if let shown = await indicator.value { hideImageLoadingIndicator(shown) }
             let images = loaded.compactMap { $0 }
             if images.count < loaded.count {
                 showNotice(String(localized: "Bild konnte nicht gelesen werden", bundle: .module))
@@ -117,6 +127,43 @@ extension BlockEditorController {
                 showNotice(String(localized: "Bild wurde verkleinert", bundle: .module))
             }
         }
+    }
+
+    /// Kleine Ladeanzeige über dem Text an der Einfügestelle; nicht im Dokument, nicht im Undo.
+    private func showImageLoadingIndicator(atCharacter location: Int) -> NSProgressIndicator {
+        let indicator = NSProgressIndicator()
+        indicator.style = .spinning
+        indicator.controlSize = .small
+        indicator.isDisplayedWhenStopped = false
+        indicator.setAccessibilityIdentifier("editor.imageLoading")
+        indicator.setAccessibilityLabel(String(localized: "Bild wird geladen", bundle: .module))
+        let size: CGFloat = 16
+        let line = lineRect(atCharacter: min(location, max(0, textView.string.utf16.count - 1)))
+        indicator.frame = CGRect(x: line.minX, y: line.midY - size / 2, width: size, height: size)
+        textView.addSubview(indicator)
+        indicator.startAnimation(nil)
+        imageLoadingIndicators.append(indicator)
+        return indicator
+    }
+
+    private func hideImageLoadingIndicator(_ indicator: NSProgressIndicator) {
+        indicator.stopAnimation(nil)
+        indicator.removeFromSuperview()
+        imageLoadingIndicators.removeAll { $0 === indicator }
+    }
+
+    /// Zeilenrechteck des Zeichens in Koordinaten der Text-View.
+    private func lineRect(atCharacter location: Int) -> CGRect {
+        guard let manager = textView.textLayoutManager, let content = manager.textContentManager,
+              let textLocation = content.location(content.documentRange.location, offsetBy: location),
+              let fragment = manager.textLayoutFragment(for: textLocation) else {
+            return CGRect(origin: textView.textContainerOrigin, size: CGSize(width: 16, height: 20))
+        }
+        let frame = textView.viewFrame(of: fragment)
+        let block = document[blockIndex(atCharacter: location)]
+        let inset = BlockStyle.textInset(kind: block.kind, indent: block.indent)
+        let lineHeight = fragment.textLineFragments.first?.typographicBounds.height ?? frame.height
+        return CGRect(x: textView.textContainerOrigin.x + inset, y: frame.minY, width: frame.width, height: lineHeight)
     }
 
     /// Bild-Blöcke mit festen Asset-IDs an die Stelle setzen; ein Undo-Schritt.

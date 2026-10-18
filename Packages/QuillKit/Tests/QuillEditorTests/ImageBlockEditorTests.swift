@@ -193,6 +193,51 @@ struct ImageBlockEditorTests {
         #expect(editor.noticeView.text == "Bild konnte nicht gelesen werden")
     }
 
+    /// Langsames Lesen (der Test hält es an): Nach 0,3 s erscheint an der
+    /// Einfügestelle eine Ladeanzeige, nicht im Dokument und nicht im Undo.
+    @Test func slowImageFileShowsLoadingIndicator() async throws {
+        let gate = DispatchSemaphore(value: 0)
+        editor.readImageSource = { source in
+            gate.wait()
+            return source.load()
+        }
+        let position = BlockPosition(block: 1, offset: 0)
+        let documentBefore = editor.document
+        let task = editor.insertImages([.file(try pngFile())], from: position, to: position)
+
+        try await Task.sleep(for: .milliseconds(150))
+        #expect(editor.imageLoadingIndicators.isEmpty, "Ladeanzeige vor 0,3 s")
+        try await waitUntil { !editor.imageLoadingIndicators.isEmpty }
+        let indicator = try #require(editor.imageLoadingIndicators.first)
+        #expect(indicator.superview === editor.textView)
+        #expect(indicator.accessibilityLabel() == "Bild wird geladen")
+        let line = editor.textView.firstRect(forCharacterRange: NSRange(location: editor.characterLocation(of: position), length: 0), actualRange: nil)
+        let indicatorOnScreen = try #require(editor.textView.window).convertToScreen(editor.textView.convert(indicator.frame, to: nil))
+        #expect(abs(indicatorOnScreen.midY - line.midY) < 12, "Ladeanzeige nicht an der Einfügestelle")
+        #expect(editor.document == documentBefore)
+        #expect(!editor.undoManager.canUndo)
+
+        gate.signal()
+        await task?.value
+        #expect(editor.imageLoadingIndicators.isEmpty)
+        #expect(indicator.superview == nil)
+        #expect(kinds == [.paragraph, .image, .paragraph])
+    }
+
+    @Test func fastImageShowsNoLoadingIndicator() async throws {
+        var shown = false
+        editor.imageLoadingIndicatorDelay = .milliseconds(300)
+        let position = BlockPosition(block: 1, offset: 0)
+        let task = editor.insertImages([.file(try pngFile())], from: position, to: position)
+        let watcher = Task { while !Task.isCancelled { shown = shown || !editor.imageLoadingIndicators.isEmpty; try? await Task.sleep(for: .milliseconds(5)) } }
+        await task?.value
+        try await Task.sleep(for: .milliseconds(400))
+        watcher.cancel()
+        #expect(!shown)
+        #expect(editor.imageLoadingIndicators.isEmpty)
+        #expect(kinds == [.paragraph, .image, .paragraph])
+    }
+
     /// Punkt 8: Ein Fehler beim Speichern heißt nicht „unlesbar“.
     @Test func importFailureNoticeNamesTheCause() {
         struct DiskFull: Error {}
