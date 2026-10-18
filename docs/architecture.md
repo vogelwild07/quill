@@ -37,39 +37,59 @@ Bundle-IDs: `de.vogel.quill`, `de.vogel.quill.UITests`, `de.vogel.quill.EditorSp
 
 ## Block-Editor
 
-**Vorläufige Entscheidung (Spike validiert):** ein `NSTextView` pro Seite mit TextKit 2. Ein Absatz entspricht einem Block.
+**Entscheidung (ADR-007, durch den Spike bestätigt):** ein `NSTextView` pro Seite mit TextKit 2. Ein Absatz entspricht einem Block.
 
 Grund: Selektion, Cursorbewegung und Kopieren über Blöcke hinweg, IME, Rechtschreibung, Services und VoiceOver kommen nativ mit. Bei einer TextView pro Block sind genau diese Dinge schwer.
 
+### Abbildung Modell ↔ Text
+
+- Jeder Block ist ein Absatz und endet immer mit `\n`, auch der letzte. Die Auswahl wird vor das letzte `\n` begrenzt.
+- Block-ID, Art, Einrückung, Häkchen, Code-Sprache und Listennummer liegen als eigene Attribute (`.quillBlockID` …) auf **jedem** Zeichen des Absatzes.
+- Weicher Umbruch (Code, ⇧↩) ist U+2028 im Speicher und `\n` im Modell. Atomare Blöcke (Trenner, Bild) sind ein einzelnes U+FFFC mit Attachment.
+- `BlockRenderer.parse` liest den Textspeicher zurück in Blöcke und repariert fehlende oder doppelte IDs.
+
+### Edit-Pfade
+
+1. **Native Edits innerhalb eines Absatzes** (Tippen, IME, Autokorrektur) übernimmt die TextView. Danach gleicht der Controller das Modell ab, im schnellen Pfad nur den betroffenen Absatz.
+2. **Strukturelle Edits** (Enter, Backspace am Anfang, Tab, Kürzel, Slash-Befehle, Drop, Einfügen) laufen über `EditorDocument`. Das Ergebnis wird als minimaler Diff über `shouldChangeText`/`replaceCharacters`/`didChangeText` geschrieben und ist damit Teil des Undo-Stacks der TextView.
+3. **Undo/Redo** lässt die TextView frei arbeiten. Danach gleicht der Controller über `NSUndoManagerDidUndoChange`/`DidRedoChange` das Modell ab.
+4. `shouldChangeTextIn` fängt Änderungen ab, die Blockgrenzen überschreiten, Blöcke einfügen oder atomare Blöcke berühren, und leitet sie über Pfad 2 um. Bei markiertem Text (IME) wird nie eingegriffen.
+
 ### Schichten
 
-1. **`EditorDocument`** (Value-Type): `[EditorBlock]` mit id, kind, indent, Runs. Einzige Wahrheit im Editor, unit-testbar.
-2. **`BlockTextContentManager`** (`NSTextContentStorage`-Delegate): Blöcke ↔ Absätze. Block-ID und Art als eigene Attribute am Absatz.
-3. **Eigene `NSTextLayoutFragment`-Subklassen**: zeichnen Bullet, Nummer, Checkbox, Zitatbalken, Code-Hintergrund (plattformneutral).
-4. **`NSTextAttachmentViewProvider`**: Bild, Trenner.
-5. **`BlockInputController`**: Enter teilt, Backspace am Anfang verbindet / setzt auf Text zurück, Tab rückt ein, Markdown-Kürzel, Slash-Trigger.
-6. **Overlay**: Griff ⋮⋮ und ＋ positioniert über `textLayoutFragment(for:)`. Drag & Drop via `NSDraggingSource`, Pasteboard-Typ `de.vogel.quill.block` plus Markdown und Plain Text für fremde Apps.
-7. **`SlashMenuController`**: Glass-Popover, verankert an `firstRect(forCharacterRange:)`.
-8. **`EditorPersistenceBridge`**: entprellt (≈ 300 ms), schreibt Diffs pro Block über `PageStore.applyEdits`. Kein SwiftData-Write pro Tastendruck. Undo über den `NSUndoManager` der TextView.
-
-Einbettung per `NSViewRepresentable`; iOS später `UIViewRepresentable` + `UITextView`, Schichten 1–3, 5, 8 geteilt.
-
-### Spike (Phase 1)
-
-Timebox 7–10 Arbeitstage, Target `EditorSpike`, Wegwerf-Code.
-
-| # | Kriterium | Ziel |
+| Schicht | Typ | Plattform |
 |---|---|---|
-| 1 | 1000 Blöcke laden und tippen | < 16 ms/Tastendruck, Laden < 300 ms |
-| 2 | Enter/Backspace teilen/verbinden, Tab einrücken | korrekt inkl. Undo |
-| 3 | Markdown-Kürzel für alle MVP-Typen | wandeln beim Leerzeichen |
-| 4 | Slash-Menü am Cursor, filtern, Tastatur | funktioniert |
-| 5 | Block per Griff ziehen, auch Mehrfachauswahl | flüssig, Undo-fähig |
-| 6 | Checkbox-Klick, Bild-Attachment, Trenner | funktioniert |
-| 7 | Selektion über Blöcke → ⌘C → Markdown/Plain/RTF | korrekt |
-| 8 | IME (Japanisch), VoiceOver-Grundnavigation, Dark Mode | ohne Fehler |
+| Modell | `EditorDocument`, `EditorBlock`, `MarkdownShortcut`, `MarkdownSerializer`, `SlashCommand` | neutral |
+| Abbildung | `BlockRenderer`, `BlockStyle`, Attribut-Schlüssel | neutral (Fonts über `#if`) |
+| Darstellung | `BlockLayoutFragment` zeichnet Bullet, Nummer, Checkbox, Zitatbalken, Code-Hintergrund und Trenner | neutral (TextKit 2) |
+| Eingabe | `BlockEditorController` (`NSTextViewDelegate`, `NSTextStorageDelegate`) | AppKit, iOS-Gegenstück später |
+| Oberfläche | `BlockTextView` (Griff, Drop, Checkbox-Klick, Zwischenablage), `SlashMenuController` (Glass-Panel), `BlockEditorView` (`NSViewRepresentable`) | AppKit |
+| Persistenz | `EditorPersistenceBridge`: entprellt (≈ 300 ms), Diffs pro Block über `PageStore.applyEdits` | neutral (Phase 3) |
 
-Ergebnis: ADR in `decisions.md`. Fallback, wenn 1, 5 oder 7 scheitern: TextView pro Block in `NSStackView` plus eigener Selektionskoordinator.
+### Erkenntnisse aus dem Spike
+
+- **Fragment-Koordinaten:** Der lokale Ursprung eines `NSTextLayoutFragment` liegt am Textanfang (Padding + Einrückung), nicht am Containerrand. Dekorationen werden in Container-x gerechnet und mit `layoutFragmentFrame.minX` umgerechnet.
+- **Attachments:** TextKit 2 reserviert Platz für ein `NSTextAttachment`, zeichnet aber dessen `image(for:…)` nicht zuverlässig. Der Trenner wird deshalb im Fragment gezeichnet. Für Bilder in Phase 4 einen `NSTextAttachmentViewProvider` prüfen.
+- **Drag & Drop:** `NSTextView.prepareForDragOperation` lehnt eigene Typen ab und muss für Block-Drags überschrieben werden.
+- **Undo-Gruppen:** Vor einem Markdown-Kürzel `breakUndoCoalescing()`, sonst landen Tippen und Umwandeln in einer Gruppe.
+- **VoiceOver:** Text und Zeilen sind über die Bedienungshilfen-Schnittstelle erreichbar. Blockart und Häkchenstatus werden noch nicht angesagt, weil Marker nur gezeichnet sind (Phase 7).
+
+### Spike-Ergebnis (Phase 1)
+
+Gemessen im Release-Build, echtes Fenster, 1000 Blöcke:
+
+| # | Kriterium | Ziel | Ergebnis |
+|---|---|---|---|
+| 1 | 1000 Blöcke laden und tippen | < 16 ms/Tastendruck, Laden < 300 ms | Laden 12–14 ms; Tippen Median 0,85 ms, p95 1,1 ms, max. ≈ 10 ms; Enter Median 0,6 ms ✅ |
+| 2 | Enter/Backspace teilen/verbinden, Tab einrücken | korrekt inkl. Undo | Tests ✅ |
+| 3 | Markdown-Kürzel für alle MVP-Typen | wandeln beim Leerzeichen | Tests + manuell ✅ |
+| 4 | Slash-Menü am Cursor, filtern, Tastatur | funktioniert | manuell ✅ (↑↓, ↩, ⎋) |
+| 5 | Block per Griff ziehen, auch Mehrfachauswahl | flüssig, Undo-fähig | manuell ✅ nach Fix `prepareForDragOperation` |
+| 6 | Checkbox-Klick, Bild-Attachment, Trenner | funktioniert | Checkbox manuell ✅, Trenner ✅ nach Fix, Bild per Test ✅ |
+| 7 | Selektion über Blöcke → ⌘C → Markdown/Plain/RTF | korrekt | Tests ✅ (4 Typen) |
+| 8 | IME, VoiceOver-Grundnavigation, Dark Mode | ohne Fehler | Markierter Text per Test ✅; tote Tasten (´e, ^a, ⌥n n) vom Nutzer manuell ✅, gleicher Pfad wie IME; Japanisch nicht manuell geprüft; AX-Text ✅; Dark Mode ✅ |
+
+Der Code in `QuillEditorSpike` und `Spikes/EditorSpike` ist Wegwerf-Code. Was davon in Phase 3 nach `QuillEditor` überführt wird und wann der Spike gelöscht wird, legt ADR-007 fest.
 
 ## Tests
 

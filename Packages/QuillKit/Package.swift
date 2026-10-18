@@ -9,6 +9,7 @@ let package = Package(
         .iOS(.v26),
     ],
     products: [
+        .library(name: "QuillEditorSpike", targets: ["QuillEditorSpike"]),
         .library(
             name: "QuillKit",
             targets: ["QuillFeatures", "QuillModel", "QuillEditor", "QuillExport", "QuillDesign"]
@@ -23,6 +24,9 @@ let package = Package(
             name: "QuillFeatures",
             dependencies: ["QuillModel", "QuillEditor", "QuillExport", "QuillDesign"]
         ),
+        // Phase-1-Spike (Wegwerf-Code bis zum ADR „Editor-Architektur“).
+        .target(name: "QuillEditorSpike", dependencies: ["QuillEditor", "QuillDesign"]),
+        .testTarget(name: "QuillEditorSpikeTests", dependencies: ["QuillEditorSpike", "QuillEditor"]),
         .testTarget(name: "QuillModelTests", dependencies: ["QuillModel"]),
         .testTarget(name: "QuillEditorTests", dependencies: ["QuillEditor"]),
         .testTarget(name: "QuillExportTests", dependencies: ["QuillExport"]),
