@@ -31,11 +31,17 @@ Format: Kontext → Entscheidung → Konsequenzen. Neueste unten.
 
 **Entscheidung:** Export einer Seite oder eines Teilbaums als Ordner: eine `.md` pro Seite, Unterseiten als Unterordner, Bilder in `assets/`, relative Links.
 
-## ADR-007: Block-Editor auf einem NSTextView mit TextKit 2 (vorläufig, 2026-10-18)
+## ADR-007: Block-Editor auf einem NSTextView mit TextKit 2 (2026-10-18)
 
-**Kontext:** Größtes Projektrisiko.
-**Entscheidung:** Vorläufig ein `NSTextView` pro Seite; Absatz = Block. Validierung im Spike (Phase 1), siehe `architecture.md`.
-**Status:** offen bis Spike-Ergebnis.
+**Kontext:** Größtes Projektrisiko. Alternativen: ein `NSTextView` pro Block in einem Stack mit eigenem Selektionskoordinator, oder ein Web-Editor. Der Spike in Phase 1 hat den Ansatz mit einer TextView pro Seite gegen 8 Kriterien geprüft (Ergebnisse in `architecture.md`).
+**Entscheidung:** Angenommen. Ein `NSTextView` pro Seite mit TextKit 2; ein Absatz entspricht einem Block. Block-Metadaten als Attribute auf jedem Zeichen. Native Edits innerhalb eines Absatzes übernimmt die TextView; strukturelle Edits laufen über `EditorDocument` und werden als Diff in die TextView geschrieben, damit Undo nativ bleibt. Dekoration zeichnen eigene `NSTextLayoutFragment`s.
+**Konsequenzen:**
+- Selektion, Kopieren über Blöcke, IME, Rechtschreibung, Services und Undo kommen vom System.
+- Performance reicht weit: Tippen bei 1000 Blöcken im Median unter 1 ms.
+- Marker sind nur gezeichnet. Für VoiceOver braucht es eigene Bedienungshilfen-Angaben (Phase 7).
+- Bilder brauchen voraussichtlich einen `NSTextAttachmentViewProvider` (Phase 4).
+- Der Controller ist AppKit-spezifisch. Für iOS entsteht später ein `UITextView`-Gegenstück; Modell, Abbildung und Fragmente werden geteilt.
+- Offen: manueller Test mit japanischer Eingabe (automatisch über markierten Text abgedeckt).
 
 ## ADR-008: UI-Tests starten ohne gespeicherten Fensterzustand (2026-10-18)
 
