@@ -346,6 +346,32 @@ struct BlockActionTests {
         Harness([EditorBlock(text: "A"), EditorBlock(text: "Bb"), EditorBlock(text: "C")])
     }
 
+    /// CLAUDE.md: bei markiertem Text (IME, tote Tasten) nie eingreifen.
+    @Test func blockActionsLeaveMarkedTextAlone() {
+        let actions: [(String, (Harness) -> Void)] = [
+            ("Duplizieren", { $0.editor.duplicateSelectedBlocks() }),
+            ("Löschen", { $0.editor.deleteSelectedBlocks() }),
+            ("Abhaken", { $0.editor.toggleCheckedInSelection() }),
+            ("Verschieben", { _ = $0.editor.moveSelectedBlocks(by: 1) }),
+            ("Umwandeln", { $0.editor.convertSelectedBlocks(to: .heading1) }),
+            ("Griff", { h in
+                h.editor.textView.handle.characterOffset = 0
+                #expect(!h.editor.textView.handle.perform { $0.deleteSelectedBlocks() })
+            }),
+        ]
+        for (name, action) in actions {
+            let h = Harness([EditorBlock(kind: .todo, text: "A"), EditorBlock(text: "B")])
+            h.caret(at: 0, 1)
+            h.textView.setMarkedText("か", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: NSNotFound, length: 0))
+            let storage = h.textView.string
+            action(h)
+            #expect(h.textView.hasMarkedText(), "\(name)")
+            #expect(h.textView.string == storage, "\(name)")
+            #expect(h.kinds == [.todo, .paragraph], "\(name)")
+            #expect(!h.document[0].isChecked, "\(name)")
+        }
+    }
+
     @Test func moveWithKeyboardKeepsCaret() {
         let h = abc()
         h.caret(at: 1, 1)

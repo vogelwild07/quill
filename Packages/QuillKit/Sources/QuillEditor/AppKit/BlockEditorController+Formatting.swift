@@ -74,6 +74,7 @@ extension BlockEditorController {
 
     /// ⌘↩: Häkchen der To-dos in der Auswahl umschalten. Gemischt: alle abhaken.
     func toggleCheckedInSelection() {
+        guard !textView.hasMarkedText() else { return }
         let todos = selectedBlockRange().filter { document[$0].kind == .todo }
         guard !todos.isEmpty else { return }
         let check = !todos.allSatisfy { document[$0].isChecked }

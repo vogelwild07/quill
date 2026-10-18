@@ -41,6 +41,7 @@ extension BlockEditorController {
     /// ⌘D: Blöcke der Auswahl darunter verdoppeln und die Kopien auswählen. Bilder
     /// bekommen eine Kopie ihres Assets (das dauert, deshalb dann asynchron).
     func duplicateSelectedBlocks() {
+        guard !textView.hasMarkedText() else { return }
         let range = selectedBlockRange()
         let originals = range.map { document[$0] }
         let anchorID = document[range.upperBound].id
@@ -68,6 +69,7 @@ extension BlockEditorController {
 
     /// Kontextmenü „Löschen“: Blöcke der Auswahl entfernen, ein Undo-Schritt.
     func deleteSelectedBlocks() {
+        guard !textView.hasMarkedText() else { return }
         let range = selectedBlockRange()
         var newDocument = document
         var cursor = BlockPosition(block: 0, offset: 0)

@@ -444,7 +444,8 @@ final class BlockHandleView: NSView, NSDraggingSource {
     /// Wählt die Blöcke des Griffs aus und führt dann die Aktion auf der Auswahl aus.
     @discardableResult
     func perform(_ action: (BlockEditorController) -> Void) -> Bool {
-        guard let textView, let editor = textView.editor else { return false }
+        // Bei markiertem Text (IME) nie eingreifen, auch nicht in die Auswahl.
+        guard let textView, let editor = textView.editor, !textView.hasMarkedText() else { return false }
         editor.selectBlocks(editor.handleBlockRange(atCharacter: characterOffset))
         textView.window?.makeFirstResponder(textView)
         action(editor)
