@@ -11,6 +11,7 @@ Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-A
 - Swift 6 (strikte Concurrency), SwiftUI, AppKit nur wo nötig, SwiftData lokal. Sync später CloudKit.
 - Editor: eigener Block-Editor auf TextKit 2 / `NSTextView` (siehe `docs/architecture.md`).
 - Tests: Swift Testing (Unit), XCUITest (UI). Bundle-ID `de.vogel.quill`.
+- UI-Tests starten die App immer über `XCUIApplication.quill()` (ignoriert gespeicherten Fensterzustand, ADR-008).
 - UI-Strings lokalisierbar (`Localizable.xcstrings`), Ausgangssprache Deutsch.
 
 ## Datenmodell-Regeln (CloudKit-tauglich)

@@ -36,3 +36,9 @@ Format: Kontext → Entscheidung → Konsequenzen. Neueste unten.
 **Kontext:** Größtes Projektrisiko.
 **Entscheidung:** Vorläufig ein `NSTextView` pro Seite; Absatz = Block. Validierung im Spike (Phase 1), siehe `architecture.md`.
 **Status:** offen bis Spike-Ergebnis.
+
+## ADR-008: UI-Tests starten ohne gespeicherten Fensterzustand (2026-10-18)
+
+**Kontext:** Nach ⌘R, Schließen des letzten Fensters und hartem Beenden (Xcode-Stop) sichert AppKit den Zustand „0 Fenster“. Unter macOS 27 liegt er im Dienst `com.apple.appkit.restoration_storage`, nicht in `Saved Application State/`. Programmatische Starts durch XCTest stellen diesen Zustand wieder her und öffnen kein Fenster. `testLaunchShowsMainWindow` schlug daher dauerhaft fehl, weil jeder Fehlversuch die App wieder hart beendet. Starts über Finder/Dock öffnen trotzdem ein Fenster; Nutzer sind nicht betroffen. `defaultLaunchBehavior(.presented)` und `restorationBehavior(.disabled)` helfen nicht, weil AppKit vor SwiftUI entscheidet.
+**Entscheidung:** Alle UI-Tests starten die App über `XCUIApplication.quill()` mit `-ApplePersistenceIgnoreState YES`.
+**Konsequenzen:** Deterministische Teststarts. Fensterwiederherstellung muss bei Bedarf eigens getestet werden. Zeigt ⌘R in Xcode kein Fenster, hilft ⌘N oder ein Klick aufs Dock-Symbol.

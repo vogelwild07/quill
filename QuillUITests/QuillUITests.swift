@@ -7,7 +7,7 @@ final class QuillUITests: XCTestCase {
 
     @MainActor
     func testLaunchShowsMainWindow() throws {
-        let app = XCUIApplication()
+        let app = XCUIApplication.quill()
         app.launch()
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 5))
     }
