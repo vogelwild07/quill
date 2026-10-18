@@ -31,7 +31,7 @@ let package = Package(
         .testTarget(name: "QuillModelTests", dependencies: ["QuillModel"]),
         .testTarget(name: "QuillEditorTests", dependencies: ["QuillEditor", "QuillModel"]),
         .testTarget(name: "QuillExportTests", dependencies: ["QuillExport"]),
-        .testTarget(name: "QuillFeaturesTests", dependencies: ["QuillFeatures", "QuillModel"]),
+        .testTarget(name: "QuillFeaturesTests", dependencies: ["QuillFeatures", "QuillModel", "QuillEditor"]),
     ],
     swiftLanguageModes: [.v6]
 )

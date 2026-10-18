@@ -2,6 +2,12 @@
 import AppKit
 import QuillDesign
 
+/// Kopf mit eigener Höhenberechnung (z. B. ein `NSHostingView` mit mehrzeiligem Titel).
+@MainActor
+protocol HeaderSizing {
+    func height(forWidth width: CGFloat) -> CGFloat
+}
+
 /// Text-View des Block-Editors. Strukturelle Logik liegt im `BlockEditorController`;
 /// hier sitzen nur Ereignisse, die eine View braucht.
 final class BlockTextView: NSTextView, EditorFormattingActions {
@@ -27,12 +33,63 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     // MARK: Layout: zentrierte Textspalte
 
+    /// Abstand über dem Text bzw. über dem Kopf.
+    var topPadding: CGFloat = 48 {
+        didSet { needsLayout = true }
+    }
+
+    /// Kopf über dem ersten Block (Icon und Titel der Seite). Sitzt im oberen
+    /// Inset, scrollt also mit dem Text.
+    var headerView: NSView? {
+        didSet {
+            oldValue?.removeFromSuperview()
+            if let headerView { addSubview(headerView) }
+            needsLayout = true
+        }
+    }
+
+    private static let headerGap: CGFloat = 12
+
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
-        let side = max(56, (newSize.width - QuillDesign.contentMaxWidth) / 2)
-        if abs(textContainerInset.width - side) > 0.5 {
-            textContainerInset = NSSize(width: side, height: 48)
+        updateInsets()
+    }
+
+    override func layout() {
+        super.layout()
+        updateInsets()
+    }
+
+    /// Zentrierte Textspalte; oben Platz für den Kopf.
+    private func updateInsets() {
+        let side = max(56, (bounds.width - QuillDesign.contentMaxWidth) / 2)
+        var top = topPadding
+        if let headerView {
+            let padding = textContainer?.lineFragmentPadding ?? 5
+            let width = max(0, bounds.width - 2 * side - 2 * padding)
+            let height = headerHeight(headerView, width: width)
+            headerView.frame = CGRect(x: side + padding, y: topPadding, width: width, height: height)
+            top += height + Self.headerGap
         }
+        if abs(textContainerInset.width - side) > 0.5 || abs(textContainerInset.height - top) > 0.5 {
+            textContainerInset = NSSize(width: side, height: top)
+        }
+    }
+
+    private func headerHeight(_ view: NSView, width: CGFloat) -> CGFloat {
+        if let sizing = view as? any HeaderSizing {
+            return ceil(sizing.height(forWidth: width))
+        }
+        return view.fittingSize.height
+    }
+
+    /// Der Kopf ist für VoiceOver und XCUITest ein Kind der Text-View.
+    override func accessibilityChildren() -> [Any]? {
+        var children = super.accessibilityChildren() ?? []
+        if let headerView, !children.contains(where: { ($0 as AnyObject) === headerView }) {
+            children.insert(headerView, at: 0)
+        }
+        return children
     }
 
     // MARK: Auswahl nie hinter das abschließende `\n` des letzten Blocks

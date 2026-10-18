@@ -40,6 +40,7 @@ public final class EditorPersistenceBridge {
         self.store = store
         self.delay = delay
         observeOtherBridges()
+        Self.live.add(self)
     }
 
     isolated deinit {
@@ -48,6 +49,22 @@ public final class EditorPersistenceBridge {
     }
 
     public var hasUnsavedChanges: Bool { pending != nil || saving != nil }
+
+    // MARK: Alle Editoren
+
+    private static let live = NSHashTable<EditorPersistenceBridge>.weakObjects()
+
+    /// Ob irgendein Editor noch ungespeicherte Änderungen hat (vor dem Beenden).
+    public static var hasAnyUnsavedChanges: Bool {
+        live.allObjects.contains { $0.hasUnsavedChanges }
+    }
+
+    /// Speichert alle Editoren sofort, z. B. vor dem Beenden der App.
+    public static func flushAll() async {
+        for bridge in live.allObjects {
+            await bridge.flush()
+        }
+    }
 
     /// Lädt die Seite. Eine leere Seite ergibt einen leeren Absatz, der erst beim
     /// ersten Tippen gespeichert wird.
@@ -80,11 +97,15 @@ public final class EditorPersistenceBridge {
             }
             guard let document = pending else { return }
             pending = nil
-            let task = Task { await self.save(document) }
+            // Die Task setzt `saving` selbst zurück. Sonst sähe ein zweiter Aufrufer
+            // von `flush()` die fertige Task weiter und würde sie endlos abfragen.
+            let task = Task { () -> Bool in
+                let succeeded = await self.save(document)
+                self.saving = nil
+                return succeeded
+            }
             saving = task
-            let succeeded = await task.value
-            saving = nil
-            guard succeeded else { return }
+            guard await task.value else { return }
         }
     }
 

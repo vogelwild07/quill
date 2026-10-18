@@ -17,6 +17,11 @@ public final class BlockEditorController: NSObject {
     public internal(set) var document: EditorDocument
     /// Wird nach jeder Änderung des Dokuments aufgerufen.
     public var onChange: ((EditorDocument) -> Void)?
+    /// ↑ in der ersten Zeile: Fokus zurück in den Titel.
+    public var onExitTop: (() -> Void)?
+    /// Eigener Undo-Stapel pro Editor. `load` leert nur ihn, nicht das Undo des
+    /// Fensters (Sidebar-Aktionen).
+    let undoManager = UndoManager()
 
     private let layoutDelegate = BlockLayoutDelegate()
     /// Startposition jedes Absatzes im Textspeicher; letzter Eintrag = Gesamtlänge.

@@ -159,3 +159,23 @@ struct EditorPersistenceBridgeTests {
         #expect(!busyReceived)
     }
 }
+
+@MainActor
+@Suite("Persistenz: gleichzeitiges Speichern", .serialized, .timeLimit(.minutes(1)))
+struct EditorPersistenceBridgeConcurrencyTests {
+    /// Seitenwechsel und Beenden gleichzeitig: beide `flush()` müssen enden.
+    @Test func concurrentFlushesBothFinish() async throws {
+        let container = try QuillStore.makeInMemoryContainer()
+        let store = PageStore(modelContainer: container)
+        let pageID = try await store.createPage()
+        let bridge = EditorPersistenceBridge(pageID: pageID, store: store, delay: .seconds(60))
+        _ = try await bridge.load()
+        bridge.documentDidChange(EditorDocument(blocks: [EditorBlock(text: "x")]))
+
+        async let first: Void = bridge.flush()
+        async let second: Void = bridge.flush()
+        _ = await (first, second)
+        #expect(!bridge.hasUnsavedChanges)
+        #expect(try ModelContext(container).fetch(FetchDescriptor<Block>()).map(\.text) == ["x"])
+    }
+}

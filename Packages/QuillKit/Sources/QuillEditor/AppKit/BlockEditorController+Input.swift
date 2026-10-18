@@ -77,6 +77,11 @@ extension BlockEditorController: NSTextViewDelegate {
             }
             return true
 
+        case #selector(NSResponder.moveUp(_:)):
+            guard let onExitTop, isCaretOnFirstLine() else { return false }
+            onExitTop()
+            return true
+
         case #selector(NSResponder.deleteBackward(_:)):
             guard selection.length == 0 else { return false }
             if caret.offset == 0 {
@@ -99,6 +104,10 @@ extension BlockEditorController: NSTextViewDelegate {
         default:
             return false
         }
+    }
+
+    public func undoManager(for view: NSTextView) -> UndoManager? {
+        undoManager
     }
 
     /// Hält die Auswahl über dieselben Blöcke, nachdem sich Einrückungen geändert haben.
