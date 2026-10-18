@@ -188,4 +188,20 @@ import Testing
         #expect(try page(child).parent == nil)
         #expect(try titles(under: nil) == ["Eltern", "Kind"])
     }
+
+    @Test func locationRestoresMove() async throws {
+        let parent = try await store.createPage(title: "Eltern")
+        let a = try await store.createPage(title: "A", in: parent)
+        let b = try await store.createPage(title: "B", in: parent)
+        try await store.createPage(title: "C", in: parent)
+
+        #expect(try await store.location(of: a) == PageLocation(parentID: parent, position: .first))
+        let old = try await store.location(of: b)
+        #expect(old == PageLocation(parentID: parent, position: .after(a)))
+
+        try await store.move(b, to: nil, at: .last)
+        try await store.move(b, to: old.parentID, at: old.position)
+
+        #expect(try titles(under: parent) == ["A", "B", "C"])
+    }
 }

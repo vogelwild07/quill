@@ -86,6 +86,11 @@ public struct StoreBackup: Sendable {
         return created
     }
 
+    /// Ob beim Öffnen eine Migration ansteht (Store vorhanden, Version abweichend oder unbekannt).
+    public var isMigrationPending: Bool {
+        storeExists && lastOpenedSchemaVersion != schemaVersion
+    }
+
     /// Nach erfolgreichem Öffnen des Containers aufrufen: merkt sich die Schema-Version.
     public func markOpened() throws {
         try Data(schemaVersion.utf8).write(to: versionFileURL, options: .atomic)

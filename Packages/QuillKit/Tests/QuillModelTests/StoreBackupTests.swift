@@ -82,6 +82,8 @@ import Testing
         let now = date("2026-10-18T08:00:00Z")
         try backup(at: now).createBackup(reason: .launch)
 
+        #expect(!backup(at: now, version: "1.0.0").isMigrationPending)
+        #expect(backup(at: now, version: "2.0.0").isMigrationPending)
         let folder = try #require(try backup(at: now.addingTimeInterval(60), version: "2.0.0").backupBeforeOpening())
 
         #expect(folder.lastPathComponent.hasSuffix("_vor-migration-1.0.0-2.0.0"))

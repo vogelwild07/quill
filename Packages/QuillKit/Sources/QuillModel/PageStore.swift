@@ -9,6 +9,12 @@ public enum SiblingPosition: Sendable, Hashable {
     case after(UUID)
 }
 
+/// Ort einer Seite im Baum, z. B. um Verschieben rückgängig zu machen.
+public struct PageLocation: Sendable, Hashable {
+    public let parentID: UUID?
+    public let position: SiblingPosition
+}
+
 public enum PageStoreError: Error, Equatable {
     case pageNotFound(UUID)
     /// Die Bezugsseite der Position ist kein Geschwister unter dem Ziel.
@@ -83,6 +89,15 @@ public actor PageStore {
         page.parent = parent
         page.updatedAt = .now
         try save()
+    }
+
+    /// Aktueller Ort: Elternseite und Stelle relativ zum vorherigen Geschwister
+    /// (inklusive Papierkorb). `move(id, to: parentID, at: position)` stellt ihn wieder her.
+    public func location(of pageID: UUID) throws -> PageLocation {
+        let page = try fetchPage(pageID)
+        let siblings = try siblings(of: page.parent, excluding: page)
+        let previous = siblings.last { ($0.sortKey, $0.createdAt, $0.id.uuidString) < (page.sortKey, page.createdAt, page.id.uuidString) }
+        return PageLocation(parentID: page.parent?.id, position: previous.map { .after($0.id) } ?? .first)
     }
 
     /// Legt die Seite in den Papierkorb. Unterseiten folgen logisch, ohne eigenes Datum.
