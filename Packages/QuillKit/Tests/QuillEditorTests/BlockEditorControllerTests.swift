@@ -276,6 +276,65 @@ struct SlashMenuIntegrationTests {
 }
 
 @MainActor
+@Suite("Editor: Einfügen-Knopf ＋", .serialized)
+struct InsertButtonTests {
+    private func location(_ h: Harness, _ block: Int) -> Int {
+        h.editor.characterLocation(of: BlockPosition(block: block, offset: 1))
+    }
+
+    @Test func insertsBelowWithOpenSlashMenu() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: false)
+        #expect(h.texts == ["Eins", "/", "Zwei"])
+        #expect(h.caretPosition == BlockPosition(block: 1, offset: 1))
+        #expect(h.editor.slashMenu.isVisible)
+
+        h.type("üb")
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        #expect(h.kinds == [.paragraph, .heading1, .paragraph])
+        #expect(h.texts == ["Eins", "", "Zwei"])
+        h.expectConsistent()
+    }
+
+    @Test func optionInsertsAbove() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: true)
+        #expect(h.texts == ["/", "Eins", "Zwei"])
+        #expect(h.editor.slashMenu.isVisible)
+        h.expectConsistent()
+    }
+
+    @Test func emptyParagraphIsUsedItself() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock()])
+        h.editor.insertBlockWithMenu(nearCharacter: h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0)), above: false)
+        #expect(h.texts == ["Eins", "/"])
+        #expect(h.editor.slashMenu.isVisible)
+    }
+
+    @Test func isOneUndoStep() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 1), above: false)
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Eins", "Zwei", "/"])
+        h.undo()
+        #expect(h.texts == ["Eins", "Zwei"])
+        h.redo()
+        #expect(h.texts == ["Eins", "Zwei", "/"])
+        h.expectConsistent()
+    }
+
+    @Test func buttonActsOnItsBlock() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(kind: .divider), EditorBlock(text: "Zwei")])
+        let button = h.editor.textView.insertButton
+        button.characterOffset = h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0))
+        #expect(button.accessibilityPerformPress())
+        #expect(h.kinds == [.paragraph, .divider, .paragraph, .paragraph])
+        #expect(h.texts == ["Eins", "", "/", "Zwei"])
+        #expect(button.accessibilityLabel() == "Block einfügen")
+    }
+}
+
+@MainActor
 @Suite("Editor: Zwischenablage, Verschieben, Checkbox", .serialized)
 struct ClipboardAndMoveTests {
     /// Eigenes Pasteboard pro Test; mit `defer { board.releaseGlobally() }` freigeben.

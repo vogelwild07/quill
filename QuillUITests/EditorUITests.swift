@@ -115,6 +115,27 @@ final class EditorUITests: XCTestCase {
         assertEditorText("Apple\n")
     }
 
+    /// ＋ erscheint bei Hover über einem Block und öffnet darunter das Slash-Menü.
+    func testInsertButtonOpensSlashMenu() throws {
+        createPage("Einfügen")
+        app.typeText("\r")
+        waitForFocus(editor)
+        app.typeText("Eins")
+
+        // Erster Block direkt unter dem Titel.
+        title.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 1)).withOffset(CGVector(dx: 0, dy: 24)).hover()
+        let insert = app.windows.firstMatch.buttons["editor.insert"]
+        XCTAssertTrue(insert.waitForExistence(timeout: 5), "Kein ＋ bei Hover")
+        insert.click()
+        assertEditorText("Eins\n/\n")
+        XCTAssertTrue(app.staticTexts["Überschrift 1"].waitForExistence(timeout: 5), "Slash-Menü nicht offen")
+
+        app.typeText("üb\r")
+        assertEditorText("Eins\n\n")
+        app.typeText("Titel")
+        assertEditorText("Eins\nTitel\n")
+    }
+
     // MARK: - Hilfen
 
     private var outline: XCUIElement {

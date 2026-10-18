@@ -14,6 +14,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     weak var editor: BlockEditorController?
 
     let handle = BlockHandleView()
+    let insertButton = BlockInsertButton()
     private let dropIndicator = NSView()
     private var hoverTrackingArea: NSTrackingArea?
 
@@ -22,6 +23,9 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         handle.isHidden = true
         handle.textView = self
         addSubview(handle)
+        insertButton.isHidden = true
+        insertButton.textView = self
+        addSubview(insertButton)
         dropIndicator.wantsLayer = true
         dropIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
         dropIndicator.layer?.cornerRadius = 1
@@ -89,6 +93,11 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         if let headerView, !children.contains(where: { ($0 as AnyObject) === headerView }) {
             children.insert(headerView, at: 0)
         }
+        // Griff und ＋ nur, solange sie zu sehen sind.
+        for view in [handle, insertButton] as [NSView] where !view.isHidden
+            && !children.contains(where: { ($0 as AnyObject) === view }) {
+            children.append(view)
+        }
         return children
     }
 
@@ -141,7 +150,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         super.mouseDown(with: event)
     }
 
-    // MARK: Griff bei Hover
+    // MARK: Griff und ＋ bei Hover
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -159,13 +168,13 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
         let point = convert(event.locationInWindow, from: nil)
-        if !handle.frame.insetBy(dx: -8, dy: -8).contains(point) { handle.isHidden = true }
+        if !handle.frame.union(insertButton.frame).insetBy(dx: -8, dy: -8).contains(point) { setHoverControlsHidden(true) }
     }
 
     func updateHandle(for point: NSPoint) {
         guard let fragment = fragment(atViewPoint: CGPoint(x: textContainerOrigin.x + 1, y: point.y)),
               let offset = characterOffset(of: fragment) else {
-            handle.isHidden = true
+            setHoverControlsHidden(true)
             return
         }
         let frame = viewFrame(of: fragment)
@@ -173,9 +182,18 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         let lineHeight = fragment.textLineFragments.first.map { $0.typographicBounds.height } ?? 20
         let x = textContainerOrigin.x + BlockStyle.textInset(kind: fragment.kind, indent: fragment.indent)
             - (fragment.kind.isListItem ? QuillDesign.Spacing.indentStep : 0) - 26
-        handle.frame = CGRect(x: x, y: frame.minY + lineTop + (lineHeight - 22) / 2, width: 20, height: 22)
+        let y = frame.minY + lineTop + (lineHeight - 22) / 2
+        // „⋮⋮ ＋ Text“: der ＋ direkt vor dem Text, der Griff links daneben.
+        insertButton.frame = CGRect(x: x, y: y, width: 20, height: 22)
+        handle.frame = CGRect(x: x - 20, y: y, width: 20, height: 22)
         handle.characterOffset = offset
-        handle.isHidden = false
+        insertButton.characterOffset = offset
+        setHoverControlsHidden(false)
+    }
+
+    private func setHoverControlsHidden(_ hidden: Bool) {
+        handle.isHidden = hidden
+        insertButton.isHidden = hidden
     }
 
     // MARK: Ziehen und Ablegen von Blöcken

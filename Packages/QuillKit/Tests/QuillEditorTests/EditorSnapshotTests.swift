@@ -23,6 +23,7 @@ struct EditorSnapshotTests {
         let point = editor.textView.convert(window.convertPoint(fromScreen: firstLine.origin), from: nil)
         editor.textView.updateHandle(for: CGPoint(x: 100, y: point.y - 4))
         #expect(!editor.textView.handle.isHidden)
+        #expect(!editor.textView.insertButton.isHidden)
 
         let view = try #require(window.contentView)
         let image = try Bitmap(view)

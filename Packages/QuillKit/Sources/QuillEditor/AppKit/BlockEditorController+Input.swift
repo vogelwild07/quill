@@ -164,6 +164,24 @@ extension BlockEditorController: NSTextViewDelegate {
         textView.setSelectedRange(selection)
     }
 
+    /// Einfügen-Knopf ＋: neuer leerer Absatz unter dem Block (mit ⌥ darüber), darin
+    /// „/“ mit offenem Slash-Menü. Ein leerer Absatz wird selbst genutzt. Ein Undo-Schritt.
+    func insertBlockWithMenu(nearCharacter location: Int, above: Bool) {
+        let index = blockIndex(atCharacter: location)
+        var newDocument = document
+        var target = index
+        if !(document[index].kind == .paragraph && document[index].text.isEmpty) {
+            target = above ? index : index + 1
+            newDocument.insertBlock(EditorBlock(), at: target)
+        }
+        let cursor = newDocument.insertText("/", at: BlockPosition(block: target, offset: 0))
+        textView.breakUndoCoalescing()
+        apply(newDocument, cursor: cursor, actionName: UndoAction.newBlock)
+        textView.breakUndoCoalescing()
+        window?.makeFirstResponder(textView)
+        slashMenu.openIfAllowed(slashLocation: characterLocation(of: BlockPosition(block: target, offset: 0)))
+    }
+
     /// Ändert die Art des Blocks am Cursor (Slash-Menü).
     func setKind(_ kind: BlockKind, ofBlockAtCharacter location: Int) {
         let index = blockIndex(atCharacter: location)
