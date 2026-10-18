@@ -314,13 +314,57 @@ struct InsertButtonTests {
     @Test func isOneUndoStep() {
         let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
         h.editor.insertBlockWithMenu(nearCharacter: location(h, 1), above: false)
-        h.press(#selector(NSResponder.cancelOperation(_:)))
+        // Menü schließt ohne Escape (z. B. Klick woanders): „/“ bleibt, Undo nimmt alles.
+        h.editor.slashMenu.close()
         #expect(h.texts == ["Eins", "Zwei", "/"])
         h.undo()
         #expect(h.texts == ["Eins", "Zwei"])
         h.redo()
         #expect(h.texts == ["Eins", "Zwei", "/"])
         h.expectConsistent()
+    }
+
+    @Test func escapeRemovesInsertedBlock() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.caret(at: 1, 2)
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: false)
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Eins", "Zwei"])
+        #expect(!h.editor.slashMenu.isVisible)
+        #expect(h.caretPosition == BlockPosition(block: 1, offset: 2))
+        // Kein Rest im Undo-Verlauf.
+        h.undo()
+        #expect(h.texts == ["Eins", "Zwei"])
+        h.expectConsistent()
+    }
+
+    @Test func escapeAfterFilterRemovesBlockAndFilter() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: true)
+        h.type("üb")
+        #expect(h.texts == ["/üb", "Eins", "Zwei"])
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Eins", "Zwei"])
+        h.expectConsistent()
+    }
+
+    @Test func escapeKeepsReusedEmptyParagraphEmpty() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock()])
+        h.editor.insertBlockWithMenu(nearCharacter: h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0)), above: false)
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Eins", ""])
+        #expect(h.kinds == [.paragraph, .paragraph])
+        h.expectConsistent()
+    }
+
+    @Test func escapeDoesNotUndoEarlierTyping() {
+        let h = Harness([EditorBlock(text: "Eins")])
+        h.caret(at: 0, 4)
+        h.type("!")
+        h.flushUndoGroup()
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: false)
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Eins!"])
     }
 
     @Test func buttonActsOnItsBlock() {

@@ -2,7 +2,7 @@
 import AppKit
 
 /// Einfügen-Knopf ＋ zwischen Griff und Block: neuer Block darunter (⌥: darüber) mit
-/// offenem Slash-Menü. Erscheint mit dem Griff bei Hover.
+/// offenem Slash-Menü; Escape nimmt den Klick zurück. Erscheint mit dem Griff bei Hover.
 final class BlockInsertButton: NSView {
     weak var textView: BlockTextView?
     var characterOffset = 0

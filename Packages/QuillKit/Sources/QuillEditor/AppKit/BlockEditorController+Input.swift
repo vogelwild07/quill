@@ -175,11 +175,28 @@ extension BlockEditorController: NSTextViewDelegate {
             newDocument.insertBlock(EditorBlock(), at: target)
         }
         let cursor = newDocument.insertText("/", at: BlockPosition(block: target, offset: 0))
+        selectionBeforeInsert = textView.selectedRange()
         textView.breakUndoCoalescing()
         apply(newDocument, cursor: cursor, actionName: UndoAction.newBlock)
         textView.breakUndoCoalescing()
         window?.makeFirstResponder(textView)
-        slashMenu.openIfAllowed(slashLocation: characterLocation(of: BlockPosition(block: target, offset: 0)))
+        slashMenu.openIfAllowed(slashLocation: characterLocation(of: BlockPosition(block: target, offset: 0)), revertsOnCancel: true)
+    }
+
+    /// Escape im Menü nach ＋: macht das Einfügen samt getipptem Filter rückgängig, als
+    /// hätte es den Klick nie gegeben (ein zuvor leerer Absatz bleibt leer).
+    func undoInsertBlockWithMenu() {
+        textView.breakUndoCoalescing()
+        // Filter-Tippen liegt über dem Schritt „Neuer Block“; höchstens ein paar Schritte.
+        for _ in 0..<32 where undoManager.canUndo {
+            let isInsert = undoManager.undoActionName == UndoAction.newBlock
+            undoManager.undo()
+            if isInsert { break }
+        }
+        if let selection = selectionBeforeInsert, NSMaxRange(selection) < textView.string.utf16.count {
+            textView.setSelectedRange(selection)
+        }
+        selectionBeforeInsert = nil
     }
 
     /// Ändert die Art des Blocks am Cursor (Slash-Menü).

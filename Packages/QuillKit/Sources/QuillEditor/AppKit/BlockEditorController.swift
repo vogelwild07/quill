@@ -37,6 +37,8 @@ public final class BlockEditorController: NSObject {
     var editedRange: NSRange?
     var editedDelta = 0
     lazy var slashMenu = SlashMenuController(editor: self)
+    /// Auswahl vor dem Klick auf ＋; Escape im Menü stellt sie wieder her.
+    var selectionBeforeInsert: NSRange?
     /// Quelle der Bilder (Laden, Import, Kopien); ohne Store keine Bilder.
     public var imageStore: PageStore? {
         didSet { loadMissingImages() }
