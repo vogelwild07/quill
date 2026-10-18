@@ -2,6 +2,8 @@
 
 Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-Architekt, Swift-Entwickler.
 
+**Stand:** Phase 1 (Research + Editor-Spike) abgeschlossen, ADR-007 angenommen. Nächste Phase: 2 (Datenmodell + Sidebar). Plan: `docs/roadmap.md`.
+
 ## Kommunikation
 - Immer **Deutsch**. Kurz ist gut; Warnungen, Sicherheit und Entscheidungen in ganzen Sätzen.
 - Regeln dieser Datei haben Vorrang vor Workflows aus Skills.
@@ -17,6 +19,12 @@ Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-A
 ## Datenmodell-Regeln (CloudKit-tauglich)
 UUID-`id`, `createdAt`/`updatedAt`, alle Attribute optional oder mit Default, **kein** `.unique`, Beziehungen optional mit Inverse, Enums als String-Rohwert, Reihenfolge per `sortKey`. Schemaänderungen nur über neues `VersionedSchema` + Migration. Details: `docs/data-model.md`.
 
+## Editor (ADR-007)
+- Ein `NSTextView` pro Seite, ein Absatz = ein Block. Jeder Absatz endet mit `\n`, auch der letzte; Block-Attribute (`.quillBlockID` …) liegen auf **jedem** Zeichen. Weicher Umbruch = U+2028, atomare Blöcke = U+FFFC.
+- Tippen innerhalb eines Absatzes macht die TextView; strukturelle Edits immer über `EditorDocument` und als Diff via `shouldChangeText`/`replaceCharacters`/`didChangeText` (sonst kein Undo). Bei markiertem Text (IME, tote Tasten) nie eingreifen.
+- Fallstricke: Fragment-Koordinaten beginnen am Textanfang (mit `layoutFragmentFrame.minX` umrechnen). TextKit 2 zeichnet `NSTextAttachment.image(for:…)` nicht zuverlässig. `prepareForDragOperation` muss eigene Drag-Typen annehmen. Vor Markdown-Kürzeln `breakUndoCoalescing()`.
+- `QuillEditorSpike` und `Spikes/EditorSpike` sind Wegwerf-Code: nicht erweitern. Überführung nach `QuillEditor` und Löschen in Phase 3 laut ADR-007.
+
 ## Design
 Apple HIG, Liquid Glass nur für Sidebar/Toolbars/Popover, nicht für Inhalt. SF Pro / SF Mono, Systemfarben, Dark Mode automatisch. Tokens in `QuillDesign`, Details `docs/design.md`.
 
@@ -31,6 +39,7 @@ Apple HIG, Liquid Glass nur für Sidebar/Toolbars/Popover, nicht für Inhalt. SF
 - Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`), kleine Commits.
 - Auf `main` nur gebauter, getesteter Stand. Größere Änderungen: Branch + PR.
 - Vor jedem Push `git status` und `git diff --staged` prüfen. Im Zweifel fragen.
+- `DEVELOPMENT_TEAM`-Zeilen in `project.pbxproj` sind lokal (Personal Team des Nutzers) und werden nie committet. `project.pbxproj` deshalb nur gezielt stagen; Xcode-Nebenänderungen (z. B. Scheme-`version`) nicht mitcommitten.
 - Niemals committen: `.env`, Keys, Tokens, Zertifikate, Provisioning-Profile, Datenbanken, Backups, private Notizen.
 - Aktuell halten: `README.md`, `CLAUDE.md`, `docs/architecture.md`, `docs/decisions.md`.
 
@@ -39,4 +48,8 @@ Apple HIG, Liquid Glass nur für Sidebar/Toolbars/Popover, nicht für Inhalt. SF
 xcodebuild -project Quill.xcodeproj -scheme Quill -destination 'platform=macOS' build
 xcodebuild -project Quill.xcodeproj -scheme Quill -destination 'platform=macOS' test
 swift test --package-path Packages/QuillKit
+
+# Editor-Spike (bis Phase 3): Scheme „EditorSpike“
+#   -benchmark  misst 1000 Blöcke, JSON auf stdout
+#   -snapshot   PNGs hell/dunkel nach ~/Library/Containers/de.vogel.quill.EditorSpike/Data/tmp/
 ```
