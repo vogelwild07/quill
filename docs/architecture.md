@@ -113,7 +113,7 @@ Der Spike ist in Phase 3 nach `QuillEditor` überführt und gelöscht worden (AD
 ### Bild-Block (ADR-015)
 
 - Bilder sind `Asset`s im Store, verknüpft über `BlockProperties.assetID`. Der Editor bekommt den `PageStore` (`imageStore`), lädt fehlende Bilder nach dem Laden, nach strukturellen Edits und nach Undo, dekodiert sie verkleinert außerhalb des Main Threads und erneuert dann das Layout des Absatzes.
-- Einfügen über Slash-Menü (Dateiauswahl), Einsetzen und Ablegen: Der Block erscheint sofort mit Platzhalter, Dateien werden im Hintergrund gelesen (`ImageSource`, nie auf dem Main Thread). Import entfernt GPS-Daten und verkleinert Bilder über 20 MB auf 4096 px. Angezeigt wird in natürlicher Größe (DPI).
+- Einfügen über Slash-Menü (Dateiauswahl), Einsetzen und Ablegen: Dateien werden im Hintergrund gelesen und geprüft (`ImageSource`, nie auf dem Main Thread), danach erscheint der Block mit Platzhalter bis zum Ende des Imports; Unlesbares wird nicht eingefügt. Import entfernt GPS-Daten und verkleinert Bilder über 20 MB auf 4096 px. Angezeigt wird in natürlicher Größe (DPI).
 - Eingesetzte Bild-Blöcke bekommen eine Kopie ihres Assets (`duplicateAsset`), weil ein Asset genau einem Block gehört.
 
 ### Erkenntnisse aus Phase 4
@@ -122,6 +122,9 @@ Der Spike ist in Phase 3 nach `QuillEditor` überführt und gelöscht worden (AD
 - **Zeichnen außerhalb von `renderingSurfaceBounds`** schneidet TextKit ab; wer dekoriert, muss die Fläche dort aufnehmen.
 - **Schriften nur auf dem Main Thread:** `NSFont` lieferte in parallel laufenden Tests sporadisch `nil` (Absturz in `addAttributes`). Tests, die rendern, laufen deshalb auf dem Main Actor.
 - **Auswahländerung vor `textDidChange`:** Beim Tippen meldet sich die Auswahl, bevor die Absätze abgeglichen sind; dort nichts aus `paragraphStarts` lesen.
+- **Zurücknehmen ohne Undo-Schleife:** Escape nach ＋ nutzt Undo nur, wenn „Neuer Block“ genau oben liegt (Dokument unverändert seit dem Klick); sonst entfernt eine eigene Bearbeitung den Block. Nie mehrere Undo-Schritte in einer Schleife: Ein Schritt aus dem Hintergrund (Import, Duplizieren mit Bild) würde sonst mit zurückgenommen.
+- **Asynchron einfügen:** Was erst nach einem `await` eingefügt wird (Bilder lesen, Assets kopieren), nimmt die Einfügemarke von dann, nicht die vom Auslösen.
+- **Asset-Kopien:** Gehört ein Asset schon einem anderen Block, bekommt der Block eine Kopie; der Editor kennt weiter die alte ID. Eine vorhandene Kopie mit denselben Daten bleibt deshalb verknüpft, sonst entstünde bei jeder Änderung eine neue.
 
 ### Erkenntnisse aus Phase 3
 
