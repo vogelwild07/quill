@@ -942,6 +942,26 @@ struct FormattingIntegrationTests {
 struct PerformanceTests {
     /// ADR-007: Tippen bei 1000 Blöcken p95 < 16 ms (ein Frame). Im Release-Build
     /// liegt der Median unter 1 ms; die Schwelle gilt auch für Debug-Builds.
+    @Test func revealSelectsMatchInBlockAndScrolls() {
+        let harness = Harness(SampleDocuments.large(blockCount: 300).blocks)
+        let target = harness.document.blocks.lastIndex { !$0.kind.isAtomic && $0.length > 6 } ?? 0
+        let block = harness.document[target]
+        let clip = harness.editor.scrollView.contentView
+        #expect(clip.bounds.minY == 0)
+
+        #expect(harness.editor.reveal(blockID: block.id, range: NSRange(location: 2, length: 4)))
+        let start = harness.editor.characterLocation(of: BlockPosition(block: target, offset: 2))
+        #expect(harness.textView.selectedRange() == NSRange(location: start, length: 4))
+        #expect(harness.window.firstResponder === harness.textView)
+        #expect(clip.bounds.minY > 0, "Treffer weit unten: Editor scrollt hin")
+
+        // Zu lang wird gekürzt, unbekannter Block ändert nichts.
+        #expect(harness.editor.reveal(blockID: block.id, range: NSRange(location: block.length - 1, length: 50)))
+        #expect(harness.textView.selectedRange().length == 1)
+        #expect(!harness.editor.reveal(blockID: UUID(), range: NSRange(location: 0, length: 1)))
+        #expect(harness.textView.selectedRange().length == 1)
+    }
+
     @Test func typingStaysWithinOneFrameAt1000Blocks() {
         let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 1100, height: 800), styleMask: [.titled], backing: .buffered, defer: false)
         let result = EditorBenchmark.run(in: window, blockCount: 1000, keystrokes: 200, enters: 50)

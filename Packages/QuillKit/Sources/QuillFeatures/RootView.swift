@@ -12,6 +12,8 @@ public struct RootView: View {
     @State private var renameRequest: UUID?
     @State private var titleFocusRequest: UUID?
     @State private var isShowingTrash = false
+    @State private var isQuickOpenShown = false
+    @State private var revealRequest: RevealRequest?
     #if canImport(AppKit)
     @State private var window: NSWindow?
     #endif
@@ -31,7 +33,8 @@ public struct RootView: View {
                     selection: $selection,
                     renameRequest: $renameRequest,
                     isShowingTrash: $isShowingTrash,
-                    actions: outlineActions(operations)
+                    actions: outlineActions(operations),
+                    search: { isQuickOpenShown = true }
                 )
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
             }
@@ -42,6 +45,7 @@ public struct RootView: View {
                 PageDetailView(
                     pageID: selection,
                     titleFocusRequest: $titleFocusRequest,
+                    revealRequest: $revealRequest,
                     rename: { id, title in Task { try? await store.rename(id, to: title) } },
                     setIcon: { id, icon in Task { try? await store.setIcon(id, to: icon) } }
                 )
@@ -61,6 +65,7 @@ public struct RootView: View {
             }
         }
         #if canImport(AppKit)
+        .overlay { quickOpen }
         .background(WindowAccessor { window in
             self.window = window
             if let pageID = WindowRouter.shared.claim(for: window) {
@@ -108,9 +113,11 @@ public struct RootView: View {
         PageActions(
             selection: selection,
             isFavorite: isFavorite(selection),
+            isQuickOpenShown: isQuickOpenShown,
             newPage: { operations.create(in: nil) },
             newSubpage: { if let selection { operations.create(in: selection) } },
             rename: { renameRequest = selection },
+            quickOpen: { isQuickOpenShown = true },
             trash: {
                 if let selection {
                     operations.trash(selection, selectionAfter: selectionAfterTrashing(selection))
@@ -120,6 +127,37 @@ public struct RootView: View {
             openInTab: { if let selection { open(selection, asTab: true) } },
             openInWindow: { if let selection { open(selection, asTab: false) } }
         )
+    }
+
+    #if canImport(AppKit)
+    /// „Schnell öffnen“ über dem ganzen Fenster; Klick daneben schließt.
+    @ViewBuilder
+    private var quickOpen: some View {
+        if isQuickOpenShown, let store {
+            ZStack(alignment: .top) {
+                Color.black.opacity(0.06)
+                    .ignoresSafeArea()
+                    .contentShape(.rect)
+                    .onTapGesture { isQuickOpenShown = false }
+                    .accessibilityHidden(true)
+                QuickOpenView(store: store, open: openHit, dismiss: { isQuickOpenShown = false })
+                    .padding(.top, 56)
+            }
+        }
+    }
+    #endif
+
+    /// Inhaltstreffer springen zur Fundstelle; in einem neuen Tab öffnet nur die Seite.
+    private func openHit(_ hit: SearchHit, inNewTab: Bool) {
+        isQuickOpenShown = false
+        if inNewTab {
+            open(hit.pageID, asTab: true)
+            return
+        }
+        if case .content(let blockID, let match) = hit.kind {
+            revealRequest = RevealRequest(pageID: hit.pageID, blockID: blockID, range: match)
+        }
+        selection = hit.pageID
     }
 
     private func isFavorite(_ pageID: UUID?) -> Bool {

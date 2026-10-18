@@ -3,7 +3,7 @@ import QuillEditor
 import SwiftUI
 
 /// Menüleiste von Quill. Kürzel wie in Apple Notizen: ⌘N Neue Seite,
-/// ⇧⌘N Neue Unterseite, ⌥⌘N Neues Fenster, ⌘T Neuer Tab.
+/// ⇧⌘N Neue Unterseite, ⌥⌘N Neues Fenster, ⌘T Neuer Tab, ⌘O Schnell öffnen.
 public struct QuillCommands: Commands {
     let persistence: QuillPersistence?
 
@@ -43,6 +43,14 @@ public struct QuillCommands: Commands {
                 openWindow(id: WindowRouter.windowID)
             }
             .keyboardShortcut("n", modifiers: [.command, .option])
+
+            Divider()
+
+            Button(String(localized: "Schnell öffnen …", bundle: .module)) {
+                actions?.quickOpen()
+            }
+            .keyboardShortcut("o")
+            .disabled(actions == nil)
         }
 
         CommandGroup(after: .importExport) {
@@ -82,8 +90,11 @@ public struct QuillCommands: Commands {
                     }
                 }
             }
+            // Deaktiviert, solange „Schnell öffnen“ offen ist: Dann öffnet ⌘↩ dort in
+            // einem neuen Tab; ein aktiver Menüpunkt finge die Taste vorher ab.
             formatButton("Abhaken", #selector(EditorFormattingActions.quillToggleChecked(_:)))
                 .keyboardShortcut(.return)
+                .disabled(actions?.isQuickOpenShown == true)
             Divider()
             // ⌥⌘↑/↓ statt ⌥⇧↑/↓: Das erweitert in Textfeldern die Auswahl absatzweise.
             formatButton("Block nach oben", #selector(EditorFormattingActions.quillMoveBlockUp(_:)))

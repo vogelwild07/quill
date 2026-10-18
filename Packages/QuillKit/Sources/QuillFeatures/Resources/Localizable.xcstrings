@@ -73,7 +73,13 @@
     "In neuem Tab öffnen" : {
 
     },
+    "Inhalt" : {
+
+    },
     "Keine Seite ausgewählt" : {
+
+    },
+    "Keine Treffer" : {
 
     },
     "Kursiv" : {
@@ -100,6 +106,9 @@
     "Nicht gespeichert" : {
 
     },
+    "Noch keine Seiten" : {
+
+    },
     "OK" : {
 
     },
@@ -121,6 +130,12 @@
     "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
 
     },
+    "Schnell öffnen (⌘O)" : {
+
+    },
+    "Schnell öffnen …" : {
+
+    },
     "Seite" : {
 
     },
@@ -133,7 +148,13 @@
     "Seiten" : {
 
     },
+    "Seiten und Inhalte durchsuchen" : {
+
+    },
     "Seiten werden nach 30 Tagen endgültig gelöscht." : {
+
+    },
+    "Suchen" : {
 
     },
     "Titel" : {
@@ -160,6 +181,9 @@
     "Zu Favoriten hinzufügen" : {
 
     },
+    "Zuletzt bearbeitet" : {
+
+    },
     "Änderungen konnten nicht gespeichert werden" : {
 
     },
@@ -167,6 +191,9 @@
 
     },
     "„%@“ endgültig löschen?" : {
+
+    },
+    "↑↓ wählen   ↩ öffnen   ⌘↩ in neuem Tab   ⎋ schließen" : {
 
     }
   },
