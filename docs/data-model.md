@@ -9,6 +9,7 @@
 - Alle Beziehungen optional, mit Inverse
 - Enums als `String`-Rohwert (`kindRaw`), damit unbekannte Werte späterer Versionen nicht crashen
 - Von Anfang an `VersionedSchema` (`SchemaV1`) + `SchemaMigrationPlan`
+- Veröffentlichte Versionen sind eingefroren (Fingerabdruck-Test). Neue Version: `SchemaV(n)` + Stufe, `CurrentSchema` umstellen, Test „V(n-1) → V(n)“ in `MigrationTests` (ADR-011)
 
 **Reihenfolge:** CloudKit kennt keine geordneten Beziehungen. Jedes sortierbare Objekt hat einen `sortKey: String` (Fractional Indexing). Verschieben ändert genau ein Objekt → wenige Sync-Konflikte.
 
