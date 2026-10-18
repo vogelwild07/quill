@@ -10,30 +10,11 @@ import Testing
 @MainActor
 @Suite("Editor: Darstellung hell und dunkel", .serialized)
 struct EditorSnapshotTests {
-    static let blocks: [EditorBlock] = [
-        EditorBlock(kind: .heading1, text: "Überschrift"),
-        EditorBlock(text: "Fett und Code", spans: [InlineSpan(0..<4, marks: [.bold]), InlineSpan(9..<13, marks: [.code])]),
-        EditorBlock(text: "Kursiv, durchgestrichen, Link", spans: [
-            InlineSpan(0..<6, marks: [.italic]), InlineSpan(8..<23, marks: [.strikethrough]),
-            InlineSpan(25..<29, marks: [], link: "https://apple.com"),
-        ]),
-        EditorBlock(kind: .heading2, text: "Zwischentitel"),
-        EditorBlock(kind: .bulleted, text: "Punkt"),
-        EditorBlock(kind: .bulleted, text: "Eingerückt", indent: 1),
-        EditorBlock(kind: .numbered, text: "Nummer"),
-        EditorBlock(kind: .numbered, text: "Zweite Nummer"),
-        EditorBlock(kind: .todo, text: "Offen"),
-        EditorBlock(kind: .todo, text: "Erledigt", isChecked: true),
-        EditorBlock(kind: .quote, text: "Zitat"),
-        EditorBlock(kind: .divider),
-        EditorBlock(kind: .code, text: "let x = 1"),
-    ]
-
     @Test(arguments: [NSAppearance.Name.aqua, .darkAqua])
     func editorUsesSystemColors(_ appearance: NSAppearance.Name) throws {
-        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 640, height: 720), styleMask: [.titled], backing: .buffered, defer: false)
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 640, height: 820), styleMask: [.titled], backing: .buffered, defer: false)
         window.appearance = NSAppearance(named: appearance)
-        let editor = BlockEditorController(document: EditorDocument(blocks: Self.blocks))
+        let editor = BlockEditorController(document: SampleDocuments.welcome)
         window.contentView = editor.scrollView
         editor.textView.layoutSubtreeIfNeeded()
         let firstLine = editor.textView.firstRect(forCharacterRange: NSRange(location: 0, length: 0), actualRange: nil)

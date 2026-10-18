@@ -264,15 +264,11 @@ struct SlashMenuIntegrationTests {
 @MainActor
 @Suite("Editor: Zwischenablage, Verschieben, Checkbox", .serialized)
 struct ClipboardAndMoveTests {
+    /// Eigenes Pasteboard pro Test; mit `defer { board.releaseGlobally() }` freigeben.
     private func pasteboard() -> NSPasteboard { NSPasteboard(name: .init("de.vogel.quill.tests.\(UUID().uuidString)")) }
 
     private func sample() -> Harness {
-        Harness([
-            EditorBlock(kind: .heading1, text: "Titel"),
-            EditorBlock(kind: .todo, text: "Aufgabe", isChecked: true),
-            EditorBlock(kind: .numbered, text: "eins"),
-            EditorBlock(text: "Ende"),
-        ])
+        Harness(SampleDocuments.mixed)
     }
 
     @Test func copyWritesAllRepresentations() throws {
@@ -281,6 +277,7 @@ struct ClipboardAndMoveTests {
         let end = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 4))
         h.textView.setSelectedRange(NSRange(location: start, length: end - start))
         let board = pasteboard()
+        defer { board.releaseGlobally() }
         #expect(h.editor.copySelection(to: board))
 
         let types = Set(board.pasteboardItems?.first?.types ?? [])
@@ -298,6 +295,7 @@ struct ClipboardAndMoveTests {
         let end = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 4))
         h.textView.setSelectedRange(NSRange(location: start, length: end - start))
         let board = pasteboard()
+        defer { board.releaseGlobally() }
         _ = h.editor.copySelection(to: board)
         h.caret(at: 3, 4)
         #expect(h.editor.paste(from: board))
@@ -429,6 +427,7 @@ struct FormattingIntegrationTests {
         ])
         select(h, from: BlockPosition(block: 0, offset: 4), to: BlockPosition(block: 0, offset: 8))
         let board = NSPasteboard(name: .init("de.vogel.quill.tests.\(UUID().uuidString)"))
+        defer { board.releaseGlobally() }
         #expect(h.editor.copySelection(to: board))
         #expect(board.string(forType: .markdown) == "o **We**")
         #expect(board.string(forType: .string) == "o We")
