@@ -1,21 +1,20 @@
-#if os(macOS)
+#if canImport(AppKit)
 import AppKit
-import QuillEditor
+#elseif canImport(UIKit)
+import UIKit
+#endif
 
 /// Übersetzt zwischen `EditorDocument` und dem attributierten Text im Textspeicher.
 ///
 /// Invariante: Jeder Block ist genau ein Absatz und endet mit `\n` – auch der letzte.
 /// So trägt jeder Absatz mindestens ein Zeichen mit den Block-Attributen.
-@MainActor
-struct BlockRenderer {
-    var images: [UUID: NSImage] = [:]
-
+enum BlockRenderer {
     /// Anzahl Zeichen eines Blocks im Textspeicher (ohne `\n`).
     static func displayLength(of block: EditorBlock) -> Int {
         block.kind.isAtomic ? 1 : block.length
     }
 
-    func render(_ blocks: ArraySlice<EditorBlock>, ordinals: [UUID: Int]) -> NSAttributedString {
+    static func render(_ blocks: ArraySlice<EditorBlock>, ordinals: [UUID: Int]) -> NSAttributedString {
         let result = NSMutableAttributedString()
         for block in blocks {
             result.append(paragraph(for: block, ordinal: ordinals[block.id]))
@@ -23,14 +22,15 @@ struct BlockRenderer {
         return result
     }
 
-    func paragraph(for block: EditorBlock, ordinal: Int?) -> NSAttributedString {
+    static func paragraph(for block: EditorBlock, ordinal: Int?) -> NSAttributedString {
         let attributes = BlockStyle.attributes(for: block, ordinal: ordinal)
         let result = NSMutableAttributedString()
         switch block.kind {
         case .divider:
             result.append(NSAttributedString(attachment: DividerAttachment()))
         case .image:
-            result.append(NSAttributedString(attachment: ImageAttachment(image: images[block.id])))
+            // Platzhalter; Bilder mit `NSTextAttachmentViewProvider` folgen in Phase 4.
+            result.append(NSAttributedString(attachment: NSTextAttachment(data: nil, ofType: nil)))
         default:
             let text = block.text.replacingOccurrences(of: "\n", with: StorageCharacter.softBreak)
             result.append(NSAttributedString(string: text))
@@ -97,4 +97,3 @@ struct BlockRenderer {
         return result
     }
 }
-#endif

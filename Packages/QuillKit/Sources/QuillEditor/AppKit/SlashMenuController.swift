@@ -1,7 +1,6 @@
-#if os(macOS)
+#if canImport(AppKit)
 import AppKit
 import Observation
-import QuillEditor
 import SwiftUI
 
 @MainActor
@@ -164,7 +163,7 @@ struct SlashMenuView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if model.commands.isEmpty {
-                Text("Keine Treffer")
+                Text("Keine Treffer", bundle: .module)
                     .foregroundStyle(.secondary)
                     .padding(12)
             }
@@ -182,7 +181,7 @@ struct SlashMenuView: View {
                 .onChange(of: model.selection) { _, selection in proxy.scrollTo(selection) }
             }
             Divider()
-            Text("↑↓ wählen   ↩ einfügen   ⎋ schließen")
+            Text("↑↓ wählen   ↩ einfügen   ⎋ schließen", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 12)

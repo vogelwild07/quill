@@ -1,7 +1,7 @@
+#if canImport(AppKit)
 import AppKit
-import QuillEditor
 import Testing
-@testable import QuillEditorSpike
+@testable import QuillEditor
 
 /// Steuert Controller und Text-View wie Tastatureingaben, in einem Offscreen-Fenster.
 @MainActor
@@ -67,7 +67,7 @@ private final class Harness {
 }
 
 @MainActor
-@Suite("Spike: Tippen und Struktur", .serialized)
+@Suite("Editor: Tippen und Struktur", .serialized)
 struct TypingTests {
     @Test func typingUpdatesModel() {
         let h = Harness()
@@ -170,7 +170,7 @@ struct TypingTests {
 }
 
 @MainActor
-@Suite("Spike: Markdown-Kürzel", .serialized)
+@Suite("Editor: Markdown-Kürzel", .serialized)
 struct ShortcutIntegrationTests {
     @Test(arguments: [
         ("# ", BlockKind.heading1), ("## ", .heading2), ("### ", .heading3), ("- ", .bulleted),
@@ -218,7 +218,7 @@ struct ShortcutIntegrationTests {
 }
 
 @MainActor
-@Suite("Spike: Slash-Menü", .serialized)
+@Suite("Editor: Slash-Menü", .serialized)
 struct SlashMenuIntegrationTests {
     @Test func filtersAndChoosesWithKeyboard() {
         let h = Harness([EditorBlock(text: "Ziele")])
@@ -249,7 +249,7 @@ struct SlashMenuIntegrationTests {
 }
 
 @MainActor
-@Suite("Spike: Zwischenablage, Verschieben, Checkbox", .serialized)
+@Suite("Editor: Zwischenablage, Verschieben, Checkbox", .serialized)
 struct ClipboardAndMoveTests {
     private func pasteboard() -> NSPasteboard { NSPasteboard(name: .init("de.vogel.quill.tests.\(UUID().uuidString)")) }
 
@@ -319,29 +319,37 @@ struct ClipboardAndMoveTests {
         h.expectConsistent()
     }
 
-    @Test func imageBlockCanBeInsertedAndDeleted() {
-        let h = sample()
-        let image = NSImage(size: CGSize(width: 400, height: 200), flipped: false) { rect in
-            NSColor.systemTeal.setFill()
-            rect.fill()
-            return true
-        }
-        h.editor.insertImage(image, afterCharacter: h.editor.characterLocation(of: BlockPosition(block: 0, offset: 0)))
-        #expect(h.kinds == [.heading1, .image, .paragraph, .todo, .numbered, .paragraph])
+    @Test func dividerIsDeletedAsOneBlock() {
+        let h = Harness([EditorBlock(text: "A"), EditorBlock(kind: .divider), EditorBlock(text: "B")])
         h.caret(at: 1, 1)
         h.press(#selector(NSResponder.deleteBackward(_:)))
-        #expect(h.kinds == [.heading1, .paragraph, .todo, .numbered, .paragraph])
+        #expect(h.kinds == [.paragraph, .paragraph])
+        #expect(h.texts == ["A", "B"])
+        h.expectConsistent()
+    }
+
+    @Test func typingNextToDividerCreatesParagraph() {
+        let h = Harness([EditorBlock(kind: .divider)])
+        h.caret(at: 0, 1)
+        h.type("x")
+        #expect(h.kinds == [.divider, .paragraph])
+        #expect(h.texts == ["", "x"])
         h.expectConsistent()
     }
 }
 
 @MainActor
-@Suite("Spike: Messung", .serialized)
-struct BenchmarkSmokeTests {
-    @Test func benchmarkRunsOnSmallDocument() {
-        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 900, height: 700), styleMask: [.titled], backing: .buffered, defer: false)
-        let result = SpikeBenchmark.run(in: window, blockCount: 100, keystrokes: 20, enters: 5)
-        #expect(result.blocks == 105)
-        #expect(result.typing.samples == 20)
+@Suite("Editor: Messung", .serialized)
+struct PerformanceTests {
+    /// ADR-007: Tippen bei 1000 Blöcken p95 < 16 ms (ein Frame). Im Release-Build
+    /// liegt der Median unter 1 ms; die Schwelle gilt auch für Debug-Builds.
+    @Test func typingStaysWithinOneFrameAt1000Blocks() {
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 1100, height: 800), styleMask: [.titled], backing: .buffered, defer: false)
+        let result = EditorBenchmark.run(in: window, blockCount: 1000, keystrokes: 200, enters: 50)
+        #expect(result.blocks == 1050)
+        #expect(result.typing.p95 < 16, "Tippen p95 \(result.typing.p95) ms")
+        #expect(result.enter.p95 < 16, "Enter p95 \(result.enter.p95) ms")
+        #expect(result.loadMilliseconds < 300, "Laden \(result.loadMilliseconds) ms")
     }
 }
+#endif

@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		A10000000000000000000001 /* QuillKit in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000002 /* QuillKit */; };
-		B20000000000000000000001 /* QuillEditorSpike in Frameworks */ = {isa = PBXBuildFile; productRef = B20000000000000000000002 /* QuillEditorSpike */; };
+		B20000000000000000000001 /* QuillKit in Frameworks */ = {isa = PBXBuildFile; productRef = B20000000000000000000002 /* QuillKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,7 +67,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B20000000000000000000001 /* QuillEditorSpike in Frameworks */,
+				B20000000000000000000001 /* QuillKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -159,7 +159,7 @@
 			);
 			name = EditorSpike;
 			packageProductDependencies = (
-				B20000000000000000000002 /* QuillEditorSpike */,
+				B20000000000000000000002 /* QuillKit */,
 			);
 			productName = EditorSpike;
 			productReference = B20000000000000000000003 /* EditorSpike.app */;
@@ -508,10 +508,10 @@
 			package = A10000000000000000000003 /* XCLocalSwiftPackageReference "Packages/QuillKit" */;
 			productName = QuillKit;
 		};
-		B20000000000000000000002 /* QuillEditorSpike */ = {
+		B20000000000000000000002 /* QuillKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A10000000000000000000003 /* XCLocalSwiftPackageReference "Packages/QuillKit" */;
-			productName = QuillEditorSpike;
+			productName = QuillKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

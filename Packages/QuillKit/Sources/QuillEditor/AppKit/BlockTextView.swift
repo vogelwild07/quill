@@ -1,14 +1,6 @@
-#if os(macOS)
+#if canImport(AppKit)
 import AppKit
 import QuillDesign
-
-extension NSPasteboard.PasteboardType {
-    /// Quill-Blöcke als JSON (`[EditorBlock]`).
-    static let quillBlocks = NSPasteboard.PasteboardType("de.vogel.quill.blocks")
-    static let markdown = NSPasteboard.PasteboardType("net.daringfireball.markdown")
-    /// Interner Ziehvorgang: IDs der gezogenen Blöcke.
-    static let quillBlockDrag = NSPasteboard.PasteboardType("de.vogel.quill.block-drag")
-}
 
 /// Text-View des Block-Editors. Strukturelle Logik liegt im `BlockEditorController`;
 /// hier sitzen nur Ereignisse, die eine View braucht.
@@ -217,7 +209,7 @@ final class BlockHandleView: NSView, NSDraggingSource {
 
     override func draw(_ dirtyRect: NSRect) {
         let config = NSImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
-        guard let image = NSImage(systemSymbolName: "line.3.horizontal", accessibilityDescription: "Block verschieben")?
+        guard let image = NSImage(systemSymbolName: "line.3.horizontal", accessibilityDescription: String(localized: "Block verschieben", bundle: .module))?
             .withSymbolConfiguration(config) else { return }
         NSColor.tertiaryLabelColor.set()
         let size = image.size

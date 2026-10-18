@@ -1,10 +1,15 @@
-#if os(macOS)
+#if canImport(AppKit)
 import AppKit
+#elseif canImport(UIKit)
+import UIKit
+#endif
+import CoreText
 import QuillDesign
-import QuillEditor
 
 /// Zeichnet die Dekoration eines Blocks: Bullet, Nummer, Checkbox, Zitatbalken,
-/// Code-Hintergrund. Alles wird aus den Absatz-Attributen abgeleitet.
+/// Code-Hintergrund, Trenner. Alles wird aus den Absatz-Attributen abgeleitet.
+///
+/// Gezeichnet wird nur über `CGContext` und CoreText, damit iOS die Klasse teilt.
 final class BlockLayoutFragment: NSTextLayoutFragment {
     let kind: BlockKind
     let indent: Int
@@ -29,7 +34,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
 
     // MARK: Geometrie (Fragment-Koordinaten, y nach unten)
 
-    private var markerFont: NSFont { BlockStyle.font(for: kind) }
+    private var markerFont: PlatformFont { BlockStyle.font(for: kind) }
 
     /// Grundlinie der ersten Zeile.
     private var firstBaseline: CGFloat {
@@ -89,94 +94,109 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     // MARK: Zeichnen
 
     override func draw(at point: CGPoint, in context: CGContext) {
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: true)
-        let origin = NSAffineTransform()
-        origin.translateX(by: point.x, yBy: point.y)
-        origin.concat()
-
+        context.saveGState()
+        context.translateBy(x: point.x, y: point.y)
         switch kind {
-        case .code: drawCodeBackground()
-        case .quote: drawQuoteBar()
+        case .code: drawCodeBackground(in: context)
+        case .quote: drawQuoteBar(in: context)
         default: break
         }
-        NSGraphicsContext.restoreGraphicsState()
+        context.restoreGState()
 
         super.draw(at: point, in: context)
 
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: true)
-        origin.concat()
+        context.saveGState()
+        context.translateBy(x: point.x, y: point.y)
         switch kind {
-        case .bulleted: drawBullet()
-        case .numbered: drawNumber()
-        case .todo: drawCheckbox()
-        case .divider: drawDivider()
+        case .bulleted: drawBullet(in: context)
+        case .numbered: drawNumber(in: context)
+        case .todo: drawCheckbox(in: context)
+        case .divider: drawDivider(in: context)
         default: break
         }
-        NSGraphicsContext.restoreGraphicsState()
+        context.restoreGState()
     }
 
-    private func drawCodeBackground() {
-        NSColor.quaternarySystemFill.setFill()
-        NSBezierPath(roundedRect: codeBackgroundRect, xRadius: 8, yRadius: 8).fill()
+    private func drawCodeBackground(in context: CGContext) {
+        fillRoundedRect(codeBackgroundRect, radius: 8, color: EditorColor.quaternaryFill, in: context)
     }
 
-    private func drawQuoteBar() {
+    private func drawQuoteBar(in context: CGContext) {
         let bounds = contentBounds.isNull ? CGRect(x: 0, y: 0, width: 0, height: 20) : contentBounds
-        NSColor.controlAccentColor.withAlphaComponent(0.6).setFill()
-        NSBezierPath(roundedRect: CGRect(x: markerOriginX + 2, y: bounds.minY + 2, width: 3, height: bounds.height - 4), xRadius: 1.5, yRadius: 1.5).fill()
+        let bar = CGRect(x: markerOriginX + 2, y: bounds.minY + 2, width: 3, height: bounds.height - 4)
+        fillRoundedRect(bar, radius: 1.5, color: EditorColor.accent.withAlphaComponent(0.6), in: context)
     }
 
-    private func drawBullet() {
+    private func drawBullet(in context: CGContext) {
         let symbols = ["•", "◦", "▪︎"]
-        drawMarker(symbols[indent % symbols.count], alignRight: false)
+        drawMarker(symbols[indent % symbols.count], alignRight: false, in: context)
     }
 
-    private func drawNumber() {
-        drawMarker("\(ordinal).", alignRight: true)
+    private func drawNumber(in context: CGContext) {
+        drawMarker("\(ordinal).", alignRight: true, in: context)
     }
 
-    private func drawMarker(_ text: String, alignRight: Bool) {
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: markerFont.pointSize, weight: .regular),
-            .foregroundColor: NSColor.secondaryLabelColor,
-        ]
-        let string = NSAttributedString(string: text, attributes: attributes)
-        let size = string.size()
+    /// Marker-Text über CoreText. Der Kontext ist gespiegelt (y nach unten),
+    /// deshalb wird die Textmatrix vertikal umgedreht.
+    private func drawMarker(_ text: String, alignRight: Bool, in context: CGContext) {
+        let font = PlatformFont.monospacedDigitSystemFont(ofSize: markerFont.pointSize, weight: .regular)
+        let string = NSAttributedString(string: text, attributes: [
+            .font: font,
+            NSAttributedString.Key(kCTForegroundColorFromContextAttributeName as String): true,
+        ])
+        let line = CTLineCreateWithAttributedString(string)
+        let width = CTLineGetTypographicBounds(line, nil, nil, nil)
         let step = QuillDesign.Spacing.indentStep
-        let x = alignRight ? markerOriginX + step - 6 - size.width : markerOriginX + 6
-        let font = attributes[.font] as! NSFont
-        string.draw(at: CGPoint(x: x, y: firstBaseline - font.ascender))
+        let x = alignRight ? markerOriginX + step - 6 - width : markerOriginX + 6
+
+        context.setFillColor(EditorColor.secondaryLabel.cgColor)
+        context.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
+        context.textPosition = CGPoint(x: x, y: firstBaseline)
+        CTLineDraw(line, context)
     }
 
     /// Das Attachment reserviert nur Platz; TextKit 2 zeichnet sein Bild nicht zuverlässig.
-    private func drawDivider() {
+    private func drawDivider(in context: CGContext) {
         let line = textLineFragments.first?.typographicBounds ?? CGRect(x: 0, y: 0, width: 0, height: 20)
-        NSColor.separatorColor.setFill()
-        CGRect(x: markerOriginX, y: (line.midY).rounded(.down), width: contentMaxX - markerOriginX, height: 1).fill()
+        context.setFillColor(EditorColor.separator.cgColor)
+        context.fill(CGRect(x: markerOriginX, y: line.midY.rounded(.down), width: contentMaxX - markerOriginX, height: 1))
     }
 
-    private func drawCheckbox() {
+    private func drawCheckbox(in context: CGContext) {
         let rect = checkboxRect
-        let path = NSBezierPath(roundedRect: rect, xRadius: 4, yRadius: 4)
+        let box = Self.roundedRect(rect, radius: 4)
         if isChecked {
-            NSColor.controlAccentColor.setFill()
-            path.fill()
-            let check = NSBezierPath()
-            check.move(to: CGPoint(x: rect.minX + 3.5, y: rect.midY))
-            check.line(to: CGPoint(x: rect.minX + 6, y: rect.maxY - 3.5))
-            check.line(to: CGPoint(x: rect.maxX - 3, y: rect.minY + 3.5))
-            check.lineWidth = 1.8
-            check.lineCapStyle = .round
-            check.lineJoinStyle = .round
-            NSColor.white.setStroke()
-            check.stroke()
+            context.addPath(box)
+            context.setFillColor(EditorColor.accent.cgColor)
+            context.fillPath()
+
+            context.move(to: CGPoint(x: rect.minX + 3.5, y: rect.midY))
+            context.addLine(to: CGPoint(x: rect.minX + 6, y: rect.maxY - 3.5))
+            context.addLine(to: CGPoint(x: rect.maxX - 3, y: rect.minY + 3.5))
+            context.setLineWidth(1.8)
+            context.setLineCap(.round)
+            context.setLineJoin(.round)
+            context.setStrokeColor(CGColor(gray: 1, alpha: 1))
+            context.strokePath()
         } else {
-            NSColor.tertiaryLabelColor.setStroke()
-            path.lineWidth = 1.2
-            path.stroke()
+            context.addPath(box)
+            context.setLineWidth(1.2)
+            context.setStrokeColor(EditorColor.tertiaryLabel.cgColor)
+            context.strokePath()
         }
+    }
+
+    private func fillRoundedRect(_ rect: CGRect, radius: CGFloat, color: PlatformColor, in context: CGContext) {
+        guard rect.width > 0, rect.height > 0 else { return }
+        context.addPath(Self.roundedRect(rect, radius: radius))
+        context.setFillColor(color.cgColor)
+        context.fillPath()
+    }
+
+    /// `CGPath(roundedRect:)` bricht ab, wenn der Radius größer als die halbe Seite ist.
+    private static func roundedRect(_ rect: CGRect, radius: CGFloat) -> CGPath {
+        let radius = max(0, min(radius, rect.width / 2, rect.height / 2))
+        return CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
     }
 }
 
@@ -190,4 +210,3 @@ final class BlockLayoutDelegate: NSObject, NSTextLayoutManagerDelegate {
         BlockLayoutFragment(textElement: textElement, range: textElement.elementRange)
     }
 }
-#endif

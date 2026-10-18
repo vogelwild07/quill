@@ -1,6 +1,5 @@
-#if os(macOS)
+#if canImport(AppKit)
 import AppKit
-import QuillEditor
 import SwiftUI
 
 /// SwiftUI-Hülle um den Block-Editor.
@@ -16,12 +15,5 @@ public struct BlockEditorView: NSViewRepresentable {
     }
 
     public func updateNSView(_ nsView: NSScrollView, context: Context) {}
-}
-
-extension BlockEditorController {
-    /// Macht den Editor zum Ersthelfer seines Fensters.
-    public func focus() {
-        textView.window?.makeFirstResponder(textView)
-    }
 }
 #endif

@@ -1,10 +1,10 @@
-#if os(macOS)
+#if canImport(AppKit)
 import AppKit
-import QuillEditor
 
-/// Messungen für Spike-Kriterium 1 (Laden, Tippen, Enter bei 1000 Blöcken).
+/// Messung Laden, Tippen und Enter bei vielen Blöcken (Spike-Kriterium 1, ADR-007).
+/// Läuft im Performance-Test und mit `-benchmark` im Release-Build.
 @MainActor
-public enum SpikeBenchmark {
+public enum EditorBenchmark {
     public struct Result: Codable, Sendable {
         public var blocks: Int
         public var loadMilliseconds: Double
@@ -30,7 +30,7 @@ public enum SpikeBenchmark {
     /// Lädt ein großes Dokument in `window`, tippt in die Mitte und misst pro Tastendruck
     /// Einfügen + Modellabgleich + Layout + Zeichnen des sichtbaren Bereichs.
     public static func run(in window: NSWindow, blockCount: Int = 1000, keystrokes: Int = 200, enters: Int = 50) -> Result {
-        let document = SpikeSamples.large(blockCount: blockCount)
+        let document = sampleDocument(blockCount: blockCount)
 
         let loadStart = ContinuousClock.now
         let controller = BlockEditorController(document: document)
@@ -62,6 +62,25 @@ public enum SpikeBenchmark {
         }
 
         return Result(blocks: controller.document.count, loadMilliseconds: load, typing: Stats(typing), enter: Stats(enter))
+    }
+
+    /// Großes Dokument mit gemischten Blockarten.
+    public static func sampleDocument(blockCount: Int) -> EditorDocument {
+        let sentence = "Quill speichert lokal, startet schnell und hält den Text im Mittelpunkt. "
+        var blocks: [EditorBlock] = []
+        blocks.reserveCapacity(blockCount)
+        for index in 0..<blockCount {
+            switch index % 20 {
+            case 0: blocks.append(EditorBlock(kind: .heading2, text: "Abschnitt \(index / 20 + 1)"))
+            case 1...3: blocks.append(EditorBlock(kind: .bulleted, text: "Punkt \(index)", indent: index % 2))
+            case 4...6: blocks.append(EditorBlock(kind: .numbered, text: "Schritt \(index)"))
+            case 7, 8: blocks.append(EditorBlock(kind: .todo, text: "Aufgabe \(index)", isChecked: index % 2 == 0))
+            case 9: blocks.append(EditorBlock(kind: .quote, text: sentence))
+            case 10: blocks.append(EditorBlock(kind: .code, text: "func f\(index)() {\n    return\n}", codeLanguage: "swift"))
+            default: blocks.append(EditorBlock(text: String(repeating: sentence, count: 1 + index % 3)))
+            }
+        }
+        return EditorDocument(blocks: blocks)
     }
 
     private static func forceLayoutAndDisplay(_ controller: BlockEditorController) {

@@ -9,19 +9,18 @@ public struct SlashCommand: Identifiable, Equatable, Sendable {
     public let shortcut: String?
     let aliases: [String]
 
-    /// Alle Befehle in Menü-Reihenfolge.
+    /// Alle Befehle in Menü-Reihenfolge. „Bild“ folgt in Phase 4 (Asset-Anbindung).
     public static let all: [SlashCommand] = [
-        .init(kind: .paragraph, title: "Text", symbol: "text.alignleft", shortcut: nil, aliases: ["text", "absatz", "paragraph"]),
-        .init(kind: .heading1, title: "Überschrift 1", symbol: "textformat.size.larger", shortcut: "#", aliases: ["h1", "heading", "titel"]),
-        .init(kind: .heading2, title: "Überschrift 2", symbol: "textformat.size", shortcut: "##", aliases: ["h2", "heading"]),
-        .init(kind: .heading3, title: "Überschrift 3", symbol: "textformat.size.smaller", shortcut: "###", aliases: ["h3", "heading"]),
-        .init(kind: .bulleted, title: "Aufzählung", symbol: "list.bullet", shortcut: "-", aliases: ["liste", "bullet", "ul"]),
-        .init(kind: .numbered, title: "Nummerierte Liste", symbol: "list.number", shortcut: "1.", aliases: ["liste", "numbered", "ol"]),
-        .init(kind: .todo, title: "To-do", symbol: "checklist", shortcut: "[]", aliases: ["aufgabe", "checkbox", "todo", "task"]),
-        .init(kind: .quote, title: "Zitat", symbol: "text.quote", shortcut: ">", aliases: ["quote", "blockquote"]),
-        .init(kind: .code, title: "Code", symbol: "chevron.left.forwardslash.chevron.right", shortcut: "```", aliases: ["code", "snippet"]),
-        .init(kind: .divider, title: "Trenner", symbol: "minus", shortcut: "---", aliases: ["divider", "linie", "hr"]),
-        .init(kind: .image, title: "Bild", symbol: "photo", shortcut: nil, aliases: ["image", "foto", "img"]),
+        .init(kind: .paragraph, title: String(localized: "Text", bundle: .module), symbol: "text.alignleft", shortcut: nil, aliases: ["text", "absatz", "paragraph"]),
+        .init(kind: .heading1, title: String(localized: "Überschrift 1", bundle: .module), symbol: "textformat.size.larger", shortcut: "#", aliases: ["h1", "heading", "titel"]),
+        .init(kind: .heading2, title: String(localized: "Überschrift 2", bundle: .module), symbol: "textformat.size", shortcut: "##", aliases: ["h2", "heading"]),
+        .init(kind: .heading3, title: String(localized: "Überschrift 3", bundle: .module), symbol: "textformat.size.smaller", shortcut: "###", aliases: ["h3", "heading"]),
+        .init(kind: .bulleted, title: String(localized: "Aufzählung", bundle: .module), symbol: "list.bullet", shortcut: "-", aliases: ["liste", "bullet", "ul"]),
+        .init(kind: .numbered, title: String(localized: "Nummerierte Liste", bundle: .module), symbol: "list.number", shortcut: "1.", aliases: ["liste", "numbered", "ol"]),
+        .init(kind: .todo, title: String(localized: "To-do", bundle: .module), symbol: "checklist", shortcut: "[]", aliases: ["aufgabe", "checkbox", "todo", "task"]),
+        .init(kind: .quote, title: String(localized: "Zitat", bundle: .module), symbol: "text.quote", shortcut: ">", aliases: ["quote", "blockquote"]),
+        .init(kind: .code, title: String(localized: "Code", bundle: .module), symbol: "chevron.left.forwardslash.chevron.right", shortcut: "```", aliases: ["code", "snippet"]),
+        .init(kind: .divider, title: String(localized: "Trenner", bundle: .module), symbol: "minus", shortcut: "---", aliases: ["divider", "linie", "hr"]),
     ]
 
     /// Filtert nach Titel und Aliassen, ohne Groß-/Kleinschreibung und Akzente.

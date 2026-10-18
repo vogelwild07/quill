@@ -1,9 +1,9 @@
 import AppKit
 import QuillEditor
-import QuillEditorSpike
 import SwiftUI
 
-/// Wegwerf-App für den Editor-Spike (Phase 1). Wird nach dem ADR entfernt.
+/// Wegwerf-App für den Editor-Spike, nutzt seit Phase 3 `QuillEditor`.
+/// Wird am Ende von Phase 3 gelöscht (ADR-007).
 @main
 struct EditorSpikeApp: App {
     @NSApplicationDelegateAdaptor private var appDelegate: SpikeAppDelegate
@@ -18,7 +18,7 @@ struct EditorSpikeApp: App {
             CommandMenu("Spike") {
                 Button("Willkommensdokument") { session.load(SpikeSamples.welcome) }
                     .keyboardShortcut("1", modifiers: [.command, .option])
-                Button("1000 Blöcke laden") { session.load(SpikeSamples.large(blockCount: 1000)) }
+                Button("1000 Blöcke laden") { session.load(EditorBenchmark.sampleDocument(blockCount: 1000)) }
                     .keyboardShortcut("2", modifiers: [.command, .option])
                 Divider()
                 Button(session.showsMarkdown ? "Markdown ausblenden" : "Markdown einblenden") {
@@ -86,7 +86,7 @@ final class SpikeAppDelegate: NSObject, NSApplicationDelegate {
                     styleMask: [.titled, .resizable], backing: .buffered, defer: false
                 )
                 window.makeKeyAndOrderFront(nil)
-                let result = SpikeBenchmark.run(in: window)
+                let result = EditorBenchmark.run(in: window)
                 let encoder = JSONEncoder()
                 encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
                 if let data = try? encoder.encode(result), let json = String(data: data, encoding: .utf8) {
