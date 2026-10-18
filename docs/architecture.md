@@ -29,11 +29,10 @@ quill/
 │  ├─ Sources/{QuillModel,QuillEditor,QuillFeatures,QuillExport,QuillDesign}
 │  └─ Tests/                    Swift Testing
 ├─ QuillUITests/                XCUITest
-├─ Spikes/EditorSpike/          Wegwerf-Target (Phase 1)
 └─ docs/                        architecture, decisions, data-model, design, roadmap, research/
 ```
 
-Bundle-IDs: `de.vogel.quill`, `de.vogel.quill.UITests`, `de.vogel.quill.EditorSpike`.
+Bundle-IDs: `de.vogel.quill`, `de.vogel.quill.UITests`.
 
 ## Block-Editor
 
@@ -64,7 +63,25 @@ Grund: Selektion, Cursorbewegung und Kopieren über Blöcke hinweg, IME, Rechtsc
 | Darstellung | `BlockLayoutFragment` zeichnet Bullet, Nummer, Checkbox, Zitatbalken, Code-Hintergrund und Trenner | neutral (TextKit 2) |
 | Eingabe | `BlockEditorController` (`NSTextViewDelegate`, `NSTextStorageDelegate`) | AppKit, iOS-Gegenstück später |
 | Oberfläche | `BlockTextView` (Griff, Drop, Checkbox-Klick, Zwischenablage), `SlashMenuController` (Glass-Panel), `BlockEditorView` (`NSViewRepresentable`) | AppKit |
-| Persistenz | `EditorPersistenceBridge`: entprellt (≈ 300 ms), Diffs pro Block über `PageStore.applyEdits` | neutral (Phase 3) |
+| Modell (Inline) | `InlineText`, `InlineSpan`, `InlineMark`, `EditorDocument+Inline` | neutral |
+| Persistenz | `EditorPersistenceBridge`: entprellt (≈ 300 ms), Diffs pro Block über `PageStore.applyEdits` | neutral |
+| Seite | `PageEditorSession`, `PageHeaderView` (Icon, Titel) in `QuillFeatures` | AppKit + SwiftUI |
+
+Der Controller ist auf Erweiterungen verteilt: `+Input` (Tastatur, Kürzel, Slash), `+Sync` (Text ↔ Modell, Undo), `+Clipboard`, `+Drag`, `+Formatting` (⌘B … ⌘K), `+Page` (Kopf, Fokus, Neuladen).
+
+### Inline-Formatierung
+
+- Im Modell: `EditorBlock.spans` mit UTF-16-Bereichen und `InlineStyle` (Marks + Link). `InlineText.normalized` hält Spans überlappungsfrei und fasst gleiche Nachbarn zusammen. Code-Blöcke und atomare Blöcke tragen keine Marks.
+- Im Textspeicher sind `.quillMarks` (sortierte Rohwerte) und `.link` die Quelle; Schrift, Hintergrund und Durchstreichung werden daraus abgeleitet (`BlockStyle.inlineAttributes`).
+- Menü **Format** (`CommandGroup(after: .textFormatting)`) schickt Selektoren aus `EditorFormattingActions` über die Responder-Kette, damit die Befehle nur im Editor wirken. Ohne Auswahl ändern sie die Schreibattribute.
+- Gespeichert als `Block.richText` (Format in `data-model.md`), Markdown-Export über `MarkdownSerializer.inlineMarkdown`.
+
+### Editor in der Seite
+
+- `PageDetailView` erzeugt pro Seite eine `PageEditorSession`: Controller, Bridge und Kopf. Der Kopf (`PageHeaderView` in `EditorHeaderView`) sitzt im oberen Inset der Text-View und scrollt mit; seine Höhe misst `NSHostingController.sizeThatFits`.
+- ↩ im Titel → Anfang des ersten Blocks; ↑ in der ersten Zeile → Titel, Cursor am Ende.
+- Jeder Editor hat einen eigenen `UndoManager`, damit Laden oder Neuladen nicht das Undo der Sidebar (Fenster) leert.
+- Speichern: entprellt beim Tippen, sofort beim Seitenwechsel und Schließen (`close()` → `flush()`), beim Beenden `applicationShouldTerminate` → `.terminateLater`, `EditorPersistenceBridge.flushAll()`, danach Backup. Regeln in ADR-013.
 
 ### Erkenntnisse aus dem Spike
 
@@ -89,7 +106,14 @@ Gemessen im Release-Build, echtes Fenster, 1000 Blöcke:
 | 7 | Selektion über Blöcke → ⌘C → Markdown/Plain/RTF | korrekt | Tests ✅ (4 Typen) |
 | 8 | IME, VoiceOver-Grundnavigation, Dark Mode | ohne Fehler | Markierter Text per Test ✅; tote Tasten (´e, ^a, ⌥n n) vom Nutzer manuell ✅, gleicher Pfad wie IME; Japanisch nicht manuell geprüft; AX-Text ✅; Dark Mode ✅ |
 
-Der Code in `QuillEditorSpike` und `Spikes/EditorSpike` ist Wegwerf-Code. Was davon in Phase 3 nach `QuillEditor` überführt wird und wann der Spike gelöscht wird, legt ADR-007 fest.
+Der Spike ist in Phase 3 nach `QuillEditor` überführt und gelöscht worden (ADR-007). Letzter Stand: Git-Tag `editor-spike`. `-benchmark` ist jetzt der Performance-Test, `-snapshot` der Snapshot-Test.
+
+### Erkenntnisse aus Phase 3
+
+- **SF Symbols einfärben:** `NSColor.set()` färbt ein Symbolbild beim `draw(in:)` nicht ein; es bleibt schwarz und verschwindet im Dunkelmodus. Selbst gezeichnete Elemente deshalb mit Pfaden in Systemfarben zeichnen (Griff ⋮⋮) oder das Symbol über `SymbolConfiguration` färben.
+- **Kein ⋮⋮-Symbol:** `grip.vertical` und `circle.grid.2x3` gibt es unter macOS 26 nicht; der Griff sind sechs gezeichnete Punkte.
+- **SwiftUI-Textfeld fokussieren** markiert den ganzen Inhalt. Eine Einfügemarke per `TextSelection` muss einen Durchlauf später gesetzt werden.
+- **Kopfhöhe:** Der Kopf muss Titel und Icon schon beim ersten Messen kennen, sonst überdeckt ein mehrzeiliger Titel kurz den Text.
 
 ## Persistenz und Fenster (Phase 2)
 
@@ -107,15 +131,18 @@ Der Code in `QuillEditorSpike` und `Spikes/EditorSpike` ist Wegwerf-Code. Was da
 | ↩ (Sidebar) | Umbenennen |
 | ⌘⌫ (Sidebar) | In den Papierkorb legen (Menüpunkt ohne Kürzel, siehe ADR-012) |
 | ⌘Z / ⇧⌘Z | Rückgängig / Wiederholen |
-| ⌘B / ⌘I (Editor) | Fett / Kursiv (Phase 3) |
-| ⇧⌘M (Editor) | Inline-Code (Phase 3) |
-| ⇧⌘X (Editor) | Durchgestrichen (Phase 3) |
-| ⌘K (Editor) | Link einfügen oder bearbeiten (Phase 3) |
+| ↩ (Titel) / ↑ (erste Zeile) | In den Text / zurück in den Titel |
+| ⌘B / ⌘I (Editor) | Fett / Kursiv |
+| ⇧⌘M (Editor) | Inline-Code |
+| ⇧⌘X (Editor) | Durchgestrichen |
+| ⌘K (Editor) | Link einfügen oder bearbeiten |
 | ⌘O | Schnell öffnen: Suche nach Titel und Volltext (Phase 5) |
 
 ⌘K ist bewusst der Link wie in Pages, Mail und Notizen; die Suche liegt deshalb auf ⌘O. ⌘E bleibt frei für den Standard „Auswahl für Suche verwenden“ (HIG), Inline-Code liegt deshalb auf ⇧⌘M. Nicht verwenden: ⇧⌘C („Farben einblenden“).
 
 ## Tests
 
-- Unit: Swift Testing pro Modul. `EditorDocument` und Exporter mit Golden Files, `PageStore` mit In-Memory-`ModelContainer`, Backups und Migrationen mit Stores im Temp-Ordner (ADR-010, ADR-011), `PageTree` ohne SwiftData.
-- UI: XCUITest, immer über `XCUIApplication.quill()` (ohne Fensterzustand, Store nur im Arbeitsspeicher). Phase 2: Seite anlegen und umbenennen, Unterseite, Papierkorb mit Undo, Tabs. Der Test „Ziehen zum Verschachteln“ ist übersprungen (`XCTSkip`): Synthetische Drags von XCUITest starten in der `NSOutlineView` kein Ziehen; die Logik ist per Unit-Test abgedeckt, das Ziehen selbst wird von Hand geprüft. Später: Tippen, Slash-Menü, Schnell öffnen (⌘O). Vor dem Lauf darf keine andere Quill-Instanz laufen (z. B. aus ⌘R), sonst kann XCTest sie nicht beenden.
+- Unit: Swift Testing pro Modul. `EditorDocument` und Exporter mit Golden Files, Editor-Controller mit Offscreen-Fenster (Tastatureingaben, Undo, Zwischenablage, Formatieren), `EditorPersistenceBridge` gegen In-Memory-Store, `PageStore` mit In-Memory-`ModelContainer`, Backups und Migrationen mit Stores im Temp-Ordner (ADR-010, ADR-011), `PageTree` ohne SwiftData.
+- UI: XCUITest, immer über `XCUIApplication.quill()` (ohne Fensterzustand, Store nur im Arbeitsspeicher). Phase 2: Seite anlegen und umbenennen, Unterseite, Papierkorb mit Undo, Tabs. Der Test „Ziehen zum Verschachteln“ ist übersprungen (`XCTSkip`): Synthetische Drags von XCUITest starten in der `NSOutlineView` kein Ziehen; die Logik ist per Unit-Test abgedeckt, das Ziehen selbst wird von Hand geprüft. Phase 3 (`EditorUITests`): Tippen mit Markdown-Kürzeln, Titel ↔ Text, Text bleibt beim Seitenwechsel, Undo im Editor getrennt von der Sidebar, ⌘B und Menü Format, Link-Popover. Die App nutzt dabei per `-QuillPasteboardName` eine eigene Zwischenablage; die allgemeine bleibt unberührt (geprüft über `changeCount`). Später: Slash-Menü, Schnell öffnen (⌘O). Vor dem Lauf darf keine andere Quill-Instanz laufen (z. B. aus ⌘R), sonst kann XCTest sie nicht beenden.
+- Darstellung: `EditorSnapshotTests` rendert den Editor hell und dunkel über `cacheDisplay` (keine Bildschirmfotos) und prüft, dass im Dunkelmodus nichts dunkler als der Hintergrund gezeichnet wird; PNGs in `$TMPDIR/QuillEditorSnapshots/`.
+- Performance: `EditorBenchmark` im Test-Target, p95 < 16 ms pro Tastendruck bei 1000 Blöcken (Debug-Build).

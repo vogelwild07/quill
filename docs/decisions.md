@@ -62,6 +62,8 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 
 **Löschen:** Ja. Am Ende von Phase 3, im selben PR, sobald die Quill-App den Editor zeigt und alle übernommenen Tests grün sind, werden gelöscht: `Spikes/EditorSpike/`, das Target und Schema `EditorSpike`, das Modul `QuillEditorSpike` samt Produkt und Testtarget. Vorher wird der letzte Spike-Stand mit dem Git-Tag `editor-spike` markiert, damit er auffindbar bleibt.
 
+**Stand Phase 3:** Erledigt. Tag `editor-spike` gesetzt; `QuillEditorSpike` wurde mit Zustimmung des Nutzers schon nach dem ersten Prüfpunkt gelöscht, `Spikes/EditorSpike` samt Target und Scheme am Ende der Phase. `SpikeBenchmark` ist `EditorBenchmark` im Test-Target, `SpikeSamples` und `-snapshot` ersetzt `EditorSnapshotTests`.
+
 ## ADR-008: UI-Tests starten ohne gespeicherten Fensterzustand (2026-10-18)
 
 **Kontext:** Nach ⌘R, Schließen des letzten Fensters und hartem Beenden (Xcode-Stop) sichert AppKit den Zustand „0 Fenster“. Unter macOS 27 liegt er im Dienst `com.apple.appkit.restoration_storage`, nicht in `Saved Application State/`. Programmatische Starts durch XCTest stellen diesen Zustand wieder her und öffnen kein Fenster. `testLaunchShowsMainWindow` schlug daher dauerhaft fehl, weil jeder Fehlversuch die App wieder hart beendet. Starts über Finder/Dock öffnen trotzdem ein Fenster; Nutzer sind nicht betroffen. `defaultLaunchBehavior(.presented)` und `restorationBehavior(.disabled)` helfen nicht, weil AppKit vor SwiftUI entscheidet.
@@ -110,3 +112,19 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - **Undo/Redo** für Anlegen, Umbenennen in der Sidebar, Verschieben und Papierkorb (`PageOperations`), damit nichts verloren geht, bevor es in Phase 5 eine Papierkorb-Ansicht gibt. Tippen im Titelfeld nutzt das Undo des Textfelds.
 - **Kürzel wie in Apple Notizen:** ⌘N Neue Seite, ⇧⌘N Neue Unterseite, ⌥⌘N Neues Fenster, ⌘T Neuer Tab.
 **Konsequenzen:** Mehr AppKit-Code in `QuillFeatures` (hinter `#if canImport(AppKit)`). Bedienungshilfen, Typ-Auswahl und Ausklappen per Pfeiltasten kommen von AppKit.
+
+## ADR-013: Inline-Formatierung, Speichern aus dem Editor und zwei Fenster (2026-10-18)
+
+**Kontext:** Phase 3 bindet den Editor an `PageStore` an. Offen waren das Speicherformat für Formatierung, wann und wie oft gespeichert wird, was bei zwei Fenstern mit derselben Seite passiert und wie Undo von Editor und Sidebar zusammenspielen.
+**Entscheidung:**
+- **Formatierung:** Marks `bold`, `italic`, `code`, `strikethrough` und ein Link pro Bereich. Im Modell als Spans (`InlineText`), gespeichert als versioniertes JSON in `Block.richText` (Format in `data-model.md`), `nil` ohne Formatierung. Marks sind Strings, damit unbekannte Werte späterer Versionen erhalten bleiben. `Block.text` bleibt maßgeblich: Passt `richText` nicht dazu, gilt der Klartext.
+- **Kürzel:** ⌘B, ⌘I, ⇧⌘M (Inline-Code wie in Apple Notizen; ⌘E bleibt „Auswahl für Suche verwenden“, ⇧⌘C ist „Farben einblenden“), ⇧⌘X, ⌘K (Link; Suche deshalb auf ⌘O). Das Menü Format erreicht den Editor über die Responder-Kette.
+- **Speichern** über `EditorPersistenceBridge`: Diff gegen den zuletzt gespeicherten Stand, entprellt 300 ms; sofort beim Seitenwechsel, beim Schließen und beim Beenden (`.terminateLater`, alle Editoren speichern, dann Backup). Eine leere neue Seite wird erst nach dem ersten Tippen geschrieben. Schlägt Speichern fehl, bleiben die Änderungen vorgemerkt und werden beim nächsten Anlass erneut versucht. Gleichzeitige `flush()`-Aufrufe warten aufeinander.
+- **Zwei Fenster mit derselben Seite (bewusste Vereinfachung):** Nach jeder Speicherung lädt ein anderes Fenster die Seite neu, sofern es selbst keine ungespeicherten Änderungen hat. Sonst gewinnt pro Block die letzte Speicherung. Es gibt kein Zusammenführen innerhalb eines Blocks.
+- **Undo:** Jeder Editor hat einen eigenen `UndoManager`. ⌘Z im Text betrifft nur den Text, die Sidebar behält ihr Undo (ADR-012).
+- **Kopf im Editor:** Icon und Titel sitzen im oberen Inset der Text-View und scrollen mit dem Text. ↩ im Titel springt in den Text, ↑ in der ersten Zeile zurück.
+- **UI-Tests** lenken die Zwischenablage des Editors mit `-QuillPasteboardName` auf ein eigenes `NSPasteboard`, damit die des Nutzers weder gelesen noch überschrieben wird.
+**Konsequenzen:**
+- Für CloudKit-Sync reicht „letzte Speicherung pro Block gewinnt“ nicht. Dort kommen Änderungen verzögert und von mehreren Geräten; es braucht eine echte Konfliktlösung (mindestens pro Block mit `updatedAt` und sichtbarem Konfliktfall, besser Zusammenführen innerhalb eines Blocks). Das wird vor dem Sync entschieden.
+- Undo-Schritte im Editor überleben keinen Seitenwechsel.
+- `richText` ist plattformneutral und vom Markdown-Export lesbar; Änderungen am Format brauchen eine neue `version`.

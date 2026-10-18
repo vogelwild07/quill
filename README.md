@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche Produktivitäts-App für macOS: Seiten, Notizen und Aufgaben in einem nativen Block-Editor.
 
-> Status: Phase 2 (Datenmodell + Sidebar) abgeschlossen. Seiten anlegen, verschachteln, verschieben, Tabs. Der Editor folgt in Phase 3.
+> Status: Phase 3 (Editor: Text) abgeschlossen. Seiten mit Block-Editor: Überschriften, Listen, To-dos, Zitat, Code, Trenner, Inline-Formatierung und Links; Speichern automatisch.
 
 ## Voraussetzungen
 
@@ -19,20 +19,21 @@ xcodebuild -project Quill.xcodeproj -scheme Quill -destination 'platform=macOS' 
 swift test --package-path Packages/QuillKit
 ```
 
-Editor-Spike (Wegwerf-Prototyp aus Phase 1): Scheme „EditorSpike“, ⌘R. Mit `-benchmark` misst er 1000 Blöcke und gibt JSON aus, mit `-snapshot` schreibt er Bilder (hell und dunkel) in den temporären Ordner der App.
+Darstellung prüfen ohne Bildschirmfotos: `EditorSnapshotTests` rendert den Editor hell und dunkel und legt PNGs in `$TMPDIR/QuillEditorSnapshots/` ab. Der Performance-Test misst Tippen bei 1000 Blöcken (p95 < 16 ms). Der letzte Stand des Editor-Spikes aus Phase 1 ist der Git-Tag `editor-spike`.
 
 ## Daten und Backups
 
 Die Datenbank liegt in `~/Library/Containers/de.vogel.quill/Data/Library/Application Support/Quill/`. Automatische Backups (beim Start höchstens einmal pro Tag, vor jeder Migration, beim Beenden nach Änderungen) liegen daneben in `Backups/` und sind über **Ablage → Backups im Finder zeigen** erreichbar. Wiederherstellen von Hand: [Datenmodell](docs/data-model.md#backup-von-hand-wiederherstellen).
 
-Startargument `-QuillInMemoryStore YES`: Daten nur im Arbeitsspeicher, keine Backups (UI-Tests).
+Startargumente für UI-Tests:
+- `-QuillInMemoryStore YES`: Daten nur im Arbeitsspeicher, keine Backups.
+- `-QuillPasteboardName <Name>`: Kopieren und Einsetzen im Editor über eine eigene Zwischenablage statt der allgemeinen.
 
 ## Struktur
 
 - `App/` – macOS-App-Target (Scenes, Menüleiste, Ressourcen)
 - `Packages/QuillKit/` – gesamte Logik: Model, Editor, Features, Export, Design
 - `QuillUITests/` – UI-Tests
-- `Spikes/EditorSpike/` – Wegwerf-Target des Editor-Spikes (wird in Phase 3 entfernt)
 - `docs/` – [Architektur](docs/architecture.md), [Entscheidungen](docs/decisions.md), [Datenmodell](docs/data-model.md), [Design](docs/design.md), [Roadmap](docs/roadmap.md), [Product Brief](docs/product-brief.md)
 
 ## Lizenz
