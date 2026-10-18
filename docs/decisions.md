@@ -157,3 +157,16 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Ein und dasselbe Bild auf zwei Seiten belegt doppelt Platz (ein Asset pro Block).
 - Markdown in der Zwischenablage ist für Bilder `![]()`; Pfade unter `assets/` kommen mit dem Export (Phase 6).
 - Beim Verkleinern wird die DPI mitskaliert, damit ein Bild gleich groß erscheint.
+
+## ADR-016: Kurzbefehle und Aktionen für Blöcke (2026-10-18)
+
+**Kontext:** Phase 4 bringt Blockart, Verschieben und Duplizieren auf die Tastatur („Tastatur zuerst“) und ein Kontextmenü an den Griff. Die Tasten dürfen keine Standard-Kürzel von macOS überdecken.
+**Entscheidung:**
+- **Format › Blockart:** ⌥⌘0–7 in Slash-Menü-Reihenfolge (Text, Überschrift 1–3, Aufzählung, Nummerierte Liste, To-do, Zitat). ⌥⌘8 ist „Zoom ein/aus“ der Bedienungshilfen und erreicht die App dann nicht; Code hat deshalb kein Kürzel (Kürzel „``` “ und Menü bleiben). Liste und Ziffern an einer Stelle: `BlockConversion`.
+- **Verschieben:** ⌥⌘↑/↓ statt ⌥⇧↑/↓, das in Textfeldern die Auswahl absatzweise erweitert (`StandardKeyBinding.dict`). Frei laut Standardbelegung; ⌃⌘↓ ist dort Schreibrichtung.
+- **Duplizieren** ⌘D, **Abhaken** ⌘↩: in Quill und der Standardbelegung nicht vergeben.
+- **Griff:** Klick wählt die Blöcke aus, Ziehen ab 3 pt, Rechtsklick öffnet Löschen, Duplizieren, Umwandeln in … (dieselbe Liste wie Format › Blockart). Für VoiceOver dieselben Aktionen als eigene Aktionen am Griff.
+- Alle Aktionen wirken auf die Blöcke der Auswahl (sonst den Block am Cursor bzw. am Griff) und sind ein Undo-Schritt.
+**Konsequenzen:**
+- Die Menüpunkte liegen im Menü „Format“ und laufen über die Responder-Kette wie die Inline-Formate.
+- Markdown-Kürzel greifen in allen Textblöcken außer Code; „## “ in einer Aufzählung macht eine Überschrift daraus.

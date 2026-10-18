@@ -64,7 +64,7 @@ Grund: Selektion, Cursorbewegung und Kopieren über Blöcke hinweg, IME, Rechtsc
 | Abbildung | `BlockRenderer`, `BlockStyle`, Attribut-Schlüssel | neutral (Fonts über `#if`) |
 | Darstellung | `BlockLayoutFragment` zeichnet Bullet, Nummer, Checkbox, Zitatbalken, Code-Hintergrund, Trenner und Bilder (`ImageAttachment` reserviert Platz, `EditorImageCache` hält dekodierte Bilder) | neutral (TextKit 2) |
 | Eingabe | `BlockEditorController` (`NSTextViewDelegate`, `NSTextStorageDelegate`) | AppKit, iOS-Gegenstück später |
-| Oberfläche | `BlockTextView` (Griff ⋮⋮ und Einfügen-Knopf ＋ bei Hover, Drop, Checkbox-Klick, Zwischenablage), `SlashMenuController` (Glass-Panel), `BlockEditorView` (`NSViewRepresentable`) | AppKit |
+| Oberfläche | `BlockTextView` (Griff ⋮⋮ mit Kontextmenü und Einfügen-Knopf ＋ bei Hover, Drop mit Mitscrollen, Checkbox-Klick, Zwischenablage), `SlashMenuController` (Glass-Panel), `BlockEditorView` (`NSViewRepresentable`) | AppKit |
 | Modell (Inline) | `InlineText`, `InlineSpan`, `InlineMark`, `EditorDocument+Inline` | neutral |
 | Persistenz | `EditorPersistenceBridge`: entprellt (≈ 300 ms), Diffs pro Block über `PageStore.applyEdits` | neutral |
 | Seite | `PageEditorSession`, `PageHeaderView` (Icon, Titel) in `QuillFeatures` | AppKit + SwiftUI |
@@ -120,6 +120,7 @@ Der Spike ist in Phase 3 nach `QuillEditor` überführt und gelöscht worden (AD
 
 - **Inline-Code-Hintergrund:** Über `.backgroundColor` reichte die Fläche einmal in die Zeile darüber (nicht wieder nachstellbar). Jetzt zeichnet `BlockLayoutFragment` sie selbst (`inlineCodeRects`): je Zeile ein Rechteck aus den Schriftmetriken um die Grundlinie, senkrecht auf die Zeile begrenzt. `InlineCodeSnapshotTests` vergleicht den Absatz darüber pixelgenau mit und ohne Inline-Code.
 - **Zeichnen außerhalb von `renderingSurfaceBounds`** schneidet TextKit ab; wer dekoriert, muss die Fläche dort aufnehmen.
+- **Schriften nur auf dem Main Thread:** `NSFont` lieferte in parallel laufenden Tests sporadisch `nil` (Absturz in `addAttributes`). Tests, die rendern, laufen deshalb auf dem Main Actor.
 - **Auswahländerung vor `textDidChange`:** Beim Tippen meldet sich die Auswahl, bevor die Absätze abgeglichen sind; dort nichts aus `paragraphStarts` lesen.
 
 ### Erkenntnisse aus Phase 3
@@ -150,13 +151,18 @@ Der Spike ist in Phase 3 nach `QuillEditor` überführt und gelöscht worden (AD
 | ⇧⌘M (Editor) | Inline-Code |
 | ⇧⌘X (Editor) | Durchgestrichen |
 | ⌘K (Editor) | Link einfügen oder bearbeiten |
+| ⌥⌘0–7 (Editor) | Blockart: Text, Überschrift 1–3, Aufzählung, Nummerierte Liste, To-do, Zitat (ADR-016) |
+| ⌘↩ (Editor) | To-dos der Auswahl abhaken |
+| ⌥⌘↑ / ⌥⌘↓ (Editor) | Block bzw. ausgewählte Blöcke verschieben |
+| ⌘D (Editor) | Block bzw. ausgewählte Blöcke duplizieren |
+| Rechtsklick auf ⋮⋮ | Löschen, Duplizieren, Umwandeln in … |
 | ⌘O | Schnell öffnen: Suche nach Titel und Volltext (Phase 5) |
 
-⌘K ist bewusst der Link wie in Pages, Mail und Notizen; die Suche liegt deshalb auf ⌘O. ⌘E bleibt frei für den Standard „Auswahl für Suche verwenden“ (HIG), Inline-Code liegt deshalb auf ⇧⌘M. Nicht verwenden: ⇧⌘C („Farben einblenden“).
+⌘K ist bewusst der Link wie in Pages, Mail und Notizen; die Suche liegt deshalb auf ⌘O. ⌘E bleibt frei für den Standard „Auswahl für Suche verwenden“ (HIG), Inline-Code liegt deshalb auf ⇧⌘M. Nicht verwenden: ⇧⌘C („Farben einblenden“), ⌥⌘8 (Zoom der Bedienungshilfen), ⌥⇧↑/↓ (Auswahl absatzweise erweitern).
 
 ## Tests
 
 - Unit: Swift Testing pro Modul. `EditorDocument` und Exporter mit Golden Files, Editor-Controller mit Offscreen-Fenster (Tastatureingaben, Undo, Zwischenablage, Formatieren), `EditorPersistenceBridge` gegen In-Memory-Store, `PageStore` mit In-Memory-`ModelContainer`, Backups und Migrationen mit Stores im Temp-Ordner (ADR-010, ADR-011), `PageTree` ohne SwiftData.
-- UI: XCUITest, immer über `XCUIApplication.quill()` (ohne Fensterzustand, Store nur im Arbeitsspeicher). Phase 2: Seite anlegen und umbenennen, Unterseite, Papierkorb mit Undo, Tabs. Der Test „Ziehen zum Verschachteln“ ist übersprungen (`XCTSkip`): Synthetische Drags von XCUITest starten in der `NSOutlineView` kein Ziehen; die Logik ist per Unit-Test abgedeckt, das Ziehen selbst wird von Hand geprüft. Phase 3 (`EditorUITests`): Tippen mit Markdown-Kürzeln, Titel ↔ Text, Text bleibt beim Seitenwechsel, Undo im Editor getrennt von der Sidebar, ⌘B und Menü Format, Link-Popover, ＋ bei Hover öffnet das Slash-Menü im neuen Block. Die App nutzt dabei per `-QuillPasteboardName` eine eigene Zwischenablage; die allgemeine bleibt unberührt (geprüft über `changeCount`). Phase 4 (`ImageBlockUITests`): Bild per ⌘V mit Undo/Redo, bleibt beim Seitenwechsel, Einsetzen über eine Auswahl als ein Undo-Schritt, Hinweis „Bild wurde verkleinert“ (AX-Gruppe `editor.notice`), Eintrag „Bild“ im Slash-Menü; Testbilder werden im Test erzeugt. Die Dateiauswahl (`NSOpenPanel`) läuft in der Sandbox außerhalb der App und wird von Hand geprüft. Später: Slash-Menü, Schnell öffnen (⌘O). Vor dem Lauf darf keine andere Quill-Instanz laufen (z. B. aus ⌘R), sonst kann XCTest sie nicht beenden.
+- UI: XCUITest, immer über `XCUIApplication.quill()` (ohne Fensterzustand, Store nur im Arbeitsspeicher). Phase 2: Seite anlegen und umbenennen, Unterseite, Papierkorb mit Undo, Tabs. Der Test „Ziehen zum Verschachteln“ ist übersprungen (`XCTSkip`): Synthetische Drags von XCUITest starten in der `NSOutlineView` kein Ziehen; die Logik ist per Unit-Test abgedeckt, das Ziehen selbst wird von Hand geprüft. Phase 3 (`EditorUITests`): Tippen mit Markdown-Kürzeln, Titel ↔ Text, Text bleibt beim Seitenwechsel, Undo im Editor getrennt von der Sidebar, ⌘B und Menü Format, Link-Popover, ＋ bei Hover öffnet das Slash-Menü im neuen Block (Escape nimmt es zurück), Slash-Menü per Tastatur und Maus über AX-Kennungen (`slash.menu`, `slash.<blockart>`), Schließen bei Fokusverlust, Format › Blockart und ⌘↩ (geprüft über das Markdown der eigenen Zwischenablage), ⌥⌘↓, Kontextmenü am Griff und ⌘D. Die App nutzt dabei per `-QuillPasteboardName` eine eigene Zwischenablage; die allgemeine bleibt unberührt (geprüft über `changeCount`). Phase 4 (`ImageBlockUITests`): Bild per ⌘V mit Undo/Redo, bleibt beim Seitenwechsel, Einsetzen über eine Auswahl als ein Undo-Schritt, Hinweis „Bild wurde verkleinert“ (AX-Gruppe `editor.notice`), Eintrag „Bild“ im Slash-Menü; Testbilder werden im Test erzeugt. Die Dateiauswahl (`NSOpenPanel`) läuft in der Sandbox außerhalb der App und wird von Hand geprüft. Später: Schnell öffnen (⌘O). Vor dem Lauf darf keine andere Quill-Instanz laufen (z. B. aus ⌘R), sonst kann XCTest sie nicht beenden.
 - Darstellung: `EditorSnapshotTests` rendert den Editor hell und dunkel über `cacheDisplay` (keine Bildschirmfotos) und prüft, dass im Dunkelmodus nichts dunkler als der Hintergrund gezeichnet wird; PNGs in `$TMPDIR/QuillEditorSnapshots/`.
 - Performance: `EditorBenchmark` im Test-Target, p95 < 16 ms pro Tastendruck bei 1000 Blöcken (Debug-Build).
