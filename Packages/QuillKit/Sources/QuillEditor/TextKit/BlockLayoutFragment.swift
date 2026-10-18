@@ -100,7 +100,6 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
             runs.append((range, string.attribute(.font, at: range.location, effectiveRange: nil) as? PlatformFont))
         }
         guard !runs.isEmpty else { return [] }
-        let text = string.string as NSString
         var rects: [CGRect] = []
         for line in textLineFragments {
             let lineRange = line.characterRange
@@ -108,10 +107,9 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
             for run in runs {
                 let overlap = NSIntersectionRange(run.range, lineRange)
                 guard overlap.length > 0 else { continue }
-                // Abschließenden Zeilenumbruch nicht mit unterlegen.
-                var end = NSMaxRange(overlap)
-                while end > overlap.location, [StorageCharacter.paragraphEnd, StorageCharacter.softBreakUnit].contains(text.character(at: end - 1)) { end -= 1 }
-                guard end > overlap.location else { continue }
+                // Ein Umbruch am Zeilenende hat dieselbe Position wie das Zeichen davor,
+                // wird also nicht mit unterlegt (Test `trailingSoftBreakIsNotUnderlaid`).
+                let end = NSMaxRange(overlap)
                 let startX = line.locationForCharacter(at: overlap.location).x
                 let endX = line.locationForCharacter(at: end).x
                 let font = run.font ?? markerFont
