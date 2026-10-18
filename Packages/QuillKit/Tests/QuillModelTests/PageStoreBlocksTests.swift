@@ -110,6 +110,46 @@ import Testing
         #expect(try ModelContext(container).fetch(FetchDescriptor<Page>()).first!.updatedAt == pageUpdated)
     }
 
+    /// Legt Blöcke mit festen Schlüsseln direkt im Store an (z. B. aus einem anderen Fenster).
+    private func insertBlocks(_ keys: [String: String], into pageID: UUID) throws -> [String: UUID] {
+        let context = ModelContext(container)
+        let page = try #require(try context.fetch(FetchDescriptor<Page>()).first { $0.id == pageID })
+        var ids: [String: UUID] = [:]
+        for (text, key) in keys {
+            let block = Block(text: text, sortKey: key)
+            context.insert(block)
+            block.page = page
+            ids[text] = block.id
+        }
+        try context.save()
+        return ids
+    }
+
+    /// Fehler 3 aus dem Review: Ein Block außerhalb von `order` (anderes Fenster) liegt
+    /// genau auf der Mitte der Lücke, in die ein neuer Block kommt.
+    @Test func newBlockDoesNotReuseKeyOfBlockOutsideOrder() async throws {
+        let page = try await store.createPage()
+        let ids = try insertBlocks(["P": "A", "fremd": "a", "Q": "z"], into: page)
+        let new = BlockSnapshot(id: UUID(), text: "neu")
+        try await store.applyEdits(page, BlockEdits(upserts: [new], order: [try #require(ids["P"]), new.id, try #require(ids["Q"])]))
+
+        let keys = try stored(page).map(\.sortKey)
+        #expect(Set(keys).count == keys.count, "doppelte Schlüssel: \(keys)")
+        let texts = try stored(page).map(\.text)
+        #expect(texts.first == "P" && texts.last == "Q")
+    }
+
+    /// Anhängen nach sehr großen Schlüsseln braucht keinen Ausweichpfad.
+    @Test func blocksAreAppendedAfterHighestKeys() async throws {
+        let page = try await store.createPage()
+        _ = try insertBlocks(["alt": "zzzz"], into: page)
+        let new = snapshots(["x", "y"])
+        try await store.applyEdits(page, BlockEdits(upserts: new))
+        let blocks = try stored(page)
+        #expect(blocks.map(\.text) == ["alt", "x", "y"])
+        #expect(Set(blocks.map(\.sortKey)).count == 3)
+    }
+
     @Test func longestIncreasingRunIgnoresInvalidKeys() {
         let keep = PageStore.longestIncreasingRun(["a1", "", "a3", "a2", "a4"])
         #expect(keep == [0, 2, 4] || keep == [0, 3, 4])

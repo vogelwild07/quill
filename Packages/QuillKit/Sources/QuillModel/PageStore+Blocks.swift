@@ -95,12 +95,17 @@ extension PageStore {
         }
 
         if let order = edits.order {
-            changed = assignSortKeys(order: order.compactMap { byID[$0] }) || changed
+            let ordered = order.compactMap { byID[$0] }
+            let orderedIDs = Set(ordered.map(\.id))
+            let others = byID.values.filter { !orderedIDs.contains($0.id) }
+            changed = assignSortKeys(order: ordered, others: others) || changed
         }
         // Neue Blöcke ohne Reihenfolge kommen ans Ende.
         let unplaced = inserted.filter { !FractionalIndex.isValid($0.sortKey) }
         if !unplaced.isEmpty {
             let last = byID.values.map(\.sortKey).filter(FractionalIndex.isValid).max()
+            // `last` ist gültig und die Lücke nach oben offen: wirft nicht (Test
+            // `blocksAreAppendedAfterHighestKeys`). Der Ausweichpfad ist nur Absicherung.
             let keys = (try? FractionalIndex.keys(count: unplaced.count, between: last, and: nil))
                 ?? FractionalIndex.keys(count: unplaced.count)
             for (block, key) in zip(unplaced, keys) { block.sortKey = key }
@@ -120,9 +125,12 @@ extension PageStore {
     }
 
     /// Vergibt Schlüssel so, dass `order` aufsteigend ist, und ändert dabei möglichst
-    /// wenige Blöcke. Gibt zurück, ob sich ein Schlüssel geändert hat.
-    private func assignSortKeys(order: [Block]) -> Bool {
+    /// wenige Blöcke. `others` sind Blöcke der Seite, die in `order` fehlen (z. B. aus
+    /// einem anderen Fenster); ihre Schlüssel werden nie doppelt vergeben.
+    /// Gibt zurück, ob sich ein Schlüssel geändert hat.
+    private func assignSortKeys(order: [Block], others: [Block]) -> Bool {
         let keep = Self.longestIncreasingRun(order.map(\.sortKey))
+        let foreignKeys = others.map(\.sortKey).filter(FractionalIndex.isValid).sorted()
         var changed = false
         var index = 0
         while index < order.count {
@@ -132,12 +140,19 @@ extension PageStore {
             }
             var end = index
             while end < order.count && !keep.contains(end) { end += 1 }
-            let lower = index > 0 ? order[index - 1].sortKey : nil
+            var lower = index > 0 ? order[index - 1].sortKey : nil
             let upper = end < order.count ? order[end].sortKey : nil
+            // Liegt ein fremder Schlüssel in der Lücke, beginnt sie dahinter. Sonst
+            // könnte die Mitte genau auf ihn fallen.
+            if let foreign = foreignKeys.last(where: { key in key > (lower ?? "") && upper.map { key < $0 } ?? true }) {
+                lower = foreign
+            }
             guard let keys = try? FractionalIndex.keys(count: end - index, between: lower, and: upper) else {
                 // Sollte nicht vorkommen (behaltene Schlüssel sind gültig und aufsteigend).
-                // Sicherheitsnetz: alle Blöcke der Reihenfolge neu nummerieren.
-                for (block, key) in zip(order, FractionalIndex.keys(count: order.count)) {
+                // Sicherheitsnetz: alle Blöcke der Seite neu nummerieren, fremde dahinter,
+                // damit kein Schlüssel doppelt vorkommt.
+                let all = order + others.sorted { $0.sortKey < $1.sortKey }
+                for (block, key) in zip(all, FractionalIndex.keys(count: all.count)) {
                     block.sortKey = key
                     block.updatedAt = .now
                 }
