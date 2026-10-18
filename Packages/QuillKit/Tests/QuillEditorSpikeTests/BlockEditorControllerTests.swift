@@ -1,0 +1,347 @@
+import AppKit
+import QuillEditor
+import Testing
+@testable import QuillEditorSpike
+
+/// Steuert Controller und Text-View wie Tastatureingaben, in einem Offscreen-Fenster.
+@MainActor
+private final class Harness {
+    let window: NSWindow
+    let editor: BlockEditorController
+    var textView: NSTextView { editor.textView }
+
+    init(_ blocks: [EditorBlock] = [EditorBlock()]) {
+        window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 900, height: 700), styleMask: [.titled], backing: .buffered, defer: false)
+        editor = BlockEditorController(document: EditorDocument(blocks: blocks))
+        window.contentView = editor.scrollView
+        editor.focus()
+    }
+
+    var document: EditorDocument { editor.document }
+    var texts: [String] { document.blocks.map(\.text) }
+    var kinds: [BlockKind] { document.blocks.map(\.kind) }
+    var storage: String { textView.string }
+
+    func caret(at block: Int, _ offset: Int) {
+        let location = editor.characterLocation(of: BlockPosition(block: block, offset: offset))
+        textView.setSelectedRange(NSRange(location: location, length: 0))
+    }
+
+    /// Jedes Zeichen ist wie in der App ein eigenes Tastaturereignis.
+    func type(_ text: String) {
+        for character in text {
+            textView.insertText(String(character), replacementRange: textView.selectedRange())
+            RunLoop.current.run(until: Date())
+        }
+    }
+
+    func press(_ selector: Selector) {
+        textView.doCommand(by: selector)
+    }
+
+    var caretPosition: BlockPosition { editor.position(atCharacter: textView.selectedRange().location) }
+
+    func undo() {
+        flushUndoGroup()
+        textView.undoManager?.undo()
+    }
+
+    func redo() {
+        flushUndoGroup()
+        textView.undoManager?.redo()
+    }
+
+    /// Schließt die automatische Undo-Gruppe wie am Ende eines Ereignisses.
+    func flushUndoGroup() {
+        textView.breakUndoCoalescing()
+        RunLoop.current.run(until: Date())
+    }
+
+    /// Invariante: Textspeicher entspricht dem Modell.
+    func expectConsistent(sourceLocation: SourceLocation = #_sourceLocation) {
+        let (parsed, repaired) = BlockRenderer.parse(textView.textStorage!)
+        #expect(parsed == document.blocks, sourceLocation: sourceLocation)
+        #expect(repaired.isEmpty, sourceLocation: sourceLocation)
+        #expect(storage.hasSuffix("\n"), sourceLocation: sourceLocation)
+    }
+}
+
+@MainActor
+@Suite("Spike: Tippen und Struktur", .serialized)
+struct TypingTests {
+    @Test func typingUpdatesModel() {
+        let h = Harness()
+        h.type("Hallo")
+        #expect(h.texts == ["Hallo"])
+        h.expectConsistent()
+    }
+
+    @Test func enterSplitsAndBackspaceMerges() {
+        let h = Harness([EditorBlock(text: "HalloWelt")])
+        h.caret(at: 0, 5)
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        #expect(h.texts == ["Hallo", "Welt"])
+        #expect(h.caretPosition == BlockPosition(block: 1, offset: 0))
+        h.press(#selector(NSResponder.deleteBackward(_:)))
+        #expect(h.texts == ["HalloWelt"])
+        #expect(h.caretPosition == BlockPosition(block: 0, offset: 5))
+        h.expectConsistent()
+    }
+
+    @Test func undoAndRedoRestoreStructure() {
+        let h = Harness([EditorBlock(kind: .bulleted, text: "AB")])
+        h.caret(at: 0, 1)
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        #expect(h.texts == ["A", "B"])
+        h.undo()
+        #expect(h.texts == ["AB"])
+        #expect(h.kinds == [.bulleted])
+        h.expectConsistent()
+        h.redo()
+        #expect(h.texts == ["A", "B"])
+        #expect(h.kinds == [.bulleted, .bulleted])
+        h.expectConsistent()
+    }
+
+    @Test func blockIDsSurviveUndo() {
+        let first = EditorBlock(text: "Eins")
+        let h = Harness([first, EditorBlock(text: "Zwei")])
+        h.caret(at: 1, 0)
+        h.press(#selector(NSResponder.deleteBackward(_:)))
+        #expect(h.texts == ["EinsZwei"])
+        h.undo()
+        #expect(h.texts == ["Eins", "Zwei"])
+        #expect(h.document[0].id == first.id)
+        h.expectConsistent()
+    }
+
+    @Test func tabIndentsAndShiftTabOutdents() {
+        let h = Harness([EditorBlock(kind: .bulleted, text: "A"), EditorBlock(kind: .bulleted, text: "B")])
+        h.caret(at: 1, 1)
+        h.press(#selector(NSResponder.insertTab(_:)))
+        #expect(h.document[1].indent == 1)
+        #expect(h.caretPosition == BlockPosition(block: 1, offset: 1))
+        h.press(#selector(NSResponder.insertBacktab(_:)))
+        #expect(h.document[1].indent == 0)
+        h.expectConsistent()
+    }
+
+    @Test func softLineBreakStaysInBlock() {
+        let h = Harness([EditorBlock(kind: .code, text: "a")])
+        h.caret(at: 0, 1)
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        h.type("b")
+        #expect(h.document.count == 1)
+        #expect(h.texts == ["a\nb"])
+        h.expectConsistent()
+    }
+
+    @Test func selectionAcrossBlocksIsReplacedByTyping() {
+        let h = Harness([EditorBlock(text: "Hallo"), EditorBlock(kind: .heading1, text: "mitte"), EditorBlock(text: "Welt")])
+        let start = h.editor.characterLocation(of: BlockPosition(block: 0, offset: 2))
+        let end = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 1))
+        h.textView.setSelectedRange(NSRange(location: start, length: end - start))
+        h.type("X")
+        #expect(h.texts == ["HaXelt"])
+        h.expectConsistent()
+    }
+
+    @Test func caretNeverPassesFinalNewline() {
+        let h = Harness([EditorBlock(text: "A")])
+        h.textView.setSelectedRange(NSRange(location: 2, length: 0))
+        #expect(h.textView.selectedRange().location == 1)
+    }
+
+    @Test func pastingLinesCreatesBlocks() {
+        let h = Harness()
+        h.textView.insertText("eins\nzwei\ndrei", replacementRange: h.textView.selectedRange())
+        #expect(h.texts == ["eins", "zwei", "drei"])
+        h.expectConsistent()
+    }
+
+    @Test func imeCompositionIsLeftToTextView() {
+        let h = Harness([EditorBlock(text: "")])
+        h.textView.setMarkedText("か", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: NSNotFound, length: 0))
+        h.textView.setMarkedText("かん", selectedRange: NSRange(location: 2, length: 0), replacementRange: NSRange(location: NSNotFound, length: 0))
+        h.textView.insertText("漢", replacementRange: NSRange(location: NSNotFound, length: 0))
+        #expect(h.texts == ["漢"])
+        h.expectConsistent()
+    }
+}
+
+@MainActor
+@Suite("Spike: Markdown-Kürzel", .serialized)
+struct ShortcutIntegrationTests {
+    @Test(arguments: [
+        ("# ", BlockKind.heading1), ("## ", .heading2), ("### ", .heading3), ("- ", .bulleted),
+        ("1. ", .numbered), ("[] ", .todo), ("> ", .quote), ("``` ", .code),
+    ])
+    func convertsWhileTyping(prefix: String, kind: BlockKind) {
+        let h = Harness()
+        h.type(prefix + "x")
+        #expect(h.kinds == [kind])
+        #expect(h.texts == ["x"])
+        h.expectConsistent()
+    }
+
+    @Test func dividerFromTripleDash() {
+        let h = Harness()
+        h.type("---")
+        #expect(h.kinds == [.divider, .paragraph])
+        #expect(h.caretPosition == BlockPosition(block: 1, offset: 0))
+        h.expectConsistent()
+    }
+
+    @Test func undoRevertsShortcutOnly() {
+        let h = Harness()
+        h.type("# ")
+        #expect(h.kinds == [.heading1])
+        h.undo()
+        #expect(h.kinds == [.paragraph])
+        #expect(h.texts == ["# "])
+        h.expectConsistent()
+        h.redo()
+        #expect(h.kinds == [.heading1])
+        #expect(h.texts == [""])
+    }
+
+    @Test func numberedListCountsUp() {
+        let h = Harness()
+        h.type("1. a")
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        h.type("b")
+        let ordinals = BlockRenderer.ordinals(for: h.document)
+        #expect(h.document.blocks.map { ordinals[$0.id] } == [1, 2])
+        let stored = h.textView.textStorage!.attribute(.quillOrdinal, at: h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0)), effectiveRange: nil) as? Int
+        #expect(stored == 2)
+    }
+}
+
+@MainActor
+@Suite("Spike: Slash-Menü", .serialized)
+struct SlashMenuIntegrationTests {
+    @Test func filtersAndChoosesWithKeyboard() {
+        let h = Harness([EditorBlock(text: "Ziele")])
+        h.caret(at: 0, 5)
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        h.type("/üb")
+        h.press(#selector(NSResponder.moveDown(_:)))
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        #expect(h.kinds == [.paragraph, .heading2])
+        #expect(h.texts == ["Ziele", ""])
+        h.expectConsistent()
+    }
+
+    @Test func escapeClosesAndKeepsText() {
+        let h = Harness()
+        h.type("/h")
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        #expect(h.texts == ["/h", ""])
+    }
+
+    @Test func slashInsideWordDoesNotOpen() {
+        let h = Harness()
+        h.type("und/oder")
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        #expect(h.texts == ["und/oder", ""])
+    }
+}
+
+@MainActor
+@Suite("Spike: Zwischenablage, Verschieben, Checkbox", .serialized)
+struct ClipboardAndMoveTests {
+    private func pasteboard() -> NSPasteboard { NSPasteboard(name: .init("de.vogel.quill.tests.\(UUID().uuidString)")) }
+
+    private func sample() -> Harness {
+        Harness([
+            EditorBlock(kind: .heading1, text: "Titel"),
+            EditorBlock(kind: .todo, text: "Aufgabe", isChecked: true),
+            EditorBlock(kind: .numbered, text: "eins"),
+            EditorBlock(text: "Ende"),
+        ])
+    }
+
+    @Test func copyWritesAllRepresentations() throws {
+        let h = sample()
+        let start = h.editor.characterLocation(of: BlockPosition(block: 0, offset: 2))
+        let end = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 4))
+        h.textView.setSelectedRange(NSRange(location: start, length: end - start))
+        let board = pasteboard()
+        #expect(h.editor.copySelection(to: board))
+
+        let types = Set(board.pasteboardItems?.first?.types ?? [])
+        #expect(types.isSuperset(of: [.string, .markdown, .rtf, .quillBlocks]))
+        #expect(board.string(forType: .markdown) == "# tel\n\n- [x] Aufgabe\n1. eins")
+        #expect(board.string(forType: .string) == "tel\nAufgabe\neins")
+        let data = try #require(board.data(forType: .quillBlocks))
+        let blocks = try JSONDecoder().decode([EditorBlock].self, from: data)
+        #expect(blocks.map(\.kind) == [.heading1, .todo, .numbered])
+    }
+
+    @Test func pastingQuillBlocksKeepsKindsWithNewIDs() {
+        let h = sample()
+        let start = h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0))
+        let end = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 4))
+        h.textView.setSelectedRange(NSRange(location: start, length: end - start))
+        let board = pasteboard()
+        _ = h.editor.copySelection(to: board)
+        h.caret(at: 3, 4)
+        #expect(h.editor.paste(from: board))
+        #expect(h.kinds == [.heading1, .todo, .numbered, .paragraph, .todo, .numbered])
+        #expect(Set(h.document.blocks.map(\.id)).count == 6)
+        h.expectConsistent()
+    }
+
+    @Test func movingBlocksIsUndoable() {
+        let h = sample()
+        let ids = [h.document[0].id, h.document[1].id]
+        #expect(h.editor.moveBlocks(withIDs: ids, to: 4))
+        #expect(h.texts == ["eins", "Ende", "Titel", "Aufgabe"])
+        h.expectConsistent()
+        h.undo()
+        #expect(h.texts == ["Titel", "Aufgabe", "eins", "Ende"])
+        h.expectConsistent()
+    }
+
+    @Test func movingOntoItselfDoesNothing() {
+        let h = sample()
+        #expect(!h.editor.moveBlocks(withIDs: [h.document[1].id], to: 2))
+        #expect(!h.editor.moveBlocks(withIDs: [h.document[1].id], to: 1))
+    }
+
+    @Test func checkboxTogglesAndKeepsSelection() {
+        let h = sample()
+        h.caret(at: 3, 2)
+        h.editor.toggleChecked(atCharacter: h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0)))
+        #expect(h.document[1].isChecked == false)
+        #expect(h.caretPosition == BlockPosition(block: 3, offset: 2))
+        h.expectConsistent()
+    }
+
+    @Test func imageBlockCanBeInsertedAndDeleted() {
+        let h = sample()
+        let image = NSImage(size: CGSize(width: 400, height: 200), flipped: false) { rect in
+            NSColor.systemTeal.setFill()
+            rect.fill()
+            return true
+        }
+        h.editor.insertImage(image, afterCharacter: h.editor.characterLocation(of: BlockPosition(block: 0, offset: 0)))
+        #expect(h.kinds == [.heading1, .image, .paragraph, .todo, .numbered, .paragraph])
+        h.caret(at: 1, 1)
+        h.press(#selector(NSResponder.deleteBackward(_:)))
+        #expect(h.kinds == [.heading1, .paragraph, .todo, .numbered, .paragraph])
+        h.expectConsistent()
+    }
+}
+
+@MainActor
+@Suite("Spike: Messung", .serialized)
+struct BenchmarkSmokeTests {
+    @Test func benchmarkRunsOnSmallDocument() {
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 900, height: 700), styleMask: [.titled], backing: .buffered, defer: false)
+        let result = SpikeBenchmark.run(in: window, blockCount: 100, keystrokes: 20, enters: 5)
+        #expect(result.blocks == 105)
+        #expect(result.typing.samples == 20)
+    }
+}

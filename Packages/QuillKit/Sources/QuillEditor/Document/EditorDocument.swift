@@ -150,6 +150,41 @@ public struct EditorDocument: Equatable, Sendable {
         return BlockPosition(block: start.block + newBlocks.count - 1, offset: cursorOffset)
     }
 
+    /// Fügt einen Block an einem Index ein.
+    public mutating func insertBlock(_ block: EditorBlock, at index: Int) {
+        blocks.insert(block, at: max(0, min(index, blocks.count)))
+    }
+
+    /// Fügt Blöcke an der Cursorposition ein (Einfügen aus der Zwischenablage).
+    /// Ein leerer Absatz wird ersetzt, sonst wird bei Bedarf geteilt.
+    /// Gibt die Position am Ende des letzten eingefügten Blocks zurück.
+    @discardableResult
+    public mutating func insertBlocks(_ newBlocks: [EditorBlock], at position: BlockPosition) -> BlockPosition {
+        guard !newBlocks.isEmpty else { return position }
+        let index = position.block
+        let block = blocks[index]
+        let insertAt: Int
+        if block.kind == .paragraph && block.text.isEmpty {
+            blocks.remove(at: index)
+            insertAt = index
+        } else if position.offset == 0 && !block.kind.isAtomic {
+            insertAt = index
+        } else if position.offset >= block.length || block.kind.isAtomic {
+            insertAt = index + 1
+        } else {
+            let (head, tail) = Self.split(block.text, at: position.offset)
+            blocks[index].text = head
+            var rest = block
+            rest.id = UUID()
+            rest.text = tail
+            blocks.insert(rest, at: index + 1)
+            insertAt = index + 1
+        }
+        blocks.insert(contentsOf: newBlocks, at: insertAt)
+        let last = insertAt + newBlocks.count - 1
+        return BlockPosition(block: last, offset: blocks[last].length)
+    }
+
     // MARK: Art, Einrückung, Häkchen
 
     public mutating func setKind(_ kind: BlockKind, at index: Int) {
@@ -238,7 +273,7 @@ public struct EditorDocument: Equatable, Sendable {
     // MARK: Hilfen
 
     /// Teilt einen String an einem UTF-16-Offset.
-    static func split(_ text: String, at offset: Int) -> (String, String) {
+    public static func split(_ text: String, at offset: Int) -> (String, String) {
         let ns = text as NSString
         let clamped = max(0, min(offset, ns.length))
         return (ns.substring(to: clamped), ns.substring(from: clamped))

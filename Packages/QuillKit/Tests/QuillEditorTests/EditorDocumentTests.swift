@@ -318,3 +318,35 @@ struct SerializerTests {
         #expect(SlashCommand.matching("").count == SlashCommand.all.count)
     }
 }
+
+@Suite("Blöcke einfügen")
+struct InsertBlocksTests {
+    private let pasted = [EditorBlock(kind: .heading2, text: "X"), EditorBlock(kind: .todo, text: "Y")]
+
+    @Test func replacesEmptyParagraph() {
+        var document = doc(EditorBlock(text: "A"), EditorBlock())
+        let cursor = document.insertBlocks(pasted, at: pos(1, 0))
+        #expect(document.blocks.map(\.text) == ["A", "X", "Y"])
+        #expect(cursor == pos(2, 1))
+    }
+
+    @Test func insertsBeforeAtBlockStart() {
+        var document = doc(EditorBlock(text: "A"))
+        document.insertBlocks(pasted, at: pos(0, 0))
+        #expect(document.blocks.map(\.text) == ["X", "Y", "A"])
+    }
+
+    @Test func insertsAfterAtBlockEnd() {
+        var document = doc(EditorBlock(text: "A"))
+        let cursor = document.insertBlocks(pasted, at: pos(0, 1))
+        #expect(document.blocks.map(\.text) == ["A", "X", "Y"])
+        #expect(cursor == pos(2, 1))
+    }
+
+    @Test func splitsInTheMiddle() {
+        var document = doc(EditorBlock(kind: .bulleted, text: "AB"))
+        document.insertBlocks(pasted, at: pos(0, 1))
+        #expect(document.blocks.map(\.text) == ["A", "X", "Y", "B"])
+        #expect(document.blocks.map(\.kind) == [.bulleted, .heading2, .todo, .bulleted])
+    }
+}
