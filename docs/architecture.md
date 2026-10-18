@@ -81,7 +81,7 @@ Der Controller ist auf Erweiterungen verteilt: `+Input` (Tastatur, Kürzel, Slas
 - `PageDetailView` erzeugt pro Seite eine `PageEditorSession`: Controller, Bridge und Kopf. Der Kopf (`PageHeaderView` in `EditorHeaderView`) sitzt im oberen Inset der Text-View und scrollt mit; seine Höhe misst `NSHostingController.sizeThatFits`.
 - ↩ im Titel → Anfang des ersten Blocks; ↑ in der ersten Zeile → Titel, Cursor am Ende.
 - Jeder Editor hat einen eigenen `UndoManager`, damit Laden oder Neuladen nicht das Undo der Sidebar (Fenster) leert.
-- Speichern: entprellt beim Tippen, sofort beim Seitenwechsel und Schließen (`close()` → `flush()`), beim Beenden `applicationShouldTerminate` → `.terminateLater`, `EditorPersistenceBridge.flushAll()`, danach Backup. Regeln in ADR-013.
+- Speichern: entprellt beim Tippen, sofort beim Seitenwechsel und Schließen (`close()` → `flush()`; eine neu geöffnete Bridge derselben Seite wartet darauf), beim Beenden `applicationShouldTerminate` → `.terminateLater` → `QuitGuard.shouldTerminate()` (alle Editoren speichern, bei Fehler Rückfrage), danach Backup. Fehlschläge: automatischer erneuter Versuch mit Backoff, Hinweis `SaveProblemBadge` über `lastError` (die Bridge ist `@Observable`). Regeln in ADR-013.
 
 ### Erkenntnisse aus dem Spike
 
