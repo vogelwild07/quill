@@ -11,14 +11,15 @@ extension NSPasteboard.PasteboardType {
 }
 
 /// Seitenbaum als `NSOutlineView`, darüber die Favoriten als eigener Abschnitt
-/// (Gruppenzeilen „Favoriten“ und „Seiten“, ADR-017).
+/// (Gruppenzeilen „Favoriten“ und „Seiten“, ADR-017). Beim Ziehen einer Seite
+/// erscheint „Favoriten“ auch leer als Ablageziel.
 ///
 /// AppKit statt SwiftUI-`List`, weil Ziehen zwischen und auf Zeilen in
 /// verschachtelten Listen, Umbenennen in der Zeile, Tastatur und Ausklappen beim
 /// Ziehen hier nativ und zuverlässig sind.
 struct PageOutlineView: NSViewRepresentable {
     var nodes: [PageNode]
-    /// Flach, in Favoriten-Reihenfolge; leer blendet den Abschnitt aus.
+    /// Flach, in Favoriten-Reihenfolge; leer blendet den Abschnitt aus (außer beim Ziehen).
     var favorites: [PageNode]
     @Binding var selection: UUID?
     /// Seite, deren Titel in der Zeile bearbeitet werden soll; wird danach zurückgesetzt.
@@ -108,6 +109,9 @@ struct PageOutlineView: NSViewRepresentable {
         private var items: [UUID: Item] = [:]
         private var favoriteItems: [UUID: Item] = [:]
         private var isSyncingSelection = false
+        /// Eine Seite aus dem Baum wird gezogen: „Favoriten“ auch leer zeigen.
+        /// Nach einem Ablegen dort bleibt der Abschnitt, bis der Favorit ankommt.
+        private var showsFavoritesDropTarget = false
 
         private static let expandedKey = "QuillSidebarExpandedPages"
         private var expanded: Set<UUID> = Set(
@@ -118,6 +122,7 @@ struct PageOutlineView: NSViewRepresentable {
             parent = view
             guard let outline else { return }
             if view.nodes != nodes || view.favorites != favoriteNodes {
+                if !view.favorites.isEmpty { showsFavoritesDropTarget = false }
                 nodes = view.nodes
                 favoriteNodes = view.favorites
                 rebuildItems()
@@ -139,7 +144,12 @@ struct PageOutlineView: NSViewRepresentable {
         // MARK: Daten
 
         private var roots: [Item] {
-            favoriteNodes.isEmpty ? [pagesGroup] : [favoritesGroup, pagesGroup]
+            SidebarSection.visible(hasFavorites: !favoriteNodes.isEmpty, isDraggingPage: showsFavoritesDropTarget).map { section in
+                switch section {
+                case .favorites: favoritesGroup
+                case .pages: pagesGroup
+                }
+            }
         }
 
         private func rebuildItems() {
@@ -324,6 +334,32 @@ struct PageOutlineView: NSViewRepresentable {
                 pasteboardItem.setString("1", forType: .quillFavoriteDrag)
             }
             return pasteboardItem
+        }
+
+        /// Ohne Favoriten den leeren Abschnitt einfügen (ohne `reloadData`, das
+        /// würde das laufende Ziehen stören).
+        func outlineView(
+            _ outlineView: NSOutlineView,
+            draggingSession session: NSDraggingSession,
+            willBeginAt screenPoint: NSPoint,
+            forItems draggedItems: [Any]
+        ) {
+            guard favoriteNodes.isEmpty, (draggedItems.first as? Item)?.role == .page else { return }
+            showsFavoritesDropTarget = true
+            outlineView.insertItems(at: IndexSet(integer: 0), inParent: nil, withAnimation: .slideDown)
+            outlineView.expandItem(favoritesGroup)
+        }
+
+        func outlineView(
+            _ outlineView: NSOutlineView,
+            draggingSession session: NSDraggingSession,
+            endedAt screenPoint: NSPoint,
+            operation: NSDragOperation
+        ) {
+            // `.copy` heißt: als Favorit abgelegt; der Abschnitt bleibt, bis er ankommt.
+            guard showsFavoritesDropTarget, favoriteNodes.isEmpty, operation != .copy else { return }
+            showsFavoritesDropTarget = false
+            outlineView.removeItems(at: IndexSet(integer: 0), inParent: nil, withAnimation: .slideUp)
         }
 
         func outlineView(

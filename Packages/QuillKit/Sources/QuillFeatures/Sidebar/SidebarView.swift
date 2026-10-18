@@ -20,7 +20,7 @@ struct SidebarView: View {
                 HStack {
                     Label(String(localized: "Suchen", bundle: .module), systemImage: "magnifyingglass")
                     Spacer()
-                    Text("⌘O")
+                    Text(verbatim: "⌘O")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .accessibilityHidden(true)

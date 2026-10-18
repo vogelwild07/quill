@@ -1,13 +1,25 @@
 {
   "sourceLanguage" : "de",
   "strings" : {
+    "„%@“ endgültig löschen?" : {
+
+    },
     "%lld Seiten endgültig löschen?" : {
+
+    },
+    "↑↓ wählen   ↩ öffnen   ⌘↩ in neuem Tab   ⎋ schließen" : {
 
     },
     "Abbrechen" : {
 
     },
     "Abhaken" : {
+
+    },
+    "Änderungen konnten nicht gespeichert werden" : {
+
+    },
+    "Änderungen konnten nicht gespeichert werden. Quill versucht es automatisch erneut.\n%@" : {
 
     },
     "Aus Favoriten entfernen" : {
@@ -109,10 +121,10 @@
     "Noch keine Seiten" : {
 
     },
-    "OK" : {
+    "Ohne Titel" : {
 
     },
-    "Ohne Titel" : {
+    "OK" : {
 
     },
     "Papierkorb" : {
@@ -130,10 +142,10 @@
     "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
 
     },
-    "Schnell öffnen (⌘O)" : {
+    "Schnell öffnen …" : {
 
     },
-    "Schnell öffnen …" : {
+    "Schnell öffnen (⌘O)" : {
 
     },
     "Seite" : {
@@ -169,31 +181,19 @@
     "Verschieben" : {
 
     },
+    "Wähle links eine Seite oder lege mit ⌘N eine neue an." : {
+
+    },
     "Wenn du Quill jetzt beendest, gehen diese Änderungen verloren. Solange Quill geöffnet bleibt, wird das Speichern weiter versucht.\n\n%@" : {
 
     },
     "Wiederherstellen" : {
 
     },
-    "Wähle links eine Seite oder lege mit ⌘N eine neue an." : {
-
-    },
     "Zu Favoriten hinzufügen" : {
 
     },
     "Zuletzt bearbeitet" : {
-
-    },
-    "Änderungen konnten nicht gespeichert werden" : {
-
-    },
-    "Änderungen konnten nicht gespeichert werden. Quill versucht es automatisch erneut.\n%@" : {
-
-    },
-    "„%@“ endgültig löschen?" : {
-
-    },
-    "↑↓ wählen   ↩ öffnen   ⌘↩ in neuem Tab   ⎋ schließen" : {
 
     }
   },

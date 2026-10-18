@@ -166,3 +166,14 @@ public enum SidebarDrop: Equatable, Sendable {
         return favorites.contains(dragged) ? .moveFavorite(position) : .addFavorite(position)
     }
 }
+
+/// Abschnitte der Sidebar. „Favoriten“ erscheint mit dem ersten Favoriten und,
+/// solange eine Seite gezogen wird, auch leer als Ablageziel (ADR-017).
+public enum SidebarSection: Equatable, Sendable {
+    case favorites
+    case pages
+
+    public static func visible(hasFavorites: Bool, isDraggingPage: Bool) -> [SidebarSection] {
+        hasFavorites || isDraggingPage ? [.favorites, .pages] : [.pages]
+    }
+}

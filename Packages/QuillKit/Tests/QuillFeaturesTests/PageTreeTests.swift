@@ -112,4 +112,15 @@ import QuillModel
         #expect(resolve(c, .favorite, .pages, 0) == nil)
         #expect(resolve(c, .favorite, .page(a), nil) == nil)
     }
+
+    @Test func emptyFavoritesAppearAsDropTargetWhileDragging() {
+        #expect(SidebarSection.visible(hasFavorites: false, isDraggingPage: false) == [.pages])
+        #expect(SidebarSection.visible(hasFavorites: false, isDraggingPage: true) == [.favorites, .pages])
+        #expect(SidebarSection.visible(hasFavorites: true, isDraggingPage: false) == [.favorites, .pages])
+
+        // Leerer Abschnitt: auf die Gruppe oder hinein legt den ersten Favoriten an.
+        let tree = PageTree.build([entry(a, "A", key: "V")])
+        #expect(SidebarDrop.resolve(a, from: .page, onto: .favorites, childIndex: nil, favorites: [], tree: tree) == .addFavorite(.last))
+        #expect(SidebarDrop.resolve(a, from: .page, onto: .favorites, childIndex: 0, favorites: [], tree: tree) == .addFavorite(.first))
+    }
 }
