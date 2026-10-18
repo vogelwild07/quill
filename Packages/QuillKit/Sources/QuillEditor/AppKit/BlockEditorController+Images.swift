@@ -211,6 +211,8 @@ final class EditorNoticeView: NSVisualEffectView {
             label.topAnchor.constraint(equalTo: topAnchor, constant: 6),
             label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
         ])
+        setAccessibilityElement(true)
+        setAccessibilityRole(.group)
         setAccessibilityIdentifier("editor.notice")
         isHidden = true
     }
@@ -222,6 +224,7 @@ final class EditorNoticeView: NSVisualEffectView {
 
     func show(_ text: String, in container: NSView) {
         label.stringValue = text
+        setAccessibilityLabel(text)
         if superview !== container {
             removeFromSuperview()
             translatesAutoresizingMaskIntoConstraints = false
