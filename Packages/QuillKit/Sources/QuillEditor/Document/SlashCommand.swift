@@ -10,6 +10,25 @@ public struct SlashCommand: Identifiable, Equatable, Sendable {
     public let shortcut: String?
     let aliases: [String]
 
+    /// Abschnitt im Menü.
+    public enum Group: CaseIterable, Sendable {
+        case basic, more
+
+        public var title: String {
+            switch self {
+            case .basic: String(localized: "Grundblöcke", bundle: .module)
+            case .more: String(localized: "Weitere", bundle: .module)
+            }
+        }
+    }
+
+    public var group: Group {
+        switch kind {
+        case .paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .todo, .quote: .basic
+        case .code, .divider, .image: .more
+        }
+    }
+
     /// Alle Befehle in Menü-Reihenfolge. „Bild“ öffnet die Dateiauswahl.
     public static let all: [SlashCommand] = [
         .init(kind: .paragraph, title: String(localized: "Text", bundle: .module), symbol: "text.alignleft", shortcut: nil, aliases: ["text", "absatz", "paragraph"]),
@@ -26,7 +45,7 @@ public struct SlashCommand: Identifiable, Equatable, Sendable {
     ]
 
     /// Filtert nach Titel und Aliassen, ohne Groß-/Kleinschreibung und Akzente.
-    /// Treffer am Wortanfang stehen vor Treffern mittendrin.
+    /// Nach Abschnitten geordnet; darin stehen Treffer am Wortanfang vor Treffern mittendrin.
     public static func matching(_ query: String) -> [SlashCommand] {
         let needle = normalize(query)
         guard !needle.isEmpty else { return all }
@@ -41,7 +60,8 @@ public struct SlashCommand: Identifiable, Equatable, Sendable {
                 containsMatches.append(command)
             }
         }
-        return prefixMatches + containsMatches
+        let ranked = prefixMatches + containsMatches
+        return Group.allCases.flatMap { group in ranked.filter { $0.group == group } }
     }
 
     private static func normalize(_ text: String) -> String {

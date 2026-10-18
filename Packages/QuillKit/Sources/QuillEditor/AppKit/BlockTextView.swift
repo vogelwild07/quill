@@ -101,6 +101,13 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         return children
     }
 
+    /// Fokus woanders (Sidebar, anderer Tab): Slash-Menü schließen.
+    override func resignFirstResponder() -> Bool {
+        let resigned = super.resignFirstResponder()
+        if resigned { editor?.slashMenu.close() }
+        return resigned
+    }
+
     // MARK: Auswahl nie hinter das abschließende `\n` des letzten Blocks
 
     override func setSelectedRanges(_ ranges: [NSValue], affinity: NSSelectionAffinity, stillSelecting: Bool) {

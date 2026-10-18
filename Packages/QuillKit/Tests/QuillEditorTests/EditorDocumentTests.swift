@@ -318,6 +318,15 @@ struct SerializerTests {
         #expect(SlashCommand.matching("todo").first?.kind == .todo)
         #expect(SlashCommand.matching("").count == SlashCommand.all.count)
     }
+
+    @Test func slashMatchesAreGroupedBySection() {
+        // „li“: Liste (Grundblöcke) und Linie (Weitere).
+        #expect(SlashCommand.matching("li").map(\.kind) == [.bulleted, .numbered, .divider])
+        for query in ["", "e", "o", "bild", "t"] {
+            let groups = SlashCommand.matching(query).map(\.group)
+            #expect(!groups.drop { $0 == .basic }.contains(.basic), "\(query)")
+        }
+    }
 }
 
 @Suite("Blöcke einfügen")

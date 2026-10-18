@@ -267,6 +267,23 @@ struct SlashMenuIntegrationTests {
         #expect(h.texts == ["/h", ""])
     }
 
+    @Test func losingFocusCloses() {
+        let h = Harness()
+        h.type("/")
+        #expect(h.editor.slashMenu.isVisible)
+        h.window.makeFirstResponder(nil)
+        #expect(!h.editor.slashMenu.isVisible)
+    }
+
+    @Test func arrowsWrapAround() {
+        let h = Harness()
+        h.type("/")
+        h.press(#selector(NSResponder.moveUp(_:)))
+        #expect(h.editor.slashMenu.selection == SlashCommand.all.count - 1)
+        h.press(#selector(NSResponder.moveDown(_:)))
+        #expect(h.editor.slashMenu.selection == 0)
+    }
+
     @Test func slashInsideWordDoesNotOpen() {
         let h = Harness()
         h.type("und/oder")

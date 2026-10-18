@@ -87,7 +87,9 @@ final class ImageBlockUITests: XCTestCase {
         app.typeText("\r")
         waitForFocus(editor)
         app.typeText("/bild")
-        XCTAssertTrue(app.staticTexts["Bild"].waitForExistence(timeout: 5))
+        let entry = app.descendants(matching: .any)["slash.image"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 5))
+        XCTAssertEqual(entry.label, "Bild")
         app.typeKey(.escape, modifierFlags: [])
         assertEditorText("/bild\n")
     }

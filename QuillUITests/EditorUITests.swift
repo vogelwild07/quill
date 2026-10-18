@@ -128,7 +128,7 @@ final class EditorUITests: XCTestCase {
         XCTAssertTrue(insert.waitForExistence(timeout: 5), "Kein ＋ bei Hover")
         insert.click()
         assertEditorText("Eins\n/\n")
-        XCTAssertTrue(app.staticTexts["Überschrift 1"].waitForExistence(timeout: 5), "Slash-Menü nicht offen")
+        XCTAssertTrue(app.descendants(matching: .any)["slash.heading1"].waitForExistence(timeout: 5), "Slash-Menü nicht offen")
 
         // Escape nimmt den Klick zurück.
         app.typeKey(.escape, modifierFlags: [])
@@ -143,6 +143,38 @@ final class EditorUITests: XCTestCase {
         assertEditorText("Eins\n\n")
         app.typeText("Titel")
         assertEditorText("Eins\nTitel\n")
+    }
+
+    /// Slash-Menü über Bedienungshilfen: Tastatur wählt aus, Klick fügt ein.
+    func testSlashMenuKeyboardAndMouse() throws {
+        createPage("Slash")
+        app.typeText("\r")
+        waitForFocus(editor)
+        app.typeText("/")
+        let menu = app.descendants(matching: .any)["slash.menu"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 5), "Slash-Menü nicht erreichbar")
+        let heading = menu.descendants(matching: .any)["slash.heading1"]
+        XCTAssertTrue(heading.exists)
+        app.typeKey(.downArrow, modifierFlags: [])
+        let selected = NSPredicate { _, _ in heading.isSelected }
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation(for: selected, evaluatedWith: nil)], timeout: 5), .completed, "↓ wählt nicht aus")
+
+        menu.descendants(matching: .any)["slash.divider"].click()
+        assertEditorText("\u{FFFC}\n\n")
+        XCTAssertFalse(menu.exists)
+    }
+
+    /// Klick in die Sidebar schließt das Menü.
+    func testSlashMenuClosesWhenFocusLeaves() throws {
+        createPage("Fokus")
+        app.typeText("\r")
+        waitForFocus(editor)
+        app.typeText("/")
+        let menu = app.descendants(matching: .any)["slash.menu"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 5))
+        row(0).click()
+        let gone = NSPredicate { _, _ in !menu.exists }
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation(for: gone, evaluatedWith: nil)], timeout: 5), .completed, "Menü bleibt offen")
     }
 
     // MARK: - Hilfen
