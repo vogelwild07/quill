@@ -41,8 +41,7 @@ public struct EditorDocument: Equatable, Sendable {
             if block.indent > 0 {
                 blocks[index].indent -= 1
             } else {
-                blocks[index].kind = .paragraph
-                blocks[index].isChecked = false
+                setKind(.paragraph, at: index)
             }
             return position
         }
@@ -83,9 +82,7 @@ public struct EditorDocument: Equatable, Sendable {
             return deleteBlock(at: index)
         }
         if block.kind != .paragraph {
-            blocks[index].kind = .paragraph
-            blocks[index].isChecked = false
-            blocks[index].codeLanguage = nil
+            setKind(.paragraph, at: index)
             return BlockPosition(block: index, offset: 0)
         }
         if block.indent > 0 {
@@ -189,18 +186,13 @@ public struct EditorDocument: Equatable, Sendable {
 
     public mutating func setKind(_ kind: BlockKind, at index: Int) {
         blocks[index].kind = kind
-        if kind != .todo { blocks[index].isChecked = false }
-        if kind != .code { blocks[index].codeLanguage = nil }
+        blocks[index].properties = blocks[index].properties.normalized(for: kind)
         if !kind.allowsInlineMarks { blocks[index].spans = [] }
         if kind.isAtomic {
             blocks[index].content = InlineText()
-            blocks[index].indent = 0
             if index == blocks.count - 1 {
                 blocks.append(EditorBlock())
             }
-        }
-        if kind.isHeading || kind == .code || kind == .quote {
-            blocks[index].indent = 0
         }
     }
 

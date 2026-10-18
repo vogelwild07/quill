@@ -78,13 +78,6 @@ struct InlineTextTests {
         block.content = InlineText("let b", spans: [InlineSpan(0..<3, marks: bold)])
         #expect(block.spans.isEmpty)
     }
-
-    @Test func blocksWithoutSpansDecodeFromOlderClipboardData() throws {
-        let json = #"[{"id":"7A3B5B6E-6C2B-4C38-9E73-6C1C4D2E8F10","kind":"paragraph","text":"alt","indent":0,"isChecked":false}]"#
-        let blocks = try JSONDecoder().decode([EditorBlock].self, from: Data(json.utf8))
-        #expect(blocks.first?.text == "alt")
-        #expect(blocks.first?.spans.isEmpty == true)
-    }
 }
 
 @Suite("Inline-Formatierung: Dokument-Operationen")

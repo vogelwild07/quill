@@ -233,7 +233,7 @@ public final class EditorPersistenceBridge {
 extension EditorBlock {
     /// Leerer Absatz ohne Formatierung, wie ihn eine neue Seite zeigt.
     var isPristine: Bool {
-        kind == .paragraph && text.isEmpty && indent == 0 && spans.isEmpty
+        kind == .paragraph && text.isEmpty && spans.isEmpty && properties == BlockProperties()
     }
 
     /// Unbekannte Blockarten werden als Absatz gelesen. Solange der Block nicht
@@ -241,15 +241,9 @@ extension EditorBlock {
     init(snapshot: BlockSnapshot) {
         let kind = BlockKind(rawValue: snapshot.kindRaw) ?? .paragraph
         let content = InlineText(text: snapshot.text, richText: snapshot.richText.flatMap(RichText.decode))
-        self.init(
-            id: snapshot.id,
-            kind: kind,
-            text: content.text,
-            spans: content.spans,
-            indent: max(0, min(snapshot.indent, EditorDocument.maxIndent)),
-            isChecked: snapshot.isChecked,
-            codeLanguage: snapshot.codeLanguage
-        )
+        var properties = snapshot.properties
+        properties.indent = max(0, min(properties.indent, EditorDocument.maxIndent))
+        self.init(id: snapshot.id, kind: kind, text: content.text, spans: content.spans, properties: properties)
     }
 
     var snapshot: BlockSnapshot {
@@ -258,9 +252,7 @@ extension EditorBlock {
             kindRaw: kind.rawValue,
             text: text,
             richText: try? content.richText?.encoded(),
-            indent: indent,
-            isChecked: isChecked,
-            codeLanguage: codeLanguage
+            properties: properties
         )
     }
 }

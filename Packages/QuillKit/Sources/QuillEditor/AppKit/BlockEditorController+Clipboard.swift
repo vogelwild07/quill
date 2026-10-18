@@ -2,7 +2,7 @@
 import AppKit
 
 extension NSPasteboard.PasteboardType {
-    /// Quill-Blöcke als JSON (`[EditorBlock]`).
+    /// Quill-Blöcke als JSON mit Version (`BlockClipboard`).
     static let quillBlocks = NSPasteboard.PasteboardType("de.vogel.quill.blocks")
     static let markdown = NSPasteboard.PasteboardType("net.daringfireball.markdown")
     /// Interner Ziehvorgang: IDs der gezogenen Blöcke.
@@ -55,7 +55,7 @@ extension BlockEditorController {
         let item = NSPasteboardItem()
         item.setString(plain, forType: .string)
         item.setString(markdown, forType: .markdown)
-        if let data = try? JSONEncoder().encode(blocks) { item.setData(data, forType: .quillBlocks) }
+        if let data = BlockClipboard.encode(blocks) { item.setData(data, forType: .quillBlocks) }
         if let storage = textView.textStorage {
             let rich = NSMutableAttributedString(attributedString: storage.attributedSubstring(from: textView.selectedRange()))
             rich.mutableString.replaceOccurrences(of: StorageCharacter.softBreak, with: "\n", options: [], range: NSRange(location: 0, length: rich.length))
@@ -76,12 +76,13 @@ extension BlockEditorController {
         return true
     }
 
-    /// Fügt Quill-Blöcke verlustfrei ein, sonst Klartext (keine fremden Formate).
+    /// Fügt Quill-Blöcke verlustfrei ein, sonst Klartext (keine fremden Formate, auch
+    /// keine Quill-Blöcke einer anderen Version).
     /// Ein einzelner Absatz wird in den Text eingefügt und behält seine Formatierung.
     func paste(from pasteboard: NSPasteboard) -> Bool {
         let selection = textView.selectedRange()
         if let data = pasteboard.data(forType: .quillBlocks),
-           let blocks = try? JSONDecoder().decode([EditorBlock].self, from: data) {
+           let blocks = BlockClipboard.decode(data) {
             var newDocument = document
             var caret = position(atCharacter: selection.location)
             if blocks.count == 1, blocks[0].kind == .paragraph {

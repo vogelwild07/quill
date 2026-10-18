@@ -285,7 +285,7 @@ struct ClipboardAndMoveTests {
         #expect(board.string(forType: .markdown) == "# tel\n\n- [x] Aufgabe\n1. eins")
         #expect(board.string(forType: .string) == "tel\nAufgabe\neins")
         let data = try #require(board.data(forType: .quillBlocks))
-        let blocks = try JSONDecoder().decode([EditorBlock].self, from: data)
+        let blocks = try #require(BlockClipboard.decode(data))
         #expect(blocks.map(\.kind) == [.heading1, .todo, .numbered])
     }
 
@@ -301,6 +301,23 @@ struct ClipboardAndMoveTests {
         #expect(h.editor.paste(from: board))
         #expect(h.kinds == [.heading1, .todo, .numbered, .paragraph, .todo, .numbered])
         #expect(Set(h.document.blocks.map(\.id)).count == 6)
+        h.expectConsistent()
+    }
+
+    @Test func pastingOlderQuillBlocksFallsBackToPlainText() {
+        let h = sample()
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        let item = NSPasteboardItem()
+        let version1 = #"[{"id":"7A3B5B6E-6C2B-4C38-9E73-6C1C4D2E8F10","kind":"heading1","text":"alt","indent":0,"isChecked":false}]"#
+        item.setData(Data(version1.utf8), forType: .quillBlocks)
+        item.setString("alt", forType: .string)
+        board.clearContents()
+        board.writeObjects([item])
+        h.caret(at: 3, 4)
+        #expect(h.editor.paste(from: board))
+        #expect(h.kinds == [.heading1, .todo, .numbered, .paragraph])
+        #expect(h.texts[3] == "Endealt")
         h.expectConsistent()
     }
 

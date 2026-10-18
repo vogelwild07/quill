@@ -8,26 +8,20 @@ public struct BlockSnapshot: Identifiable, Equatable, Sendable {
     public var kindRaw: String
     public var text: String
     public var richText: Data?
-    public var indent: Int
-    public var isChecked: Bool
-    public var codeLanguage: String?
+    public var properties: BlockProperties
 
     public init(
         id: UUID,
         kindRaw: String = BlockKind.paragraph.rawValue,
         text: String = "",
         richText: Data? = nil,
-        indent: Int = 0,
-        isChecked: Bool = false,
-        codeLanguage: String? = nil
+        properties: BlockProperties = BlockProperties()
     ) {
         self.id = id
         self.kindRaw = kindRaw
         self.text = text
         self.richText = richText
-        self.indent = indent
-        self.isChecked = isChecked
-        self.codeLanguage = codeLanguage
+        self.properties = properties
     }
 }
 
@@ -50,11 +44,18 @@ public struct BlockEdits: Equatable, Sendable {
 }
 
 extension Block {
+    /// Die einzige Abbildung von `BlockProperties` auf die Spalten des Modells.
+    public var properties: BlockProperties {
+        get { BlockProperties(indent: indent, isChecked: isChecked, codeLanguage: codeLanguage) }
+        set {
+            indent = newValue.indent
+            isChecked = newValue.isChecked
+            codeLanguage = newValue.codeLanguage
+        }
+    }
+
     var snapshot: BlockSnapshot {
-        BlockSnapshot(
-            id: id, kindRaw: kindRaw, text: text, richText: richText,
-            indent: indent, isChecked: isChecked, codeLanguage: codeLanguage
-        )
+        BlockSnapshot(id: id, kindRaw: kindRaw, text: text, richText: richText, properties: properties)
     }
 
     /// Übernimmt den Inhalt; `true`, wenn sich etwas geändert hat.
@@ -63,9 +64,7 @@ extension Block {
         kindRaw = snapshot.kindRaw
         text = snapshot.text
         richText = snapshot.richText
-        indent = snapshot.indent
-        isChecked = snapshot.isChecked
-        codeLanguage = snapshot.codeLanguage
+        properties = snapshot.properties
         return true
     }
 }
