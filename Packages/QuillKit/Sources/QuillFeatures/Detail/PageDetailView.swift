@@ -1,9 +1,10 @@
 import QuillDesign
+import QuillEditor
 import QuillModel
 import SwiftData
 import SwiftUI
 
-/// Kopf einer Seite: Icon und Titel. Der Editor folgt in Phase 3.
+/// Eine Seite: Kopf (Icon, Titel) und Block-Editor in einer gemeinsamen Scrollfläche.
 struct PageDetailView: View {
     let pageID: UUID
     @Binding var titleFocusRequest: UUID?
@@ -11,11 +12,11 @@ struct PageDetailView: View {
     let setIcon: @MainActor (_ id: UUID, _ icon: String?) -> Void
 
     @Query private var pages: [Page]
-    @State private var title = ""
-    @State private var icon = ""
-    @FocusState private var focusedField: Field?
-
-    private enum Field { case title, icon }
+    @Environment(\.pageStore) private var store
+    @Environment(\.modelContext) private var context
+    #if canImport(AppKit)
+    @State private var session: PageEditorSession?
+    #endif
 
     init(
         pageID: UUID,
@@ -32,52 +33,8 @@ struct PageDetailView: View {
 
     var body: some View {
         if let page = pages.first, page.trashedAt == nil {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    TextField(
-                        String(localized: "Icon", bundle: .module),
-                        text: $icon,
-                        prompt: Text(Image(systemName: "face.smiling"))
-                    )
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 40))
-                    .frame(width: 56)
-                    .focused($focusedField, equals: .icon)
-                    .help(String(localized: "Emoji eingeben oder mit ⌃⌘Leertaste auswählen", bundle: .module))
-                    .accessibilityIdentifier("detail.icon")
-
-                    TextField(
-                        String(localized: "Titel", bundle: .module),
-                        text: $title,
-                        prompt: Text("Ohne Titel", bundle: .module),
-                        axis: .vertical
-                    )
-                    .textFieldStyle(.plain)
-                    .font(.system(size: QuillDesign.Typography.pageTitleSize, weight: .bold))
-                    .focused($focusedField, equals: .title)
-                    .accessibilityIdentifier("detail.title")
-
-                    Text("Der Editor folgt in Phase 3.", bundle: .module)
-                        .foregroundStyle(.tertiary)
-                        .padding(.top, 8)
-                }
-                .frame(maxWidth: QuillDesign.contentMaxWidth, alignment: .leading)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 96)
-                .padding(.horizontal, 48)
-            }
-            .navigationTitle(page.title.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : page.title)
-            .onAppear { load(page) }
-            .onChange(of: page.title) { if focusedField != .title { title = page.title } }
-            .onChange(of: page.icon) { if focusedField != .icon { icon = page.icon ?? "" } }
-            .onChange(of: title) { if title != page.title { rename(pageID, title) } }
-            .onChange(of: icon) { applyIcon(page) }
-            .onChange(of: titleFocusRequest, initial: true) {
-                if titleFocusRequest == pageID {
-                    focusedField = .title
-                    titleFocusRequest = nil
-                }
-            }
+            editor
+                .navigationTitle(page.title.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : page.title)
         } else {
             ContentUnavailableView(
                 String(localized: "Seite nicht gefunden", bundle: .module),
@@ -86,20 +43,43 @@ struct PageDetailView: View {
         }
     }
 
-    private func load(_ page: Page) {
-        title = page.title
-        icon = page.icon ?? ""
+    #if canImport(AppKit)
+    private var editor: some View {
+        Group {
+            if let session {
+                BlockEditorView(controller: session.controller)
+            } else {
+                Color(nsColor: .textBackgroundColor)
+            }
+        }
+        .task {
+            guard session == nil, let store else { return }
+            let page = pages.first
+            let session = PageEditorSession(
+                pageID: pageID, title: page?.title ?? "", icon: page?.icon,
+                store: store, context: context, rename: rename, setIcon: setIcon
+            )
+            self.session = session
+            applyTitleFocusRequest()
+            await session.load()
+        }
+        .overlay(alignment: .topTrailing) {
+            if let error = session?.bridge.lastError {
+                SaveProblemBadge(error: error)
+                    .padding(12)
+            }
+        }
+        .onDisappear { session?.close() }
+        .onChange(of: titleFocusRequest) { applyTitleFocusRequest() }
     }
 
-    /// Behält nur das erste Zeichen (ein Emoji); leer entfernt das Icon.
-    private func applyIcon(_ page: Page) {
-        let first = icon.first.map(String.init)
-        if icon != (first ?? "") {
-            icon = first ?? ""
-            return
-        }
-        if first != page.icon {
-            setIcon(pageID, first)
-        }
+    /// Neue Seite (⌘N): Fokus in den Titel, sobald der Editor steht.
+    private func applyTitleFocusRequest() {
+        guard titleFocusRequest == pageID, let session else { return }
+        session.headerFocus.requestTitle()
+        titleFocusRequest = nil
     }
+    #else
+    private var editor: some View { EmptyView() }
+    #endif
 }

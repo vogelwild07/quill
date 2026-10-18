@@ -55,13 +55,13 @@ public struct EditorDocument: Equatable, Sendable {
             return BlockPosition(block: index + 1, offset: 0)
         }
 
-        let (head, tail) = Self.split(block.text, at: position.offset)
-        blocks[index].text = head
-        let next = EditorBlock(
+        let (head, tail) = block.content.split(at: position.offset)
+        blocks[index].content = head
+        var next = EditorBlock(
             kind: Self.continuation(of: block.kind),
-            text: tail,
             indent: block.kind.isHeading ? 0 : block.indent
         )
+        next.content = tail
         blocks.insert(next, at: index + 1)
         return BlockPosition(block: index + 1, offset: 0)
     }
@@ -100,7 +100,7 @@ public struct EditorDocument: Equatable, Sendable {
             return BlockPosition(block: index - 1, offset: 0)
         }
         let offset = previous.length
-        blocks[index - 1].text += block.text
+        blocks[index - 1].content = previous.content + block.content
         blocks.remove(at: index)
         return BlockPosition(block: index - 1, offset: offset)
     }
@@ -131,20 +131,20 @@ public struct EditorDocument: Equatable, Sendable {
     public mutating func replace(from start: BlockPosition, to end: BlockPosition, with text: String) -> BlockPosition {
         let first = blocks[start.block]
         let last = blocks[end.block]
-        let (head, _) = Self.split(first.text, at: start.offset)
-        let (_, tail) = Self.split(last.text, at: end.offset)
+        let head = first.content.split(at: start.offset).0
+        let tail = last.content.split(at: end.offset).1
 
         let keepsLineBreaks = first.kind == .code
         let lines = keepsLineBreaks ? [text] : text.components(separatedBy: "\n")
 
         var replacement = first
-        replacement.text = head + lines[0]
+        replacement.content = head + InlineText(lines[0])
         var newBlocks = [replacement]
         for line in lines.dropFirst() {
             newBlocks.append(EditorBlock(kind: .paragraph, text: line, indent: first.indent))
         }
         let cursorOffset = newBlocks[newBlocks.count - 1].length
-        newBlocks[newBlocks.count - 1].text += tail
+        newBlocks[newBlocks.count - 1].content = newBlocks[newBlocks.count - 1].content + tail
 
         blocks.replaceSubrange(start.block...end.block, with: newBlocks)
         return BlockPosition(block: start.block + newBlocks.count - 1, offset: cursorOffset)
@@ -172,11 +172,11 @@ public struct EditorDocument: Equatable, Sendable {
         } else if position.offset >= block.length || block.kind.isAtomic {
             insertAt = index + 1
         } else {
-            let (head, tail) = Self.split(block.text, at: position.offset)
-            blocks[index].text = head
+            let (head, tail) = block.content.split(at: position.offset)
+            blocks[index].content = head
             var rest = block
             rest.id = UUID()
-            rest.text = tail
+            rest.content = tail
             blocks.insert(rest, at: index + 1)
             insertAt = index + 1
         }
@@ -191,8 +191,9 @@ public struct EditorDocument: Equatable, Sendable {
         blocks[index].kind = kind
         if kind != .todo { blocks[index].isChecked = false }
         if kind != .code { blocks[index].codeLanguage = nil }
+        if !kind.allowsInlineMarks { blocks[index].spans = [] }
         if kind.isAtomic {
-            blocks[index].text = ""
+            blocks[index].content = InlineText()
             blocks[index].indent = 0
             if index == blocks.count - 1 {
                 blocks.append(EditorBlock())

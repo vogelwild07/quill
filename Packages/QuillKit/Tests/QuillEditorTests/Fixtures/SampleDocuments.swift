@@ -1,14 +1,18 @@
-#if os(macOS)
 import Foundation
-import QuillEditor
+@testable import QuillEditor
 
-/// Beispielinhalte für den Spike (eigene Texte).
-public enum SpikeSamples {
-    public static let welcome = EditorDocument(blocks: [
-        EditorBlock(kind: .heading1, text: "Quill-Editor-Spike"),
+/// Gemeinsame Beispieldokumente der Editor-Tests (Nachfolger von `SpikeSamples`, ADR-007).
+enum SampleDocuments {
+    /// Alle Text-Blockarten und Inline-Formate, für den Snapshot-Test hell/dunkel.
+    static let welcome = EditorDocument(blocks: [
+        EditorBlock(kind: .heading1, text: "Willkommen in Quill"),
         EditorBlock(text: "Tippe „/“ für das Blockmenü oder nutze Markdown-Kürzel wie „# “, „- “, „1. “, „[] “, „> “, „``` “ und „---“."),
+        EditorBlock(text: "Fett, kursiv, Code, durchgestrichen und ein Link.", spans: [
+            InlineSpan(0..<4, marks: [.bold]), InlineSpan(6..<12, marks: [.italic]), InlineSpan(14..<18, marks: [.code]),
+            InlineSpan(20..<35, marks: [.strikethrough]), InlineSpan(44..<48, marks: [], link: "https://apple.com"),
+        ]),
         EditorBlock(kind: .heading2, text: "Ziele"),
-        EditorBlock(kind: .todo, text: "Block-Editor-Spike abschließen"),
+        EditorBlock(kind: .todo, text: "Editor alltagstauglich machen"),
         EditorBlock(kind: .todo, text: "Datenmodell entwerfen", isChecked: true),
         EditorBlock(kind: .bulleted, text: "Schnell"),
         EditorBlock(kind: .bulleted, text: "Start unter einer Sekunde", indent: 1),
@@ -21,8 +25,16 @@ public enum SpikeSamples {
         EditorBlock(text: "Ziehe Blöcke am Griff links, markiere über mehrere Blöcke und kopiere mit ⌘C."),
     ])
 
+    /// Kurzes gemischtes Dokument für Zwischenablage und Verschieben.
+    static let mixed: [EditorBlock] = [
+        EditorBlock(kind: .heading1, text: "Titel"),
+        EditorBlock(kind: .todo, text: "Aufgabe", isChecked: true),
+        EditorBlock(kind: .numbered, text: "eins"),
+        EditorBlock(text: "Ende"),
+    ]
+
     /// Großes Dokument mit gemischten Blockarten für Messungen.
-    public static func large(blockCount: Int) -> EditorDocument {
+    static func large(blockCount: Int) -> EditorDocument {
         let sentence = "Quill speichert lokal, startet schnell und hält den Text im Mittelpunkt. "
         var blocks: [EditorBlock] = []
         blocks.reserveCapacity(blockCount)
@@ -40,4 +52,3 @@ public enum SpikeSamples {
         return EditorDocument(blocks: blocks)
     }
 }
-#endif

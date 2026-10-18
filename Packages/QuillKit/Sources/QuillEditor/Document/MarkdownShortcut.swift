@@ -11,9 +11,10 @@ extension EditorDocument {
         let index = position.block
         let block = blocks[index]
         guard block.kind == .paragraph else { return nil }
-        let (prefix, rest) = Self.split(block.text, at: position.offset)
+        let (prefix, _) = Self.split(block.text, at: position.offset)
+        let rest = block.content.split(at: position.offset).1
 
-        if prefix == "---" && rest.isEmpty {
+        if prefix == "---" && rest.text.isEmpty {
             setKind(.divider, at: index)
             return BlockPosition(block: index + 1, offset: 0)
         }
@@ -21,8 +22,8 @@ extension EditorDocument {
         let marker = String(prefix.dropLast())
         guard let (kind, checked, language) = Self.shortcutKind(for: marker) else { return nil }
 
+        blocks[index].content = rest
         setKind(kind, at: index)
-        blocks[index].text = rest
         blocks[index].isChecked = checked
         blocks[index].codeLanguage = language
         return BlockPosition(block: index, offset: 0)

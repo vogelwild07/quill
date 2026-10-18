@@ -29,8 +29,8 @@
 | Slash-Menü mit Filter | iPhone/iPad |
 | Drag & Drop von Blöcken (Griff ⋮⋮) | Notion → Quill-Import |
 | Markdown-Kürzel `#` `##` `###` `-` `*` `1.` `[]` `>` ```` ``` ```` `---` | Toggle, Callout, Tabellen-Block, Embeds |
-| Inline: fett, kursiv, Code, durchgestrichen, Link (⌘B/I/E/⇧X/K) | Seiten-Cover, Kommentare, Versionsverlauf |
-| Suche ⌘K (Titel + Volltext) | Spotlight-Integration, Share-Extension |
+| Inline: fett, kursiv, Code, durchgestrichen, Link (⌘B, ⌘I, ⇧⌘M, ⇧⌘X, ⌘K) | Seiten-Cover, Kommentare, Versionsverlauf |
+| Schnell öffnen ⌘O: Suche nach Titel und Volltext | Spotlight-Integration, Share-Extension |
 | Favoriten, Papierkorb (wiederherstellen, endgültig löschen, Auto-Leeren nach 30 Tagen) | Quick Note / Menüleisten-Extra |
 | Export als Markdown (Seite oder Baum, Ordner mit `assets/`) | PDF-Export, Markdown-Import |
 | Tabs (⌘T), Seite in neuem Fenster | |

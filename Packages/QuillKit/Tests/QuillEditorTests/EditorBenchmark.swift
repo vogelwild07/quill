@@ -1,22 +1,23 @@
-#if os(macOS)
+#if canImport(AppKit)
 import AppKit
-import QuillEditor
+@testable import QuillEditor
 
-/// Messungen für Spike-Kriterium 1 (Laden, Tippen, Enter bei 1000 Blöcken).
+/// Messung Laden, Tippen und Enter bei vielen Blöcken (Spike-Kriterium 1, ADR-007).
+/// Läuft im Performance-Test (Debug-Build, also strenger als in der App).
 @MainActor
-public enum SpikeBenchmark {
-    public struct Result: Codable, Sendable {
-        public var blocks: Int
-        public var loadMilliseconds: Double
-        public var typing: Stats
-        public var enter: Stats
+enum EditorBenchmark {
+    struct Result: Codable, Sendable {
+        var blocks: Int
+        var loadMilliseconds: Double
+        var typing: Stats
+        var enter: Stats
     }
 
-    public struct Stats: Codable, Sendable {
-        public var samples: Int
-        public var median: Double
-        public var p95: Double
-        public var max: Double
+    struct Stats: Codable, Sendable {
+        var samples: Int
+        var median: Double
+        var p95: Double
+        var max: Double
 
         init(_ values: [Double]) {
             let sorted = values.sorted()
@@ -29,8 +30,8 @@ public enum SpikeBenchmark {
 
     /// Lädt ein großes Dokument in `window`, tippt in die Mitte und misst pro Tastendruck
     /// Einfügen + Modellabgleich + Layout + Zeichnen des sichtbaren Bereichs.
-    public static func run(in window: NSWindow, blockCount: Int = 1000, keystrokes: Int = 200, enters: Int = 50) -> Result {
-        let document = SpikeSamples.large(blockCount: blockCount)
+    static func run(in window: NSWindow, blockCount: Int = 1000, keystrokes: Int = 200, enters: Int = 50) -> Result {
+        let document = SampleDocuments.large(blockCount: blockCount)
 
         let loadStart = ContinuousClock.now
         let controller = BlockEditorController(document: document)

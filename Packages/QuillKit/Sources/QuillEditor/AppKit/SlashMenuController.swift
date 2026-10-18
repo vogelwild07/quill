@@ -1,7 +1,6 @@
-#if os(macOS)
+#if canImport(AppKit)
 import AppKit
 import Observation
-import QuillEditor
 import SwiftUI
 
 @MainActor
@@ -164,7 +163,7 @@ struct SlashMenuView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if model.commands.isEmpty {
-                Text("Keine Treffer")
+                Text("Keine Treffer", bundle: .module)
                     .foregroundStyle(.secondary)
                     .padding(12)
             }
@@ -182,7 +181,7 @@ struct SlashMenuView: View {
                 .onChange(of: model.selection) { _, selection in proxy.scrollTo(selection) }
             }
             Divider()
-            Text("↑↓ wählen   ↩ einfügen   ⎋ schließen")
+            Text("↑↓ wählen   ↩ einfügen   ⎋ schließen", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 12)
@@ -192,22 +191,24 @@ struct SlashMenuView: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 14))
     }
 
+    private static let selectedText = Color(nsColor: .alternateSelectedControlTextColor)
+
     private func row(_ command: SlashCommand, isSelected: Bool) -> some View {
         HStack(spacing: 10) {
             Image(systemName: command.symbol)
                 .frame(width: 22)
-                .foregroundStyle(isSelected ? Color.white : Color.secondary)
+                .foregroundStyle(isSelected ? Self.selectedText : Color.secondary)
             Text(command.title)
             Spacer()
             if let shortcut = command.shortcut {
                 Text(shortcut)
                     .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(isSelected ? Color.white.opacity(0.8) : Color.secondary)
+                    .foregroundStyle(isSelected ? Self.selectedText.opacity(0.8) : Color.secondary)
             }
         }
         .padding(.horizontal, 8)
         .frame(height: 32)
-        .foregroundStyle(isSelected ? Color.white : Color.primary)
+        .foregroundStyle(isSelected ? Self.selectedText : Color.primary)
         .background(isSelected ? Color.accentColor : Color.clear, in: .rect(cornerRadius: 8))
         .contentShape(.rect)
     }

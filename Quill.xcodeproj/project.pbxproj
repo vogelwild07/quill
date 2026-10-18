@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		A10000000000000000000001 /* QuillKit in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000002 /* QuillKit */; };
-		B20000000000000000000001 /* QuillEditorSpike in Frameworks */ = {isa = PBXBuildFile; productRef = B20000000000000000000002 /* QuillEditorSpike */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -25,7 +24,6 @@
 		A10000000000000000000020 /* Quill.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Quill.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000021 /* QuillUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QuillUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000022 /* QuillKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = QuillKit; path = Packages/QuillKit; sourceTree = "<group>"; };
-		B20000000000000000000003 /* EditorSpike.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EditorSpike.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -37,12 +35,6 @@
 		A10000000000000000000031 /* QuillUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = QuillUITests;
-			sourceTree = "<group>";
-		};
-		B20000000000000000000004 /* EditorSpike */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			name = EditorSpike;
-			path = Spikes/EditorSpike;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -63,14 +55,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		B20000000000000000000005 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				B20000000000000000000001 /* QuillEditorSpike in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -79,7 +63,6 @@
 			children = (
 				A10000000000000000000030 /* App */,
 				A10000000000000000000022 /* QuillKit */,
-				B20000000000000000000004 /* EditorSpike */,
 				A10000000000000000000031 /* QuillUITests */,
 				A10000000000000000000051 /* Products */,
 			);
@@ -90,7 +73,6 @@
 			children = (
 				A10000000000000000000020 /* Quill.app */,
 				A10000000000000000000021 /* QuillUITests.xctest */,
-				B20000000000000000000003 /* EditorSpike.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -142,29 +124,6 @@
 			productReference = A10000000000000000000021 /* QuillUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
-		B20000000000000000000010 /* EditorSpike */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = B20000000000000000000013 /* Build configuration list for PBXNativeTarget "EditorSpike" */;
-			buildPhases = (
-				B20000000000000000000006 /* Sources */,
-				B20000000000000000000005 /* Frameworks */,
-				B20000000000000000000007 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				B20000000000000000000004 /* EditorSpike */,
-			);
-			name = EditorSpike;
-			packageProductDependencies = (
-				B20000000000000000000002 /* QuillEditorSpike */,
-			);
-			productName = EditorSpike;
-			productReference = B20000000000000000000003 /* EditorSpike.app */;
-			productType = "com.apple.product-type.application";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -176,9 +135,6 @@
 				LastUpgradeCheck = 2710;
 				TargetAttributes = {
 					A10000000000000000000100 = {
-						CreatedOnToolsVersion = 27.1;
-					};
-					B20000000000000000000010 = {
 						CreatedOnToolsVersion = 27.1;
 					};
 					A10000000000000000000101 = {
@@ -206,7 +162,6 @@
 			targets = (
 				A10000000000000000000100 /* Quill */,
 				A10000000000000000000101 /* QuillUITests */,
-				B20000000000000000000010 /* EditorSpike */,
 			);
 		};
 /* End PBXProject section */
@@ -226,13 +181,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		B20000000000000000000007 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -244,13 +192,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A10000000000000000000061 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B20000000000000000000006 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -412,48 +353,6 @@
 			};
 			name = Release;
 		};
-		B20000000000000000000011 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = Spikes/EditorSpike/EditorSpike.entitlements;
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Editor-Spike";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.vogel.quill.EditorSpike;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-			};
-			name = Debug;
-		};
-		B20000000000000000000012 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = Spikes/EditorSpike/EditorSpike.entitlements;
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Editor-Spike";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.vogel.quill.EditorSpike;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -484,15 +383,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B20000000000000000000013 /* Build configuration list for PBXNativeTarget "EditorSpike" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				B20000000000000000000011 /* Debug */,
-				B20000000000000000000012 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -507,11 +397,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A10000000000000000000003 /* XCLocalSwiftPackageReference "Packages/QuillKit" */;
 			productName = QuillKit;
-		};
-		B20000000000000000000002 /* QuillEditorSpike */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A10000000000000000000003 /* XCLocalSwiftPackageReference "Packages/QuillKit" */;
-			productName = QuillEditorSpike;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

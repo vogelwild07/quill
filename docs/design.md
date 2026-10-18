@@ -4,7 +4,7 @@ Grundlage: Apple Human Interface Guidelines. Quill ist kein Notion-Klon und übe
 
 ## Ästhetik
 
-„Papier unter Glas“: Inhaltsflächen matt, ruhig, typografisch. Liquid Glass nur für Sidebar, Toolbar, Slash-Menü und ⌘K-Panel. Identität über Typografie, Weißraum und einen eigenen Akzent, nicht über Deko.
+„Papier unter Glas“: Inhaltsflächen matt, ruhig, typografisch. Liquid Glass nur für Sidebar, Toolbar, Slash-Menü und das Panel „Schnell öffnen“ (⌘O). Identität über Typografie, Weißraum und einen eigenen Akzent, nicht über Deko.
 
 ## Farben
 
@@ -50,7 +50,7 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ ● ● ●  ⟨sidebar⟩   ‹ ›   📝 Projekte / Quill            ☆   ⋯   ⌕     │ ← Glass-Toolbar
 ├────────────────────┬────────────────────────────────────────────────────┤
-│ ⌕ Suchen      ⌘K   │                                                    │
+│ ⌕ Suchen      ⌘O   │                                                    │
 │                    │        📝 Quill                                    │
 │ FAVORITEN          │        ─────────────────────────────               │
 │  ★ Inbox           │        Text …                                      │
@@ -101,7 +101,7 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
             └──────────────────────────────┘
 ```
 
-### Suche ⌘K
+### Schnell öffnen ⌘O
 
 ```
         ┌────────────────────────────────────────────┐

@@ -1,21 +1,19 @@
-#if os(macOS)
+#if canImport(AppKit)
 import AppKit
 import QuillDesign
 
-extension NSPasteboard.PasteboardType {
-    /// Quill-Blöcke als JSON (`[EditorBlock]`).
-    static let quillBlocks = NSPasteboard.PasteboardType("de.vogel.quill.blocks")
-    static let markdown = NSPasteboard.PasteboardType("net.daringfireball.markdown")
-    /// Interner Ziehvorgang: IDs der gezogenen Blöcke.
-    static let quillBlockDrag = NSPasteboard.PasteboardType("de.vogel.quill.block-drag")
+/// Kopf mit eigener Höhenberechnung (z. B. ein `NSHostingView` mit mehrzeiligem Titel).
+@MainActor
+protocol HeaderSizing {
+    func height(forWidth width: CGFloat) -> CGFloat
 }
 
 /// Text-View des Block-Editors. Strukturelle Logik liegt im `BlockEditorController`;
 /// hier sitzen nur Ereignisse, die eine View braucht.
-final class BlockTextView: NSTextView {
+final class BlockTextView: NSTextView, EditorFormattingActions {
     weak var editor: BlockEditorController?
 
-    private let handle = BlockHandleView()
+    let handle = BlockHandleView()
     private let dropIndicator = NSView()
     private var hoverTrackingArea: NSTrackingArea?
 
@@ -35,12 +33,63 @@ final class BlockTextView: NSTextView {
 
     // MARK: Layout: zentrierte Textspalte
 
+    /// Abstand über dem Text bzw. über dem Kopf.
+    var topPadding: CGFloat = 48 {
+        didSet { needsLayout = true }
+    }
+
+    /// Kopf über dem ersten Block (Icon und Titel der Seite). Sitzt im oberen
+    /// Inset, scrollt also mit dem Text.
+    var headerView: NSView? {
+        didSet {
+            oldValue?.removeFromSuperview()
+            if let headerView { addSubview(headerView) }
+            needsLayout = true
+        }
+    }
+
+    private static let headerGap: CGFloat = 12
+
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
-        let side = max(56, (newSize.width - QuillDesign.contentMaxWidth) / 2)
-        if abs(textContainerInset.width - side) > 0.5 {
-            textContainerInset = NSSize(width: side, height: 48)
+        updateInsets()
+    }
+
+    override func layout() {
+        super.layout()
+        updateInsets()
+    }
+
+    /// Zentrierte Textspalte; oben Platz für den Kopf.
+    private func updateInsets() {
+        let side = max(56, (bounds.width - QuillDesign.contentMaxWidth) / 2)
+        var top = topPadding
+        if let headerView {
+            let padding = textContainer?.lineFragmentPadding ?? 5
+            let width = max(0, bounds.width - 2 * side - 2 * padding)
+            let height = headerHeight(headerView, width: width)
+            headerView.frame = CGRect(x: side + padding, y: topPadding, width: width, height: height)
+            top += height + Self.headerGap
         }
+        if abs(textContainerInset.width - side) > 0.5 || abs(textContainerInset.height - top) > 0.5 {
+            textContainerInset = NSSize(width: side, height: top)
+        }
+    }
+
+    private func headerHeight(_ view: NSView, width: CGFloat) -> CGFloat {
+        if let sizing = view as? any HeaderSizing {
+            return ceil(sizing.height(forWidth: width))
+        }
+        return view.fittingSize.height
+    }
+
+    /// Der Kopf ist für VoiceOver und XCUITest ein Kind der Text-View.
+    override func accessibilityChildren() -> [Any]? {
+        var children = super.accessibilityChildren() ?? []
+        if let headerView, !children.contains(where: { ($0 as AnyObject) === headerView }) {
+            children.insert(headerView, at: 0)
+        }
+        return children
     }
 
     // MARK: Auswahl nie hinter das abschließende `\n` des letzten Blocks
@@ -113,7 +162,7 @@ final class BlockTextView: NSTextView {
         if !handle.frame.insetBy(dx: -8, dy: -8).contains(point) { handle.isHidden = true }
     }
 
-    private func updateHandle(for point: NSPoint) {
+    func updateHandle(for point: NSPoint) {
         guard let fragment = fragment(atViewPoint: CGPoint(x: textContainerOrigin.x + 1, y: point.y)),
               let offset = characterOffset(of: fragment) else {
             handle.isHidden = true
@@ -195,18 +244,33 @@ final class BlockTextView: NSTextView {
         super.draggingEnded(sender)
     }
 
+    // MARK: Format
+
+    @objc func quillToggleBold(_ sender: Any?) { editor?.toggleMark(.bold) }
+    @objc func quillToggleItalic(_ sender: Any?) { editor?.toggleMark(.italic) }
+    @objc func quillToggleInlineCode(_ sender: Any?) { editor?.toggleMark(.code) }
+    @objc func quillToggleStrikethrough(_ sender: Any?) { editor?.toggleMark(.strikethrough) }
+    @objc func quillEditLink(_ sender: Any?) { editor?.editLink() }
+
     // MARK: Zwischenablage
 
+    /// Startargument `-QuillPasteboardName <Name>`: Kopieren und Einsetzen nutzen eine
+    /// eigene Zwischenablage. Für UI-Tests, damit die des Nutzers unberührt bleibt.
+    public static let pasteboardArgument = "QuillPasteboardName"
+
+    static let clipboard: NSPasteboard = UserDefaults.standard.string(forKey: pasteboardArgument)
+        .map { NSPasteboard(name: NSPasteboard.Name($0)) } ?? .general
+
     override func copy(_ sender: Any?) {
-        if editor?.copySelection(to: .general) != true { super.copy(sender) }
+        if editor?.copySelection(to: Self.clipboard) != true { super.copy(sender) }
     }
 
     override func cut(_ sender: Any?) {
-        if editor?.cutSelection(to: .general) != true { super.cut(sender) }
+        if editor?.cutSelection(to: Self.clipboard) != true { super.cut(sender) }
     }
 
     override func paste(_ sender: Any?) {
-        if editor?.paste(from: .general) != true { super.paste(sender) }
+        if editor?.paste(from: Self.clipboard) != true { super.paste(sender) }
     }
 }
 
@@ -215,14 +279,52 @@ final class BlockHandleView: NSView, NSDraggingSource {
     weak var textView: BlockTextView?
     var characterOffset = 0
 
+    /// Unter dem Mauszeiger kräftiger (Systemfarben, hell und dunkel).
+    var isHovered = false {
+        didSet { if isHovered != oldValue { needsDisplay = true } }
+    }
+    private var hoverTrackingArea: NSTrackingArea?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.handle)
+        setAccessibilityLabel(String(localized: "Block verschieben", bundle: .module))
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("nicht unterstützt") }
+
+    /// ⋮⋮ als 2 × 3 Punkte; SF Symbols hat unter macOS 26 kein passendes Zeichen.
     override func draw(_ dirtyRect: NSRect) {
-        let config = NSImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
-        guard let image = NSImage(systemSymbolName: "line.3.horizontal", accessibilityDescription: "Block verschieben")?
-            .withSymbolConfiguration(config) else { return }
-        NSColor.tertiaryLabelColor.set()
-        let size = image.size
-        let rect = CGRect(x: (bounds.width - size.width) / 2, y: (bounds.height - size.height) / 2, width: size.width, height: size.height)
-        image.draw(in: rect)
+        (isHovered ? NSColor.secondaryLabelColor : NSColor.tertiaryLabelColor).setFill()
+        let diameter: CGFloat = 3, spacing: CGFloat = 4.5
+        let width = diameter + spacing, height = diameter + 2 * spacing
+        let origin = CGPoint(x: ((bounds.width - width) / 2).rounded(), y: ((bounds.height - height) / 2).rounded())
+        for column in 0..<2 {
+            for row in 0..<3 {
+                let dot = CGRect(
+                    x: origin.x + CGFloat(column) * spacing, y: origin.y + CGFloat(row) * spacing,
+                    width: diameter, height: diameter
+                )
+                NSBezierPath(ovalIn: dot).fill()
+            }
+        }
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let hoverTrackingArea { removeTrackingArea(hoverTrackingArea) }
+        let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self)
+        addTrackingArea(area)
+        hoverTrackingArea = area
+    }
+
+    override func mouseEntered(with event: NSEvent) { isHovered = true }
+    override func mouseExited(with event: NSEvent) { isHovered = false }
+
+    override var isHidden: Bool {
+        didSet { if isHidden { isHovered = false } }
     }
 
     override func resetCursorRects() {

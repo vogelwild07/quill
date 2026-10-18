@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-Architekt, Swift-Entwickler.
 
-**Stand:** Phase 2 (Datenmodell + Sidebar) abgeschlossen: `SchemaV1`, `PageStore`, Backups (ADR-010), Migrationstests (ADR-011), Sidebar als `NSOutlineView` (ADR-012). Nächste Phase: 3 (Editor Text). Plan: `docs/roadmap.md`.
+**Stand:** Phase 3 (Editor Text) abgeschlossen und gemergt (PR #3): Spike nach `QuillEditor` überführt und gelöscht (ADR-007, Tag `editor-spike`), Inline-Formatierung, `EditorPersistenceBridge` mit Retry und Rückfrage beim Beenden, Editor mit Kopf in der Seite (ADR-013). Nächste Phase: 4 (Editor Interaktion), zuerst Block-Felder bündeln. Bekannte Probleme und Plan: `docs/roadmap.md`.
 
 ## Kommunikation
 - Immer **Deutsch**. Kurz ist gut; Warnungen, Sicherheit und Entscheidungen in ganzen Sätzen.
@@ -13,7 +13,7 @@ Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-A
 - Swift 6 (strikte Concurrency), SwiftUI, AppKit nur wo nötig, SwiftData lokal. Sync später CloudKit.
 - Editor: eigener Block-Editor auf TextKit 2 / `NSTextView` (siehe `docs/architecture.md`).
 - Tests: Swift Testing (Unit), XCUITest (UI). Bundle-ID `de.vogel.quill`.
-- UI-Tests starten die App immer über `XCUIApplication.quill()` (ignoriert gespeicherten Fensterzustand, ADR-008; Store nur im Arbeitsspeicher via `-QuillInMemoryStore YES`). Tests nie gegen den echten Store laufen lassen.
+- UI-Tests starten die App immer über `XCUIApplication.quill()` (ignoriert gespeicherten Fensterzustand, ADR-008; Store nur im Arbeitsspeicher via `-QuillInMemoryStore YES`). Tests nie gegen den echten Store laufen lassen. Tests mit Kopieren/Einsetzen nutzen eine eigene Zwischenablage (`-QuillPasteboardName`), nie die allgemeine.
 - UI-Strings lokalisierbar (`Localizable.xcstrings`), Ausgangssprache Deutsch.
 
 ## Datenmodell-Regeln (CloudKit-tauglich)
@@ -23,7 +23,10 @@ UUID-`id`, `createdAt`/`updatedAt`, alle Attribute optional oder mit Default, **
 - Ein `NSTextView` pro Seite, ein Absatz = ein Block. Jeder Absatz endet mit `\n`, auch der letzte; Block-Attribute (`.quillBlockID` …) liegen auf **jedem** Zeichen. Weicher Umbruch = U+2028, atomare Blöcke = U+FFFC.
 - Tippen innerhalb eines Absatzes macht die TextView; strukturelle Edits immer über `EditorDocument` und als Diff via `shouldChangeText`/`replaceCharacters`/`didChangeText` (sonst kein Undo). Bei markiertem Text (IME, tote Tasten) nie eingreifen.
 - Fallstricke: Fragment-Koordinaten beginnen am Textanfang (mit `layoutFragmentFrame.minX` umrechnen). TextKit 2 zeichnet `NSTextAttachment.image(for:…)` nicht zuverlässig. `prepareForDragOperation` muss eigene Drag-Typen annehmen. Vor Markdown-Kürzeln `breakUndoCoalescing()`.
-- `QuillEditorSpike` und `Spikes/EditorSpike` sind Wegwerf-Code: nicht erweitern. Überführung nach `QuillEditor` und Löschen in Phase 3 laut ADR-007.
+- Inline-Formatierung: `.quillMarks` und `.link` im Textspeicher sind die Quelle, Schrift/Farbe werden abgeleitet. Gespeichert als `Block.richText` (`RichText`-JSON, `nil` ohne Formatierung). Blöcke schreibt nur die `EditorPersistenceBridge` über `PageStore.applyEdits` (ADR-013).
+- Speichern darf nie still scheitern: Bridge wiederholt mit Backoff, Seite zeigt `lastError`, Beenden fragt über `QuitGuard`. Neuladen aus anderen Fenstern nie bei markiertem Text.
+- Test-Beispieldokumente nur aus `SampleDocuments` (Tests/QuillEditorTests/Fixtures).
+- Selbst gezeichnete Elemente nur in Systemfarben; SF Symbols nicht mit `NSColor.set()` einfärben (bleibt schwarz). Hell und dunkel per `EditorSnapshotTests` prüfen.
 
 ## Design
 Apple HIG, Liquid Glass nur für Sidebar/Toolbars/Popover, nicht für Inhalt. SF Pro / SF Mono, Systemfarben, Dark Mode automatisch. Tokens in `QuillDesign`, Details `docs/design.md`.
@@ -68,7 +71,6 @@ xcodebuild -project Quill.xcodeproj -scheme Quill -destination 'platform=macOS' 
 xcodebuild -project Quill.xcodeproj -scheme Quill -destination 'platform=macOS' test
 swift test --package-path Packages/QuillKit
 
-# Editor-Spike (bis Phase 3): Scheme „EditorSpike“
-#   -benchmark  misst 1000 Blöcke, JSON auf stdout
-#   -snapshot   PNGs hell/dunkel nach ~/Library/Containers/de.vogel.quill.EditorSpike/Data/tmp/
+# Darstellung hell/dunkel als PNG nach $TMPDIR/QuillEditorSnapshots/
+swift test --package-path Packages/QuillKit --filter EditorSnapshotTests
 ```

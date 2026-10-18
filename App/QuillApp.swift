@@ -1,3 +1,4 @@
+import QuillEditor
 import QuillFeatures
 import SwiftUI
 
@@ -26,6 +27,15 @@ struct QuillApp: App {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let persistence = Result { try QuillPersistence.open() }
+
+    /// Speichert offene Änderungen aller Editoren, bevor die App endet (und vor dem Backup).
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard EditorPersistenceBridge.hasAnyUnsavedChanges else { return .terminateNow }
+        Task {
+            sender.reply(toApplicationShouldTerminate: await QuitGuard.shouldTerminate())
+        }
+        return .terminateLater
+    }
 
     func applicationWillTerminate(_ notification: Notification) {
         try? persistence.get().backupOnQuit()

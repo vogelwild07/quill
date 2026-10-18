@@ -89,6 +89,14 @@ import Testing
         }
         #expect(!FractionalIndex.isValid(""))
     }
+
+    @Test func keysInGapAreAscendingAndInside() throws {
+        let keys = try FractionalIndex.keys(count: 100, between: "V", and: "W")
+        #expect(keys.count == 100)
+        #expect(zip(keys, keys.dropFirst()).allSatisfy { $0 < $1 })
+        #expect(keys.allSatisfy { $0 > "V" && $0 < "W" })
+        #expect(try FractionalIndex.keys(count: 0, between: nil, and: nil).isEmpty)
+    }
 }
 
 /// Deterministischer Zufall für reproduzierbare Tests.

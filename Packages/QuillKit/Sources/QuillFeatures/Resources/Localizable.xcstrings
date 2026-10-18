@@ -1,16 +1,25 @@
 {
   "sourceLanguage" : "de",
   "strings" : {
+    "Abbrechen" : {
+
+    },
     "Backups im Finder zeigen" : {
+
+    },
+    "Code" : {
 
     },
     "Daten konnten nicht geöffnet werden" : {
 
     },
-    "Der Editor folgt in Phase 3." : {
+    "Durchgestrichen" : {
 
     },
     "Emoji eingeben oder mit ⌃⌘Leertaste auswählen" : {
+
+    },
+    "Fett" : {
 
     },
     "Icon" : {
@@ -28,6 +37,12 @@
     "Keine Seite ausgewählt" : {
 
     },
+    "Kursiv" : {
+
+    },
+    "Link …" : {
+
+    },
     "Neue Seite" : {
 
     },
@@ -38,6 +53,9 @@
 
     },
     "Neues Fenster" : {
+
+    },
+    "Nicht gespeichert" : {
 
     },
     "Ohne Titel" : {
@@ -64,13 +82,25 @@
     "Titel" : {
 
     },
+    "Trotzdem beenden" : {
+
+    },
     "Umbenennen" : {
 
     },
     "Verschieben" : {
 
     },
+    "Wenn du Quill jetzt beendest, gehen diese Änderungen verloren. Solange Quill geöffnet bleibt, wird das Speichern weiter versucht.\n\n%@" : {
+
+    },
     "Wähle links eine Seite oder lege mit ⌘N eine neue an." : {
+
+    },
+    "Änderungen konnten nicht gespeichert werden" : {
+
+    },
+    "Änderungen konnten nicht gespeichert werden. Quill versucht es automatisch erneut.\n%@" : {
 
     }
   },

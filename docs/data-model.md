@@ -38,7 +38,7 @@ Block
   id, kindRaw = "paragraph"   (paragraph|heading1-3|bulleted|numbered|todo|quote|code|divider|image)
   sortKey = "", indent = 0    (flache Liste + Einrückungsstufe)
   text = ""                   (Klartext → Suche, Export)
-  richText: Data?             (eigenes Codable-JSON: Runs mit Marks bold/italic/code/strike/link)
+  richText: Data?             (RichText-JSON, nil ohne Formatierung; siehe unten)
   isChecked = false, codeLanguage: String?
   createdAt, updatedAt
   page: Page?
@@ -61,6 +61,24 @@ DatabaseView         (später)  id, name, layoutRaw (table|board|calendar), conf
 - Schreiben über einen `@ModelActor`-Store `PageStore` (`createPage`, `move`, `trash`, `restore`, `applyEdits`).
 - Lesen in der UI über `@Query`.
 - `richText` ist bewusst kein `NSAttributedString`-Archiv: plattformneutral (iOS), diff-bar, exportierbar.
+
+### Format von `Block.richText`
+
+```json
+{"runs":[{"marks":[],"text":"Hallo "},{"link":"https://apple.com","marks":["bold"],"text":"Welt"}],"version":1}
+```
+
+- `RichText` in `QuillModel`: `version` (aktuell 1) und `runs` mit `text`, `marks` (sortierte Rohwerte `bold`, `italic`, `code`, `strikethrough`) und optional `link`. Kodiert mit sortierten Schlüsseln: gleicher Inhalt ergibt gleiche Bytes.
+- `nil`, solange ein Block keine Formatierung hat. `Block.text` bleibt immer der vollständige Klartext (Suche, Export).
+- Unbekannte Marks bleiben beim Lesen und Schreiben erhalten. Passt der Text der Runs nicht zu `Block.text`, gilt `Block.text` ohne Formatierung; unlesbare Daten werden ebenso behandelt.
+- Neue Felder nur additiv und optional; ein anderer Aufbau bekommt eine neue `version`.
+
+### Blöcke schreiben: `PageStore.applyEdits`
+
+- Eingabe `BlockEdits`: `upserts` (neue oder geänderte `BlockSnapshot`s), `deletions` und optional `order` (IDs in gewünschter Reihenfolge). Die `EditorPersistenceBridge` schickt nur Blöcke, die sich gegenüber dem zuletzt gespeicherten Stand geändert haben.
+- `updatedAt` ändert sich nur bei Blöcken mit echten Änderungen, `Page.updatedAt` nur, wenn sich überhaupt etwas geändert hat.
+- Reihenfolge: Die längste schon richtig sortierte Teilfolge behält ihre `sortKey`s; nur die übrigen Blöcke bekommen neue Schlüssel (`FractionalIndex.keys(count:between:and:)`). Blöcke, die in `order` fehlen (z. B. aus einem anderen Fenster), bleiben unverändert; neue Schlüssel werden so gewählt, dass sie nie mit deren Schlüsseln zusammenfallen.
+- Unbekannte `kindRaw`-Werte (spätere Versionen) bleiben erhalten, solange der Block im Editor nicht bearbeitet wird; angezeigt werden sie als Absatz.
 
 ## Speicherort und Backups
 

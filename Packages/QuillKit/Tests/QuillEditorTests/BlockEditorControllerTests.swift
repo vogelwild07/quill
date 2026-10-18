@@ -1,7 +1,7 @@
+#if canImport(AppKit)
 import AppKit
-import QuillEditor
 import Testing
-@testable import QuillEditorSpike
+@testable import QuillEditor
 
 /// Steuert Controller und Text-View wie Tastatureingaben, in einem Offscreen-Fenster.
 @MainActor
@@ -67,7 +67,7 @@ private final class Harness {
 }
 
 @MainActor
-@Suite("Spike: Tippen und Struktur", .serialized)
+@Suite("Editor: Tippen und Struktur", .serialized)
 struct TypingTests {
     @Test func typingUpdatesModel() {
         let h = Harness()
@@ -167,10 +167,23 @@ struct TypingTests {
         #expect(h.texts == ["漢"])
         h.expectConsistent()
     }
+
+    /// Neuladen aus einem anderen Fenster greift nie in eine laufende IME-Eingabe ein.
+    @Test func reloadIsRejectedDuringComposition() {
+        let h = Harness([EditorBlock(text: "")])
+        h.textView.setMarkedText("か", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: NSNotFound, length: 0))
+        #expect(h.editor.reload(EditorDocument(blocks: [EditorBlock(text: "fremd")])) == false)
+        #expect(h.textView.hasMarkedText())
+
+        h.textView.insertText("漢", replacementRange: NSRange(location: NSNotFound, length: 0))
+        #expect(h.editor.reload(EditorDocument(blocks: [EditorBlock(text: "fremd")])))
+        #expect(h.texts == ["fremd"])
+        h.expectConsistent()
+    }
 }
 
 @MainActor
-@Suite("Spike: Markdown-Kürzel", .serialized)
+@Suite("Editor: Markdown-Kürzel", .serialized)
 struct ShortcutIntegrationTests {
     @Test(arguments: [
         ("# ", BlockKind.heading1), ("## ", .heading2), ("### ", .heading3), ("- ", .bulleted),
@@ -218,7 +231,7 @@ struct ShortcutIntegrationTests {
 }
 
 @MainActor
-@Suite("Spike: Slash-Menü", .serialized)
+@Suite("Editor: Slash-Menü", .serialized)
 struct SlashMenuIntegrationTests {
     @Test func filtersAndChoosesWithKeyboard() {
         let h = Harness([EditorBlock(text: "Ziele")])
@@ -249,17 +262,13 @@ struct SlashMenuIntegrationTests {
 }
 
 @MainActor
-@Suite("Spike: Zwischenablage, Verschieben, Checkbox", .serialized)
+@Suite("Editor: Zwischenablage, Verschieben, Checkbox", .serialized)
 struct ClipboardAndMoveTests {
+    /// Eigenes Pasteboard pro Test; mit `defer { board.releaseGlobally() }` freigeben.
     private func pasteboard() -> NSPasteboard { NSPasteboard(name: .init("de.vogel.quill.tests.\(UUID().uuidString)")) }
 
     private func sample() -> Harness {
-        Harness([
-            EditorBlock(kind: .heading1, text: "Titel"),
-            EditorBlock(kind: .todo, text: "Aufgabe", isChecked: true),
-            EditorBlock(kind: .numbered, text: "eins"),
-            EditorBlock(text: "Ende"),
-        ])
+        Harness(SampleDocuments.mixed)
     }
 
     @Test func copyWritesAllRepresentations() throws {
@@ -268,6 +277,7 @@ struct ClipboardAndMoveTests {
         let end = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 4))
         h.textView.setSelectedRange(NSRange(location: start, length: end - start))
         let board = pasteboard()
+        defer { board.releaseGlobally() }
         #expect(h.editor.copySelection(to: board))
 
         let types = Set(board.pasteboardItems?.first?.types ?? [])
@@ -285,6 +295,7 @@ struct ClipboardAndMoveTests {
         let end = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 4))
         h.textView.setSelectedRange(NSRange(location: start, length: end - start))
         let board = pasteboard()
+        defer { board.releaseGlobally() }
         _ = h.editor.copySelection(to: board)
         h.caret(at: 3, 4)
         #expect(h.editor.paste(from: board))
@@ -319,29 +330,174 @@ struct ClipboardAndMoveTests {
         h.expectConsistent()
     }
 
-    @Test func imageBlockCanBeInsertedAndDeleted() {
-        let h = sample()
-        let image = NSImage(size: CGSize(width: 400, height: 200), flipped: false) { rect in
-            NSColor.systemTeal.setFill()
-            rect.fill()
-            return true
-        }
-        h.editor.insertImage(image, afterCharacter: h.editor.characterLocation(of: BlockPosition(block: 0, offset: 0)))
-        #expect(h.kinds == [.heading1, .image, .paragraph, .todo, .numbered, .paragraph])
+    @Test func dividerIsDeletedAsOneBlock() {
+        let h = Harness([EditorBlock(text: "A"), EditorBlock(kind: .divider), EditorBlock(text: "B")])
         h.caret(at: 1, 1)
         h.press(#selector(NSResponder.deleteBackward(_:)))
-        #expect(h.kinds == [.heading1, .paragraph, .todo, .numbered, .paragraph])
+        #expect(h.kinds == [.paragraph, .paragraph])
+        #expect(h.texts == ["A", "B"])
+        h.expectConsistent()
+    }
+
+    @Test func typingNextToDividerCreatesParagraph() {
+        let h = Harness([EditorBlock(kind: .divider)])
+        h.caret(at: 0, 1)
+        h.type("x")
+        #expect(h.kinds == [.divider, .paragraph])
+        #expect(h.texts == ["", "x"])
         h.expectConsistent()
     }
 }
 
 @MainActor
-@Suite("Spike: Messung", .serialized)
-struct BenchmarkSmokeTests {
-    @Test func benchmarkRunsOnSmallDocument() {
-        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 900, height: 700), styleMask: [.titled], backing: .buffered, defer: false)
-        let result = SpikeBenchmark.run(in: window, blockCount: 100, keystrokes: 20, enters: 5)
-        #expect(result.blocks == 105)
-        #expect(result.typing.samples == 20)
+@Suite("Editor: Inline-Formatierung", .serialized)
+struct FormattingIntegrationTests {
+    private func select(_ h: Harness, from start: BlockPosition, to end: BlockPosition) {
+        let from = h.editor.characterLocation(of: start)
+        let to = h.editor.characterLocation(of: end)
+        h.textView.setSelectedRange(NSRange(location: from, length: to - from))
+    }
+
+    @Test func boldOnSelectionIsOneUndoStepAndKeepsSelection() {
+        let h = Harness([EditorBlock(text: "Hallo Welt")])
+        select(h, from: BlockPosition(block: 0, offset: 0), to: BlockPosition(block: 0, offset: 5))
+        h.editor.toggleMark(.bold)
+        #expect(h.document[0].spans == [InlineSpan(0..<5, marks: [.bold])])
+        #expect(h.textView.selectedRange() == NSRange(location: 0, length: 5))
+        let font = h.textView.textStorage!.attribute(.font, at: 1, effectiveRange: nil) as? NSFont
+        #expect(font?.fontDescriptor.symbolicTraits.contains(.bold) == true)
+        h.expectConsistent()
+        h.undo()
+        #expect(h.document[0].spans.isEmpty)
+        h.expectConsistent()
+        h.redo()
+        #expect(h.document[0].spans == [InlineSpan(0..<5, marks: [.bold])])
+    }
+
+    @Test func toggleOnFullyBoldSelectionRemovesBold() {
+        let h = Harness([EditorBlock(text: "Hallo", spans: [InlineSpan(0..<5, marks: [.bold])])])
+        select(h, from: BlockPosition(block: 0, offset: 1), to: BlockPosition(block: 0, offset: 3))
+        h.editor.toggleMark(.bold)
+        #expect(h.document[0].spans == [InlineSpan(0..<1, marks: [.bold]), InlineSpan(3..<5, marks: [.bold])])
+        h.expectConsistent()
+    }
+
+    @Test func typingAfterBoldTextStaysBold() {
+        let h = Harness([EditorBlock(text: "ab", spans: [InlineSpan(0..<2, marks: [.bold])])])
+        h.caret(at: 0, 2)
+        h.type("cd")
+        #expect(h.document[0].spans == [InlineSpan(0..<4, marks: [.bold])])
+        h.expectConsistent()
+    }
+
+    @Test func toggleWithoutSelectionChangesOnlyTypingAttributes() {
+        let h = Harness([EditorBlock(text: "ab")])
+        h.caret(at: 0, 2)
+        h.editor.toggleMark(.italic)
+        #expect(h.document[0].spans.isEmpty)
+        h.type("cd")
+        h.editor.toggleMark(.italic)
+        h.type("e")
+        #expect(h.document[0].text == "abcde")
+        #expect(h.document[0].spans == [InlineSpan(2..<4, marks: [.italic])])
+        h.expectConsistent()
+    }
+
+    @Test func enterInsideBoldKeepsBothHalvesBold() {
+        let h = Harness([EditorBlock(text: "abcd", spans: [InlineSpan(0..<4, marks: [.bold])])])
+        h.caret(at: 0, 2)
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        #expect(h.document.blocks.map(\.spans) == [[InlineSpan(0..<2, marks: [.bold])], [InlineSpan(0..<2, marks: [.bold])]])
+        h.expectConsistent()
+    }
+
+    @Test func markdownShortcutKeepsInlineFormatting() {
+        let h = Harness([EditorBlock(text: "Titel", spans: [InlineSpan(0..<5, marks: [.bold])])])
+        h.caret(at: 0, 0)
+        h.type("# ")
+        #expect(h.kinds == [.heading1])
+        #expect(h.document[0].spans == [InlineSpan(0..<5, marks: [.bold])])
+        h.expectConsistent()
+    }
+
+    @Test func copyInsideOneBlockWritesInlineFormatsAndPastesInline() throws {
+        let h = Harness([
+            EditorBlock(text: "Hallo Welt", spans: [InlineSpan(6..<10, marks: [.bold])]),
+            EditorBlock(kind: .heading1, text: "Ziel"),
+        ])
+        select(h, from: BlockPosition(block: 0, offset: 4), to: BlockPosition(block: 0, offset: 8))
+        let board = NSPasteboard(name: .init("de.vogel.quill.tests.\(UUID().uuidString)"))
+        defer { board.releaseGlobally() }
+        #expect(h.editor.copySelection(to: board))
+        #expect(board.string(forType: .markdown) == "o **We**")
+        #expect(board.string(forType: .string) == "o We")
+        let rtf = try #require(board.data(forType: .rtf))
+        let rich = try #require(NSAttributedString(rtf: rtf, documentAttributes: nil))
+        let font = rich.attribute(.font, at: 3, effectiveRange: nil) as? NSFont
+        #expect(font?.fontDescriptor.symbolicTraits.contains(.bold) == true)
+
+        h.caret(at: 1, 2)
+        #expect(h.editor.paste(from: board))
+        #expect(h.kinds == [.paragraph, .heading1])
+        #expect(h.document[1].text == "Zio Weel")
+        #expect(h.document[1].spans == [InlineSpan(4..<6, marks: [.bold])])
+        h.expectConsistent()
+    }
+
+    @Test func linkCanBeSetChangedAndRemoved() {
+        let h = Harness([EditorBlock(text: "siehe Quill")])
+        select(h, from: BlockPosition(block: 0, offset: 6), to: BlockPosition(block: 0, offset: 11))
+        let target = h.editor.linkTarget()
+        #expect(target.link == nil)
+        h.editor.setLink("https://quill.app", on: target.range)
+        #expect(h.document[0].spans == [InlineSpan(6..<11, marks: [], link: "https://quill.app")])
+        let stored = h.textView.textStorage!.attribute(.link, at: 7, effectiveRange: nil) as? URL
+        #expect(stored == URL(string: "https://quill.app"))
+        h.expectConsistent()
+        h.flushUndoGroup()
+
+        h.caret(at: 0, 8)
+        let existing = h.editor.linkTarget()
+        #expect(existing.link == "https://quill.app")
+        #expect(existing.range.length == 5)
+        h.editor.setLink(nil, on: existing.range)
+        #expect(h.document[0].spans.isEmpty)
+        h.undo()
+        #expect(h.document[0].spans.first?.style.link == "https://quill.app")
+        h.expectConsistent()
+    }
+
+    @Test func linkWithoutSelectionInsertsTheAddress() {
+        let h = Harness([EditorBlock(text: "Web: ")])
+        h.caret(at: 0, 5)
+        let target = h.editor.linkTarget()
+        h.editor.setLink(BlockEditorController.normalizedLink("quill.app"), on: target.range)
+        #expect(h.document[0].text == "Web: https://quill.app")
+        #expect(h.document[0].spans == [InlineSpan(5..<22, marks: [], link: "https://quill.app")])
+        #expect(h.caretPosition == BlockPosition(block: 0, offset: 22))
+        h.expectConsistent()
+    }
+
+    @Test func formattingIgnoresCodeBlocks() {
+        let h = Harness([EditorBlock(kind: .code, text: "let a")])
+        select(h, from: BlockPosition(block: 0, offset: 0), to: BlockPosition(block: 0, offset: 3))
+        h.editor.toggleMark(.bold)
+        #expect(h.document[0].spans.isEmpty)
     }
 }
+
+@MainActor
+@Suite("Editor: Messung", .serialized)
+struct PerformanceTests {
+    /// ADR-007: Tippen bei 1000 Blöcken p95 < 16 ms (ein Frame). Im Release-Build
+    /// liegt der Median unter 1 ms; die Schwelle gilt auch für Debug-Builds.
+    @Test func typingStaysWithinOneFrameAt1000Blocks() {
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 1100, height: 800), styleMask: [.titled], backing: .buffered, defer: false)
+        let result = EditorBenchmark.run(in: window, blockCount: 1000, keystrokes: 200, enters: 50)
+        #expect(result.blocks == 1050)
+        #expect(result.typing.p95 < 16, "Tippen p95 \(result.typing.p95) ms")
+        #expect(result.enter.p95 < 16, "Enter p95 \(result.enter.p95) ms")
+        #expect(result.loadMilliseconds < 300, "Laden \(result.loadMilliseconds) ms")
+    }
+}
+#endif
