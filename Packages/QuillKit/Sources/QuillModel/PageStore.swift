@@ -247,6 +247,12 @@ extension PageStore {
 
         for id in edits.deletions {
             guard let block = byID.removeValue(forKey: id) else { continue }
+            // Asset lösen, sonst löscht die Regel `cascade` es mit, und Undo hätte
+            // kein Bild mehr. Es bleibt verwaist liegen (ADR-015).
+            if let asset = block.asset {
+                block.asset = nil
+                asset.updatedAt = .now
+            }
             modelContext.delete(block)
             changed = true
         }
@@ -365,5 +371,68 @@ extension PageStore {
             cursor = previous[cursor]
         }
         return result
+    }
+}
+
+// MARK: - Bilder (ADR-015)
+
+/// Ergebnis von `PageStore.importImage`.
+public struct ImportedImage: Sendable, Equatable {
+    public let assetID: UUID
+    public let pixelWidth: Int
+    public let pixelHeight: Int
+    /// Das Original war größer als `ImageImport.maxOriginalBytes`.
+    public let wasDownscaled: Bool
+}
+
+extension PageStore {
+    /// Legt ein Asset ohne Block an (GPS entfernt, ggf. verkleinert). Der Block
+    /// verknüpft es beim Speichern über `BlockProperties.assetID`.
+    public func importImage(_ data: Data) throws -> ImportedImage {
+        let prepared = try ImageImport.prepare(data)
+        let asset = Asset(data: prepared.data, uti: prepared.uti)
+        asset.pixelWidth = prepared.pixelWidth
+        asset.pixelHeight = prepared.pixelHeight
+        modelContext.insert(asset)
+        try save()
+        return ImportedImage(
+            assetID: asset.id, pixelWidth: prepared.pixelWidth, pixelHeight: prepared.pixelHeight,
+            wasDownscaled: prepared.wasDownscaled
+        )
+    }
+
+    /// Kopie eines Assets, z. B. für eingesetzte Bild-Blöcke: Ein Asset gehört
+    /// genau einem Block.
+    public func duplicateAsset(_ id: UUID) throws -> UUID? {
+        guard let original = try fetchAsset(id) else { return nil }
+        let copy = Asset(data: original.data, uti: original.uti)
+        copy.pixelWidth = original.pixelWidth
+        copy.pixelHeight = original.pixelHeight
+        modelContext.insert(copy)
+        try save()
+        return copy.id
+    }
+
+    /// Bilddaten und Typ, `nil`, wenn es das Asset nicht (mehr) gibt.
+    public func imageData(_ id: UUID) throws -> (data: Data, uti: String)? {
+        guard let asset = try fetchAsset(id), let data = asset.data else { return nil }
+        return (data, asset.uti)
+    }
+
+    /// Löscht Assets ohne Block, die seit `age` nicht mehr verknüpft waren.
+    /// Beim Start aufgerufen; 30 Tage wie der Papierkorb (ADR-015).
+    @discardableResult
+    public func removeOrphanedAssets(olderThan age: TimeInterval = 30 * 24 * 3600, now: Date = .now) throws -> Int {
+        let cutoff = now.addingTimeInterval(-age)
+        let orphans = try modelContext.fetch(FetchDescriptor<Asset>(predicate: #Predicate { $0.block == nil && $0.updatedAt < cutoff }))
+        for asset in orphans { modelContext.delete(asset) }
+        try save()
+        return orphans.count
+    }
+
+    private func fetchAsset(_ id: UUID) throws -> Asset? {
+        var descriptor = FetchDescriptor<Asset>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try modelContext.fetch(descriptor).first
     }
 }

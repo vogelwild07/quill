@@ -107,12 +107,13 @@ public struct EditorBlock: Identifiable, Equatable, Codable, Sendable {
 
 extension BlockProperties {
     /// Hält die Regeln ein, welche Felder zu welcher Blockart passen: Häkchen nur
-    /// bei To-dos, Sprache nur bei Code, keine Einrückung bei Überschriften, Code,
+    /// bei To-dos, Sprache nur bei Code, Bild nur bei Bild-Blöcken, keine Einrückung bei Überschriften, Code,
     /// Zitaten und atomaren Blöcken.
     func normalized(for kind: BlockKind) -> BlockProperties {
         var result = self
         if kind != .todo { result.isChecked = false }
         if kind != .code { result.codeLanguage = nil }
+        if kind != .image { result.assetID = nil }
         if kind.isAtomic || kind.isHeading || kind == .code || kind == .quote {
             result.indent = 0
         }

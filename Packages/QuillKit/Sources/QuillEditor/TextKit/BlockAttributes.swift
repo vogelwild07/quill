@@ -10,6 +10,8 @@ extension NSAttributedString.Key {
     static let quillIndent = NSAttributedString.Key("de.vogel.quill.indent")
     static let quillChecked = NSAttributedString.Key("de.vogel.quill.checked")
     static let quillCodeLanguage = NSAttributedString.Key("de.vogel.quill.codeLanguage")
+    /// `Asset.id` als `String`.
+    static let quillAssetID = NSAttributedString.Key("de.vogel.quill.assetID")
     /// Nummer eines nummerierten Punkts; abgeleitet, wird nach jeder Änderung nachgeführt.
     static let quillOrdinal = NSAttributedString.Key("de.vogel.quill.ordinal")
     /// Inline-Marks eines Zeichens: sortierte Rohwerte, durch Leerzeichen getrennt (`"bold italic"`).
@@ -28,6 +30,7 @@ extension BlockProperties {
             .quillChecked: isChecked,
         ]
         if let codeLanguage { attributes[.quillCodeLanguage] = codeLanguage }
+        if let assetID { attributes[.quillAssetID] = assetID.uuidString }
         return attributes
     }
 
@@ -35,7 +38,8 @@ extension BlockProperties {
         self.init(
             indent: attributes[.quillIndent] as? Int ?? 0,
             isChecked: attributes[.quillChecked] as? Bool ?? false,
-            codeLanguage: attributes[.quillCodeLanguage] as? String
+            codeLanguage: attributes[.quillCodeLanguage] as? String,
+            assetID: (attributes[.quillAssetID] as? String).flatMap(UUID.init(uuidString:))
         )
     }
 }

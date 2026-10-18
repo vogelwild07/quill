@@ -1,0 +1,110 @@
+import Foundation
+import ImageIO
+import UniformTypeIdentifiers
+
+/// Bereitet Bilddaten für ein `Asset` vor (ADR-015).
+///
+/// - Bis `maxOriginalBytes` bleibt das Original erhalten (PNG, JPEG, HEIC, GIF),
+///   andere Formate (z. B. TIFF aus der Zwischenablage) werden PNG.
+/// - Größere Bilder werden auf höchstens `maxPixelSize` Pixel Kantenlänge
+///   heruntergerechnet, nie abgelehnt.
+/// - GPS-Daten werden immer entfernt; Ausrichtung und übrige Metadaten bleiben.
+///   Standortangaben in der MakerNote des Herstellers oder in eigenen XMP-Feldern
+///   kann ImageIO nicht filtern.
+public enum ImageImport {
+    public static let maxOriginalBytes = 20 * 1024 * 1024
+    public static let maxPixelSize = 4096
+
+    public struct Prepared: Sendable {
+        public var data: Data
+        public var uti: String
+        /// Größe in Pixeln, wie das Bild angezeigt wird (Ausrichtung berücksichtigt).
+        public var pixelWidth: Int
+        public var pixelHeight: Int
+        public var wasDownscaled: Bool
+    }
+
+    public enum Failure: Error, Equatable {
+        case unreadable
+    }
+
+    private static let keptTypes: Set<String> = [
+        UTType.png.identifier, UTType.jpeg.identifier, UTType.heic.identifier, UTType.gif.identifier,
+    ]
+
+    public static func prepare(_ data: Data, maxOriginalBytes: Int = maxOriginalBytes) throws -> Prepared {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let type = CGImageSourceGetType(source) as String?,
+              CGImageSourceGetCount(source) > 0,
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        else { throw Failure.unreadable }
+
+        if data.count > maxOriginalBytes {
+            return try downscaled(source, properties: properties)
+        }
+        let (width, height) = displaySize(properties)
+        if keptTypes.contains(type), let copy = copyWithoutGPS(source, type: type) {
+            return Prepared(data: copy, uti: type, pixelWidth: width, pixelHeight: height, wasDownscaled: false)
+        }
+        guard let image = CGImageSourceCreateImageAtIndex(source, 0, nil),
+              let png = encode(image, type: UTType.png.identifier, properties: withoutGPS(properties))
+        else { throw Failure.unreadable }
+        return Prepared(data: png, uti: UTType.png.identifier, pixelWidth: width, pixelHeight: height, wasDownscaled: false)
+    }
+
+    /// Kopiert ohne neu zu komprimieren; `nil`, wenn das Format das nicht kann.
+    private static func copyWithoutGPS(_ source: CGImageSource, type: String) -> Data? {
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(output, type as CFString, CGImageSourceGetCount(source), nil)
+        else { return nil }
+        // Ohne `kCGImageDestinationMetadata` verwirft ImageIO alle Metadaten, auch die
+        // Ausrichtung. Deshalb die der Quelle mitgeben und nur GPS ausschließen.
+        var options: [CFString: Any] = [kCGImageMetadataShouldExcludeGPS: true]
+        if let metadata = CGImageSourceCopyMetadataAtIndex(source, 0, nil) {
+            options[kCGImageDestinationMetadata] = metadata
+        }
+        guard CGImageDestinationCopyImageSource(destination, source, options as CFDictionary, nil) else { return nil }
+        return output as Data
+    }
+
+    /// Verkleinert mit angewandter Ausrichtung; das Ergebnis steht deshalb aufrecht.
+    private static func downscaled(_ source: CGImageSource, properties: [CFString: Any]) throws -> Prepared {
+        let options = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+        ] as CFDictionary
+        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options) else { throw Failure.unreadable }
+        let hasAlpha = ![.none, .noneSkipFirst, .noneSkipLast].contains(image.alphaInfo)
+        let type = hasAlpha ? UTType.png.identifier : UTType.jpeg.identifier
+        var kept = withoutGPS(properties)
+        kept[kCGImagePropertyOrientation] = 1
+        kept[kCGImagePropertyTIFFDictionary] = (kept[kCGImagePropertyTIFFDictionary] as? [CFString: Any])?
+            .filter { $0.key != kCGImagePropertyTIFFOrientation }
+        kept[kCGImagePropertyPixelWidth] = nil
+        kept[kCGImagePropertyPixelHeight] = nil
+        if !hasAlpha { kept[kCGImageDestinationLossyCompressionQuality] = 0.9 }
+        guard let data = encode(image, type: type, properties: kept) else { throw Failure.unreadable }
+        return Prepared(data: data, uti: type, pixelWidth: image.width, pixelHeight: image.height, wasDownscaled: true)
+    }
+
+    private static func encode(_ image: CGImage, type: String, properties: [CFString: Any]) -> Data? {
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(output, type as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(destination, image, properties as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return output as Data
+    }
+
+    private static func withoutGPS(_ properties: [CFString: Any]) -> [CFString: Any] {
+        properties.filter { $0.key != kCGImagePropertyGPSDictionary }
+    }
+
+    /// Ausrichtungen 5–8 drehen um 90°: Breite und Höhe tauschen.
+    private static func displaySize(_ properties: [CFString: Any]) -> (Int, Int) {
+        let width = properties[kCGImagePropertyPixelWidth] as? Int ?? 0
+        let height = properties[kCGImagePropertyPixelHeight] as? Int ?? 0
+        let orientation = properties[kCGImagePropertyOrientation] as? Int ?? 1
+        return orientation >= 5 ? (height, width) : (width, height)
+    }
+}

@@ -19,7 +19,7 @@ public final class QuillPersistence {
     public let isInMemory: Bool
     private let backup: StoreBackup?
 
-    private static let logger = Logger(subsystem: "de.vogel.quill", category: "persistence")
+    private nonisolated static let logger = Logger(subsystem: "de.vogel.quill", category: "persistence")
 
     private init(container: ModelContainer, backup: StoreBackup?) {
         self.container = container
@@ -51,7 +51,23 @@ public final class QuillPersistence {
         } catch {
             logger.error("Schema-Version nicht gespeichert: \(error, privacy: .public)")
         }
-        return QuillPersistence(container: container, backup: backup)
+        let persistence = QuillPersistence(container: container, backup: backup)
+        persistence.removeOrphanedAssets()
+        return persistence
+    }
+
+    /// Bilder, die seit 30 Tagen keinem Block mehr gehören (ADR-015). Läuft nach dem
+    /// Backup beim Start, damit ein versehentlich gelöschtes Bild dort noch liegt.
+    private func removeOrphanedAssets() {
+        let store = store
+        Task.detached(priority: .utility) {
+            do {
+                let count = try await store.removeOrphanedAssets()
+                if count > 0 { Self.logger.notice("Verwaiste Bilder gelöscht: \(count)") }
+            } catch {
+                Self.logger.error("Aufräumen der Bilder fehlgeschlagen: \(error, privacy: .public)")
+            }
+        }
     }
 
     /// Beim Beenden: Backup, falls sich seit dem letzten etwas geändert hat.
