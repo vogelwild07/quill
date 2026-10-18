@@ -19,8 +19,6 @@ final class SlashMenuController {
     private var panel: NSPanel?
     /// Position des „/“ im Textspeicher.
     private var slashLocation: Int?
-    /// Vom Einfügen-Knopf geöffnet: Escape nimmt den Klick ganz zurück.
-    private var revertsOnCancel = false
 
     init(editor: BlockEditorController) {
         self.editor = editor
@@ -33,8 +31,7 @@ final class SlashMenuController {
     var commands: [SlashCommand] { model.commands }
 
     /// Öffnet das Menü, wenn „/“ am Blockanfang oder nach Leerraum steht (nicht im Code).
-    /// `revertsOnCancel`: vom Einfügen-Knopf, Escape nimmt das Einfügen zurück.
-    func openIfAllowed(slashLocation location: Int, revertsOnCancel: Bool = false) {
+    func openIfAllowed(slashLocation location: Int) {
         let block = editor.blockIndex(atCharacter: location)
         guard editor.document[block].kind != .code else { return }
         if location > 0 {
@@ -43,7 +40,6 @@ final class SlashMenuController {
                 || editor.position(atCharacter: location).offset == 0 else { return }
         }
         slashLocation = location
-        self.revertsOnCancel = revertsOnCancel
         model.commands = SlashCommand.all
         model.selection = 0
         show()
@@ -66,7 +62,8 @@ final class SlashMenuController {
         }
         let matches = SlashCommand.matching(query)
         if matches.isEmpty && query.count > 3 {
-            close()
+            // Ohne Treffer zu; Escape kann einen Klick auf ＋ danach noch zurücknehmen.
+            close(keepingInsert: true)
             return
         }
         model.commands = matches
@@ -95,9 +92,8 @@ final class SlashMenuController {
             choose(model.commands[model.selection])
             return true
         case #selector(NSResponder.cancelOperation(_:)):
-            let revert = revertsOnCancel
-            close()
-            if revert { editor.undoInsertBlockWithMenu() }
+            close(keepingInsert: true)
+            editor.revertInsertBlockWithMenu()
             return true
         default:
             return false
@@ -128,9 +124,10 @@ final class SlashMenuController {
         }
     }
 
-    func close() {
+    /// `keepingInsert`: ein Klick auf ＋ bleibt für Escape zurücknehmbar.
+    func close(keepingInsert: Bool = false) {
         slashLocation = nil
-        revertsOnCancel = false
+        if !keepingInsert { editor.pendingInsert = nil }
         if let panel {
             panel.parent?.removeChildWindow(panel)
             panel.orderOut(nil)

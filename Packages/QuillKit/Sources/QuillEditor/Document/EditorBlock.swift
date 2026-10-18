@@ -76,6 +76,13 @@ public struct EditorBlock: Identifiable, Equatable, Codable, Sendable {
         set { properties[keyPath: keyPath] = newValue }
     }
 
+    /// Kopie mit neuer ID (Einsetzen, Duplizieren); Inhalt und Felder bleiben.
+    public func withNewID() -> EditorBlock {
+        var copy = self
+        copy.id = UUID()
+        return copy
+    }
+
     /// Länge in UTF-16-Einheiten, wie `NSString` und `NSTextView` zählen.
     public var length: Int { text.utf16.count }
 

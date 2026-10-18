@@ -566,6 +566,66 @@ struct InsertButtonTests {
         #expect(h.texts == ["Eins!"])
     }
 
+    @Test func escapeAfterMenuClosedWithoutMatchesStillReverts() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: false)
+        h.type("abcd")
+        #expect(!h.editor.slashMenu.isVisible)
+        #expect(h.texts == ["Eins", "/abcd", "Zwei"])
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Eins", "Zwei"])
+        h.expectConsistent()
+    }
+
+    @Test func escapeAfterLeavingTheBlockKeepsIt() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: false)
+        h.type("abcd")
+        h.caret(at: 0, 2)
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Eins", "/abcd", "Zwei"])
+    }
+
+    @Test func escapeAfterChoosingKeepsBlock() {
+        let h = Harness([EditorBlock(text: "Eins")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 0), above: false)
+        h.type("üb")
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.kinds == [.paragraph, .heading1])
+    }
+
+    /// Ein fremder Schritt liegt über „Neuer Block“ (z. B. ein Import im Hintergrund):
+    /// Escape entfernt den Block als eigene Bearbeitung und lässt den Schritt stehen.
+    @Test func escapeWithForeignStepOnTopUndoesNothingElse() {
+        let h = Harness([EditorBlock(kind: .todo, text: "Aufgabe"), EditorBlock(text: "Zwei")])
+        h.editor.insertBlockWithMenu(nearCharacter: location(h, 1), above: false)
+        h.flushUndoGroup()
+        h.editor.toggleChecked(atCharacter: location(h, 0))
+        h.flushUndoGroup()
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Aufgabe", "Zwei"])
+        #expect(h.document[0].isChecked)
+        h.flushUndoGroup()
+        h.undo()
+        #expect(h.texts == ["Aufgabe", "Zwei", "/"])
+        #expect(h.document[0].isChecked)
+        h.expectConsistent()
+    }
+
+    @Test func escapeWithFilterAndForeignStepKeepsReusedParagraphEmpty() {
+        let h = Harness([EditorBlock(kind: .todo, text: "Aufgabe"), EditorBlock()])
+        h.editor.insertBlockWithMenu(nearCharacter: h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0)), above: false)
+        h.type("ü")
+        h.flushUndoGroup()
+        h.editor.toggleChecked(atCharacter: location(h, 0))
+        h.flushUndoGroup()
+        h.press(#selector(NSResponder.cancelOperation(_:)))
+        #expect(h.texts == ["Aufgabe", ""])
+        #expect(h.document[0].isChecked)
+        h.expectConsistent()
+    }
+
     @Test func buttonActsOnItsBlock() {
         let h = Harness([EditorBlock(text: "Eins"), EditorBlock(kind: .divider), EditorBlock(text: "Zwei")])
         let button = h.editor.textView.insertButton

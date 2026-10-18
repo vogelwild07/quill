@@ -191,10 +191,17 @@ public struct EditorDocument: Equatable, Sendable {
         if !kind.allowsInlineMarks { blocks[index].spans = [] }
         if kind.isAtomic {
             blocks[index].content = InlineText()
-            if index == blocks.count - 1 {
-                blocks.append(EditorBlock())
-            }
+            ensureEditableEnd()
         }
+    }
+
+    /// Hinter einem Trenner oder Bild am Ende muss ein Absatz zum Weiterschreiben
+    /// stehen. `true`, wenn einer angehängt wurde.
+    @discardableResult
+    public mutating func ensureEditableEnd() -> Bool {
+        guard blocks.last?.kind.isAtomic ?? true else { return false }
+        blocks.append(EditorBlock())
+        return true
     }
 
     /// Tab: höchstens eine Stufe tiefer als der vorherige Block.
