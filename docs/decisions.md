@@ -41,7 +41,26 @@ Format: Kontext → Entscheidung → Konsequenzen. Neueste unten.
 - Marker sind nur gezeichnet. Für VoiceOver braucht es eigene Bedienungshilfen-Angaben (Phase 7).
 - Bilder brauchen voraussichtlich einen `NSTextAttachmentViewProvider` (Phase 4).
 - Der Controller ist AppKit-spezifisch. Für iOS entsteht später ein `UITextView`-Gegenstück; Modell, Abbildung und Fragmente werden geteilt.
-- Offen: manueller Test mit japanischer Eingabe (automatisch über markierten Text abgedeckt).
+- Eingabe mit markiertem Text ist per Test abgedeckt. Tote Tasten (´e, ^a, ⌥n n) hat der Nutzer am 2026-10-18 manuell geprüft; sie laufen über denselben Pfad wie IME. Ein manueller Test mit japanischer Eingabe steht noch aus.
+
+**Überführung in Phase 3** (Spike → `QuillEditor`, jeweils mit Aufräumen und Tests):
+
+| Spike-Teil | Ziel in `QuillEditor` | Anpassung |
+|---|---|---|
+| `Document/*` (Modell, Kürzel, Serializer, Slash-Befehle) | bleibt in `Document/` | – |
+| `BlockAttributes`, `BlockRenderer` | `TextKit/` | Fonts und Farben hinter `#if` für iOS |
+| `BlockLayoutFragment`, `BlockLayoutDelegate` | `TextKit/` | Zeichnen über `CGContext` statt `NSBezierPath`, damit iOS es teilt |
+| `DividerAttachment` | `TextKit/` | Bild-Attachment erst in Phase 4 über `NSTextAttachmentViewProvider` |
+| `BlockEditorController` | `AppKit/` | aufteilen in Eingabe (Enter, Tab, Backspace, Kürzel), Abgleich Text ↔ Modell und Zwischenablage |
+| `BlockTextView`, `BlockEditorView` | `AppKit/` | – |
+| `SlashMenu` | `AppKit/` (Panel), Modell neutral | – |
+| `BlockEditorControllerTests` mit Harness | `Tests/QuillEditorTests` | – |
+| `SpikeBenchmark` | Performance-Test in `QuillEditorTests` | Schwelle p95 < 16 ms bei 1000 Blöcken |
+| `SpikeSamples` | Test-Fixtures | – |
+
+Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-Formatierung.
+
+**Löschen:** Ja. Am Ende von Phase 3, im selben PR, sobald die Quill-App den Editor zeigt und alle übernommenen Tests grün sind, werden gelöscht: `Spikes/EditorSpike/`, das Target und Schema `EditorSpike`, das Modul `QuillEditorSpike` samt Produkt und Testtarget. Vorher wird der letzte Spike-Stand mit dem Git-Tag `editor-spike` markiert, damit er auffindbar bleibt.
 
 ## ADR-008: UI-Tests starten ohne gespeicherten Fensterzustand (2026-10-18)
 

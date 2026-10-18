@@ -87,9 +87,9 @@ Gemessen im Release-Build, echtes Fenster, 1000 Blöcke:
 | 5 | Block per Griff ziehen, auch Mehrfachauswahl | flüssig, Undo-fähig | manuell ✅ nach Fix `prepareForDragOperation` |
 | 6 | Checkbox-Klick, Bild-Attachment, Trenner | funktioniert | Checkbox manuell ✅, Trenner ✅ nach Fix, Bild per Test ✅ |
 | 7 | Selektion über Blöcke → ⌘C → Markdown/Plain/RTF | korrekt | Tests ✅ (4 Typen) |
-| 8 | IME, VoiceOver-Grundnavigation, Dark Mode | ohne Fehler | IME per Test (markierter Text) ✅, Japanisch nicht manuell geprüft; AX-Text ✅; Dark Mode ✅ |
+| 8 | IME, VoiceOver-Grundnavigation, Dark Mode | ohne Fehler | Markierter Text per Test ✅; tote Tasten (´e, ^a, ⌥n n) vom Nutzer manuell ✅, gleicher Pfad wie IME; Japanisch nicht manuell geprüft; AX-Text ✅; Dark Mode ✅ |
 
-Der Code in `QuillEditorSpike` und `Spikes/EditorSpike` ist Wegwerf-Code. In Phase 3 wird er nach `QuillEditor` übernommen, aufgeräumt und an `PageStore` angebunden; danach werden Spike-Target und -Modul gelöscht.
+Der Code in `QuillEditorSpike` und `Spikes/EditorSpike` ist Wegwerf-Code. Was davon in Phase 3 nach `QuillEditor` überführt wird und wann der Spike gelöscht wird, legt ADR-007 fest.
 
 ## Tests
 
