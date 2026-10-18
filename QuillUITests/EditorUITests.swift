@@ -6,13 +6,21 @@ import XCTest
 /// Neustart ist damit nicht prüfbar und wird von `EditorPersistenceBridgeTests` abgedeckt.
 final class EditorUITests: XCTestCase {
     private var app: XCUIApplication!
+    /// Eigene Zwischenablage statt der des Nutzers (`-QuillPasteboardName`).
+    private let pasteboard = NSPasteboard(name: NSPasteboard.Name("de.vogel.quill.uitests.\(UUID().uuidString)"))
 
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication.quill()
+        app.launchArguments += ["-QuillPasteboardName", pasteboard.name.rawValue]
         app.launch()
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 5))
         app.windows.firstMatch.click()
+    }
+
+    override func tearDownWithError() throws {
+        app.terminate()
+        pasteboard.releaseGlobally()
     }
 
     // MARK: - Tests
@@ -74,9 +82,8 @@ final class EditorUITests: XCTestCase {
 
     @MainActor
     func testBoldShortcutAndFormatMenu() throws {
-        let saved = PasteboardSnapshot()
-        defer { saved.restore() }
-
+        // Nur der Zähler, nie der Inhalt der Zwischenablage des Nutzers.
+        let generalChangeCount = NSPasteboard.general.changeCount
         createPage("Format")
         app.typeText("\r")
         waitForFocus(editor)
@@ -89,9 +96,10 @@ final class EditorUITests: XCTestCase {
 
         app.typeKey("c", modifierFlags: .command)
         let markdown = NSPasteboard.PasteboardType("net.daringfireball.markdown")
-        let copied = NSPredicate { _, _ in NSPasteboard.general.string(forType: markdown) == "**_fett_**" }
+        let copied = NSPredicate { _, _ in self.pasteboard.string(forType: markdown) == "**_fett_**" }
         let result = XCTWaiter.wait(for: [expectation(for: copied, evaluatedWith: nil)], timeout: 5)
-        XCTAssertEqual(result, .completed, "Markdown: \(String(describing: NSPasteboard.general.string(forType: markdown)))")
+        XCTAssertEqual(result, .completed, "Markdown: \(String(describing: pasteboard.string(forType: markdown)))")
+        XCTAssertEqual(NSPasteboard.general.changeCount, generalChangeCount, "Allgemeine Zwischenablage wurde verändert")
     }
 
     @MainActor
@@ -149,26 +157,5 @@ final class EditorUITests: XCTestCase {
         let matches = NSPredicate { _, _ in self.editor.value as? String == expected }
         let result = XCTWaiter.wait(for: [expectation(for: matches, evaluatedWith: nil)], timeout: 5)
         XCTAssertEqual(result, .completed, "Editor: \((editor.value as? String)?.debugDescription ?? "nil") statt \(expected.debugDescription)", file: file, line: line)
-    }
-}
-
-/// Sichert die Zwischenablage des Nutzers vor dem Test und stellt sie danach wieder her.
-private struct PasteboardSnapshot {
-    private let items: [[NSPasteboard.PasteboardType: Data]]
-
-    init() {
-        items = (NSPasteboard.general.pasteboardItems ?? []).map { item in
-            Dictionary(uniqueKeysWithValues: item.types.compactMap { type in item.data(forType: type).map { (type, $0) } })
-        }
-    }
-
-    func restore() {
-        NSPasteboard.general.clearContents()
-        let restored = items.map { entries in
-            let item = NSPasteboardItem()
-            for (type, data) in entries { item.setData(data, forType: type) }
-            return item
-        }
-        NSPasteboard.general.writeObjects(restored)
     }
 }

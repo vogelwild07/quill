@@ -254,16 +254,23 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     // MARK: Zwischenablage
 
+    /// Startargument `-QuillPasteboardName <Name>`: Kopieren und Einsetzen nutzen eine
+    /// eigene Zwischenablage. Für UI-Tests, damit die des Nutzers unberührt bleibt.
+    public static let pasteboardArgument = "QuillPasteboardName"
+
+    static let clipboard: NSPasteboard = UserDefaults.standard.string(forKey: pasteboardArgument)
+        .map { NSPasteboard(name: NSPasteboard.Name($0)) } ?? .general
+
     override func copy(_ sender: Any?) {
-        if editor?.copySelection(to: .general) != true { super.copy(sender) }
+        if editor?.copySelection(to: Self.clipboard) != true { super.copy(sender) }
     }
 
     override func cut(_ sender: Any?) {
-        if editor?.cutSelection(to: .general) != true { super.cut(sender) }
+        if editor?.cutSelection(to: Self.clipboard) != true { super.cut(sender) }
     }
 
     override func paste(_ sender: Any?) {
-        if editor?.paste(from: .general) != true { super.paste(sender) }
+        if editor?.paste(from: Self.clipboard) != true { super.paste(sender) }
     }
 }
 
