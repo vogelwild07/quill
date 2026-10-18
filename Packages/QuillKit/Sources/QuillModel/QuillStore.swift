@@ -20,6 +20,12 @@ public enum QuillStore {
         Schema(versionedSchema: CurrentSchema.self)
     }
 
+    /// Version des aktuellen Schemas, z. B. `"1.0.0"`.
+    public static var schemaVersion: String {
+        let version = CurrentSchema.versionIdentifier
+        return "\(version.major).\(version.minor).\(version.patch)"
+    }
+
     /// Container auf der Festplatte; legt den Ordner bei Bedarf an.
     public static func makeContainer(storeURL: URL = defaultStoreURL) throws -> ModelContainer {
         try FileManager.default.createDirectory(
