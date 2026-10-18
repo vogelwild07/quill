@@ -11,6 +11,7 @@ public struct RootView: View {
     @State private var selection: UUID?
     @State private var renameRequest: UUID?
     @State private var titleFocusRequest: UUID?
+    @State private var isShowingTrash = false
     #if canImport(AppKit)
     @State private var window: NSWindow?
     #endif
@@ -29,12 +30,15 @@ public struct RootView: View {
                 SidebarView(
                     selection: $selection,
                     renameRequest: $renameRequest,
+                    isShowingTrash: $isShowingTrash,
                     actions: outlineActions(operations)
                 )
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
             }
         } detail: {
-            if let selection, let store {
+            if isShowingTrash, let operations {
+                TrashView(restore: { operations.restore($0) })
+            } else if let selection, let store {
                 PageDetailView(
                     pageID: selection,
                     titleFocusRequest: $titleFocusRequest,
@@ -64,7 +68,10 @@ public struct RootView: View {
             if selection == nil { selection = UUID(uuidString: storedSelection) }
             Task { try? await store?.ensureWorkspace() }
         }
-        .onChange(of: selection) { storedSelection = selection?.uuidString ?? "" }
+        .onChange(of: selection) {
+            storedSelection = selection?.uuidString ?? ""
+            if selection != nil { isShowingTrash = false }
+        }
     }
 
     // MARK: - Aktionen

@@ -13,6 +13,7 @@ struct QuillApp: App {
                 RootView()
                     .modelContainer(persistence.container)
                     .environment(\.pageStore, persistence.store)
+                    .environment(\.quillPersistence, persistence)
             case .failure(let error):
                 PersistenceErrorView(error: error)
             }

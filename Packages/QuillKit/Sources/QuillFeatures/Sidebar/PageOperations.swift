@@ -57,6 +57,15 @@ struct PageOperations {
         }
     }
 
+    func restore(_ id: UUID) {
+        perform {
+            try await store.restore(id)
+            register(String(localized: "Wiederherstellen", bundle: .module),
+                     undo: { try await store.trash(id) },
+                     redo: { try await store.restore(id) })
+        }
+    }
+
     // MARK: - Hilfen
 
     private func perform(_ operation: @escaping @MainActor () async throws -> Void) {

@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "de",
   "strings" : {
+    "%lld Seiten endgültig löschen?" : {
+
+    },
     "Abbrechen" : {
 
     },
@@ -25,13 +28,25 @@
     "Code" : {
 
     },
+    "Das lässt sich nicht rückgängig machen. Unterseiten werden mitgelöscht." : {
+
+    },
     "Daten konnten nicht geöffnet werden" : {
+
+    },
+    "Der Papierkorb ist leer" : {
 
     },
     "Durchgestrichen" : {
 
     },
     "Emoji eingeben oder mit ⌃⌘Leertaste auswählen" : {
+
+    },
+    "Endgültig löschen" : {
+
+    },
+    "Endgültig löschen …" : {
 
     },
     "Fett" : {
@@ -58,6 +73,9 @@
     "Link …" : {
 
     },
+    "Löschen fehlgeschlagen" : {
+
+    },
     "Neue Seite" : {
 
     },
@@ -73,7 +91,19 @@
     "Nicht gespeichert" : {
 
     },
+    "OK" : {
+
+    },
     "Ohne Titel" : {
+
+    },
+    "Papierkorb" : {
+
+    },
+    "Papierkorb leeren …" : {
+
+    },
+    "Papierkorb leeren?" : {
 
     },
     "Quill" : {
@@ -94,6 +124,9 @@
     "Seiten" : {
 
     },
+    "Seiten werden nach 30 Tagen endgültig gelöscht." : {
+
+    },
     "Titel" : {
 
     },
@@ -109,6 +142,9 @@
     "Wenn du Quill jetzt beendest, gehen diese Änderungen verloren. Solange Quill geöffnet bleibt, wird das Speichern weiter versucht.\n\n%@" : {
 
     },
+    "Wiederherstellen" : {
+
+    },
     "Wähle links eine Seite oder lege mit ⌘N eine neue an." : {
 
     },
@@ -116,6 +152,9 @@
 
     },
     "Änderungen konnten nicht gespeichert werden. Quill versucht es automatisch erneut.\n%@" : {
+
+    },
+    "„%@“ endgültig löschen?" : {
 
     }
   },

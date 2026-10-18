@@ -80,7 +80,76 @@ final class SidebarUITests: XCTestCase {
         XCTAssertEqual(app.windows.firstMatch.title, "Reise")
     }
 
+    /// Papierkorb (ADR-017): Wiederherstellen, endgültig löschen mit Rückfrage, leeren.
+    func testTrashRestoreDeleteAndEmpty() throws {
+        createPage("Eins")
+        createPage("Zwei")
+        assertTitles(["Eins", "Zwei"])
+        for _ in 0..<2 {
+            row(0).click()
+            app.typeKey(.delete, modifierFlags: .command)
+        }
+        assertTitles([])
+
+        app.windows.firstMatch.buttons["sidebar.trash"].click()
+        waitForTrashRows(2)
+
+        // Wiederherstellen: Seite ist wieder in der Sidebar.
+        trashRows.element(boundBy: 0).click()
+        app.windows.firstMatch.buttons["trash.restore"].click()
+        waitForTrashRows(1)
+        assertTitles(["Zwei"])
+        // Undo legt sie zurück in den Papierkorb.
+        app.typeKey("z", modifierFlags: .command)
+        waitForTrashRows(2)
+        assertTitles([])
+        trashRows.element(boundBy: 0).click()
+        app.windows.firstMatch.buttons["trash.restore"].click()
+        waitForTrashRows(1)
+        assertTitles(["Zwei"])
+
+        // ⌫ fragt nach; Abbrechen lässt die Seite liegen, Bestätigen löscht sie.
+        trashRows.element(boundBy: 0).click()
+        app.typeKey(.delete, modifierFlags: [])
+        answerConfirmation(confirm: false)
+        waitForTrashRows(1)
+        app.typeKey(.delete, modifierFlags: [])
+        answerConfirmation(confirm: true)
+        waitForTrashRows(0)
+
+        // Leeren.
+        row(0).click()
+        app.typeKey(.delete, modifierFlags: .command)
+        app.windows.firstMatch.buttons["sidebar.trash"].click()
+        waitForTrashRows(1)
+        app.windows.firstMatch.buttons["trash.empty"].click()
+        answerConfirmation(confirm: true)
+        waitForTrashRows(0)
+        XCTAssertFalse(app.windows.firstMatch.buttons["trash.empty"].isEnabled)
+        assertTitles([])
+    }
+
     // MARK: - Hilfen
+
+    private var trashRows: XCUIElementQuery {
+        app.windows.firstMatch.descendants(matching: .any).matching(identifier: "trash.row")
+    }
+
+    private func waitForTrashRows(_ count: Int, file: StaticString = #filePath, line: UInt = #line) {
+        let matches = NSPredicate { _, _ in self.trashRows.count == count }
+        let result = XCTWaiter.wait(for: [expectation(for: matches, evaluatedWith: nil)], timeout: 5)
+        XCTAssertEqual(result, .completed, "Papierkorb: \(trashRows.count) statt \(count) Einträge", file: file, line: line)
+    }
+
+    /// Rückfrage beantworten. Das Fenster meldet sich in AX schon vorher als
+    /// gesperrt, deshalb auf das Sheet selbst warten und danach auf sein Verschwinden.
+    private func answerConfirmation(confirm: Bool, file: StaticString = #filePath, line: UInt = #line) {
+        let sheet = app.windows.firstMatch.sheets.firstMatch
+        XCTAssertTrue(sheet.waitForExistence(timeout: 5), "Keine Rückfrage", file: file, line: line)
+        sheet.buttons[confirm ? "action-button-1" : "action-button-2"].click()
+        let gone = NSPredicate { _, _ in !sheet.exists }
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation(for: gone, evaluatedWith: nil)], timeout: 5), .completed, "Rückfrage bleibt offen", file: file, line: line)
+    }
 
     private var outline: XCUIElement {
         app.windows.firstMatch.outlines["sidebar.pages"]

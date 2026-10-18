@@ -21,7 +21,10 @@ public final class QuillPersistence {
 
     private nonisolated static let logger = Logger(subsystem: "de.vogel.quill", category: "persistence")
 
-    private init(container: ModelContainer, backup: StoreBackup?) {
+    /// Seiten liegen so lange im Papierkorb, dann löscht Quill sie endgültig.
+    public static let trashRetention: TimeInterval = 30 * 24 * 60 * 60
+
+    init(container: ModelContainer, backup: StoreBackup?) {
         self.container = container
         self.store = PageStore(modelContainer: container)
         self.backup = backup
@@ -53,6 +56,7 @@ public final class QuillPersistence {
         }
         let persistence = QuillPersistence(container: container, backup: backup)
         persistence.removeOrphanedAssets()
+        persistence.scheduleTrashAutoEmpty()
         return persistence
     }
 
@@ -67,6 +71,52 @@ public final class QuillPersistence {
             } catch {
                 Self.logger.error("Aufräumen der Bilder fehlgeschlagen: \(error, privacy: .public)")
             }
+        }
+    }
+
+    // MARK: Papierkorb (ADR-017)
+
+    /// Löscht eine Seite aus dem Papierkorb endgültig. Vorher ein Backup (höchstens
+    /// eins pro Stunde); scheitert es, wird nichts gelöscht.
+    public func deletePermanently(_ pageID: UUID) async throws {
+        try await backupBeforeEmptyingTrash()
+        try await store.deletePermanently(pageID)
+    }
+
+    /// Leert den Papierkorb ganz; vorher ein Backup wie bei `deletePermanently`.
+    @discardableResult
+    public func emptyTrash() async throws -> Int {
+        try await backupBeforeEmptyingTrash()
+        return try await store.emptyTrash()
+    }
+
+    /// Löscht Seiten, die länger als 30 Tage im Papierkorb liegen. Ohne Backup
+    /// wird nichts gelöscht; dann beim nächsten Mal wieder.
+    func emptyExpiredTrash(now: Date = .now) async {
+        do {
+            guard try await store.trashCount(olderThan: Self.trashRetention, now: now) > 0 else { return }
+            try await backupBeforeEmptyingTrash()
+            let count = try await store.emptyTrash(olderThan: Self.trashRetention, now: now)
+            if count > 0 { Self.logger.notice("Papierkorb: \(count) alte Seiten gelöscht") }
+        } catch {
+            Self.logger.error("Auto-Leeren des Papierkorbs fehlgeschlagen: \(error, privacy: .public)")
+        }
+    }
+
+    /// Beim Start (nach dem Start-Backup) und danach einmal täglich.
+    private func scheduleTrashAutoEmpty() {
+        Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.emptyExpiredTrash()
+                try? await Task.sleep(for: .seconds(24 * 60 * 60))
+            }
+        }
+    }
+
+    private func backupBeforeEmptyingTrash() async throws {
+        guard let backup else { return }
+        if let folder = try await Task.detached(priority: .userInitiated, operation: { try backup.backupBeforeEmptyingTrash() }).value {
+            Self.logger.notice("Backup vor dem Leeren: \(folder.lastPathComponent, privacy: .public)")
         }
     }
 
@@ -95,4 +145,6 @@ public final class QuillPersistence {
 extension EnvironmentValues {
     /// Schreibzugriff auf Seiten; `nil` nur in Previews ohne Store.
     @Entry public var pageStore: PageStore?
+    /// Für endgültiges Löschen mit Backup; `nil` nur in Previews ohne Store.
+    @Entry public var quillPersistence: QuillPersistence?
 }

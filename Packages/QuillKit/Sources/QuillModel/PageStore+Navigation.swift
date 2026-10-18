@@ -36,6 +36,30 @@ public struct TrashedPage: Sendable, Hashable, Identifiable {
     public let trashedAt: Date
     /// Erste Worte des Inhalts (`TextSnippet.preview`).
     public let preview: String
+
+    /// Liest Titel, Pfad und Vorschau aus der Seite (auch für `@Query` in der UI).
+    public init(_ page: Page) {
+        let texts = (page.blocks ?? []).sorted { $0.sortKey < $1.sortKey }.map(\.text)
+        id = page.id
+        title = page.title
+        icon = page.icon
+        path = page.ancestorTitles
+        trashedAt = page.trashedAt ?? .now
+        preview = TextSnippet.preview(of: texts)
+    }
+}
+
+extension Page {
+    /// Titel der Elternseiten von oben nach unten.
+    public var ancestorTitles: [String] {
+        var titles: [String] = []
+        var ancestor = parent
+        while let current = ancestor {
+            titles.insert(current.title, at: 0)
+            ancestor = current.parent
+        }
+        return titles
+    }
 }
 
 /// Favoriten, Papierkorb und Suche.
@@ -81,13 +105,7 @@ extension PageStore {
     public func trashedPages() throws -> [TrashedPage] {
         try modelContext.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.trashedAt != nil }))
             .sorted { ($0.trashedAt ?? .distantPast) > ($1.trashedAt ?? .distantPast) }
-            .map { page in
-                let texts = (page.blocks ?? []).sorted { $0.sortKey < $1.sortKey }.map(\.text)
-                return TrashedPage(
-                    id: page.id, title: page.title, icon: page.icon, path: path(of: page),
-                    trashedAt: page.trashedAt ?? .now, preview: TextSnippet.preview(of: texts)
-                )
-            }
+            .map(TrashedPage.init)
     }
 
     /// Löscht eine Seite aus dem Papierkorb samt Unterseiten, Blöcken und Bildern.
@@ -105,12 +123,24 @@ extension PageStore {
     /// gelöschten Einträge zurück.
     @discardableResult
     public func emptyTrash(olderThan age: TimeInterval? = nil, now: Date = .now) throws -> Int {
+        let roots = try trashRoots(olderThan: age, now: now)
+        for page in roots { modelContext.delete(page) }
+        try save()
+        return roots.count
+    }
+
+    /// Wie viele Einträge `emptyTrash(olderThan:now:)` löschen würde.
+    public func trashCount(olderThan age: TimeInterval? = nil, now: Date = .now) throws -> Int {
+        try trashRoots(olderThan: age, now: now).count
+    }
+
+    private func trashRoots(olderThan age: TimeInterval?, now: Date) throws -> [Page] {
         let cutoff = age.map { now.addingTimeInterval(-$0) } ?? .distantFuture
         let due = try modelContext.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.trashedAt != nil }))
             .filter { ($0.trashedAt ?? .distantFuture) <= cutoff }
         let dueIDs = Set(due.map(\.id))
         // Nur die obersten löschen; Unterseiten folgen per Cascade.
-        let roots = due.filter { page in
+        return due.filter { page in
             var ancestor = page.parent
             while let current = ancestor {
                 if dueIDs.contains(current.id) { return false }
@@ -118,9 +148,6 @@ extension PageStore {
             }
             return true
         }
-        for page in roots { modelContext.delete(page) }
-        try save()
-        return roots.count
     }
 
     // MARK: Suche
@@ -184,13 +211,7 @@ extension PageStore {
     }
 
     private func path(of page: Page) -> [String] {
-        var titles: [String] = []
-        var ancestor = page.parent
-        while let current = ancestor {
-            titles.insert(current.title, at: 0)
-            ancestor = current.parent
-        }
-        return titles
+        page.ancestorTitles
     }
 
     /// Höchstens so viele passende Blöcke werden gelesen; bei sehr häufigen Begriffen

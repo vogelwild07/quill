@@ -157,4 +157,32 @@ import Testing
 
         #expect(!FileManager.default.fileExists(atPath: partial.path(percentEncoded: false)))
     }
+
+    // MARK: Vor dem Leeren des Papierkorbs (ADR-017)
+
+    @Test func backupBeforeEmptyingTrashAtMostHourly() throws {
+        let container = try makeStore()
+        defer { _ = container }
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        let first = try #require(try backup(at: start).backupBeforeEmptyingTrash())
+        #expect(first.lastPathComponent.hasSuffix("_vor-papierkorb-leeren"))
+        #expect(try backup(at: start.addingTimeInterval(59 * 60)).backupBeforeEmptyingTrash() == nil)
+        #expect(try backup(at: start.addingTimeInterval(61 * 60)).backupBeforeEmptyingTrash() != nil)
+        #expect(try backup(at: start).entries().count == 2)
+    }
+
+    /// Ein späteres Backup am selben Tag verdrängt das vor dem Leeren nicht; nach
+    /// 30 Tagen zählt es wie ein normales.
+    @Test func trashBackupsSurvivePruningForThirtyDays() throws {
+        let container = try makeStore()
+        defer { _ = container }
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        let trash = try #require(try backup(at: start).backupBeforeEmptyingTrash())
+        try backup(at: start.addingTimeInterval(3600)).createBackup(reason: .quit)
+        try backup(at: start.addingTimeInterval(3600)).prune()
+        #expect(FileManager.default.fileExists(atPath: trash.path(percentEncoded: false)))
+
+        try backup(at: start.addingTimeInterval(31 * 24 * 3600)).prune()
+        #expect(!FileManager.default.fileExists(atPath: trash.path(percentEncoded: false)))
+    }
 }

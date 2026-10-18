@@ -15,12 +15,15 @@ public struct StoreBackup: Sendable {
         case quit
         /// Vor dem Öffnen mit einer anderen Schema-Version. Wird nie automatisch gelöscht.
         case beforeMigration(from: String, to: String)
+        /// Vor endgültigem Löschen aus dem Papierkorb (ADR-017).
+        case beforeEmptyingTrash
 
         var slug: String {
             switch self {
             case .launch: "start"
             case .quit: "beenden"
             case .beforeMigration(let from, let to): "\(Self.migrationPrefix)\(from)-\(to)"
+            case .beforeEmptyingTrash: "vor-papierkorb-leeren"
             }
         }
 
@@ -37,6 +40,7 @@ public struct StoreBackup: Sendable {
         public let url: URL
         public let date: Date
         public let isBeforeMigration: Bool
+        public let isBeforeEmptyingTrash: Bool
     }
 
     public let storeURL: URL
@@ -48,6 +52,10 @@ public struct StoreBackup: Sendable {
     public static let dailyBackupsToKeep = 7
     public static let weeklyBackupsToKeep = 4
     public static let launchInterval: TimeInterval = 24 * 60 * 60
+    /// Backups vor dem Leeren des Papierkorbs: so lange und höchstens so viele,
+    /// zusätzlich zu den regulären (ADR-017).
+    public static let trashBackupRetention: TimeInterval = 30 * 24 * 60 * 60
+    public static let trashBackupsToKeep = 10
 
     public init(
         storeURL: URL = QuillStore.defaultStoreURL,
@@ -109,6 +117,19 @@ public struct StoreBackup: Sendable {
         return created
     }
 
+    /// Vor endgültigem Löschen: Backup, falls das letzte älter als `minimumInterval`
+    /// ist (ADR-017). So kostet mehrfaches Löschen hintereinander nur ein Backup.
+    @discardableResult
+    public func backupBeforeEmptyingTrash(minimumInterval: TimeInterval = 60 * 60) throws -> URL? {
+        guard storeExists else { return nil }
+        if let latest = try entries().first, now().timeIntervalSince(latest.date) < minimumInterval {
+            return nil
+        }
+        let created = try createBackup(reason: .beforeEmptyingTrash)
+        try prune()
+        return created
+    }
+
     // MARK: - Bausteine
 
     /// Legt sofort ein Backup an und gibt seinen Ordner zurück.
@@ -157,23 +178,34 @@ public struct StoreBackup: Sendable {
                   let date = Self.formatter.date(from: String(name[..<separator]))
             else { return nil }
             let reason = name[name.index(after: separator)...]
-            return Entry(url: url, date: date, isBeforeMigration: reason.hasPrefix(Reason.migrationPrefix))
+            return Entry(
+                url: url, date: date, isBeforeMigration: reason.hasPrefix(Reason.migrationPrefix),
+                isBeforeEmptyingTrash: reason.hasPrefix(Reason.beforeEmptyingTrash.slug)
+            )
         }
         .sorted { $0.date > $1.date }
     }
 
     /// Behält je das neueste Backup der letzten 7 Tage mit Backup (Tages-Backups)
     /// und davor der 4 nächstälteren Wochen mit Backup (Wochen-Backups); Backups
-    /// vor einer Migration immer. Entfernt Reste abgebrochener Backups.
+    /// vor einer Migration immer. Backups vor dem Leeren des Papierkorbs zählen
+    /// 30 Tage lang nicht mit (höchstens 10). Entfernt Reste abgebrochener Backups.
     public func prune() throws {
         let fileManager = FileManager.default
         var keep = Set<URL>()
         var days = Set<DateComponents>()
         var weeksWithDaily = Set<DateComponents>()
         var weeks = Set<DateComponents>()
+        var trashBackups = 0
         // Neueste zuerst: Das erste Backup eines Tages oder einer Woche ist das neueste.
         for entry in try entries() {
             if entry.isBeforeMigration {
+                keep.insert(entry.url)
+                continue
+            }
+            if entry.isBeforeEmptyingTrash, trashBackups < Self.trashBackupsToKeep,
+               now().timeIntervalSince(entry.date) < Self.trashBackupRetention {
+                trashBackups += 1
                 keep.insert(entry.url)
                 continue
             }
