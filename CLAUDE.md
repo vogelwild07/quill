@@ -24,6 +24,7 @@ UUID-`id`, `createdAt`/`updatedAt`, alle Attribute optional oder mit Default, **
 - Tippen innerhalb eines Absatzes macht die TextView; strukturelle Edits immer über `EditorDocument` und als Diff via `shouldChangeText`/`replaceCharacters`/`didChangeText` (sonst kein Undo). Bei markiertem Text (IME, tote Tasten) nie eingreifen.
 - Fallstricke: Fragment-Koordinaten beginnen am Textanfang (mit `layoutFragmentFrame.minX` umrechnen). TextKit 2 zeichnet `NSTextAttachment.image(for:…)` nicht zuverlässig. `prepareForDragOperation` muss eigene Drag-Typen annehmen. Vor Markdown-Kürzeln `breakUndoCoalescing()`.
 - Neue einfache Block-Felder nur über `BlockProperties` (ADR-014); Textattribute nur mit `Int`/`Bool`/`String`-Werten, kein Struct (AppKit muss archivieren können). `BlockPropertiesRoundTripTests` erzwingt Testwerte für jedes Feld.
+- `BlockKind` nur in `QuillModel`. Switches über die Blockart ohne `default:`; neue Arten müssen `BlockKindCoverageTests` bestehen.
 - Inline-Formatierung: `.quillMarks` und `.link` im Textspeicher sind die Quelle, Schrift/Farbe werden abgeleitet. Gespeichert als `Block.richText` (`RichText`-JSON, `nil` ohne Formatierung). Blöcke schreibt nur die `EditorPersistenceBridge` über `PageStore.applyEdits` (ADR-013).
 - Speichern darf nie still scheitern: Bridge wiederholt mit Backoff, Seite zeigt `lastError`, Beenden fragt über `QuitGuard`. Neuladen aus anderen Fenstern nie bei markiertem Text.
 - Test-Beispieldokumente nur aus `SampleDocuments` (Tests/QuillEditorTests/Fixtures).

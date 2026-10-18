@@ -4,7 +4,6 @@ import SwiftData
 import Testing
 @testable import QuillEditor
 
-/// Eigene Datei mit `QuillModel`: Blockarten deshalb als `QuillEditor.BlockKind`.
 @MainActor
 @Suite("Persistenz: EditorPersistenceBridge", .serialized)
 struct EditorPersistenceBridgeTests {
@@ -46,7 +45,7 @@ struct EditorPersistenceBridgeTests {
         _ = try await bridge.load()
         let document = EditorDocument(blocks: [
             EditorBlock(text: "fett", spans: [InlineSpan(0..<4, marks: [.bold])]),
-            EditorBlock(kind: QuillEditor.BlockKind.heading1, text: "schlicht"),
+            EditorBlock(kind: .heading1, text: "schlicht"),
         ])
         bridge.documentDidChange(document)
         await bridge.flush()

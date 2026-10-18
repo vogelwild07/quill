@@ -45,6 +45,7 @@ Grund: Selektion, Cursorbewegung und Kopieren über Blöcke hinweg, IME, Rechtsc
 - Jeder Block ist ein Absatz und endet immer mit `\n`, auch der letzte. Die Auswahl wird vor das letzte `\n` begrenzt.
 - Block-ID, Art, Einrückung, Häkchen, Code-Sprache und Listennummer liegen als eigene Attribute (`.quillBlockID` …) auf **jedem** Zeichen des Absatzes.
 - Einrückung, Häkchen und Code-Sprache sind gebündelt in `BlockProperties` (ADR-014). Auf die Textattribute bildet sie nur `BlockProperties.textAttributes` / `init(textAttributes:)` ab, auf die Spalten nur `Block.properties`. Regeln je Blockart: `normalized(for:)`.
+- `BlockKind` gibt es nur in `QuillModel`; der Editor ergänzt Verhalten per `extension`. Switches über die Blockart ohne `default:`, `BlockKindCoverageTests` prüft jede Art in Renderer, Slash-Menü und Markdown.
 - Weicher Umbruch (Code, ⇧↩) ist U+2028 im Speicher und `\n` im Modell. Atomare Blöcke (Trenner, Bild) sind ein einzelnes U+FFFC mit Attachment.
 - `BlockRenderer.parse` liest den Textspeicher zurück in Blöcke und repariert fehlende oder doppelte IDs.
 

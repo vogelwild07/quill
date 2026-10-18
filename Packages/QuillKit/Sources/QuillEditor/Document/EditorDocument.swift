@@ -1,4 +1,5 @@
 import Foundation
+import QuillModel
 
 /// Dokument eines Editors: geordnete, flache Liste von Blöcken.
 ///
@@ -68,7 +69,7 @@ public struct EditorDocument: Equatable, Sendable {
     private static func continuation(of kind: BlockKind) -> BlockKind {
         switch kind {
         case .bulleted, .numbered, .todo, .quote: kind
-        default: .paragraph
+        case .paragraph, .heading1, .heading2, .heading3, .code, .divider, .image: .paragraph
         }
     }
 

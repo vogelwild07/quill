@@ -1,4 +1,5 @@
 import Foundation
+import QuillModel
 
 /// Eintrag im Slash-Menü.
 public struct SlashCommand: Identifiable, Equatable, Sendable {

@@ -101,7 +101,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         switch kind {
         case .code: drawCodeBackground(in: context)
         case .quote: drawQuoteBar(in: context)
-        default: break
+        case .paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .todo, .divider, .image: break
         }
         context.restoreGState()
 
@@ -114,7 +114,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         case .numbered: drawNumber(in: context)
         case .todo: drawCheckbox(in: context)
         case .divider: drawDivider(in: context)
-        default: break
+        case .paragraph, .heading1, .heading2, .heading3, .quote, .code, .image: break
         }
         context.restoreGState()
     }

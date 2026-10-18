@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillModel
 
 /// Eingabe: Abfangen von Änderungen über Blockgrenzen, Enter, Tab, Backspace,
 /// Markdown-Kürzel und Slash-Menü.

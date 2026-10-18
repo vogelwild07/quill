@@ -4,6 +4,7 @@ import AppKit
 import UIKit
 #endif
 import QuillDesign
+import QuillModel
 
 /// Typografie und Absatzformate pro Blockart.
 enum BlockStyle {
@@ -16,7 +17,7 @@ enum BlockStyle {
         case .heading2: .systemFont(ofSize: T.heading2Size, weight: .semibold)
         case .heading3: .systemFont(ofSize: T.heading3Size, weight: .semibold)
         case .code: .monospacedSystemFont(ofSize: T.codeSize, weight: .regular)
-        default: .systemFont(ofSize: T.bodySize)
+        case .paragraph, .bulleted, .numbered, .todo, .quote, .divider, .image: .systemFont(ofSize: T.bodySize)
         }
     }
 
@@ -44,7 +45,7 @@ enum BlockStyle {
             style.tailIndent = -S.codePadding
             style.paragraphSpacingBefore = S.codePadding
             style.paragraphSpacing = S.codePadding + S.blockGap
-        default:
+        case .paragraph, .bulleted, .numbered, .todo, .quote, .divider, .image:
             style.lineHeightMultiple = T.bodyLineHeight
         }
         return style

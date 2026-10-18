@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillModel
 import Testing
 @testable import QuillEditor
 

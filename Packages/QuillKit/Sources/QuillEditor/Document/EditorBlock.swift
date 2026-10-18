@@ -1,13 +1,8 @@
 import Foundation
 import QuillModel
 
-/// Art eines Blocks. Rohwerte entsprechen `Block.kindRaw` im Datenmodell.
-public enum BlockKind: String, Codable, Sendable, CaseIterable {
-    case paragraph
-    case heading1, heading2, heading3
-    case bulleted, numbered, todo
-    case quote, code, divider, image
-
+/// Verhalten der Blockarten im Editor; die Arten selbst stehen in `QuillModel`.
+extension BlockKind {
     /// Listenartige Blöcke setzen sich bei Enter fort.
     public var isListItem: Bool {
         self == .bulleted || self == .numbered || self == .todo

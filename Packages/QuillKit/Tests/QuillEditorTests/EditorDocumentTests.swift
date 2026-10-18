@@ -1,4 +1,5 @@
 import Foundation
+import QuillModel
 import Testing
 @testable import QuillEditor
 

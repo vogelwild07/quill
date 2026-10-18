@@ -1,4 +1,5 @@
 import Foundation
+import QuillModel
 
 extension EditorDocument {
     /// Wandelt ein Markdown-Kürzel am Blockanfang um, z. B. `# ` → Überschrift 1.
