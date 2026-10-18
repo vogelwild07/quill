@@ -89,7 +89,7 @@ enum BlockStyle {
             font = Self.font(font, bold: marks.contains(.bold), italic: marks.contains(.italic))
         }
         if font != base { attributes[.font] = font }
-        if marks.contains(.code) { attributes[.backgroundColor] = EditorColor.quaternaryFill }
+        // Hintergrund von Inline-Code zeichnet `BlockLayoutFragment`.
         if marks.contains(.strikethrough) { attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
         if let link = style.link { attributes[.link] = URL(string: link) ?? link }
         return attributes

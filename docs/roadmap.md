@@ -16,6 +16,6 @@ Jede Phase auf eigenem Branch mit PR; auf `main` nur grüne Builds.
 
 ## Bekannte Probleme
 
-- **Inline-Code-Hintergrund in der Zeile darüber (Phase 4):** Der graue Hintergrund von Inline-Code (`.backgroundColor`, `quaternarySystemFill`) reichte einmal nach oben in die vorherige Zeile, hinter „```“. Gesehen am 2026-10-18 im Dunkelmodus-Snapshot von `EditorSnapshotTests` (Fixture `SampleDocuments.welcome`, Fenster 640 × 820, über `cacheDisplay` gerendert), beim ersten Lauf nach einer Änderung der Fixture; Inline-Code stand im Absatz direkt unter einem zweizeiligen Absatz. In drei weiteren Läufen und beim manuellen Test in der App nicht wieder aufgetreten. Vermutung: Hintergrund wird vor dem endgültigen Layout gezeichnet oder umfasst den Absatzabstand. Prüfen, ggf. Hintergrund im `BlockLayoutFragment` selbst zeichnen.
+- Keine offenen. Behoben in Phase 4: Inline-Code-Hintergrund in der Zeile darüber (siehe `architecture.md`, Erkenntnisse aus Phase 4).
 
 **Signing:** Personal Team (gratis) → keine Notarisierung. Ein GitHub-Release startet auf fremden Macs nur über „Trotzdem öffnen“. CloudKit und App Store brauchen später einen bezahlten Developer Account.

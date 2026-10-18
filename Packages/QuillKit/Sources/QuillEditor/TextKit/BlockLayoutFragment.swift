@@ -8,7 +8,8 @@ import QuillDesign
 import QuillModel
 
 /// Zeichnet die Dekoration eines Blocks: Bullet, Nummer, Checkbox, Zitatbalken,
-/// Code-Hintergrund, Trenner. Alles wird aus den Absatz-Attributen abgeleitet.
+/// Code-Hintergrund, Hintergrund von Inline-Code, Trenner. Alles wird aus den
+/// Absatz-Attributen abgeleitet.
 ///
 /// Gezeichnet wird nur über `CGContext` und CoreText, damit iOS die Klasse teilt.
 final class BlockLayoutFragment: NSTextLayoutFragment {
@@ -87,8 +88,46 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         )
     }
 
+    /// Hintergrund von Inline-Code, je Zeile ein Rechteck. Höhe aus der Schrift um die
+    /// Grundlinie, nicht aus der Zeile: so bleibt er sicher in seiner Zeile (statt
+    /// `.backgroundColor`, das einmal in die Zeile darüber reichte).
+    var inlineCodeRects: [CGRect] {
+        guard kind.allowsInlineMarks,
+              let string = (textElement as? NSTextParagraph)?.attributedString, string.length > 0 else { return [] }
+        var runs: [(range: NSRange, font: PlatformFont?)] = []
+        string.enumerateAttribute(.quillMarks, in: NSRange(location: 0, length: string.length)) { value, range, _ in
+            guard let marks = value as? String, marks.split(separator: " ").contains(Substring(InlineMark.code.rawValue)) else { return }
+            runs.append((range, string.attribute(.font, at: range.location, effectiveRange: nil) as? PlatformFont))
+        }
+        guard !runs.isEmpty else { return [] }
+        let text = string.string as NSString
+        var rects: [CGRect] = []
+        for line in textLineFragments {
+            let lineRange = line.characterRange
+            let baseline = line.typographicBounds.minY + line.glyphOrigin.y
+            for run in runs {
+                let overlap = NSIntersectionRange(run.range, lineRange)
+                guard overlap.length > 0 else { continue }
+                // Abschließenden Zeilenumbruch nicht mit unterlegen.
+                var end = NSMaxRange(overlap)
+                while end > overlap.location, [0x0A, 0x2028].contains(text.character(at: end - 1)) { end -= 1 }
+                guard end > overlap.location else { continue }
+                let startX = line.locationForCharacter(at: overlap.location).x
+                let endX = line.locationForCharacter(at: end).x
+                let font = run.font ?? markerFont
+                let padding: CGFloat = 2
+                let bounds = line.typographicBounds
+                let top = max(bounds.minY, baseline - font.ascender - 1)
+                let bottom = min(bounds.maxY, baseline - font.descender + 1)
+                rects.append(CGRect(x: bounds.minX + startX - padding, y: top, width: endX - startX + 2 * padding, height: bottom - top))
+            }
+        }
+        return rects
+    }
+
     override var renderingSurfaceBounds: CGRect {
         var bounds = super.renderingSurfaceBounds
+        for rect in inlineCodeRects { bounds = bounds.union(rect) }
         if kind == .code { bounds = bounds.union(codeBackgroundRect) }
         if kind == .quote { bounds = bounds.union(CGRect(x: markerOriginX, y: 0, width: 8, height: layoutFragmentFrame.height)) }
         if kind.isListItem { bounds = bounds.union(checkboxRect.insetBy(dx: -4, dy: -4)) }
@@ -105,6 +144,9 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         case .code: drawCodeBackground(in: context)
         case .quote: drawQuoteBar(in: context)
         case .paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .todo, .divider, .image: break
+        }
+        for rect in inlineCodeRects {
+            fillRoundedRect(rect, radius: 4, color: EditorColor.quaternaryFill, in: context)
         }
         context.restoreGState()
 

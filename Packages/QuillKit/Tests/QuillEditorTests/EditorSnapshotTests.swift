@@ -59,6 +59,77 @@ struct EditorSnapshotTests {
 }
 
 @MainActor
+@Suite("Editor: Inline-Code zeichnen", .serialized)
+struct InlineCodeSnapshotTests {
+    @MainActor
+    private struct Rendered {
+        let window: NSWindow
+        let editor: BlockEditorController
+        let bitmap: Bitmap
+
+        /// Fragmente in Dokumentreihenfolge.
+        var fragments: [BlockLayoutFragment] {
+            var result: [BlockLayoutFragment] = []
+            editor.textView.textLayoutManager?.enumerateTextLayoutFragments(from: nil, options: [.ensuresLayout]) { fragment in
+                if let fragment = fragment as? BlockLayoutFragment { result.append(fragment) }
+                return true
+            }
+            return result
+        }
+
+        /// Pixelzeilen (y nach unten) eines Fragments im Bild.
+        func pixelRows(of fragment: NSTextLayoutFragment) throws -> Range<Int> {
+            let content = try #require(window.contentView)
+            let rect = content.convert(editor.textView.viewFrame(of: fragment), from: editor.textView)
+            let scale = Double(bitmap.width) / content.bounds.width
+            let top = content.isFlipped ? rect.minY : content.bounds.height - rect.maxY
+            return Int((top * scale).rounded(.down))..<Int(((top + rect.height) * scale).rounded(.up))
+        }
+    }
+
+    private func render(_ document: EditorDocument, appearance: NSAppearance.Name) throws -> Rendered {
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 640, height: 600), styleMask: [.titled], backing: .buffered, defer: false)
+        window.appearance = NSAppearance(named: appearance)
+        let editor = BlockEditorController(document: document)
+        window.contentView = editor.scrollView
+        editor.textView.layoutSubtreeIfNeeded()
+        return Rendered(window: window, editor: editor, bitmap: try Bitmap(try #require(window.contentView)))
+    }
+
+    /// Bekanntes Problem aus der Roadmap: Der Hintergrund reichte einmal in die Zeile
+    /// darüber. Der Absatz darüber muss mit und ohne Inline-Code pixelgleich sein.
+    @Test(arguments: [NSAppearance.Name.aqua, .darkAqua])
+    func backgroundStaysInItsLine(_ appearance: NSAppearance.Name) throws {
+        let with = try render(SampleDocuments.inlineCode(), appearance: appearance)
+        let without = try render(SampleDocuments.inlineCode(withCode: false), appearance: appearance)
+        try with.bitmap.writePNG(named: "inline-code-\(appearance.rawValue)")
+
+        let fragments = with.fragments
+        try #require(fragments.count >= 4)
+        #expect(fragments[0].textLineFragments.count == 2, "Absatz darüber soll umbrechen")
+        let above = try with.pixelRows(of: fragments[0])
+        #expect(with.bitmap.rowsEqual(without.bitmap, above), "Hintergrund reicht in den Absatz darüber")
+        // Sichtprobe: Mit Inline-Code ist im Absatz selbst etwas unterlegt.
+        #expect(!with.bitmap.rowsEqual(without.bitmap, try with.pixelRows(of: fragments[1])))
+
+        // Jedes Rechteck liegt in seiner Zeile.
+        for fragment in fragments[1...2] {
+            let rects = fragment.inlineCodeRects
+            #expect(!rects.isEmpty)
+            for rect in rects {
+                let line = try #require(fragment.textLineFragments.first { $0.typographicBounds.intersects(rect) })
+                #expect(rect.minY >= line.typographicBounds.minY - 0.5)
+                #expect(rect.maxY <= line.typographicBounds.maxY + 0.5)
+            }
+        }
+        // Umbrochener Inline-Code: ein Rechteck je Zeile, übereinander ohne Überlappung.
+        let wrapped = fragments[2].inlineCodeRects
+        #expect(wrapped.count == 2)
+        if wrapped.count == 2 { #expect(wrapped[0].maxY <= wrapped[1].minY) }
+    }
+}
+
+@MainActor
 @Suite("Editor: Bild-Block zeichnen", .serialized)
 struct ImageBlockSnapshotTests {
     /// Einfarbiges Testbild, im Test erzeugt.
@@ -247,6 +318,14 @@ private struct Bitmap {
     /// Zeilen (y nach unten) mit mindestens einem passenden Pixel.
     func rows(where match: (Pixel) -> Bool) -> [Int] {
         (0..<height).filter { y in (0..<width).contains { match(pixel($0, y)) } }
+    }
+
+    /// Gleiche Pixel in den Zeilen `rows` (y nach unten) bei gleich großen Bildern.
+    func rowsEqual(_ other: Bitmap, _ rows: Range<Int>) -> Bool {
+        guard width == other.width, height == other.height else { return false }
+        let clamped = rows.clamped(to: 0..<height)
+        let range = (clamped.lowerBound * width * 4)..<(clamped.upperBound * width * 4)
+        return pixels[range] == other.pixels[range]
     }
 
     func writePNG(named name: String) throws {

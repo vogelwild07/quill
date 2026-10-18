@@ -116,6 +116,12 @@ Der Spike ist in Phase 3 nach `QuillEditor` überführt und gelöscht worden (AD
 - Einfügen über Slash-Menü (Dateiauswahl), Einsetzen und Ablegen: Der Block erscheint sofort mit Platzhalter, Dateien werden im Hintergrund gelesen (`ImageSource`, nie auf dem Main Thread). Import entfernt GPS-Daten und verkleinert Bilder über 20 MB auf 4096 px. Angezeigt wird in natürlicher Größe (DPI).
 - Eingesetzte Bild-Blöcke bekommen eine Kopie ihres Assets (`duplicateAsset`), weil ein Asset genau einem Block gehört.
 
+### Erkenntnisse aus Phase 4
+
+- **Inline-Code-Hintergrund:** Über `.backgroundColor` reichte die Fläche einmal in die Zeile darüber (nicht wieder nachstellbar). Jetzt zeichnet `BlockLayoutFragment` sie selbst (`inlineCodeRects`): je Zeile ein Rechteck aus den Schriftmetriken um die Grundlinie, senkrecht auf die Zeile begrenzt. `InlineCodeSnapshotTests` vergleicht den Absatz darüber pixelgenau mit und ohne Inline-Code.
+- **Zeichnen außerhalb von `renderingSurfaceBounds`** schneidet TextKit ab; wer dekoriert, muss die Fläche dort aufnehmen.
+- **Auswahländerung vor `textDidChange`:** Beim Tippen meldet sich die Auswahl, bevor die Absätze abgeglichen sind; dort nichts aus `paragraphStarts` lesen.
+
 ### Erkenntnisse aus Phase 3
 
 - **SF Symbols einfärben:** `NSColor.set()` färbt ein Symbolbild beim `draw(in:)` nicht ein; es bleibt schwarz und verschwindet im Dunkelmodus. Selbst gezeichnete Elemente deshalb mit Pfaden in Systemfarben zeichnen (Griff ⋮⋮) oder das Symbol über `SymbolConfiguration` färben.
