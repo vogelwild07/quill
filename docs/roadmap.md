@@ -7,7 +7,7 @@
 | 2 Datenmodell + Sidebar | `SchemaV1`, `PageStore`, automatische Backups, Migrationstest, Seitenbaum, Drag & Drop, Tabs, Menüleiste | Seiten anlegen und verschachteln |
 | 3 Editor (Text) | Textblöcke, Überschriften, Listen, To-do, Zitat, Inline-Formatierung, Persistenz | Schreiben alltagstauglich |
 | 4 Editor (Interaktion) | Slash-Menü, Markdown-Kürzel, Block-Drag & Drop, Code, Trenner, Bild | Editor MVP-komplett |
-| 5 Navigation | ⌘K-Suche, Favoriten, Papierkorb inkl. Auto-Leeren | – |
+| 5 Navigation | Schnell öffnen (⌘O), Favoriten, Papierkorb inkl. Auto-Leeren | – |
 | 6 Export | Markdown-Exporter (Seite/Baum, `assets/`), Golden-File-Tests | – |
 | 7 Feinschliff | Accessibility, Lokalisierung, Performance, Icon, Leerzustände, **„Backup wiederherstellen…“** (Menüpunkt + Tests, Pflicht vor v0.1) | v0.1 |
 | 8 Release | GitHub-Release v0.1 | – |

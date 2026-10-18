@@ -107,8 +107,12 @@ Der Code in `QuillEditorSpike` und `Spikes/EditorSpike` ist Wegwerf-Code. Was da
 | ↩ (Sidebar) | Umbenennen |
 | ⌘⌫ (Sidebar) | In den Papierkorb legen (Menüpunkt ohne Kürzel, siehe ADR-012) |
 | ⌘Z / ⇧⌘Z | Rückgängig / Wiederholen |
+| ⌘K (Editor) | Link einfügen oder bearbeiten (Phase 3) |
+| ⌘O | Schnell öffnen: Suche nach Titel und Volltext (Phase 5) |
+
+⌘K ist bewusst der Link wie in Pages, Mail und Notizen; die Suche liegt deshalb auf ⌘O.
 
 ## Tests
 
 - Unit: Swift Testing pro Modul. `EditorDocument` und Exporter mit Golden Files, `PageStore` mit In-Memory-`ModelContainer`, Backups und Migrationen mit Stores im Temp-Ordner (ADR-010, ADR-011), `PageTree` ohne SwiftData.
-- UI: XCUITest, immer über `XCUIApplication.quill()` (ohne Fensterzustand, Store nur im Arbeitsspeicher). Phase 2: Seite anlegen und umbenennen, Unterseite, Papierkorb mit Undo, Tabs. Der Test „Ziehen zum Verschachteln“ ist übersprungen (`XCTSkip`): Synthetische Drags von XCUITest starten in der `NSOutlineView` kein Ziehen; die Logik ist per Unit-Test abgedeckt, das Ziehen selbst wird von Hand geprüft. Später: Tippen, Slash-Menü, ⌘K. Vor dem Lauf darf keine andere Quill-Instanz laufen (z. B. aus ⌘R), sonst kann XCTest sie nicht beenden.
+- UI: XCUITest, immer über `XCUIApplication.quill()` (ohne Fensterzustand, Store nur im Arbeitsspeicher). Phase 2: Seite anlegen und umbenennen, Unterseite, Papierkorb mit Undo, Tabs. Der Test „Ziehen zum Verschachteln“ ist übersprungen (`XCTSkip`): Synthetische Drags von XCUITest starten in der `NSOutlineView` kein Ziehen; die Logik ist per Unit-Test abgedeckt, das Ziehen selbst wird von Hand geprüft. Später: Tippen, Slash-Menü, Schnell öffnen (⌘O). Vor dem Lauf darf keine andere Quill-Instanz laufen (z. B. aus ⌘R), sonst kann XCTest sie nicht beenden.
