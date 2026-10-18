@@ -81,7 +81,7 @@ public final class BlockEditorController: NSObject {
         isApplying = false
         rebuildParagraphStarts()
         textView.setSelectedRange(NSRange(location: 0, length: 0))
-        textView.typingAttributes = BlockStyle.attributes(for: document[0], ordinal: nil)
+        updateTypingAttributes(forCaretAt: BlockPosition(block: 0, offset: 0))
     }
 
     /// Ersetzt das gesamte Dokument (z. B. Laden einer anderen Seite). Leert Undo.
@@ -169,9 +169,24 @@ public final class BlockEditorController: NSObject {
         if let cursor {
             let location = characterLocation(of: cursor)
             textView.setSelectedRange(NSRange(location: location, length: 0))
-            textView.typingAttributes = BlockStyle.attributes(for: document[cursor.block], ordinal: nil)
+            updateTypingAttributes(forCaretAt: cursor)
         }
         onChange?(document)
+    }
+
+    /// Tipp-Attribute am Cursor: Blockart des Cursor-Blocks, Inline-Stil des Zeichens
+    /// davor (am Blockanfang unformatiert). Die Text-View würde sonst am Blockanfang
+    /// die Attribute des vorherigen Blocks übernehmen.
+    func updateTypingAttributes(forCaretAt cursor: BlockPosition) {
+        let block = document[cursor.block]
+        var attributes = BlockStyle.attributes(for: block, ordinal: nil)
+        if cursor.offset > 0, block.kind.allowsInlineMarks {
+            let style = block.content.style(at: cursor.offset - 1)
+            // Links setzen sich beim Weitertippen nicht fort.
+            let inline = InlineStyle(marks: style.marks)
+            attributes.merge(BlockStyle.inlineAttributes(for: inline, kind: block.kind)) { $1 }
+        }
+        textView.typingAttributes = attributes
     }
 
     /// Nummern nummerierter Punkte nachführen (nicht undo-relevant, abgeleitet).
@@ -224,5 +239,7 @@ enum UndoAction {
     static var moveBlocks: String { String(localized: "Blöcke verschieben", bundle: .module) }
     static var cut: String { String(localized: "Ausschneiden", bundle: .module) }
     static var paste: String { String(localized: "Einsetzen", bundle: .module) }
+    static var format: String { String(localized: "Formatieren", bundle: .module) }
+    static var link: String { String(localized: "Link", bundle: .module) }
 }
 #endif

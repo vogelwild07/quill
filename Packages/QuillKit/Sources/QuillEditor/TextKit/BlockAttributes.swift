@@ -10,6 +10,10 @@ extension NSAttributedString.Key {
     static let quillCodeLanguage = NSAttributedString.Key("de.vogel.quill.codeLanguage")
     /// Nummer eines nummerierten Punkts; abgeleitet, wird nach jeder Änderung nachgeführt.
     static let quillOrdinal = NSAttributedString.Key("de.vogel.quill.ordinal")
+    /// Inline-Marks eines Zeichens: sortierte Rohwerte, durch Leerzeichen getrennt (`"bold italic"`).
+    /// Zusammen mit `.link` die Wahrheit über die Formatierung; Schrift, Hintergrund
+    /// und Durchstreichung werden daraus abgeleitet.
+    static let quillMarks = NSAttributedString.Key("de.vogel.quill.marks")
 }
 
 /// Zeichen im Textspeicher.

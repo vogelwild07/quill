@@ -339,6 +339,142 @@ struct ClipboardAndMoveTests {
 }
 
 @MainActor
+@Suite("Editor: Inline-Formatierung", .serialized)
+struct FormattingIntegrationTests {
+    private func select(_ h: Harness, from start: BlockPosition, to end: BlockPosition) {
+        let from = h.editor.characterLocation(of: start)
+        let to = h.editor.characterLocation(of: end)
+        h.textView.setSelectedRange(NSRange(location: from, length: to - from))
+    }
+
+    @Test func boldOnSelectionIsOneUndoStepAndKeepsSelection() {
+        let h = Harness([EditorBlock(text: "Hallo Welt")])
+        select(h, from: BlockPosition(block: 0, offset: 0), to: BlockPosition(block: 0, offset: 5))
+        h.editor.toggleMark(.bold)
+        #expect(h.document[0].spans == [InlineSpan(0..<5, marks: [.bold])])
+        #expect(h.textView.selectedRange() == NSRange(location: 0, length: 5))
+        let font = h.textView.textStorage!.attribute(.font, at: 1, effectiveRange: nil) as? NSFont
+        #expect(font?.fontDescriptor.symbolicTraits.contains(.bold) == true)
+        h.expectConsistent()
+        h.undo()
+        #expect(h.document[0].spans.isEmpty)
+        h.expectConsistent()
+        h.redo()
+        #expect(h.document[0].spans == [InlineSpan(0..<5, marks: [.bold])])
+    }
+
+    @Test func toggleOnFullyBoldSelectionRemovesBold() {
+        let h = Harness([EditorBlock(text: "Hallo", spans: [InlineSpan(0..<5, marks: [.bold])])])
+        select(h, from: BlockPosition(block: 0, offset: 1), to: BlockPosition(block: 0, offset: 3))
+        h.editor.toggleMark(.bold)
+        #expect(h.document[0].spans == [InlineSpan(0..<1, marks: [.bold]), InlineSpan(3..<5, marks: [.bold])])
+        h.expectConsistent()
+    }
+
+    @Test func typingAfterBoldTextStaysBold() {
+        let h = Harness([EditorBlock(text: "ab", spans: [InlineSpan(0..<2, marks: [.bold])])])
+        h.caret(at: 0, 2)
+        h.type("cd")
+        #expect(h.document[0].spans == [InlineSpan(0..<4, marks: [.bold])])
+        h.expectConsistent()
+    }
+
+    @Test func toggleWithoutSelectionChangesOnlyTypingAttributes() {
+        let h = Harness([EditorBlock(text: "ab")])
+        h.caret(at: 0, 2)
+        h.editor.toggleMark(.italic)
+        #expect(h.document[0].spans.isEmpty)
+        h.type("cd")
+        h.editor.toggleMark(.italic)
+        h.type("e")
+        #expect(h.document[0].text == "abcde")
+        #expect(h.document[0].spans == [InlineSpan(2..<4, marks: [.italic])])
+        h.expectConsistent()
+    }
+
+    @Test func enterInsideBoldKeepsBothHalvesBold() {
+        let h = Harness([EditorBlock(text: "abcd", spans: [InlineSpan(0..<4, marks: [.bold])])])
+        h.caret(at: 0, 2)
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        #expect(h.document.blocks.map(\.spans) == [[InlineSpan(0..<2, marks: [.bold])], [InlineSpan(0..<2, marks: [.bold])]])
+        h.expectConsistent()
+    }
+
+    @Test func markdownShortcutKeepsInlineFormatting() {
+        let h = Harness([EditorBlock(text: "Titel", spans: [InlineSpan(0..<5, marks: [.bold])])])
+        h.caret(at: 0, 0)
+        h.type("# ")
+        #expect(h.kinds == [.heading1])
+        #expect(h.document[0].spans == [InlineSpan(0..<5, marks: [.bold])])
+        h.expectConsistent()
+    }
+
+    @Test func copyInsideOneBlockWritesInlineFormatsAndPastesInline() throws {
+        let h = Harness([
+            EditorBlock(text: "Hallo Welt", spans: [InlineSpan(6..<10, marks: [.bold])]),
+            EditorBlock(kind: .heading1, text: "Ziel"),
+        ])
+        select(h, from: BlockPosition(block: 0, offset: 4), to: BlockPosition(block: 0, offset: 8))
+        let board = NSPasteboard(name: .init("de.vogel.quill.tests.\(UUID().uuidString)"))
+        #expect(h.editor.copySelection(to: board))
+        #expect(board.string(forType: .markdown) == "o **We**")
+        #expect(board.string(forType: .string) == "o We")
+        let rtf = try #require(board.data(forType: .rtf))
+        let rich = try #require(NSAttributedString(rtf: rtf, documentAttributes: nil))
+        let font = rich.attribute(.font, at: 3, effectiveRange: nil) as? NSFont
+        #expect(font?.fontDescriptor.symbolicTraits.contains(.bold) == true)
+
+        h.caret(at: 1, 2)
+        #expect(h.editor.paste(from: board))
+        #expect(h.kinds == [.paragraph, .heading1])
+        #expect(h.document[1].text == "Zio Weel")
+        #expect(h.document[1].spans == [InlineSpan(4..<6, marks: [.bold])])
+        h.expectConsistent()
+    }
+
+    @Test func linkCanBeSetChangedAndRemoved() {
+        let h = Harness([EditorBlock(text: "siehe Quill")])
+        select(h, from: BlockPosition(block: 0, offset: 6), to: BlockPosition(block: 0, offset: 11))
+        let target = h.editor.linkTarget()
+        #expect(target.link == nil)
+        h.editor.setLink("https://quill.app", on: target.range)
+        #expect(h.document[0].spans == [InlineSpan(6..<11, marks: [], link: "https://quill.app")])
+        let stored = h.textView.textStorage!.attribute(.link, at: 7, effectiveRange: nil) as? URL
+        #expect(stored == URL(string: "https://quill.app"))
+        h.expectConsistent()
+        h.flushUndoGroup()
+
+        h.caret(at: 0, 8)
+        let existing = h.editor.linkTarget()
+        #expect(existing.link == "https://quill.app")
+        #expect(existing.range.length == 5)
+        h.editor.setLink(nil, on: existing.range)
+        #expect(h.document[0].spans.isEmpty)
+        h.undo()
+        #expect(h.document[0].spans.first?.style.link == "https://quill.app")
+        h.expectConsistent()
+    }
+
+    @Test func linkWithoutSelectionInsertsTheAddress() {
+        let h = Harness([EditorBlock(text: "Web: ")])
+        h.caret(at: 0, 5)
+        let target = h.editor.linkTarget()
+        h.editor.setLink(BlockEditorController.normalizedLink("quill.app"), on: target.range)
+        #expect(h.document[0].text == "Web: https://quill.app")
+        #expect(h.document[0].spans == [InlineSpan(5..<22, marks: [], link: "https://quill.app")])
+        #expect(h.caretPosition == BlockPosition(block: 0, offset: 22))
+        h.expectConsistent()
+    }
+
+    @Test func formattingIgnoresCodeBlocks() {
+        let h = Harness([EditorBlock(kind: .code, text: "let a")])
+        select(h, from: BlockPosition(block: 0, offset: 0), to: BlockPosition(block: 0, offset: 3))
+        h.editor.toggleMark(.bold)
+        #expect(h.document[0].spans.isEmpty)
+    }
+}
+
+@MainActor
 @Suite("Editor: Messung", .serialized)
 struct PerformanceTests {
     /// ADR-007: Tippen bei 1000 Blöcken p95 < 16 ms (ein Frame). Im Release-Build

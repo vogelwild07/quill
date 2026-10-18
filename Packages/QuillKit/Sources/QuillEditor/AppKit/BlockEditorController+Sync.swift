@@ -51,6 +51,9 @@ extension BlockEditorController: @MainActor NSTextStorageDelegate {
             return false
         }
         document[index].text = string.substring(with: body).replacingOccurrences(of: StorageCharacter.softBreak, with: "\n")
+        if document[index].kind.allowsInlineMarks {
+            document[index].spans = BlockRenderer.spans(in: storage, body: body)
+        }
         for later in (index + 1)...document.count { paragraphStarts[later] += editedDelta }
         self.editedRange = nil
         editedDelta = 0
@@ -82,7 +85,7 @@ extension BlockEditorController: @MainActor NSTextStorageDelegate {
             let last = blockIndex(atCharacter: NSMaxRange(range) - 1)
             for index in first...last {
                 let block = document[index]
-                storage.addAttributes(BlockStyle.attributes(for: block, ordinal: ordinals[block.id]), range: paragraphRange(ofBlock: index))
+                BlockRenderer.restyle(storage, block: block, ordinal: ordinals[block.id], range: paragraphRange(ofBlock: index))
             }
         }
         storage.endEditing()

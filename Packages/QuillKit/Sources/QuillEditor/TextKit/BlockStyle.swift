@@ -69,4 +69,55 @@ enum BlockStyle {
         }
         return attributes
     }
+
+    // MARK: Inline
+
+    /// Attribute eines formatierten Textstücks, aufbauend auf der Schrift der Blockart.
+    static func inlineAttributes(for style: InlineStyle, kind: BlockKind) -> [NSAttributedString.Key: Any] {
+        var attributes: [NSAttributedString.Key: Any] = [:]
+        let marks = style.marks
+        if !marks.isEmpty {
+            attributes[.quillMarks] = marks.sorted().map(\.rawValue).joined(separator: " ")
+        }
+        let base = font(for: kind)
+        var font = marks.contains(.code)
+            ? PlatformFont.monospacedSystemFont(ofSize: (base.pointSize * 0.9).rounded(), weight: .regular)
+            : base
+        if marks.contains(.bold) || marks.contains(.italic) {
+            font = Self.font(font, bold: marks.contains(.bold), italic: marks.contains(.italic))
+        }
+        if font != base { attributes[.font] = font }
+        if marks.contains(.code) { attributes[.backgroundColor] = EditorColor.quaternaryFill }
+        if marks.contains(.strikethrough) { attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
+        if let link = style.link { attributes[.link] = URL(string: link) ?? link }
+        return attributes
+    }
+
+    /// Inline-Stil aus den Attributen eines Zeichens.
+    static func inlineStyle(from attributes: [NSAttributedString.Key: Any]) -> InlineStyle {
+        let marks = (attributes[.quillMarks] as? String)?
+            .split(separator: " ")
+            .map { InlineMark(rawValue: String($0)) } ?? []
+        let link: String? = switch attributes[.link] {
+        case let url as URL: url.absoluteString
+        case let string as String: string
+        default: nil
+        }
+        return InlineStyle(marks: Set(marks), link: link)
+    }
+
+    private static func font(_ font: PlatformFont, bold: Bool, italic: Bool) -> PlatformFont {
+        #if canImport(AppKit)
+        var traits = font.fontDescriptor.symbolicTraits
+        if bold { traits.insert(.bold) }
+        if italic { traits.insert(.italic) }
+        return NSFont(descriptor: font.fontDescriptor.withSymbolicTraits(traits), size: font.pointSize) ?? font
+        #else
+        var traits = font.fontDescriptor.symbolicTraits
+        if bold { traits.insert(.traitBold) }
+        if italic { traits.insert(.traitItalic) }
+        guard let descriptor = font.fontDescriptor.withSymbolicTraits(traits) else { return font }
+        return UIFont(descriptor: descriptor, size: font.pointSize)
+        #endif
+    }
 }

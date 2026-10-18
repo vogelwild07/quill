@@ -12,33 +12,43 @@ extension NSPasteboard.PasteboardType {
 /// Zwischenablage: Kopieren über Blockgrenzen in vier Formaten, verlustfreies Einsetzen.
 extension BlockEditorController {
     /// Blöcke der Auswahl; Rand-Blöcke auf den ausgewählten Text gekürzt.
-    private func selectedBlocks() -> [EditorBlock]? {
+    /// Eine Auswahl innerhalb eines Textblocks ergibt einen Absatz ohne Blockart:
+    /// Er wird beim Einsetzen in den Text eingefügt statt als eigener Block.
+    private func selectedBlocks() -> (blocks: [EditorBlock], isInline: Bool)? {
         let selection = textView.selectedRange()
         guard selection.length > 0 else { return nil }
         let start = position(atCharacter: selection.location)
         var end = position(atCharacter: NSMaxRange(selection))
-        guard start.block != end.block else { return nil }
+        if start.block == end.block {
+            let block = document[start.block]
+            guard !block.kind.isAtomic else { return nil }
+            var inline = EditorBlock()
+            inline.content = block.content.split(at: end.offset).0.split(at: start.offset).1
+            return ([inline], true)
+        }
         if end.offset == 0 && NSMaxRange(selection) == paragraphStarts[end.block] {
             end = BlockPosition(block: end.block - 1, offset: BlockRenderer.displayLength(of: document[end.block - 1]))
         }
         var blocks = Array(document.blocks[start.block...end.block])
         if !blocks[0].kind.isAtomic {
-            blocks[0].text = EditorDocument.split(blocks[0].text, at: start.offset).1
+            blocks[0].content = blocks[0].content.split(at: start.offset).1
         }
         let lastIndex = blocks.count - 1
         if !blocks[lastIndex].kind.isAtomic {
             let trimmedEnd = lastIndex == 0 ? end.offset - start.offset : end.offset
-            blocks[lastIndex].text = EditorDocument.split(blocks[lastIndex].text, at: trimmedEnd).0
+            blocks[lastIndex].content = blocks[lastIndex].content.split(at: trimmedEnd).0
         }
-        return blocks
+        return (blocks, false)
     }
 
-    /// Schreibt Klartext, Markdown, RTF und Quill-Blöcke. `false` = einfache Auswahl
-    /// innerhalb eines Blocks; dann übernimmt die Text-View.
+    /// Schreibt Klartext, Markdown, RTF und Quill-Blöcke. `false` = keine Auswahl
+    /// oder nur ein Trenner; dann übernimmt die Text-View.
     func copySelection(to pasteboard: NSPasteboard) -> Bool {
-        guard let blocks = selectedBlocks() else { return false }
+        guard let (blocks, isInline) = selectedBlocks() else { return false }
         let slice = EditorDocument(blocks: blocks)
-        let markdown = MarkdownSerializer.markdown(for: slice, blocks: 0..<slice.count)
+        let markdown = isInline
+            ? MarkdownSerializer.inlineMarkdown(blocks[0].content)
+            : MarkdownSerializer.markdown(for: slice, blocks: 0..<slice.count)
         let plain = MarkdownSerializer.plainText(for: blocks)
 
         pasteboard.clearContents()
@@ -67,12 +77,19 @@ extension BlockEditorController {
     }
 
     /// Fügt Quill-Blöcke verlustfrei ein, sonst Klartext (keine fremden Formate).
+    /// Ein einzelner Absatz wird in den Text eingefügt und behält seine Formatierung.
     func paste(from pasteboard: NSPasteboard) -> Bool {
         let selection = textView.selectedRange()
         if let data = pasteboard.data(forType: .quillBlocks),
            let blocks = try? JSONDecoder().decode([EditorBlock].self, from: data) {
             var newDocument = document
             var caret = position(atCharacter: selection.location)
+            if blocks.count == 1, blocks[0].kind == .paragraph {
+                let end = position(atCharacter: NSMaxRange(selection))
+                let cursor = newDocument.insertInline(blocks[0].content, from: caret, to: end)
+                apply(newDocument, cursor: cursor, actionName: UndoAction.paste)
+                return true
+            }
             if selection.length > 0 {
                 caret = newDocument.replace(from: caret, to: position(atCharacter: NSMaxRange(selection)), with: "")
             }

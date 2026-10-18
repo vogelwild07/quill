@@ -29,7 +29,7 @@ let package = Package(
             resources: [.process("Resources")]
         ),
         .testTarget(name: "QuillModelTests", dependencies: ["QuillModel"]),
-        .testTarget(name: "QuillEditorTests", dependencies: ["QuillEditor"]),
+        .testTarget(name: "QuillEditorTests", dependencies: ["QuillEditor", "QuillModel"]),
         .testTarget(name: "QuillExportTests", dependencies: ["QuillExport"]),
         .testTarget(name: "QuillFeaturesTests", dependencies: ["QuillFeatures", "QuillModel"]),
     ],

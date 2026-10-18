@@ -40,21 +40,60 @@ public enum MarkdownSerializer {
 
     private static func line(for block: EditorBlock, ordinal: Int) -> String {
         let indent = String(repeating: "    ", count: block.indent)
+        let text = inlineMarkdown(block.content)
         switch block.kind {
-        case .paragraph: return indent + block.text
-        case .heading1: return "# " + block.text
-        case .heading2: return "## " + block.text
-        case .heading3: return "### " + block.text
-        case .bulleted: return indent + "- " + block.text
-        case .numbered: return indent + "\(ordinal). " + block.text
-        case .todo: return indent + (block.isChecked ? "- [x] " : "- [ ] ") + block.text
+        case .paragraph: return indent + text
+        case .heading1: return "# " + text
+        case .heading2: return "## " + text
+        case .heading3: return "### " + text
+        case .bulleted: return indent + "- " + text
+        case .numbered: return indent + "\(ordinal). " + text
+        case .todo: return indent + (block.isChecked ? "- [x] " : "- [ ] ") + text
         case .quote:
-            return block.text.components(separatedBy: "\n").map { "> " + $0 }.joined(separator: "\n")
+            return text.components(separatedBy: "\n").map { "> " + $0 }.joined(separator: "\n")
         case .code:
             let fence = block.text.contains("```") ? "````" : "```"
             return fence + (block.codeLanguage ?? "") + "\n" + block.text + "\n" + fence
         case .divider: return "---"
         case .image: return "![](\(block.text))"
         }
+    }
+
+    // MARK: Inline
+
+    /// Markdown für formatierten Text: `**fett**`, `_kursiv_`, `~~durch~~`, `` `Code` ``,
+    /// `[Text](Ziel)`. Leerraum am Rand eines Stücks bleibt außerhalb der Markierungen,
+    /// sonst erkennt CommonMark sie nicht.
+    public static func inlineMarkdown(_ content: InlineText) -> String {
+        guard !content.spans.isEmpty else { return content.text }
+        let utf16 = Array(content.text.utf16)
+        var output = ""
+        var cursor = 0
+        func plain(_ range: Range<Int>) -> String {
+            String(decoding: utf16[range], as: UTF16.self)
+        }
+        for span in content.spans {
+            if cursor < span.range.lowerBound { output += plain(cursor..<span.range.lowerBound) }
+            output += wrap(plain(span.range), in: span.style)
+            cursor = span.range.upperBound
+        }
+        if cursor < utf16.count { output += plain(cursor..<utf16.count) }
+        return output
+    }
+
+    private static func wrap(_ text: String, in style: InlineStyle) -> String {
+        let leading = String(text.prefix { $0.isWhitespace })
+        let trailing = String(text.reversed().prefix { $0.isWhitespace }.reversed())
+        guard leading.count < text.count else { return text }
+        var core = String(text.dropFirst(leading.count).dropLast(trailing.count))
+
+        if style.marks.contains(.code) {
+            core = core.contains("`") ? "`` " + core + " ``" : "`" + core + "`"
+        }
+        if style.marks.contains(.italic) { core = "_" + core + "_" }
+        if style.marks.contains(.bold) { core = "**" + core + "**" }
+        if style.marks.contains(.strikethrough) { core = "~~" + core + "~~" }
+        if let link = style.link { core = "[" + core + "](" + link + ")" }
+        return leading + core + trailing
     }
 }

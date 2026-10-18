@@ -4,7 +4,7 @@ import QuillDesign
 
 /// Text-View des Block-Editors. Strukturelle Logik liegt im `BlockEditorController`;
 /// hier sitzen nur Ereignisse, die eine View braucht.
-final class BlockTextView: NSTextView {
+final class BlockTextView: NSTextView, EditorFormattingActions {
     weak var editor: BlockEditorController?
 
     private let handle = BlockHandleView()
@@ -186,6 +186,14 @@ final class BlockTextView: NSTextView {
         dropIndicator.isHidden = true
         super.draggingEnded(sender)
     }
+
+    // MARK: Format
+
+    @objc func quillToggleBold(_ sender: Any?) { editor?.toggleMark(.bold) }
+    @objc func quillToggleItalic(_ sender: Any?) { editor?.toggleMark(.italic) }
+    @objc func quillToggleInlineCode(_ sender: Any?) { editor?.toggleMark(.code) }
+    @objc func quillToggleStrikethrough(_ sender: Any?) { editor?.toggleMark(.strikethrough) }
+    @objc func quillEditLink(_ sender: Any?) { editor?.editLink() }
 
     // MARK: Zwischenablage
 
