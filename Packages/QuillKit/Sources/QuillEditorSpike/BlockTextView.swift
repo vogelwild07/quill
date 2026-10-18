@@ -170,6 +170,11 @@ final class BlockTextView: NSTextView {
         super.draggingExited(sender)
     }
 
+    /// `NSTextView` lehnt unbekannte Typen hier ab; Block-Drags erledigt `performDragOperation`.
+    override func prepareForDragOperation(_ sender: any NSDraggingInfo) -> Bool {
+        isBlockDrag(sender) ? true : super.prepareForDragOperation(sender)
+    }
+
     override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
         guard isBlockDrag(sender) else { return super.performDragOperation(sender) }
         dropIndicator.isHidden = true
@@ -182,6 +187,12 @@ final class BlockTextView: NSTextView {
     override func concludeDragOperation(_ sender: (any NSDraggingInfo)?) {
         dropIndicator.isHidden = true
         super.concludeDragOperation(sender)
+    }
+
+    /// Wird auch bei Abbruch aufgerufen; die Einfügelinie darf nie stehen bleiben.
+    override func draggingEnded(_ sender: any NSDraggingInfo) {
+        dropIndicator.isHidden = true
+        super.draggingEnded(sender)
     }
 
     // MARK: Zwischenablage
