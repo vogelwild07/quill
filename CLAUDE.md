@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-Architekt, Swift-Entwickler.
 
-**Stand:** Phase 1 (Research + Editor-Spike) abgeschlossen, ADR-007 angenommen. Nächste Phase: 2 (Datenmodell + Sidebar). Plan: `docs/roadmap.md`.
+**Stand:** Phase 2 (Datenmodell + Sidebar) abgeschlossen: `SchemaV1`, `PageStore`, Backups (ADR-010), Migrationstests (ADR-011), Sidebar als `NSOutlineView` (ADR-012). Nächste Phase: 3 (Editor Text). Plan: `docs/roadmap.md`.
 
 ## Kommunikation
 - Immer **Deutsch**. Kurz ist gut; Warnungen, Sicherheit und Entscheidungen in ganzen Sätzen.
@@ -13,11 +13,11 @@ Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-A
 - Swift 6 (strikte Concurrency), SwiftUI, AppKit nur wo nötig, SwiftData lokal. Sync später CloudKit.
 - Editor: eigener Block-Editor auf TextKit 2 / `NSTextView` (siehe `docs/architecture.md`).
 - Tests: Swift Testing (Unit), XCUITest (UI). Bundle-ID `de.vogel.quill`.
-- UI-Tests starten die App immer über `XCUIApplication.quill()` (ignoriert gespeicherten Fensterzustand, ADR-008).
+- UI-Tests starten die App immer über `XCUIApplication.quill()` (ignoriert gespeicherten Fensterzustand, ADR-008; Store nur im Arbeitsspeicher via `-QuillInMemoryStore YES`). Tests nie gegen den echten Store laufen lassen.
 - UI-Strings lokalisierbar (`Localizable.xcstrings`), Ausgangssprache Deutsch.
 
 ## Datenmodell-Regeln (CloudKit-tauglich)
-UUID-`id`, `createdAt`/`updatedAt`, alle Attribute optional oder mit Default, **kein** `.unique`, Beziehungen optional mit Inverse, Enums als String-Rohwert, Reihenfolge per `sortKey`. Schemaänderungen nur über neues `VersionedSchema` + Migration. Details: `docs/data-model.md`.
+UUID-`id`, `createdAt`/`updatedAt`, alle Attribute optional oder mit Default, **kein** `.unique`, Beziehungen optional mit Inverse, Enums als String-Rohwert, Reihenfolge per `sortKey`. Schemaänderungen nur über neues `VersionedSchema` + Migration; `SchemaV1` ist eingefroren (Fingerabdruck-Test), jede neue Version braucht einen Test „V(n-1) → V(n)“ (ADR-011). Schreiben nur über `PageStore`. Details: `docs/data-model.md`.
 
 ## Editor (ADR-007)
 - Ein `NSTextView` pro Seite, ein Absatz = ein Block. Jeder Absatz endet mit `\n`, auch der letzte; Block-Attribute (`.quillBlockID` …) liegen auf **jedem** Zeichen. Weicher Umbruch = U+2028, atomare Blöcke = U+FFFC.
@@ -30,6 +30,7 @@ Apple HIG, Liquid Glass nur für Sidebar/Toolbars/Popover, nicht für Inhalt. SF
 
 ## Tools
 - **XcodeBuildMCP** zum Bauen/Testen/Starten (macOS-Workflow). Fallback: `xcodebuild`.
+- **Keine Bildschirmfotos oder Bildschirmaufnahmen des Macs**, auch nicht zur Kontrolle (kein `screencapture`, keine Screenshot-Tools). Die App nur über Bedienungshilfen (AX), XCUITest oder Snapshots aus der App selbst (z. B. `-snapshot`) prüfen.
 - **Context7 / Apple-Doku:** SwiftUI-/SwiftData-/TextKit-APIs immer gegen aktuelle Doku prüfen.
 - **REA:** nur lawful Research am lokalen Notion, nur Verhalten beobachten. Keinen Notion-Code übernehmen oder nachbauen. Ergebnisse nach `docs/research/`.
 - **Notion-MCP:** nur lesend (`search`, `fetch`). Nie etwas im Notion des Nutzers anlegen, ändern oder löschen.

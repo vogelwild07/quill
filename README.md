@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche Produktivitäts-App für macOS: Seiten, Notizen und Aufgaben in einem nativen Block-Editor.
 
-> Status: Phase 1 (Editor-Spike) abgeschlossen. Noch keine nutzbare App.
+> Status: Phase 2 (Datenmodell + Sidebar) abgeschlossen. Seiten anlegen, verschachteln, verschieben, Tabs. Der Editor folgt in Phase 3.
 
 ## Voraussetzungen
 
@@ -20,6 +20,12 @@ swift test --package-path Packages/QuillKit
 ```
 
 Editor-Spike (Wegwerf-Prototyp aus Phase 1): Scheme „EditorSpike“, ⌘R. Mit `-benchmark` misst er 1000 Blöcke und gibt JSON aus, mit `-snapshot` schreibt er Bilder (hell und dunkel) in den temporären Ordner der App.
+
+## Daten und Backups
+
+Die Datenbank liegt in `~/Library/Containers/de.vogel.quill/Data/Library/Application Support/Quill/`. Automatische Backups (beim Start höchstens einmal pro Tag, vor jeder Migration, beim Beenden nach Änderungen) liegen daneben in `Backups/` und sind über **Ablage → Backups im Finder zeigen** erreichbar. Wiederherstellen von Hand: [Datenmodell](docs/data-model.md#backup-von-hand-wiederherstellen).
+
+Startargument `-QuillInMemoryStore YES`: Daten nur im Arbeitsspeicher, keine Backups (UI-Tests).
 
 ## Struktur
 

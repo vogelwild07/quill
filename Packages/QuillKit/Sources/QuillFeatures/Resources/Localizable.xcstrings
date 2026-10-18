@@ -1,0 +1,78 @@
+{
+  "sourceLanguage" : "de",
+  "strings" : {
+    "Backups im Finder zeigen" : {
+
+    },
+    "Daten konnten nicht geöffnet werden" : {
+
+    },
+    "Der Editor folgt in Phase 3." : {
+
+    },
+    "Emoji eingeben oder mit ⌃⌘Leertaste auswählen" : {
+
+    },
+    "Icon" : {
+
+    },
+    "In den Papierkorb legen" : {
+
+    },
+    "In neuem Fenster öffnen" : {
+
+    },
+    "In neuem Tab öffnen" : {
+
+    },
+    "Keine Seite ausgewählt" : {
+
+    },
+    "Neue Seite" : {
+
+    },
+    "Neue Unterseite" : {
+
+    },
+    "Neuer Tab" : {
+
+    },
+    "Neues Fenster" : {
+
+    },
+    "Ohne Titel" : {
+
+    },
+    "Quill" : {
+
+    },
+    "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
+
+    },
+    "Seite" : {
+
+    },
+    "Seite anlegen" : {
+
+    },
+    "Seite nicht gefunden" : {
+
+    },
+    "Seiten" : {
+
+    },
+    "Titel" : {
+
+    },
+    "Umbenennen" : {
+
+    },
+    "Verschieben" : {
+
+    },
+    "Wähle links eine Seite oder lege mit ⌘N eine neue an." : {
+
+    }
+  },
+  "version" : "1.0"
+}

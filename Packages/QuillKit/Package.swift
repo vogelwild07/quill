@@ -22,7 +22,8 @@ let package = Package(
         .target(name: "QuillExport", dependencies: ["QuillModel"]),
         .target(
             name: "QuillFeatures",
-            dependencies: ["QuillModel", "QuillEditor", "QuillExport", "QuillDesign"]
+            dependencies: ["QuillModel", "QuillEditor", "QuillExport", "QuillDesign"],
+            resources: [.process("Resources")]
         ),
         // Phase-1-Spike (Wegwerf-Code bis zum ADR „Editor-Architektur“).
         .target(name: "QuillEditorSpike", dependencies: ["QuillEditor", "QuillDesign"]),
@@ -30,6 +31,7 @@ let package = Package(
         .testTarget(name: "QuillModelTests", dependencies: ["QuillModel"]),
         .testTarget(name: "QuillEditorTests", dependencies: ["QuillEditor"]),
         .testTarget(name: "QuillExportTests", dependencies: ["QuillExport"]),
+        .testTarget(name: "QuillFeaturesTests", dependencies: ["QuillFeatures", "QuillModel"]),
     ],
     swiftLanguageModes: [.v6]
 )
