@@ -77,6 +77,29 @@ struct PageStoreAssetTests {
         #expect(secondAsset.data == firstAsset.data)
     }
 
+    @Test func importLinksAlreadySavedPlaceholderBlock() async throws {
+        let page = try await store.createPage(title: "Bilder")
+        let assetID = UUID()
+        // Der Editor speichert den Block, bevor der Import fertig ist.
+        let block = imageBlock(assetID)
+        try await store.applyEdits(page, BlockEdits(upserts: [block], order: [block.id]))
+        #expect(try blocks().first?.asset == nil)
+
+        let imported = try await store.importImage(TestImages.make(width: 4, height: 4, type: .png), assetID: assetID, linkTo: block.id)
+        #expect(imported.assetID == assetID)
+        #expect(try blocks().first?.asset?.id == assetID)
+        #expect(try await store.blocks(of: page).first?.properties.assetID == assetID)
+    }
+
+    @Test func importLinkNeverReplacesAnExistingImage() async throws {
+        let page = try await store.createPage(title: "Bilder")
+        let existing = try await store.importImage(TestImages.make(width: 4, height: 4, type: .png))
+        let block = imageBlock(existing.assetID)
+        try await store.applyEdits(page, BlockEdits(upserts: [block], order: [block.id]))
+        _ = try await store.importImage(TestImages.make(width: 4, height: 4, type: .png), linkTo: block.id)
+        #expect(try blocks().first?.asset?.id == existing.assetID)
+    }
+
     @Test func duplicateAssetCopiesDataAndSize() async throws {
         let imported = try await store.importImage(TestImages.make(width: 6, height: 3, type: .png))
         let copyID = try #require(try await store.duplicateAsset(imported.assetID))

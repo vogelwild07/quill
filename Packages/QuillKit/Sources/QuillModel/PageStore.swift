@@ -386,15 +386,29 @@ public struct ImportedImage: Sendable, Equatable {
 }
 
 extension PageStore {
-    /// Legt ein Asset ohne Block an (GPS entfernt, ggf. verkleinert). Der Block
-    /// verknüpft es beim Speichern über `BlockProperties.assetID`.
-    public func importImage(_ data: Data) throws -> ImportedImage {
+    /// Legt ein Asset an (GPS entfernt, ggf. verkleinert).
+    ///
+    /// Der Editor vergibt `assetID` schon beim Einfügen und zeigt bis zum Ende des
+    /// Imports einen Platzhalter. Ist der Block `blockID` dann schon gespeichert, wird
+    /// er hier verknüpft; sonst verknüpft ihn sein Speichern über `BlockProperties.assetID`.
+    public func importImage(_ data: Data, assetID: UUID = UUID(), linkTo blockID: UUID? = nil) throws -> ImportedImage {
         let prepared = try ImageImport.prepare(data)
         let asset = Asset(data: prepared.data, uti: prepared.uti)
+        asset.id = assetID
         asset.pixelWidth = prepared.pixelWidth
         asset.pixelHeight = prepared.pixelHeight
         modelContext.insert(asset)
         try save()
+        if let blockID {
+            var descriptor = FetchDescriptor<Block>(predicate: #Predicate { $0.id == blockID })
+            descriptor.fetchLimit = 1
+            if let block = try modelContext.fetch(descriptor).first, block.kind == .image, block.asset == nil {
+                var properties = block.properties
+                properties.assetID = assetID
+                block.properties = properties
+                try save()
+            }
+        }
         return ImportedImage(
             assetID: asset.id, pixelWidth: prepared.pixelWidth, pixelHeight: prepared.pixelHeight,
             wasDownscaled: prepared.wasDownscaled

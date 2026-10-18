@@ -237,12 +237,12 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         if isImageDrop(sender) {
             dropIndicator.isHidden = true
             guard let editor, let target = dropTarget(for: sender) else { return false }
-            let images = BlockEditorController.images(from: sender.draggingPasteboard)
+            let images = BlockEditorController.imageSources(from: sender.draggingPasteboard)
             guard !images.isEmpty else { return false }
             let position = target.index < editor.document.count
                 ? BlockPosition(block: target.index, offset: 0)
                 : BlockPosition(block: editor.document.count - 1, offset: editor.document[editor.document.count - 1].length)
-            Task { await editor.insertImages(images, at: position) }
+            editor.insertImages(images, from: position, to: position)
             return true
         }
         guard isBlockDrag(sender) else { return super.performDragOperation(sender) }

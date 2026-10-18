@@ -43,6 +43,8 @@ public final class BlockEditorController: NSObject {
     }
     /// Bilder, die gerade geladen werden.
     var loadingImages: Set<UUID> = []
+    /// Eingefügte Bilder, deren Import noch läuft; ihr Block zeigt den Platzhalter.
+    var pendingImports: Set<UUID> = []
     lazy var noticeView = EditorNoticeView()
 
     public init(document: EditorDocument) {

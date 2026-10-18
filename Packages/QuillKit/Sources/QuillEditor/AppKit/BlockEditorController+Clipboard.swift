@@ -115,15 +115,9 @@ extension BlockEditorController {
             apply(newDocument, cursor: cursor, actionName: UndoAction.paste)
             return true
         }
-        let images = Self.images(from: pasteboard)
+        let images = Self.imageSources(from: pasteboard)
         if !images.isEmpty {
-            var newDocument = document
-            var caret = position(atCharacter: selection.location)
-            if selection.length > 0 {
-                caret = newDocument.replace(from: caret, to: position(atCharacter: NSMaxRange(selection)), with: "")
-                apply(newDocument, cursor: caret, actionName: UndoAction.paste)
-            }
-            Task { await insertImages(images, at: caret) }
+            insertImages(images, from: position(atCharacter: selection.location), to: position(atCharacter: NSMaxRange(selection)))
             return true
         }
         if let string = pasteboard.string(forType: .string) {

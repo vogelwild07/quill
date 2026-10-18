@@ -3,6 +3,22 @@ import AppKit
 import QuillModel
 import UniformTypeIdentifiers
 
+/// Herkunft eines einzufügenden Bildes. Dateien werden nie auf dem Main Thread gelesen.
+enum ImageSource: Sendable {
+    case file(URL)
+    case data(Data)
+
+    nonisolated func load() -> Data? {
+        switch self {
+        case .file(let url):
+            dispatchPrecondition(condition: .notOnQueue(.main))
+            return try? Data(contentsOf: url)
+        case .data(let data):
+            return data
+        }
+    }
+}
+
 /// Bild-Blöcke (ADR-015): Bilder laden, einfügen (Slash-Menü, Einsetzen, Ablegen)
 /// und den Hinweis „Bild wurde verkleinert“.
 extension BlockEditorController {
@@ -17,7 +33,7 @@ extension BlockEditorController {
     func loadMissingImages() {
         guard let imageStore else { return }
         let missing = Set(document.blocks.compactMap { $0.kind == .image ? $0.assetID : nil })
-            .filter { EditorImageCache.shared.entry(for: $0) == nil && !loadingImages.contains($0) }
+            .filter { EditorImageCache.shared.entry(for: $0) == nil && !loadingImages.contains($0) && !pendingImports.contains($0) }
         for id in missing {
             loadingImages.insert(id)
             Task {
@@ -47,27 +63,59 @@ extension BlockEditorController {
 
     // MARK: Einfügen
 
-    /// Importiert Bilder (GPS entfernt, ggf. verkleinert) und fügt sie als Bild-Blöcke
-    /// an `position` ein, als ein Undo-Schritt. Ein leerer Absatz wird ersetzt.
-    func insertImages(_ images: [Data], at position: BlockPosition) async {
-        guard let imageStore, !images.isEmpty else { return }
-        var imported: [ImportedImage] = []
-        for data in images {
-            if let image = try? await imageStore.importImage(data) { imported.append(image) }
-        }
-        guard !imported.isEmpty else {
-            showNotice(String(localized: "Bild konnte nicht gelesen werden", bundle: .module))
-            return
-        }
-        let blocks = imported.map { EditorBlock(kind: .image, properties: BlockProperties(assetID: $0.assetID)) }
+    /// Fügt Bild-Blöcke sofort ein (bis zum Ende des Imports mit Platzhalter) und
+    /// importiert die Bilder im Hintergrund (GPS entfernt, ggf. verkleinert).
+    ///
+    /// Der Bereich `start`…`end` wird ersetzt; Löschen und Einfügen sind ein
+    /// Undo-Schritt. Die Asset-IDs stehen schon beim Einfügen fest, der Block ändert
+    /// sich danach nicht mehr. Deshalb bleibt Undo/Redo auch während des Imports
+    /// korrekt; `PageStore.importImage` verknüpft einen schon gespeicherten Block.
+    func insertImages(_ sources: [ImageSource], from start: BlockPosition, to end: BlockPosition) {
+        guard let imageStore, !sources.isEmpty else { return }
+        let blocks = sources.map { _ in EditorBlock(kind: .image, properties: BlockProperties(assetID: UUID())) }
         var newDocument = document
-        let safe = BlockPosition(block: min(position.block, newDocument.count - 1), offset: position.offset)
-        let last = newDocument.insertBlocks(blocks, at: safe)
-        if last.block == newDocument.count - 1 { newDocument.blocks.append(EditorBlock()) }
-        apply(newDocument, cursor: BlockPosition(block: last.block + 1, offset: 0), actionName: UndoAction.insertImage)
-        if imported.contains(where: \.wasDownscaled) {
-            showNotice(String(localized: "Bild wurde verkleinert", bundle: .module))
+        var caret = start
+        if start != end {
+            caret = newDocument.replace(from: start, to: end, with: "")
         }
+        let last = newDocument.insertBlocks(blocks, at: caret)
+        if last.block == newDocument.count - 1 { newDocument.blocks.append(EditorBlock()) }
+        let imports = zip(blocks, sources).map { (blockID: $0.id, assetID: $0.assetID!, source: $1) }
+        pendingImports.formUnion(imports.map(\.assetID))
+        apply(newDocument, cursor: BlockPosition(block: last.block + 1, offset: 0), actionName: UndoAction.insertImage)
+
+        Task {
+            var downscaled = false
+            var failed: Set<UUID> = []
+            for item in imports {
+                let data = await Task.detached(priority: .userInitiated) { item.source.load() }.value
+                var imported: ImportedImage?
+                if let data {
+                    imported = try? await imageStore.importImage(data, assetID: item.assetID, linkTo: item.blockID)
+                }
+                pendingImports.remove(item.assetID)
+                if let imported {
+                    downscaled = downscaled || imported.wasDownscaled
+                } else {
+                    failed.insert(item.assetID)
+                }
+            }
+            loadMissingImages()
+            if !failed.isEmpty { removeImageBlocks(withAssets: failed) }
+            if downscaled {
+                showNotice(String(localized: "Bild wurde verkleinert", bundle: .module))
+            }
+        }
+    }
+
+    /// Unlesbare Bilder: Platzhalter wieder entfernen und Bescheid geben.
+    private func removeImageBlocks(withAssets ids: Set<UUID>) {
+        showNotice(String(localized: "Bild konnte nicht gelesen werden", bundle: .module))
+        var newDocument = document
+        newDocument.blocks.removeAll { $0.kind == .image && $0.assetID.map(ids.contains) == true }
+        guard newDocument.count != document.count else { return }
+        if newDocument.blocks.isEmpty { newDocument.blocks = [EditorBlock()] }
+        apply(newDocument, cursor: nil, actionName: UndoAction.delete)
     }
 
     /// Slash-Menü „Bild“: Dateiauswahl, dann einfügen.
@@ -79,11 +127,7 @@ extension BlockEditorController {
         panel.canChooseDirectories = false
         let handle: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             guard response == .OK else { return }
-            let urls = panel.urls
-            Task { [weak self] in
-                let images = await Task.detached { urls.compactMap { try? Data(contentsOf: $0) } }.value
-                await self?.insertImages(images, at: position)
-            }
+            self?.insertImages(panel.urls.map(ImageSource.file), from: position, to: position)
         }
         if let window = textView.window {
             panel.beginSheetModal(for: window, completionHandler: handle)
@@ -92,21 +136,21 @@ extension BlockEditorController {
         }
     }
 
-    /// Bilder aus Zwischenablage oder Ziehvorgang: zuerst Bilddateien (Finder),
-    /// sonst Bilddaten, aber nur ohne Text. Sonst würde Text aus anderen Apps, der
-    /// nebenbei ein Bild mitbringt, als Bild eingesetzt.
-    static func images(from pasteboard: NSPasteboard) -> [Data] {
+    /// Bilder aus Zwischenablage oder Ziehvorgang: zuerst Bilddateien (Finder, gelesen
+    /// erst im Hintergrund), sonst Bilddaten, aber nur ohne Text. Sonst würde Text aus
+    /// anderen Apps, der nebenbei ein Bild mitbringt, als Bild eingesetzt.
+    static func imageSources(from pasteboard: NSPasteboard) -> [ImageSource] {
         let options: [NSPasteboard.ReadingOptionKey: Any] = [
             .urlReadingFileURLsOnly: true,
             .urlReadingContentsConformToTypes: [UTType.image.identifier],
         ]
         if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: options) as? [URL], !urls.isEmpty {
-            return urls.compactMap { try? Data(contentsOf: $0) }
+            return urls.map(ImageSource.file)
         }
         guard pasteboard.availableType(from: [.string]) == nil,
               let type = pasteboard.availableType(from: imageDataTypes),
               let data = pasteboard.data(forType: type) else { return [] }
-        return [data]
+        return [.data(data)]
     }
 
     /// Günstige Prüfung während des Ziehens, ohne Dateien zu lesen.
