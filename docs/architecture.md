@@ -62,14 +62,14 @@ Grund: Selektion, Cursorbewegung und Kopieren über Blöcke hinweg, IME, Rechtsc
 |---|---|---|
 | Modell | `EditorDocument`, `EditorBlock`, `MarkdownShortcut`, `MarkdownSerializer`, `SlashCommand`, `BlockClipboard` (Format `de.vogel.quill.blocks`, Version 2) | neutral |
 | Abbildung | `BlockRenderer`, `BlockStyle`, Attribut-Schlüssel | neutral (Fonts über `#if`) |
-| Darstellung | `BlockLayoutFragment` zeichnet Bullet, Nummer, Checkbox, Zitatbalken, Code-Hintergrund und Trenner | neutral (TextKit 2) |
+| Darstellung | `BlockLayoutFragment` zeichnet Bullet, Nummer, Checkbox, Zitatbalken, Code-Hintergrund, Trenner und Bilder (`ImageAttachment` reserviert Platz, `EditorImageCache` hält dekodierte Bilder) | neutral (TextKit 2) |
 | Eingabe | `BlockEditorController` (`NSTextViewDelegate`, `NSTextStorageDelegate`) | AppKit, iOS-Gegenstück später |
 | Oberfläche | `BlockTextView` (Griff, Drop, Checkbox-Klick, Zwischenablage), `SlashMenuController` (Glass-Panel), `BlockEditorView` (`NSViewRepresentable`) | AppKit |
 | Modell (Inline) | `InlineText`, `InlineSpan`, `InlineMark`, `EditorDocument+Inline` | neutral |
 | Persistenz | `EditorPersistenceBridge`: entprellt (≈ 300 ms), Diffs pro Block über `PageStore.applyEdits` | neutral |
 | Seite | `PageEditorSession`, `PageHeaderView` (Icon, Titel) in `QuillFeatures` | AppKit + SwiftUI |
 
-Der Controller ist auf Erweiterungen verteilt: `+Input` (Tastatur, Kürzel, Slash), `+Sync` (Text ↔ Modell, Undo), `+Clipboard`, `+Drag`, `+Formatting` (⌘B … ⌘K), `+Page` (Kopf, Fokus, Neuladen).
+Der Controller ist auf Erweiterungen verteilt: `+Input` (Tastatur, Kürzel, Slash), `+Sync` (Text ↔ Modell, Undo), `+Clipboard`, `+Drag`, `+Formatting` (⌘B … ⌘K), `+Page` (Kopf, Fokus, Neuladen), `+Images` (Bilder laden, einfügen, Hinweis).
 
 ### Inline-Formatierung
 
@@ -88,7 +88,7 @@ Der Controller ist auf Erweiterungen verteilt: `+Input` (Tastatur, Kürzel, Slas
 ### Erkenntnisse aus dem Spike
 
 - **Fragment-Koordinaten:** Der lokale Ursprung eines `NSTextLayoutFragment` liegt am Textanfang (Padding + Einrückung), nicht am Containerrand. Dekorationen werden in Container-x gerechnet und mit `layoutFragmentFrame.minX` umgerechnet.
-- **Attachments:** TextKit 2 reserviert Platz für ein `NSTextAttachment`, zeichnet aber dessen `image(for:…)` nicht zuverlässig. Der Trenner wird deshalb im Fragment gezeichnet. Für Bilder in Phase 4 einen `NSTextAttachmentViewProvider` prüfen.
+- **Attachments:** TextKit 2 reserviert Platz für ein `NSTextAttachment`, zeichnet aber dessen `image(for:…)` nicht zuverlässig. Trenner und Bilder werden deshalb im Fragment gezeichnet (ADR-015).
 - **Drag & Drop:** `NSTextView.prepareForDragOperation` lehnt eigene Typen ab und muss für Block-Drags überschrieben werden.
 - **Undo-Gruppen:** Vor einem Markdown-Kürzel `breakUndoCoalescing()`, sonst landen Tippen und Umwandeln in einer Gruppe.
 - **VoiceOver:** Text und Zeilen sind über die Bedienungshilfen-Schnittstelle erreichbar. Blockart und Häkchenstatus werden noch nicht angesagt, weil Marker nur gezeichnet sind (Phase 7).
@@ -109,6 +109,12 @@ Gemessen im Release-Build, echtes Fenster, 1000 Blöcke:
 | 8 | IME, VoiceOver-Grundnavigation, Dark Mode | ohne Fehler | Markierter Text per Test ✅; tote Tasten (´e, ^a, ⌥n n) vom Nutzer manuell ✅, gleicher Pfad wie IME; Japanisch nicht manuell geprüft; AX-Text ✅; Dark Mode ✅ |
 
 Der Spike ist in Phase 3 nach `QuillEditor` überführt und gelöscht worden (ADR-007). Letzter Stand: Git-Tag `editor-spike`. `-benchmark` ist jetzt der Performance-Test, `-snapshot` der Snapshot-Test.
+
+### Bild-Block (ADR-015)
+
+- Bilder sind `Asset`s im Store, verknüpft über `BlockProperties.assetID`. Der Editor bekommt den `PageStore` (`imageStore`), lädt fehlende Bilder nach dem Laden, nach strukturellen Edits und nach Undo, dekodiert sie verkleinert außerhalb des Main Threads und erneuert dann das Layout des Absatzes.
+- Einfügen über Slash-Menü (Dateiauswahl), Einsetzen und Ablegen; Import entfernt GPS-Daten und verkleinert Bilder über 20 MB auf 4096 px.
+- Eingesetzte Bild-Blöcke bekommen eine Kopie ihres Assets (`duplicateAsset`), weil ein Asset genau einem Block gehört.
 
 ### Erkenntnisse aus Phase 3
 
