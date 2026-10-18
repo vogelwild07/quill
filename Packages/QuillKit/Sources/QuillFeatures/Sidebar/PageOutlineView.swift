@@ -334,7 +334,8 @@ struct PageOutlineView: NSViewRepresentable {
         /// ↩ benennt um, ⌘⌫ legt in den Papierkorb.
         func handleKey(_ event: NSEvent) -> Bool {
             guard let outline, let item = outline.item(atRow: outline.selectedRow) as? Item else { return false }
-            let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            // Nur echte Modifikatoren; .function/.numericPad hängen je nach Tastatur dran.
+            let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
             switch (event.keyCode, modifiers) {
             case (36, []), (76, []):
                 beginEditing(item.id)
@@ -360,6 +361,15 @@ private final class MenuAction: NSObject {
 /// Outline mit eigener Tastaturbehandlung.
 final class PageOutlineTableView: NSOutlineView {
     weak var coordinator: PageOutlineView.Coordinator?
+
+    /// Ein Klick holt den Tastaturfokus in die Sidebar (wie im Finder), auch wenn
+    /// vorher das Titelfeld der Seite fokussiert war. Sonst landen ↩ und ⌘⌫ dort.
+    override func mouseDown(with event: NSEvent) {
+        if window?.firstResponder !== self {
+            window?.makeFirstResponder(self)
+        }
+        super.mouseDown(with: event)
+    }
 
     override func keyDown(with event: NSEvent) {
         if coordinator?.handleKey(event) == true { return }
