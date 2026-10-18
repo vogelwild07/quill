@@ -3,6 +3,7 @@ import AppKit
 #elseif canImport(UIKit)
 import UIKit
 #endif
+import QuillModel
 
 /// Übersetzt zwischen `EditorDocument` und dem attributierten Text im Textspeicher.
 ///
@@ -94,9 +95,7 @@ enum BlockRenderer {
             if let raw = attributes[.quillBlockKind] as? String, let kind = BlockKind(rawValue: raw) {
                 block.kind = kind
             }
-            block.indent = attributes[.quillIndent] as? Int ?? 0
-            block.isChecked = attributes[.quillChecked] as? Bool ?? false
-            block.codeLanguage = attributes[.quillCodeLanguage] as? String
+            block.properties = BlockProperties(textAttributes: attributes)
             if !block.kind.isAtomic {
                 let body = NSRange(location: start, length: end - start)
                 block.text = string.substring(with: body)

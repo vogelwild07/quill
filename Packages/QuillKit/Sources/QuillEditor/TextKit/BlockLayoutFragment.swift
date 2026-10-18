@@ -5,6 +5,7 @@ import UIKit
 #endif
 import CoreText
 import QuillDesign
+import QuillModel
 
 /// Zeichnet die Dekoration eines Blocks: Bullet, Nummer, Checkbox, Zitatbalken,
 /// Code-Hintergrund, Trenner. Alles wird aus den Absatz-Attributen abgeleitet.
@@ -24,8 +25,9 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
             attributes = [:]
         }
         kind = (attributes[.quillBlockKind] as? String).flatMap(BlockKind.init(rawValue:)) ?? .paragraph
-        indent = attributes[.quillIndent] as? Int ?? 0
-        isChecked = attributes[.quillChecked] as? Bool ?? false
+        let properties = BlockProperties(textAttributes: attributes)
+        indent = properties.indent
+        isChecked = properties.isChecked
         ordinal = attributes[.quillOrdinal] as? Int ?? 1
         super.init(textElement: textElement, range: rangeInElement)
     }

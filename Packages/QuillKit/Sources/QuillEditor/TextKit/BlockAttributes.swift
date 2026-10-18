@@ -1,10 +1,12 @@
 import Foundation
+import QuillModel
 
 extension NSAttributedString.Key {
     /// Block-ID (`String`, UUID). Liegt auf jedem Zeichen eines Absatzes inkl. `\n`.
     static let quillBlockID = NSAttributedString.Key("de.vogel.quill.blockID")
     /// `BlockKind.rawValue`.
     static let quillBlockKind = NSAttributedString.Key("de.vogel.quill.blockKind")
+    /// `BlockProperties`, nur über `textAttributes` / `init(textAttributes:)` lesen und schreiben.
     static let quillIndent = NSAttributedString.Key("de.vogel.quill.indent")
     static let quillChecked = NSAttributedString.Key("de.vogel.quill.checked")
     static let quillCodeLanguage = NSAttributedString.Key("de.vogel.quill.codeLanguage")
@@ -14,6 +16,28 @@ extension NSAttributedString.Key {
     /// Zusammen mit `.link` die Wahrheit über die Formatierung; Schrift, Hintergrund
     /// und Durchstreichung werden daraus abgeleitet.
     static let quillMarks = NSAttributedString.Key("de.vogel.quill.marks")
+}
+
+extension BlockProperties {
+    /// Die einzige Abbildung auf Textattribute. Ein Schlüssel pro Feld mit `Int`,
+    /// `Bool` oder `String`, kein Struct als Wert: AppKit muss den Text archivieren
+    /// können (ADR-014).
+    var textAttributes: [NSAttributedString.Key: Any] {
+        var attributes: [NSAttributedString.Key: Any] = [
+            .quillIndent: indent,
+            .quillChecked: isChecked,
+        ]
+        if let codeLanguage { attributes[.quillCodeLanguage] = codeLanguage }
+        return attributes
+    }
+
+    init(textAttributes attributes: [NSAttributedString.Key: Any]) {
+        self.init(
+            indent: attributes[.quillIndent] as? Int ?? 0,
+            isChecked: attributes[.quillChecked] as? Bool ?? false,
+            codeLanguage: attributes[.quillCodeLanguage] as? String
+        )
+    }
 }
 
 /// Zeichen im Textspeicher.

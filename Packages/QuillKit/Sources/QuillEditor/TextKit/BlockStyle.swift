@@ -57,10 +57,8 @@ enum BlockStyle {
             .paragraphStyle: paragraphStyle(kind: block.kind, indent: block.indent),
             .quillBlockID: block.id.uuidString,
             .quillBlockKind: block.kind.rawValue,
-            .quillIndent: block.indent,
-            .quillChecked: block.isChecked,
         ]
-        if let language = block.codeLanguage { attributes[.quillCodeLanguage] = language }
+        attributes.merge(block.properties.textAttributes) { _, new in new }
         if let ordinal { attributes[.quillOrdinal] = ordinal }
         if block.kind == .quote { attributes[.foregroundColor] = EditorColor.secondaryLabel }
         if block.kind == .todo && block.isChecked {
