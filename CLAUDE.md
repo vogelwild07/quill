@@ -62,6 +62,7 @@ Fall back to grep or file reads only for what the graph does not model: literal 
 - Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`), kleine Commits.
 - Auf `main` nur gebauter, getesteter Stand. Größere Änderungen: Branch + PR.
 - Vor jedem Push `git status` und `git diff --staged` prüfen. Im Zweifel fragen.
+- Gegenproben (absichtlich eingebaute Fehler) nie mit `git checkout`/`git restore` zurücksetzen, sondern aus einer vorher angelegten Kopie der Datei (Scratchpad). Sonst gehen uncommittete Änderungen verloren.
 - Gemergte Phasen-Branches direkt nach dem Merge lokal und auf GitHub löschen (`git branch -d`, `git push origin --delete`), ohne Rückfrage. Nur wenn der Merge bestätigt ist.
 - `DEVELOPMENT_TEAM`-Zeilen in `project.pbxproj` sind lokal (Personal Team des Nutzers) und werden nie committet. `project.pbxproj` deshalb nur gezielt stagen; Xcode-Nebenänderungen (z. B. Scheme-`version`) nicht mitcommitten.
 - Niemals committen: `.env`, Keys, Tokens, Zertifikate, Provisioning-Profile, Datenbanken, Backups, private Notizen.
