@@ -181,11 +181,20 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     // MARK: Ziehen und Ablegen von Blöcken
 
     override var acceptableDragTypes: [NSPasteboard.PasteboardType] {
-        super.acceptableDragTypes + [.quillBlockDrag]
+        super.acceptableDragTypes + [.quillBlockDrag, .fileURL] + BlockEditorController.imageDataTypes
     }
 
     private func isBlockDrag(_ info: any NSDraggingInfo) -> Bool {
         info.draggingPasteboard.availableType(from: [.quillBlockDrag]) != nil
+    }
+
+    /// Bilder aus dem Finder oder anderen Apps; werden als Bild-Blöcke zwischen Blöcken abgelegt.
+    private func isImageDrop(_ info: any NSDraggingInfo) -> Bool {
+        !isBlockDrag(info) && BlockEditorController.hasImages(info.draggingPasteboard)
+    }
+
+    private func handlesDrop(_ info: any NSDraggingInfo) -> Bool {
+        isBlockDrag(info) || isImageDrop(info)
     }
 
     /// Zielindex (Block) und y-Position der Einfügelinie.
@@ -202,16 +211,16 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     }
 
     override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
-        isBlockDrag(sender) ? draggingUpdated(sender) : super.draggingEntered(sender)
+        handlesDrop(sender) ? draggingUpdated(sender) : super.draggingEntered(sender)
     }
 
     override func draggingUpdated(_ sender: any NSDraggingInfo) -> NSDragOperation {
-        guard isBlockDrag(sender) else { return super.draggingUpdated(sender) }
+        guard handlesDrop(sender) else { return super.draggingUpdated(sender) }
         guard let target = dropTarget(for: sender) else { return [] }
         let left = textContainerOrigin.x
         dropIndicator.frame = CGRect(x: left, y: target.y - 1, width: bounds.width - 2 * left, height: 2)
         dropIndicator.isHidden = false
-        return .move
+        return isBlockDrag(sender) ? .move : .copy
     }
 
     override func draggingExited(_ sender: (any NSDraggingInfo)?) {
@@ -221,10 +230,21 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     /// `NSTextView` lehnt unbekannte Typen hier ab; Block-Drags erledigt `performDragOperation`.
     override func prepareForDragOperation(_ sender: any NSDraggingInfo) -> Bool {
-        isBlockDrag(sender) ? true : super.prepareForDragOperation(sender)
+        handlesDrop(sender) ? true : super.prepareForDragOperation(sender)
     }
 
     override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
+        if isImageDrop(sender) {
+            dropIndicator.isHidden = true
+            guard let editor, let target = dropTarget(for: sender) else { return false }
+            let images = BlockEditorController.images(from: sender.draggingPasteboard)
+            guard !images.isEmpty else { return false }
+            let position = target.index < editor.document.count
+                ? BlockPosition(block: target.index, offset: 0)
+                : BlockPosition(block: editor.document.count - 1, offset: editor.document[editor.document.count - 1].length)
+            Task { await editor.insertImages(images, at: position) }
+            return true
+        }
         guard isBlockDrag(sender) else { return super.performDragOperation(sender) }
         dropIndicator.isHidden = true
         guard let target = dropTarget(for: sender),

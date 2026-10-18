@@ -10,7 +10,7 @@ public struct SlashCommand: Identifiable, Equatable, Sendable {
     public let shortcut: String?
     let aliases: [String]
 
-    /// Alle Befehle in Menü-Reihenfolge. „Bild“ folgt in Phase 4 (Asset-Anbindung).
+    /// Alle Befehle in Menü-Reihenfolge. „Bild“ öffnet die Dateiauswahl.
     public static let all: [SlashCommand] = [
         .init(kind: .paragraph, title: String(localized: "Text", bundle: .module), symbol: "text.alignleft", shortcut: nil, aliases: ["text", "absatz", "paragraph"]),
         .init(kind: .heading1, title: String(localized: "Überschrift 1", bundle: .module), symbol: "textformat.size.larger", shortcut: "#", aliases: ["h1", "heading", "titel"]),
@@ -22,6 +22,7 @@ public struct SlashCommand: Identifiable, Equatable, Sendable {
         .init(kind: .quote, title: String(localized: "Zitat", bundle: .module), symbol: "text.quote", shortcut: ">", aliases: ["quote", "blockquote"]),
         .init(kind: .code, title: String(localized: "Code", bundle: .module), symbol: "chevron.left.forwardslash.chevron.right", shortcut: "```", aliases: ["code", "snippet"]),
         .init(kind: .divider, title: String(localized: "Trenner", bundle: .module), symbol: "minus", shortcut: "---", aliases: ["divider", "linie", "hr"]),
+        .init(kind: .image, title: String(localized: "Bild", bundle: .module), symbol: "photo", shortcut: nil, aliases: ["bild", "image", "foto", "photo"]),
     ]
 
     /// Filtert nach Titel und Aliassen, ohne Groß-/Kleinschreibung und Akzente.

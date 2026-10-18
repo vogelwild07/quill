@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillModel
 
 /// Verbindet `EditorDocument` mit einem TextKit-2-`NSTextView` (ADR-007).
 ///
@@ -36,6 +37,13 @@ public final class BlockEditorController: NSObject {
     var editedRange: NSRange?
     var editedDelta = 0
     lazy var slashMenu = SlashMenuController(editor: self)
+    /// Quelle der Bilder (Laden, Import, Kopien); ohne Store keine Bilder.
+    public var imageStore: PageStore? {
+        didSet { loadMissingImages() }
+    }
+    /// Bilder, die gerade geladen werden.
+    var loadingImages: Set<UUID> = []
+    lazy var noticeView = EditorNoticeView()
 
     public init(document: EditorDocument) {
         self.document = document
@@ -90,6 +98,7 @@ public final class BlockEditorController: NSObject {
         rebuildParagraphStarts()
         textView.setSelectedRange(NSRange(location: 0, length: 0))
         updateTypingAttributes(forCaretAt: BlockPosition(block: 0, offset: 0))
+        loadMissingImages()
     }
 
     /// Ersetzt das gesamte Dokument (z. B. Laden einer anderen Seite). Leert Undo.
@@ -179,6 +188,7 @@ public final class BlockEditorController: NSObject {
             textView.setSelectedRange(NSRange(location: location, length: 0))
             updateTypingAttributes(forCaretAt: cursor)
         }
+        loadMissingImages()
         onChange?(document)
     }
 
@@ -249,5 +259,6 @@ enum UndoAction {
     static var paste: String { String(localized: "Einsetzen", bundle: .module) }
     static var format: String { String(localized: "Formatieren", bundle: .module) }
     static var link: String { String(localized: "Link", bundle: .module) }
+    static var insertImage: String { String(localized: "Bild einfügen", bundle: .module) }
 }
 #endif

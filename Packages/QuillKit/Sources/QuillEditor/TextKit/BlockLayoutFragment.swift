@@ -16,6 +16,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     let indent: Int
     let isChecked: Bool
     let ordinal: Int
+    let assetID: UUID?
 
     override init(textElement: NSTextElement, range rangeInElement: NSTextRange?) {
         let attributes: [NSAttributedString.Key: Any]
@@ -29,6 +30,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         indent = properties.indent
         isChecked = properties.isChecked
         ordinal = attributes[.quillOrdinal] as? Int ?? 1
+        assetID = properties.assetID
         super.init(textElement: textElement, range: rangeInElement)
     }
 
@@ -90,6 +92,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         if kind == .code { bounds = bounds.union(codeBackgroundRect) }
         if kind == .quote { bounds = bounds.union(CGRect(x: markerOriginX, y: 0, width: 8, height: layoutFragmentFrame.height)) }
         if kind.isListItem { bounds = bounds.union(checkboxRect.insetBy(dx: -4, dy: -4)) }
+        if kind == .image { bounds = bounds.union(imageRect) }
         return bounds
     }
 
@@ -114,7 +117,8 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         case .numbered: drawNumber(in: context)
         case .todo: drawCheckbox(in: context)
         case .divider: drawDivider(in: context)
-        case .paragraph, .heading1, .heading2, .heading3, .quote, .code, .image: break
+        case .image: drawImage(in: context)
+        case .paragraph, .heading1, .heading2, .heading3, .quote, .code: break
         }
         context.restoreGState()
     }
@@ -162,6 +166,31 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         let line = textLineFragments.first?.typographicBounds ?? CGRect(x: 0, y: 0, width: 0, height: 20)
         context.setFillColor(EditorColor.separator.cgColor)
         context.fill(CGRect(x: markerOriginX, y: line.midY.rounded(.down), width: contentMaxX - markerOriginX, height: 1))
+    }
+
+    /// Rechteck des Bildes: auf der Grundlinie, wo das Attachment Platz reserviert hat.
+    var imageRect: CGRect {
+        let entry = assetID.flatMap { EditorImageCache.shared.entry(for: $0) }
+        let size = ImageAttachment.displaySize(pixelSize: entry?.pixelSize, availableWidth: contentMaxX - markerOriginX - 4)
+        return CGRect(x: markerOriginX, y: firstBaseline - size.height, width: size.width, height: size.height)
+    }
+
+    /// Bild aus `EditorImageCache`, bis es geladen ist eine Fläche in `quaternaryFill`.
+    private func drawImage(in context: CGContext) {
+        let rect = imageRect
+        guard let image = assetID.flatMap({ EditorImageCache.shared.entry(for: $0)?.image }) else {
+            fillRoundedRect(rect, radius: 6, color: EditorColor.quaternaryFill, in: context)
+            return
+        }
+        // Der Kontext ist gespiegelt (y nach unten), `draw` erwartet y nach oben.
+        context.saveGState()
+        context.addPath(Self.roundedRect(rect, radius: 4))
+        context.clip()
+        context.translateBy(x: rect.minX, y: rect.maxY)
+        context.scaleBy(x: 1, y: -1)
+        context.interpolationQuality = .high
+        context.draw(image, in: CGRect(origin: .zero, size: rect.size))
+        context.restoreGState()
     }
 
     private func drawCheckbox(in context: CGContext) {

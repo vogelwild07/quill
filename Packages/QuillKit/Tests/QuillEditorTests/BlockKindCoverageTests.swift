@@ -9,8 +9,7 @@ import Testing
 @Suite("BlockKind: jede Art überall behandelt")
 struct BlockKindCoverageTests {
     /// Arten, die (noch) nicht im Slash-Menü stehen, mit Grund.
-    /// `.image`: braucht die Asset-Anbindung des Bild-Blocks (Phase 4).
-    static let notInSlashMenu: Set<BlockKind> = [.image]
+    static let notInSlashMenu: Set<BlockKind> = []
 
     private static func sample(_ kind: BlockKind) -> EditorBlock {
         EditorBlock(kind: kind, text: kind.isAtomic ? "" : "Inhalt")

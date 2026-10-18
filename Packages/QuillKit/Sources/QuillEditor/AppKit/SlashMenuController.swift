@@ -101,7 +101,11 @@ final class SlashMenuController {
         let caret = max(editor.caretLocation, slashLocation + 1)
         close()
         editor.deleteText(in: NSRange(location: slashLocation, length: caret - slashLocation))
-        editor.setKind(command.kind, ofBlockAtCharacter: slashLocation)
+        if command.kind == .image {
+            editor.chooseImages(at: slashLocation)
+        } else {
+            editor.setKind(command.kind, ofBlockAtCharacter: slashLocation)
+        }
     }
 
     func close() {

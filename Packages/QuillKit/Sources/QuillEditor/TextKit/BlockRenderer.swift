@@ -30,8 +30,7 @@ enum BlockRenderer {
         case .divider:
             result.append(NSAttributedString(attachment: DividerAttachment()))
         case .image:
-            // Platzhalter; Bilder mit `NSTextAttachmentViewProvider` folgen in Phase 4.
-            result.append(NSAttributedString(attachment: NSTextAttachment(data: nil, ofType: nil)))
+            result.append(NSAttributedString(attachment: ImageAttachment(assetID: block.assetID)))
         case .paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .todo, .quote, .code:
             let text = block.text.replacingOccurrences(of: "\n", with: StorageCharacter.softBreak)
             result.append(NSAttributedString(string: text))

@@ -91,6 +91,7 @@ extension BlockEditorController: @MainActor NSTextStorageDelegate {
         storage.endEditing()
         isApplying = false
         refreshOrdinals()
+        loadMissingImages()
         onChange?(document)
     }
 }

@@ -45,7 +45,10 @@ enum BlockStyle {
             style.tailIndent = -S.codePadding
             style.paragraphSpacingBefore = S.codePadding
             style.paragraphSpacing = S.codePadding + S.blockGap
-        case .paragraph, .bulleted, .numbered, .todo, .quote, .divider, .image:
+        case .image:
+            style.lineHeightMultiple = T.bodyLineHeight
+            style.paragraphSpacingBefore = S.blockGap
+        case .paragraph, .bulleted, .numbered, .todo, .quote, .divider:
             style.lineHeightMultiple = T.bodyLineHeight
         }
         return style
