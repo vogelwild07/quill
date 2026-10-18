@@ -1,0 +1,46 @@
+# macOS
+.DS_Store
+
+# Xcode
+DerivedData/
+build/
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved.orig
+
+# Daten und Backups (niemals committen)
+*.store
+*.store-shm
+*.store-wal
+*.sqlite*
+*.bak
+*.backup
+
+# Secrets, Signing
+.env
+.env.*
+*.p12
+*.cer
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+*.pem
+*.key
+
+# Private Notizen
+private/
+notes.local.md
+
+# Lokale Claude-Code-Einstellungen
+.claude/settings.local.json
