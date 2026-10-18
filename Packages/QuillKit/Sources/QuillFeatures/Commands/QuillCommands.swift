@@ -1,4 +1,5 @@
 #if canImport(AppKit)
+import QuillEditor
 import SwiftUI
 
 /// Menüleiste von Quill. Kürzel wie in Apple Notizen: ⌘N Neue Seite,
@@ -52,6 +53,23 @@ public struct QuillCommands: Commands {
             .disabled(persistence == nil || persistence?.isInMemory == true)
         }
 
+        // Menü „Format“. Die Aktionen laufen über die Responder-Kette; ohne
+        // Block-Editor als Ersthelfer passiert nichts. ⌘E bleibt „Auswahl für Suche
+        // verwenden“, deshalb Inline-Code auf ⇧⌘M (siehe architecture.md).
+        CommandGroup(after: .textFormatting) {
+            formatButton("Fett", #selector(EditorFormattingActions.quillToggleBold(_:)))
+                .keyboardShortcut("b")
+            formatButton("Kursiv", #selector(EditorFormattingActions.quillToggleItalic(_:)))
+                .keyboardShortcut("i")
+            formatButton("Code", #selector(EditorFormattingActions.quillToggleInlineCode(_:)))
+                .keyboardShortcut("m", modifiers: [.command, .shift])
+            formatButton("Durchgestrichen", #selector(EditorFormattingActions.quillToggleStrikethrough(_:)))
+                .keyboardShortcut("x", modifiers: [.command, .shift])
+            Divider()
+            formatButton("Link …", #selector(EditorFormattingActions.quillEditLink(_:)))
+                .keyboardShortcut("k")
+        }
+
         CommandMenu(String(localized: "Seite", bundle: .module)) {
             Button(String(localized: "Umbenennen", bundle: .module)) { actions?.rename() }
                 .disabled(actions?.selection == nil)
@@ -65,6 +83,12 @@ public struct QuillCommands: Commands {
             // Sidebar legt ⌘⌫ die Seite in den Papierkorb (PageOutlineView).
             Button(String(localized: "In den Papierkorb legen", bundle: .module)) { actions?.trash() }
                 .disabled(actions?.selection == nil)
+        }
+    }
+
+    private func formatButton(_ title: String.LocalizationValue, _ action: Selector) -> some View {
+        Button(String(localized: title, bundle: .module)) {
+            NSApp.sendAction(action, to: nil, from: nil)
         }
     }
 }
