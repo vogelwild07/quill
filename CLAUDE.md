@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-Architekt, Swift-Entwickler.
 
-**Stand:** Phase 3 (Editor Text) abgeschlossen und gemergt (PR #3): Spike nach `QuillEditor` überführt und gelöscht (ADR-007, Tag `editor-spike`), Inline-Formatierung, `EditorPersistenceBridge` mit Retry und Rückfrage beim Beenden, Editor mit Kopf in der Seite (ADR-013). Nächste Phase: 4 (Editor Interaktion), zuerst Block-Felder bündeln. Bekannte Probleme und Plan: `docs/roadmap.md`.
+**Stand:** Phase 3 (Editor Text) abgeschlossen und gemergt (PR #3). Phase 4 (Editor Interaktion) läuft auf `phase-4/editor-interaction`: Block-Felder gebündelt (ADR-014), als Nächstes Bild-Block. Bekannte Probleme und Plan: `docs/roadmap.md`.
 
 ## Kommunikation
 - Immer **Deutsch**. Kurz ist gut; Warnungen, Sicherheit und Entscheidungen in ganzen Sätzen.
@@ -23,6 +23,7 @@ UUID-`id`, `createdAt`/`updatedAt`, alle Attribute optional oder mit Default, **
 - Ein `NSTextView` pro Seite, ein Absatz = ein Block. Jeder Absatz endet mit `\n`, auch der letzte; Block-Attribute (`.quillBlockID` …) liegen auf **jedem** Zeichen. Weicher Umbruch = U+2028, atomare Blöcke = U+FFFC.
 - Tippen innerhalb eines Absatzes macht die TextView; strukturelle Edits immer über `EditorDocument` und als Diff via `shouldChangeText`/`replaceCharacters`/`didChangeText` (sonst kein Undo). Bei markiertem Text (IME, tote Tasten) nie eingreifen.
 - Fallstricke: Fragment-Koordinaten beginnen am Textanfang (mit `layoutFragmentFrame.minX` umrechnen). TextKit 2 zeichnet `NSTextAttachment.image(for:…)` nicht zuverlässig. `prepareForDragOperation` muss eigene Drag-Typen annehmen. Vor Markdown-Kürzeln `breakUndoCoalescing()`.
+- Neue einfache Block-Felder nur über `BlockProperties` (ADR-014); Textattribute nur mit `Int`/`Bool`/`String`-Werten, kein Struct (AppKit muss archivieren können). `BlockPropertiesRoundTripTests` erzwingt Testwerte für jedes Feld.
 - Inline-Formatierung: `.quillMarks` und `.link` im Textspeicher sind die Quelle, Schrift/Farbe werden abgeleitet. Gespeichert als `Block.richText` (`RichText`-JSON, `nil` ohne Formatierung). Blöcke schreibt nur die `EditorPersistenceBridge` über `PageStore.applyEdits` (ADR-013).
 - Speichern darf nie still scheitern: Bridge wiederholt mit Backoff, Seite zeigt `lastError`, Beenden fragt über `QuitGuard`. Neuladen aus anderen Fenstern nie bei markiertem Text.
 - Test-Beispieldokumente nur aus `SampleDocuments` (Tests/QuillEditorTests/Fixtures).

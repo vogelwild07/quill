@@ -128,3 +128,15 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Für CloudKit-Sync reicht „letzte Speicherung pro Block gewinnt“ nicht. Dort kommen Änderungen verzögert und von mehreren Geräten; es braucht eine echte Konfliktlösung (mindestens pro Block mit `updatedAt` und sichtbarem Konfliktfall, besser Zusammenführen innerhalb eines Blocks). Das wird vor dem Sync entschieden.
 - Undo-Schritte im Editor überleben keinen Seitenwechsel.
 - `richText` ist plattformneutral und vom Markdown-Export lesbar; Änderungen am Format brauchen eine neue `version`.
+
+## ADR-014: Block-Felder gebündelt in `BlockProperties` (2026-10-18)
+
+**Kontext:** `indent`, `isChecked` und `codeLanguage` waren an zehn Stellen einzeln aufgezählt (Snapshot, `Block.snapshot`/`apply`, `EditorBlock` samt Codable, Bridge, `BlockStyle`, `BlockRenderer.parse`, `BlockLayoutFragment`, Regeln in `EditorDocument`). Der Bild-Block bringt weitere Felder.
+**Entscheidung:**
+- `BlockProperties` (`QuillModel`) bündelt die einfachen Felder neben Art und Text. `BlockSnapshot` und `EditorBlock` tragen `properties`; `EditorBlock` reicht die Felder per `@dynamicMemberLookup` durch (`block.indent`).
+- `Block.properties` ist die einzige Abbildung auf die SwiftData-Spalten. `SchemaV1` bleibt unverändert (kein Schemawechsel).
+- Welche Felder zu welcher Blockart passen, regelt `BlockProperties.normalized(for:)` in `QuillEditor`; `EditorDocument.setKind` nutzt es.
+- **Textspeicher: weiter ein Schlüssel pro Feld**, gesetzt und gelesen nur über `BlockProperties.textAttributes` / `init(textAttributes:)`. Ein einzelnes Attribut mit dem Struct als Wert wurde geprüft: Gleichheit nach dem Bridging, Attributläufe und Undo in `NSTextView` funktionieren, aber `NSKeyedArchiver` kann einen Attributstring mit Struct-Wert nicht archivieren. AppKit archiviert Text an Stellen, die wir nicht steuern (Ziehen, Dienste, Pasteboard-Typen der Text-View); dort ginge der Wert verloren oder es käme zu einer Exception. Werte bleiben deshalb `Int`, `Bool`, `String`.
+- **Zwischenablage:** Quill-Blöcke als `{"version":2,"blocks":[…]}` (`BlockClipboard`). Version 1 (bloßes Array, flache Felder), unbekannte Versionen und unlesbare Daten werden nicht als Blöcke gelesen; eingesetzt wird dann der Klartext.
+- `BlockPropertiesRoundTripTests` schickt ein Exemplar mit lauter Nicht-Standardwerten durch Store, Snapshot, Editor, Textspeicher und Zwischenablage und prüft per `Mirror`, dass die Testdaten jedes Feld belegen.
+**Konsequenzen:** Ein neues einfaches Feld braucht `BlockProperties`, `Block.properties` (mit neuer Schema-Version, ADR-011), einen Schlüssel in `textAttributes`, ggf. eine Regel in `normalized(for:)` und einen Testwert. Fehlt etwas davon, schlägt der Vollständigkeitstest fehl. Blöcke, die mit einem Build vor Phase 4 kopiert wurden, werden als Klartext eingesetzt.

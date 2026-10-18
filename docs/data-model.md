@@ -75,7 +75,9 @@ DatabaseView         (später)  id, name, layoutRaw (table|board|calendar), conf
 
 ### Blöcke schreiben: `PageStore.applyEdits`
 
-- Eingabe `BlockEdits`: `upserts` (neue oder geänderte `BlockSnapshot`s), `deletions` und optional `order` (IDs in gewünschter Reihenfolge). Die `EditorPersistenceBridge` schickt nur Blöcke, die sich gegenüber dem zuletzt gespeicherten Stand geändert haben.
+- Einfache Felder (`indent`, `isChecked`, `codeLanguage`) reisen als `BlockProperties`; `Block.properties` ist die einzige Abbildung auf die Spalten (ADR-014).
+
+- Eingabe `BlockEdits`: `upserts` (neue oder geänderte `BlockSnapshot`s: `id`, `kindRaw`, `text`, `richText`, `properties`), `deletions` und optional `order` (IDs in gewünschter Reihenfolge). Die `EditorPersistenceBridge` schickt nur Blöcke, die sich gegenüber dem zuletzt gespeicherten Stand geändert haben.
 - `updatedAt` ändert sich nur bei Blöcken mit echten Änderungen, `Page.updatedAt` nur, wenn sich überhaupt etwas geändert hat.
 - Reihenfolge: Die längste schon richtig sortierte Teilfolge behält ihre `sortKey`s; nur die übrigen Blöcke bekommen neue Schlüssel (`FractionalIndex.keys(count:between:and:)`). Blöcke, die in `order` fehlen (z. B. aus einem anderen Fenster), bleiben unverändert; neue Schlüssel werden so gewählt, dass sie nie mit deren Schlüsseln zusammenfallen.
 - Unbekannte `kindRaw`-Werte (spätere Versionen) bleiben erhalten, solange der Block im Editor nicht bearbeitet wird; angezeigt werden sie als Absatz.
