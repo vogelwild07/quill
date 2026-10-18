@@ -107,10 +107,13 @@ Der Code in `QuillEditorSpike` und `Spikes/EditorSpike` ist Wegwerf-Code. Was da
 | ↩ (Sidebar) | Umbenennen |
 | ⌘⌫ (Sidebar) | In den Papierkorb legen (Menüpunkt ohne Kürzel, siehe ADR-012) |
 | ⌘Z / ⇧⌘Z | Rückgängig / Wiederholen |
+| ⌘B / ⌘I (Editor) | Fett / Kursiv (Phase 3) |
+| ⇧⌘M (Editor) | Inline-Code (Phase 3) |
+| ⇧⌘X (Editor) | Durchgestrichen (Phase 3) |
 | ⌘K (Editor) | Link einfügen oder bearbeiten (Phase 3) |
 | ⌘O | Schnell öffnen: Suche nach Titel und Volltext (Phase 5) |
 
-⌘K ist bewusst der Link wie in Pages, Mail und Notizen; die Suche liegt deshalb auf ⌘O.
+⌘K ist bewusst der Link wie in Pages, Mail und Notizen; die Suche liegt deshalb auf ⌘O. ⌘E bleibt frei für den Standard „Auswahl für Suche verwenden“ (HIG), Inline-Code liegt deshalb auf ⇧⌘M. Nicht verwenden: ⇧⌘C („Farben einblenden“).
 
 ## Tests
 
