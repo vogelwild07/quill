@@ -148,7 +148,9 @@ extension BlockEditorController: NSTextViewDelegate {
     }
 
     public func textViewDidChangeSelection(_ notification: Notification) {
-        if slashMenu.isVisible { slashMenu.update() }
+        // Beim Tippen kommt die Auswahl vor `textDidChange`; die Absätze sind dann noch
+        // nicht abgeglichen, und `textDidChange` aktualisiert das Menü ohnehin.
+        if slashMenu.isVisible, editedRange == nil { slashMenu.update() }
     }
 
     // MARK: Aktionen

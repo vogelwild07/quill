@@ -246,6 +246,19 @@ struct SlashMenuIntegrationTests {
         h.expectConsistent()
     }
 
+    /// Nicht nur im letzten Block: Die Auswahl ändert sich vor dem Abgleich der Absätze.
+    @Test func staysOpenWhileTypingInMiddleBlock() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.caret(at: 0, 4)
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        h.type("/üb")
+        #expect(h.editor.slashMenu.isVisible)
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        #expect(h.kinds == [.paragraph, .heading1, .paragraph])
+        #expect(h.texts == ["Eins", "", "Zwei"])
+        h.expectConsistent()
+    }
+
     @Test func escapeClosesAndKeepsText() {
         let h = Harness()
         h.type("/h")
