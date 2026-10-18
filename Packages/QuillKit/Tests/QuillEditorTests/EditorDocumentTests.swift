@@ -85,6 +85,15 @@ struct BackspaceTests {
         #expect(cursor == pos(1, 0))
     }
 
+    @Test(arguments: [BlockKind.heading1, .heading2, .heading3, .quote, .todo, .numbered, .code])
+    func textBlockBecomesParagraphKeepingText(kind: BlockKind) {
+        var document = doc(EditorBlock(text: "A"), EditorBlock(kind: kind, text: "B"))
+        let cursor = document.deleteBackwardAtStart(of: 1)
+        #expect(document.blocks.map(\.kind) == [.paragraph, .paragraph])
+        #expect(document.blocks.map(\.text) == ["A", "B"])
+        #expect(cursor == pos(1, 0))
+    }
+
     @Test func indentedParagraphOutdents() {
         var document = doc(EditorBlock(text: "A"), EditorBlock(text: "B", indent: 1))
         _ = document.deleteBackwardAtStart(of: 1)
@@ -230,10 +239,30 @@ struct MarkdownShortcutTests {
         #expect(document[0].kind == .paragraph)
     }
 
-    @Test func onlyInParagraphs() {
-        var document = doc(EditorBlock(kind: .heading1, text: "- "))
+    @Test(arguments: [
+        (BlockKind.bulleted, "## ", BlockKind.heading2), (.heading1, "- ", .bulleted), (.todo, "> ", .quote),
+        (.quote, "[] ", .todo), (.heading3, "# ", .heading1), (.numbered, "``` ", .code),
+    ])
+    func worksInEveryTextBlock(from: BlockKind, prefix: String, to: BlockKind) {
+        var document = doc(EditorBlock(kind: from, text: prefix + "Text"))
+        let cursor = document.applyMarkdownShortcut(at: pos(0, prefix.utf16.count))
+        #expect(document[0].kind == to)
+        #expect(document[0].text == "Text")
+        #expect(cursor == pos(0, 0))
+    }
+
+    @Test func listKeepsIndentWhenSwitchingListKind() {
+        var document = doc(EditorBlock(kind: .bulleted, text: "1. A", indent: 1))
+        _ = document.applyMarkdownShortcut(at: pos(0, 3))
+        #expect(document[0].kind == .numbered)
+        #expect(document[0].indent == 1)
+    }
+
+    @Test func notInCode() {
+        var document = doc(EditorBlock(kind: .code, text: "- "))
         let cursor = document.applyMarkdownShortcut(at: pos(0, 2))
         #expect(cursor == nil)
+        #expect(document[0].kind == .code)
     }
 }
 

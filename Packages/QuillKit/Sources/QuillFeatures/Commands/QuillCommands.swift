@@ -68,6 +68,22 @@ public struct QuillCommands: Commands {
             Divider()
             formatButton("Link …", #selector(EditorFormattingActions.quillEditLink(_:)))
                 .keyboardShortcut("k")
+            Divider()
+            // ⌥⌘0–7 in Slash-Menü-Reihenfolge; ⌥⌘8 gehört dem Zoom der Bedienungshilfen.
+            Menu(String(localized: "Blockart", bundle: .module)) {
+                ForEach(BlockConversion.commands) { command in
+                    let button = Button(command.title) {
+                        NSApp.sendAction(#selector(EditorFormattingActions.quillSetBlockKind(_:)), to: nil, from: BlockKindRequest(command.kind))
+                    }
+                    if let digit = BlockConversion.shortcutDigit(for: command.kind) {
+                        button.keyboardShortcut(KeyEquivalent(digit), modifiers: [.command, .option])
+                    } else {
+                        button
+                    }
+                }
+            }
+            formatButton("Abhaken", #selector(EditorFormattingActions.quillToggleChecked(_:)))
+                .keyboardShortcut(.return)
         }
 
         CommandMenu(String(localized: "Seite", bundle: .module)) {

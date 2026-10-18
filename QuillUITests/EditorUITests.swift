@@ -177,7 +177,46 @@ final class EditorUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [expectation(for: gone, evaluatedWith: nil)], timeout: 5), .completed, "Menü bleibt offen")
     }
 
+    /// Format › Blockart (⌥⌘0–7) und Abhaken (⌘↩) über die Menüleiste; Ergebnis als
+    /// Markdown aus der eigenen Zwischenablage.
+    func testBlockKindShortcutsAndCheckOff() throws {
+        createPage("Kürzel")
+        app.typeText("\r")
+        waitForFocus(editor)
+        // Zwei Blöcke: dann kopiert ⌘A blockweise mit Markdown-Präfix.
+        app.typeText("Titel\rEnde")
+        app.typeKey(.upArrow, modifierFlags: .command)
+
+        app.typeKey("1", modifierFlags: [.command, .option])
+        XCTAssertEqual(copiedMarkdown(), "# Titel\n\nEnde")
+        app.typeKey("6", modifierFlags: [.command, .option])
+        app.typeKey(.return, modifierFlags: .command)
+        XCTAssertEqual(copiedMarkdown(), "- [x] Titel\n\nEnde")
+        app.typeKey("0", modifierFlags: [.command, .option])
+        XCTAssertEqual(copiedMarkdown(), "Titel\n\nEnde")
+
+        let blockKinds = app.menuBars.menuBarItems["Format"].menuItems["Blockart"]
+        app.menuBars.menuBarItems["Format"].click()
+        XCTAssertTrue(blockKinds.waitForExistence(timeout: 5))
+        blockKinds.hover()
+        XCTAssertTrue(blockKinds.menuItems["Code"].waitForExistence(timeout: 5))
+        app.typeKey(.escape, modifierFlags: [])
+        app.typeKey(.escape, modifierFlags: [])
+    }
+
     // MARK: - Hilfen
+
+    /// ⌘A, ⌘C im Editor; liest Markdown aus der eigenen Zwischenablage. Danach steht
+    /// der Cursor wieder am Anfang.
+    private func copiedMarkdown() -> String? {
+        app.typeKey("a", modifierFlags: .command)
+        let before = pasteboard.changeCount
+        app.typeKey("c", modifierFlags: .command)
+        let copied = NSPredicate { _, _ in self.pasteboard.changeCount != before }
+        _ = XCTWaiter.wait(for: [expectation(for: copied, evaluatedWith: nil)], timeout: 5)
+        app.typeKey(.upArrow, modifierFlags: .command)
+        return pasteboard.string(forType: NSPasteboard.PasteboardType("net.daringfireball.markdown"))
+    }
 
     private var outline: XCUIElement {
         app.windows.firstMatch.outlines["sidebar.pages"]

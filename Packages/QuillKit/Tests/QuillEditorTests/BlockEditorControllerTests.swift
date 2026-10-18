@@ -293,6 +293,52 @@ struct SlashMenuIntegrationTests {
 }
 
 @MainActor
+@Suite("Editor: Blockart per Menü und ⌘↩", .serialized)
+struct BlockKindCommandTests {
+    @Test func menuConvertsAllSelectedBlocksInOneStep() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(kind: .divider), EditorBlock(text: "Zwei"), EditorBlock(text: "Drei")])
+        let start = h.editor.characterLocation(of: BlockPosition(block: 0, offset: 1))
+        let end = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 2))
+        h.textView.setSelectedRange(NSRange(location: start, length: end - start))
+        // Wie die Menüleiste: über die Responder-Kette.
+        #expect(NSApp.sendAction(#selector(EditorFormattingActions.quillSetBlockKind(_:)), to: h.textView, from: BlockKindRequest(.todo)))
+        #expect(h.kinds == [.todo, .divider, .todo, .paragraph])
+        #expect(h.textView.selectedRange() == NSRange(location: start, length: end - start))
+        h.undo()
+        #expect(h.kinds == [.paragraph, .divider, .paragraph, .paragraph])
+        h.expectConsistent()
+    }
+
+    @Test func menuWithoutSelectionConvertsBlockAtCursor() {
+        let h = Harness([EditorBlock(text: "Eins"), EditorBlock(text: "Zwei")])
+        h.caret(at: 1, 2)
+        h.editor.convertSelectedBlocks(to: .heading2)
+        #expect(h.kinds == [.paragraph, .heading2])
+        #expect(h.caretPosition == BlockPosition(block: 1, offset: 2))
+    }
+
+    @Test func commandReturnTogglesTodos() {
+        let h = Harness([EditorBlock(kind: .todo, text: "A"), EditorBlock(kind: .todo, text: "B", isChecked: true), EditorBlock(text: "C")])
+        h.textView.setSelectedRange(NSRange(location: 0, length: h.editor.characterLocation(of: BlockPosition(block: 2, offset: 1))))
+        h.editor.toggleCheckedInSelection()
+        // Gemischt: alle abhaken; Absatz bleibt Absatz.
+        #expect(h.document.blocks.map(\.isChecked) == [true, true, false])
+        h.flushUndoGroup()
+        h.editor.toggleCheckedInSelection()
+        #expect(h.document.blocks.map(\.isChecked) == [false, false, false])
+        h.undo()
+        #expect(h.document.blocks.map(\.isChecked) == [true, true, false])
+    }
+
+    @Test func shortcutsAreUniqueAndSkipZoom() {
+        let digits = BlockConversion.commands.compactMap { BlockConversion.shortcutDigit(for: $0.kind) }
+        #expect(digits == ["0", "1", "2", "3", "4", "5", "6", "7"])
+        #expect(!digits.contains("8"))
+        #expect(BlockConversion.commands.map(\.kind) == [.paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .todo, .quote, .code])
+    }
+}
+
+@MainActor
 @Suite("Editor: Einfügen-Knopf ＋", .serialized)
 struct InsertButtonTests {
     private func location(_ h: Harness, _ block: Int) -> Int {

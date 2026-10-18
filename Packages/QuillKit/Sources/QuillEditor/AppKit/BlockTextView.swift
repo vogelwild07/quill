@@ -296,6 +296,11 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     @objc func quillToggleInlineCode(_ sender: Any?) { editor?.toggleMark(.code) }
     @objc func quillToggleStrikethrough(_ sender: Any?) { editor?.toggleMark(.strikethrough) }
     @objc func quillEditLink(_ sender: Any?) { editor?.editLink() }
+    @objc func quillSetBlockKind(_ sender: Any?) {
+        guard let request = sender as? BlockKindRequest else { return }
+        editor?.convertSelectedBlocks(to: request.kind)
+    }
+    @objc func quillToggleChecked(_ sender: Any?) { editor?.toggleCheckedInSelection() }
 
     // MARK: Zwischenablage
 
