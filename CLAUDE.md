@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-Architekt, Swift-Entwickler.
 
-**Stand:** Phase 3 (Editor Text) abgeschlossen und gemergt (PR #3). Phase 4 (Editor Interaktion) läuft auf `phase-4/editor-interaction`: Block-Felder gebündelt (ADR-014), Bild-Block (ADR-015, von Hand und per UI-Test geprüft; Dateiauswahl nur von Hand), als Nächstes Einfügen-Knopf ＋. Bekannte Probleme und Plan: `docs/roadmap.md`.
+**Stand:** Phase 3 (Editor Text) abgeschlossen und gemergt (PR #3). Phase 4 (Editor Interaktion) läuft auf `phase-4/editor-interaction`: Block-Felder gebündelt (ADR-014), Bild-Block (ADR-015, von Hand und per UI-Test geprüft; Dateiauswahl nur von Hand), Einfügen-Knopf ＋; als Nächstes Feinschliff Slash-Menü, Kürzel und Block-Drag. Bekannte Probleme und Plan: `docs/roadmap.md`.
 
 ## Kommunikation
 - Immer **Deutsch**. Kurz ist gut; Warnungen, Sicherheit und Entscheidungen in ganzen Sätzen.
