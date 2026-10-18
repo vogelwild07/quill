@@ -40,6 +40,7 @@ Apple HIG, Liquid Glass nur für Sidebar/Toolbars/Popover, nicht für Inhalt. SF
 - Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`), kleine Commits.
 - Auf `main` nur gebauter, getesteter Stand. Größere Änderungen: Branch + PR.
 - Vor jedem Push `git status` und `git diff --staged` prüfen. Im Zweifel fragen.
+- Gemergte Phasen-Branches direkt nach dem Merge lokal und auf GitHub löschen (`git branch -d`, `git push origin --delete`), ohne Rückfrage. Nur wenn der Merge bestätigt ist.
 - `DEVELOPMENT_TEAM`-Zeilen in `project.pbxproj` sind lokal (Personal Team des Nutzers) und werden nie committet. `project.pbxproj` deshalb nur gezielt stagen; Xcode-Nebenänderungen (z. B. Scheme-`version`) nicht mitcommitten.
 - Niemals committen: `.env`, Keys, Tokens, Zertifikate, Provisioning-Profile, Datenbanken, Backups, private Notizen.
 - Aktuell halten: `README.md`, `CLAUDE.md`, `docs/architecture.md`, `docs/decisions.md`.
