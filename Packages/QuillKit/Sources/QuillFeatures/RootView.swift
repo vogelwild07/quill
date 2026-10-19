@@ -85,6 +85,7 @@ public struct RootView: View {
         })
         #endif
         .focusedSceneValue(\.pageActions, operations.map(pageActions))
+        .focusedSceneValue(\.windowActions, persistence.map { _ in WindowActions(restoreBackup: { isRestoreShown = true }) })
         #if canImport(AppKit)
         .sheet(isPresented: $isRestoreShown, onDismiss: quitIfRestoreRequested) {
             if let persistence {
@@ -169,8 +170,7 @@ public struct RootView: View {
             toggleFavorite: { if let selection { operations.setFavorite(selection, !isFavorite(selection)) } },
             openInTab: { if let selection { open(selection, asTab: true) } },
             openInWindow: { if let selection { open(selection, asTab: false) } },
-            exportPage: { if let selection { exportPage(selection) } },
-            restoreBackup: { isRestoreShown = true }
+            exportPage: { if let selection { exportPage(selection) } }
         )
     }
 

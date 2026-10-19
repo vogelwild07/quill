@@ -8,6 +8,7 @@ public struct QuillCommands: Commands {
     let persistence: QuillPersistence?
 
     @FocusedValue(\.pageActions) private var actions
+    @FocusedValue(\.windowActions) private var windowActions
     @Environment(\.openWindow) private var openWindow
 
     public init(persistence: QuillPersistence?) {
@@ -60,9 +61,9 @@ public struct QuillCommands: Commands {
             }
             .disabled(persistence == nil || persistence?.isInMemory == true)
             Button(String(localized: "Backup wiederherstellen …", bundle: .module)) {
-                actions?.restoreBackup()
+                windowActions?.restoreBackup()
             }
-            .disabled(actions == nil || persistence?.canRestoreBackups != true)
+            .disabled(windowActions == nil || persistence?.canRestoreBackups != true)
         }
 
         // Menü „Format“. Die Aktionen laufen über die Responder-Kette; ohne
