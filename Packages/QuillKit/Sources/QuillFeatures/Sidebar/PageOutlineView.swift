@@ -559,9 +559,8 @@ final class GroupCellView: NSTableCellView {
     init(identifier: NSUserInterfaceItemIdentifier) {
         super.init(frame: .zero)
         self.identifier = identifier
+        // Schrift und Farbe setzt die Source-List für Gruppenzeilen selbst (Befund A10).
         let title = NSTextField(labelWithString: "")
-        title.font = .preferredFont(forTextStyle: .subheadline).withWeight(.semibold)
-        title.textColor = .secondaryLabelColor
         title.translatesAutoresizingMaskIntoConstraints = false
         addSubview(title)
         textField = title
@@ -578,13 +577,6 @@ final class GroupCellView: NSTableCellView {
     func configure(title: String) {
         textField?.stringValue = title
         textField?.setAccessibilityIdentifier("sidebar.group")
-    }
-}
-
-private extension NSFont {
-    func withWeight(_ weight: NSFont.Weight) -> NSFont {
-        let descriptor = fontDescriptor.addingAttributes([.traits: [NSFontDescriptor.TraitKey.weight: weight]])
-        return NSFont(descriptor: descriptor, size: pointSize) ?? self
     }
 }
 
