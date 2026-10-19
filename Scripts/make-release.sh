@@ -98,8 +98,12 @@ diskutil image attach --readOnly --nobrowse --mountPoint "$mnt" "$dmg" > "$work/
 [ "$(ls "$mnt" | tr '\n' ' ')" = "Programme Quill.app " ] || fail "Inhalt der .dmg: $(ls "$mnt")"
 [ "$(readlink "$mnt/Programme")" = /Applications ] || fail "Verknüpfung zeigt nicht auf /Applications"
 codesign --verify --deep --strict "$mnt/Quill.app" || fail "Signatur in der .dmg ungültig"
-cdhash() { codesign -dv "$1" 2>&1 | grep '^CDHash=' || fail "CDHash nicht lesbar: $1" }
-[ "$(cdhash "$mnt/Quill.app")" = "$(cdhash "$app")" ] || fail "App in der .dmg weicht vom Build ab"
+# CDHash steht erst ab -dvvv in der Ausgabe. Zuweisung statt Vergleich in [ ]:
+# Scheitert das Lesen, bricht set -e hier ab, statt zwei leere Werte zu vergleichen.
+cdhash() { codesign -dvvv "$1" 2>&1 | grep '^CDHash=' || fail "CDHash nicht lesbar: $1" }
+built_hash=$(cdhash "$app")
+dmg_hash=$(cdhash "$mnt/Quill.app")
+[ "$dmg_hash" = "$built_hash" ] || fail "App in der .dmg weicht vom Build ab"
 hdiutil detach -quiet "$mnt" || fail "Aushängen gescheitert ($mnt)"
 
 (cd "$dist" && shasum -a 256 "$name.dmg" > "$name.dmg.sha256") || fail "Prüfsumme nicht geschrieben"
