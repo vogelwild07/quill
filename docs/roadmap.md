@@ -28,6 +28,10 @@ Ideen aus Phase 5, nicht eingeplant:
 
 Ideen aus Phase 7, nicht eingeplant:
 - Englische Lokalisierung (bisher nur Deutsch).
+- Sidebar aus einer Momentaufnahme des `PageStore` statt aus beobachteten `Page`-Objekten
+  bauen. SwiftData meldet nach jeder Store-Änderung `Page.parent` als geändert, dadurch
+  läuft `SidebarView.body` dreimal statt einmal (`docs/performance.md`). Danach Schwelle
+  `sidebarReload` wieder auf 100 ms.
 
 Infrastruktur, nicht eingeplant:
 - CI-Workflow auf GitHub (macOS-Runner): Build, Package- und App-Tests ohne Warnungen bei jedem PR. Bisher wird nur lokal getestet; PR #5 wurde auf Basis der lokalen Tests gemergt.

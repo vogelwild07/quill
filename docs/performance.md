@@ -11,6 +11,9 @@ Refactor wird gegen diese Baseline verglichen.
 - **Neue Messungen:** Schwelle = max(Baseline × 3, Baseline + 5 ms), nie über einem
   Produktziel.
 - Eine gerissene Schwelle wird erst gezeigt und besprochen, dann optimiert.
+- Ausnahmen nach den Optimierungen (19.10.2026, so entschieden): Sidebar beim Start
+  200 ms (erstes Layout des Fensters, kein Umbau), Neuladen nach ⌘N 130 ms (SwiftData,
+  siehe unten; Umbau unter „Später“ in `roadmap.md`).
 - Gemessen wird nur optimiert: im Package mit `swift test -c release`, in der App mit
   der Konfiguration „Profiling“.
 
@@ -160,6 +163,53 @@ SwiftData-Getter und zwei `uuidString`). Dieselbe Funktion bremst `bridgeLoad`
 Das Ziel von 2 s gilt ab der Optimierung als Schwelle (`Performance.limits`); bis dahin
 steht dort die Baseline-Schwelle, damit die Refactors vorher und nachher gleich grün
 vergleichbar bleiben.
+
+## Optimierungen (19.10.2026)
+
+| Commit | Was |
+|---|---|
+| `9e0edd0` | Eine Reihenfolge-Regel (`SiblingOrder`) statt Vergleichen an fünf Stellen |
+| `bf6a868` | Schlüssel einmal pro Element lesen, nicht pro Vergleich |
+| `c0f8ce2` | Blöcke gesammelt laden (`relationshipKeyPathsForPrefetching`), Export mit Teilbaum in einer Abfrage |
+| `1826024` | Favoriten-Stern nur über Favoriten, nicht über alle Seiten |
+| `40662b9` | Sidebar baut den Seitenbaum beim Seitenwechsel nicht neu |
+
+Gleiche Reihenfolge bei gleichen Schlüsseln: `SiblingOrderTests` gegen den früheren
+Vergleich (Zufall mit vielen Gleichständen, über den Store), Export-Golden-Files
+unverändert.
+
+**Package** (Release, Median):
+
+| Messung | Baseline | danach |
+|---|---:|---:|
+| `applyEditsMove` | 59,1 | 14,8 |
+| `applyEditsReverse` | 102,9 | 64,0 |
+| `bridgeLoad` | 106,4 | 16,0 |
+| `exportPlan` | 4537 | 927 |
+| übrige | | unverändert im Rauschen |
+
+**App** (Profiling, Median):
+
+| Messung | Baseline | danach | Schwelle |
+|---|---:|---:|---:|
+| `ApplicationLaunch` | 608 | 561 | 1000 |
+| `launch` | 395 | 352 | 1000 |
+| `sidebarLoad` | 181 | 171 | 200 |
+| `sidebarReload` | 131 | 104 | 130 |
+| `pageSwitch` | 96 | 76,5 | 100 |
+
+### Warum `SidebarView.body` lief
+
+Per `Self._logChanges()` (SwiftUI-Log „Changed Body Properties“) geprüft:
+
+- Beim Seitenwechsel: `@self changed`. Das Binding der Auswahl trägt den Wert mit,
+  die Aktionen waren jedes Mal neue Closures, und auch zwei Bindings auf denselben
+  Zustand gelten als verschieden. Lösung: Auswahl als Objekt (`PageSelection`),
+  Aktionen als Klasse mit einer Instanz, `SidebarView` ist `Equatable`.
+- Nach jeder Store-Änderung zweimal zusätzlich `Page.parent changed`. Laut Stacktrace
+  ruft SwiftData selbst `willSet` für `parent` auf, wenn `@Query` aktualisiert
+  (`_SwiftData_SwiftUI` → `SwiftData` → `Registrar.willSet`); ein Prefetch von
+  `parent` ändert nichts. Deshalb die Ausnahme für `sidebarReload`.
 
 ## Messbedingungen
 

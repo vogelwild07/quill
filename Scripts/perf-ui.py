@@ -22,8 +22,10 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # Test → Messung (Teil des Namens in xcresult) → Schwelle in ms.
 LIMITS: dict[str, dict[str, float]] = {
-    "testColdLaunch()": {"ApplicationLaunch": 1000, "launch": 1000, "sidebarLoad": 100},
-    "testSidebarReload()": {"sidebarReload": 100},
+    # Sidebar: Ziel 100 ms. Beim Start bremst das erste Layout des Fensters, nach ⌘N
+    # SwiftData (docs/performance.md, Analyse); vom Nutzer so festgelegt am 19.10.2026.
+    "testColdLaunch()": {"ApplicationLaunch": 1000, "launch": 1000, "sidebarLoad": 200},
+    "testSidebarReload()": {"sidebarReload": 130},
     "testPageSwitch()": {"pageSwitch": 100},
 }
 
