@@ -23,8 +23,8 @@
 /* Begin PBXFileReference section */
 		A10000000000000000000020 /* Quill.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Quill.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000021 /* QuillUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QuillUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A10000000000000000000023 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = Config/Base.xcconfig; sourceTree = "<group>"; };
 		A10000000000000000000022 /* QuillKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = QuillKit; path = Packages/QuillKit; sourceTree = "<group>"; };
+		A10000000000000000000023 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = Config/Base.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
