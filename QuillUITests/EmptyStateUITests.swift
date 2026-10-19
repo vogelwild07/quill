@@ -19,6 +19,22 @@ final class EmptyStateUITests: XCTestCase {
         app.terminate()
     }
 
+    /// Hinweis auf leerer Seite: für VoiceOver ein Platzhalter, weg beim ersten Zeichen.
+    func testEmptyPageHintIsPlaceholder() throws {
+        let window = app.windows.firstMatch
+        app.typeKey("n", modifierFlags: .command)
+        let title = window.descendants(matching: .any)["detail.title"]
+        let titleFocused = NSPredicate { _, _ in title.value(forKey: "hasKeyboardFocus") as? Bool == true }
+        wait(for: [expectation(for: titleFocused, evaluatedWith: nil)], timeout: 5)
+        app.typeText("Leer\r")
+        let editor = window.textViews["editor.text"]
+        XCTAssertEqual(editor.placeholderValue, "Leere Seite – mit „/“ wählst du eine Blockart.")
+        XCTAssertEqual(editor.value as? String, "\n", "Hinweis steht im Text")
+        app.typeText("x")
+        let gone = NSPredicate { _, _ in (editor.placeholderValue ?? "").isEmpty }
+        wait(for: [expectation(for: gone, evaluatedWith: nil)], timeout: 5)
+    }
+
     func testFirstLaunchShowsEmptyStatesAndCreatesFirstPage() throws {
         let window = app.windows.firstMatch
         let sidebarEmpty = window.staticTexts["sidebar.emptyState.title"]

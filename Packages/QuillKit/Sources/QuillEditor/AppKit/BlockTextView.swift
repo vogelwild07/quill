@@ -20,6 +20,8 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     private var hoverTrackingArea: NSTrackingArea?
     /// Checkboxen für VoiceOver, pro Block (`BlockTextView+Accessibility`).
     var checkboxElements: [UUID: CheckboxAccessibilityElement] = [:]
+    /// Zuletzt gezeichneter Stand des Hinweises (`BlockTextView+EmptyPageHint`).
+    var isShowingEmptyPageHint = false
 
     override init(frame frameRect: NSRect, textContainer container: NSTextContainer?) {
         super.init(frame: frameRect, textContainer: container)

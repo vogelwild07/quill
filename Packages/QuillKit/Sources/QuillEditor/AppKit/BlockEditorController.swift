@@ -15,7 +15,9 @@ import QuillModel
 public final class BlockEditorController: NSObject {
     public let scrollView: NSScrollView
     let textView: BlockTextView
-    public internal(set) var document: EditorDocument
+    public internal(set) var document: EditorDocument {
+        didSet { textView.updateEmptyPageHint() }
+    }
     /// Wird nach jeder Änderung des Dokuments aufgerufen.
     public var onChange: ((EditorDocument) -> Void)?
     /// ↑ in der ersten Zeile oder ⇧⌃Tab: Fokus zurück in den Titel.
