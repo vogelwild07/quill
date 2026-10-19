@@ -42,6 +42,15 @@ final class AccessibilityUITests: XCTestCase {
         XCTAssertEqual(trash.label, "Seiten im Papierkorb")
     }
 
+    /// „Schnell öffnen“ (A6): beschriftetes Panel, Fokus im Suchfeld.
+    func testQuickOpenPanelIsLabeled() throws {
+        app.typeKey("o", modifierFlags: .command)
+        let panel = window.groups["quickOpen.panel"]
+        XCTAssertTrue(panel.waitForExistence(timeout: 5))
+        XCTAssertEqual(panel.label, "Schnell öffnen")
+        expectFocus(on: panel.textFields["quickOpen.field"], "Suchfeld fokussiert")
+    }
+
     /// Tastaturfokus (A4): Sidebar →Tab→ Titel →Tab→ Editor →⌃Tab→ Sidebar,
     /// rückwärts mit ⇧; ⇧Tab im Titel → Symbol. Tab im Editor rückt weiter ein.
     func testKeyboardFocusLoop() throws {
