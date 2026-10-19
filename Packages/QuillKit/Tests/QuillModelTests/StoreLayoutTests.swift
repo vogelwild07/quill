@@ -99,7 +99,7 @@ extension DiskStoreSuites {
             #expect(backup.lastOpenedSchemaVersion == "1.0.0", "Versionsdatei zieht mit, sonst Backup vor Migration")
             let (titles, images) = try contents()
             #expect(titles == ["Nur im WAL"], "WAL zieht mit")
-            #expect(images == [7], "Bilder ziehen mit")
+            DiskStoreSuites.expectImageBytes(images, [7], store: storeURL, "Bilder ziehen mit")
 
             // Zweiter Start: nichts mehr zu tun.
             #expect(try backup.moveLegacyStoreIfNeeded() == nil)
@@ -129,7 +129,7 @@ extension DiskStoreSuites {
             #expect(!exists(backup.moveURL))
             let (titles, images) = try contents()
             #expect(titles == ["Nur im WAL"])
-            #expect(images == [7])
+            DiskStoreSuites.expectImageBytes(images, [7], store: storeURL)
             #expect(try moveBackups(backup).count >= 1)
         }
 

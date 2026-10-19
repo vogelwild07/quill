@@ -107,7 +107,7 @@ extension DiskStoreSuites {
             #expect(!exists(backup.stagingURL))
             #expect(!exists(backup.storeDirectoryURL.appending(path: StoreBackup.restoreTagName)))
             #expect(try titles() == ["Eins"])
-            #expect(try imageBytes() == [1], "Bilder aus .Quill_SUPPORT des Backups")
+            DiskStoreSuites.expectImageBytes(try imageBytes(), [1], store: storeURL, "Bilder aus .Quill_SUPPORT des Backups")
             #expect(backup.lastOpenedSchemaVersion == "1.0.0")
 
             // Der vorherige Stand erscheint in der Liste und lässt sich zurückholen.
@@ -120,7 +120,7 @@ extension DiskStoreSuites {
                 return
             }
             #expect(try titles() == ["Eins", "Zwei"])
-            #expect(try imageBytes() == [1, 2])
+            DiskStoreSuites.expectImageBytes(try imageBytes(), [1, 2], store: storeURL)
         }
 
         /// Store, `-wal` und `-shm` reisen immer zusammen: beim Verschieben des aktuellen
@@ -278,10 +278,10 @@ extension DiskStoreSuites {
             let swapped = step == .swapped || step == .previousMoved
             if swapped {
                 #expect(try titles() == ["Aus dem Backup"], "Nach \(step)")
-                #expect(try imageBytes() == [1])
+                DiskStoreSuites.expectImageBytes(try imageBytes(), [1], store: storeURL)
             } else {
                 #expect(try titles() == ["Eins", "Zwei"], "Nach \(step)")
-                #expect(try imageBytes() == [1, 2])
+                DiskStoreSuites.expectImageBytes(try imageBytes(), [1, 2], store: storeURL)
             }
 
             let outcome = backup.applyPendingRestore()
@@ -304,7 +304,7 @@ extension DiskStoreSuites {
             } else {
                 #expect(outcome == .interrupted)
                 #expect(try titles() == ["Eins", "Zwei"])
-                #expect(try imageBytes() == [1, 2])
+                DiskStoreSuites.expectImageBytes(try imageBytes(), [1, 2], store: storeURL)
                 #expect(try backup.entries().allSatisfy { $0.kind != .beforeRestore })
             }
         }
@@ -327,7 +327,7 @@ extension DiskStoreSuites {
                 return
             }
             #expect(try titles() == ["Altes Format"])
-            #expect(try imageBytes() == [1])
+            DiskStoreSuites.expectImageBytes(try imageBytes(), [1], store: storeURL)
             #expect(backup.lastOpenedSchemaVersion == "1.0.0")
 
             // Auch ein reines Backup per VACUUM (nur Store und Bilder).
