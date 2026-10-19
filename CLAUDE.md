@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-Architekt, Swift-Entwickler.
 
-**Stand:** Phase 6 (Export) fertig, gemergt (PR #6, ADR-018, Review-Fixes drin). Phase 7 (Feinschliff): 7.1 Backup wiederherstellen fertig, gemergt (PR #7, ADR-019, Store in `Store/`, Review-Fixes drin). Nächstes: 7.2 Aufräumen + Performance, danach 7.3 A11y, Leerzustände, Lokalisierung, Icon. Neue Ideen nur unter „Später“ in `docs/roadmap.md`. Bekannte Probleme + Plan: `docs/roadmap.md`.
+**Stand:** Phase 6 (Export) fertig, gemergt (PR #6, ADR-018, Review-Fixes drin). Phase 7 (Feinschliff): 7.1 Backup wiederherstellen fertig, gemergt (PR #7, ADR-019, Store in `Store/`, Review-Fixes drin). 7.2 Aufräumen + Performance fertig auf Branch `phase-7.2/cleanup-performance`, noch nicht gemergt (ADR-020, `docs/performance.md`). Nächstes: 7.3 A11y, Leerzustände, Lokalisierung, Icon. Neue Ideen nur unter „Später“ in `docs/roadmap.md`. Bekannte Probleme + Plan: `docs/roadmap.md`.
 
 ## Kommunikation
 - Immer **Deutsch**. Kurz ok; Warnungen, Sicherheit, Entscheidungen in ganzen Sätzen.

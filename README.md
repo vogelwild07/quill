@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche Produktivitäts-App für macOS: Seiten, Notizen und Aufgaben in einem nativen Block-Editor.
 
-> Status: Phase 6 (Export) abgeschlossen; als Nächstes Phase 7 (Feinschliff). Export einer Seite oder eines Seitenbaums als Markdown-Ordner mit Bildern (⇧⌘E), Schnell öffnen (⌘O), Favoriten, Papierkorb mit Auto-Leeren nach 30 Tagen. Seiten mit Block-Editor: Überschriften, Listen, To-dos, Zitat, Code, Trenner, Bilder, Inline-Formatierung und Links; Slash-Menü, Markdown-Kürzel, Blockart per ⌥⌘0–7, Blöcke ziehen, verschieben und duplizieren; Speichern automatisch.
+> Status: Phase 7 (Feinschliff) läuft: Backup wiederherstellen fertig, Aufräumen und Performance fertig (Messung siehe `docs/performance.md`); als Nächstes Bedienungshilfen, Leerzustände, Lokalisierung und Icon. Export einer Seite oder eines Seitenbaums als Markdown-Ordner mit Bildern (⇧⌘E), Schnell öffnen (⌘O), Favoriten, Papierkorb mit Auto-Leeren nach 30 Tagen. Seiten mit Block-Editor: Überschriften, Listen, To-dos, Zitat, Code, Trenner, Bilder, Inline-Formatierung und Links; Slash-Menü, Markdown-Kürzel, Blockart per ⌥⌘0–7, Blöcke ziehen, verschieben und duplizieren; Speichern automatisch.
 
 ## Voraussetzungen
 
@@ -20,7 +20,7 @@ xcodebuild -project Quill.xcodeproj -scheme Quill -destination 'platform=macOS' 
 swift test --package-path Packages/QuillKit
 ```
 
-Darstellung prüfen ohne Bildschirmfotos: `EditorSnapshotTests` rendert den Editor hell und dunkel und legt PNGs in `$TMPDIR/QuillEditorSnapshots/` ab. Der Performance-Test misst Tippen bei 1000 Blöcken (p95 < 16 ms). Der letzte Stand des Editor-Spikes aus Phase 1 ist der Git-Tag `editor-spike`.
+Darstellung prüfen ohne Bildschirmfotos: `EditorSnapshotTests` rendert den Editor hell und dunkel und legt PNGs in `$TMPDIR/QuillEditorSnapshots/` ab. Performance: `python3 Scripts/perf-package.py 3` (Package, optimiert) und `python3 Scripts/perf-ui.py` (App im Schema „Quill Profiling“); Ziele und Messwerte in `docs/performance.md`. Der letzte Stand des Editor-Spikes aus Phase 1 ist der Git-Tag `editor-spike`.
 
 ## Daten und Backups
 

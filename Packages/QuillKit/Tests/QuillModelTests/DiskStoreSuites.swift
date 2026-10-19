@@ -3,9 +3,10 @@ import Testing
 
 /// Suiten mit Stores samt Bildern auf der Platte laufen nacheinander, nicht parallel
 /// zueinander. Vorsicht, keine bewiesene Ursache: Zweimal las ein Test bei parallelem
-/// Lauf Bildbytes, die nur in einer anderen Suite vorkommen. Nachstellen ließ es sich
-/// nicht (ADR-019, offen unter Phase 7.2). Die Bild-Assertions nennen deshalb bei
-/// einem Fehlschlag Store-Pfad und externe Dateien.
+/// Lauf Bildbytes, die nur in einer anderen Suite vorkommen. In Phase 7.2 einmal in 50
+/// Läufen ohne Serialisierung nachgestellt: Die Datei auf der Platte war richtig, falsch
+/// war nur, was gelesen wurde (ADR-019). Die Bild-Assertions nennen deshalb bei einem
+/// Fehlschlag Store-Pfad und externe Dateien.
 @Suite(.serialized) enum DiskStoreSuites {
     /// Prüft die ersten Bytes aller Bilder eines Stores und nennt bei Abweichung den
     /// Store-Pfad und die Dateien in `.Quill_SUPPORT` mit Größe und erstem Byte.
