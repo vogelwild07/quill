@@ -69,11 +69,11 @@ entitlements=$(codesign -d --entitlements - --xml "$app" 2>/dev/null) || fail "E
 print -r -- "$entitlements" | grep -q com.apple.security.app-sandbox || fail "ohne App Sandbox"
 if print -r -- "$entitlements" | grep -q get-task-allow; then fail "Debug-Entitlement get-task-allow"; fi
 # grep: 0 = gefunden, 1 = nichts gefunden, 2 = Lesefehler (zählt als Fehler).
-paths=$(grep -r -l -a -F /Users/ "$app") && status=0 || status=$?
-case $status in
+paths=$(grep -r -l -a -F /Users/ "$app") && found=0 || found=$?
+case $found in
   0) echo "$paths"; fail "persönlicher Pfad im Bundle (siehe oben)" ;;
   1) ;;
-  *) fail "Bundle nicht lesbar (grep $status)" ;;
+  *) fail "Bundle nicht lesbar (grep $found)" ;;
 esac
 "$root/Scripts/check-release-binary.sh" --app "$app" || fail "Profiling- oder Testcode im Bundle"
 
