@@ -66,7 +66,8 @@ enum PageExport {
                 )
                 report(result, title: PageLabel.title(snapshot.title), window: window)
             } catch {
-                logger.error("Export fehlgeschlagen: \(error, privacy: .public)")
+                // Fehlertexte enthalten Pfade und Seitentitel: nicht öffentlich protokollieren.
+                logger.error("Export fehlgeschlagen: \(error, privacy: .private)")
                 fail(error, window: window)
             }
         }
