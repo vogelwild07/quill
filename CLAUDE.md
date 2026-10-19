@@ -36,7 +36,7 @@ Apple HIG, Liquid Glass nur Sidebar/Toolbars/Popover, nicht Inhalt. SF Pro / SF 
 
 ## Tools
 - **XcodeBuildMCP** für Bauen/Testen/Starten (macOS-Workflow). Fallback: `xcodebuild`.
-- **Keine Bildschirmfotos oder -aufnahmen des Macs**, auch nicht zur Kontrolle (kein `screencapture`, keine Screenshot-Tools). App nur via Bedienungshilfen (AX), XCUITest oder App-eigene Snapshots (z. B. `-snapshot`) prüfen.
+- **Keine Bildschirmfotos oder -aufnahmen des Macs**, auch nicht zur Kontrolle (kein `screencapture`, keine Screenshot-Tools). App nur via Bedienungshilfen (AX), XCUITest oder App-eigene Snapshots (z. B. `-snapshot`) prüfen. Einzige Ausnahme: `Scripts/readme-screenshots.sh` (README-Bilder per XCUITest-Fensteraufnahme), nur nach ausdrücklichem OK des Nutzers für genau diesen Lauf, nachdem er Schreibtischbild, Fenster und „Nicht stören“ vorbereitet hat; Bilder danach auf fremde Inhalte prüfen.
 - **Context7 / Apple-Doku:** SwiftUI-/SwiftData-/TextKit-APIs immer gegen aktuelle Doku prüfen.
 - **REA:** nur lawful Research am lokalen Notion, nur Verhalten beobachten. Keinen Notion-Code übernehmen/nachbauen. Ergebnisse nach `docs/research/`.
 - **Notion-MCP:** nur lesend (`search`, `fetch`). Nie im Notion des Nutzers anlegen, ändern, löschen.

@@ -4,8 +4,10 @@
 # und keine Profiling-Bundle-ID im App-Bundle. Kurze Zeichenketten (bis 15 Byte)
 # legt Swift nicht als Text ab; „QuillSeedPages“ steht deshalb in einer
 # Lognachricht des Seeds. Ebenso fehlen das Testbild für UI-Tests (`TestImage`,
-# nur Debug), erkannt an seiner Lognachricht, die Namen der drei Startargumente
-# für UI-Tests (nur Debug) und Test-Bundles (`.xctest`, `PlugIns/`).
+# nur Debug) und die Fenstergröße für die README-Bilder (`TestWindowSize`, nur
+# Debug, Name „QuillWindowSize“ zu kurz), erkannt an ihren Lognachrichten, die
+# Namen der drei Startargumente für den Store und die Zwischenablage (nur Debug)
+# und Test-Bundles (`.xctest`, `PlugIns/`).
 #
 # Aufruf: Scripts/check-release-binary.sh [zusätzliche xcodebuild-Einstellungen]
 # Die Einstellungen dienen nur der Gegenprobe, z. B.
@@ -58,8 +60,9 @@ fi
 
 found=0
 for marker in QuillSeedPages ProfilingSeed io.github.vogelwild07.quill.profiling \
-  "Testbild in eigener Zwischenablage" QuillInMemoryStore QuillStoreDirectory QuillPasteboardName; do
-  hits=$(grep -r -l -a -F "$marker" "$copies" 2>/dev/null)
+  "Testbild in eigener Zwischenablage" "Fenstergröße für UI-Tests" QuillInMemoryStore QuillStoreDirectory QuillPasteboardName; do
+  # LC_ALL=C: byteweise; mit UTF-8-Locale findet grep in Binärdaten keine Umlaute.
+  hits=$(LC_ALL=C grep -r -l -a -F "$marker" "$copies" 2>/dev/null)
   if [ -n "$hits" ]; then
     echo "GEFUNDEN: „$marker“ in:"
     echo "$hits" | sed "s|$copies/|  |"

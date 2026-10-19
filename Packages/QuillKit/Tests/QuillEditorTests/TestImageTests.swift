@@ -28,6 +28,16 @@ struct TestImageTests {
         #expect(TestImage.png(spec: spec) == nil)
     }
 
+    /// Bild für die README: breit wie ein Titelbild, nicht einfarbig.
+    @Test func demoImageIsWideLandscape() throws {
+        let data = try #require(TestImage.png(spec: "demo"))
+        let image = try #require(NSBitmapImageRep(data: data))
+        #expect(image.pixelsWide == 1600 && image.pixelsHigh == 640)
+        let top = try #require(image.colorAt(x: 10, y: 10))
+        let bottom = try #require(image.colorAt(x: 10, y: 630))
+        #expect(top != bottom)
+    }
+
     @Test func heavyImageIsOver20MB() throws {
         #expect(try #require(TestImage.png(spec: "heavy")).count > 20 * 1024 * 1024)
     }
