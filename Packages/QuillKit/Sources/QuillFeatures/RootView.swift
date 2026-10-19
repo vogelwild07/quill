@@ -74,6 +74,7 @@ public struct RootView: View {
                 } description: {
                     Text("Wähle links eine Seite oder lege mit ⌘N eine neue an.", bundle: .module)
                 }
+                .accessibilityIdentifier("detail.emptyState")
                 .navigationTitle("Quill")
             }
         }

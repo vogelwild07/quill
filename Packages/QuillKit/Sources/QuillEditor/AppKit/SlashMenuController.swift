@@ -226,6 +226,7 @@ struct SlashMenuView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
+                .accessibilityIdentifier("slash.hint")
         }
         .frame(width: 280)
         .glassEffect(.regular, in: .rect(cornerRadius: 14))

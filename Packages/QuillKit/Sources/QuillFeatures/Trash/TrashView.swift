@@ -35,6 +35,7 @@ struct TrashView: View {
                 ContentUnavailableView {
                     Label(String(localized: "Der Papierkorb ist leer", bundle: .module), systemImage: "trash")
                 }
+                .accessibilityIdentifier("trash.emptyState")
             } else {
                 List(selection: $selection) {
                     ForEach(entries) { entry in

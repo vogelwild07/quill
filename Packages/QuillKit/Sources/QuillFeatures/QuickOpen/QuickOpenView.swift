@@ -47,6 +47,7 @@ struct QuickOpenView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
+                .accessibilityIdentifier("quickOpen.hint")
         }
         .frame(width: 560)
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
@@ -74,6 +75,7 @@ struct QuickOpenView: View {
                         Text(model.query.isEmpty ? String(localized: "Noch keine Seiten", bundle: .module) : String(localized: "Keine Treffer", bundle: .module))
                             .foregroundStyle(.secondary)
                             .padding(8)
+                            .accessibilityIdentifier("quickOpen.empty")
                     }
                     let offsets = sectionOffsets
                     ForEach(model.sections) { section in
