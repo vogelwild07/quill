@@ -36,10 +36,10 @@ Erhebung am 2026-10-18: Der Nutzer hat in Notion kopiert, danach `swift Scripts/
 - Notion schreibt nur Formate, die Chromium von sich aus kennt: Klartext, HTML und einen eigenen Container (`org.chromium.web-custom-data`). Den Inhalt des Containers haben wir nicht angesehen; er enthält vermutlich das interne Blockformat.
 - Ein über den Griff kopierter Block hat **keinen Klartext**. In nativen Apps, die nur Text annehmen (Terminal, Textfelder), kommt dann nichts an.
 - Es gibt weder RTF noch einen Markdown-Typ.
-- Für Quill heißt das: Immer alle vier Formate schreiben, also Klartext, Markdown, RTF und `de.vogel.quill.blocks`, auch beim Kopieren über den Griff. Beim Einfügen aus Notion `public.html` auswerten (Überschriften, Listen), mit Fallback auf Klartext. Den Chromium-Container ignorieren.
+- Für Quill heißt das: Immer alle vier Formate schreiben, also Klartext, Markdown, RTF und `io.github.vogelwild07.quill.blocks`, auch beim Kopieren über den Griff. Beim Einfügen aus Notion `public.html` auswerten (Überschriften, Listen), mit Fallback auf Klartext. Den Chromium-Container ignorieren.
 
 ## Eigene Ideen und Entscheidungen (unabhängig von Notion)
 
-- **Kopieren aus Quill** schreibt mehrere Darstellungen: `public.utf8-plain-text`, `net.daringfireball.markdown`, `public.rtf` sowie einen eigenen Typ `de.vogel.quill.blocks` (JSON mit Blockarten). Fremde Apps bekommen damit sinnvolles Markdown bzw. formatierten Text, Quill selbst verlustfrei Blöcke.
+- **Kopieren aus Quill** schreibt mehrere Darstellungen: `public.utf8-plain-text`, `net.daringfireball.markdown`, `public.rtf` sowie einen eigenen Typ `io.github.vogelwild07.quill.blocks` (JSON mit Blockarten). Fremde Apps bekommen damit sinnvolles Markdown bzw. formatierten Text, Quill selbst verlustfrei Blöcke.
 - **Shortcuts** folgen macOS-Konventionen (⌘B/I, ⌘K Link, ⌘Z/⇧⌘Z, Tab/⇧Tab) und gängigen Markdown-Kürzeln; nichts Notion-Spezifisches nötig.
 - **Slash-Menü:** filtert über deutsche Namen und englische Aliasse („Überschrift“, „h1“, „todo“), damit auch Markdown-Gewohnheiten funktionieren.

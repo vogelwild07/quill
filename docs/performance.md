@@ -60,7 +60,7 @@ Scripts/check-release-binary.sh               # Release ohne Profiling-Code?
 ```
 
 - Konfiguration „Profiling“: optimiert wie Release, Produktname „Quill Profiling“,
-  Bundle-ID `de.vogel.quill.profiling`. Damit eigener Sandbox-Container und eigener
+  Bundle-ID `io.github.vogelwild07.quill.profiling`. Damit eigener Sandbox-Container und eigener
   Store; der echte Store ist für diese App nicht erreichbar.
 - Das Package baut Xcode dort ohne `DEBUG`: `-QuillInMemoryStore` und
   `-QuillStoreDirectory` wirken nicht. Der Testbestand kommt aus
@@ -71,7 +71,7 @@ Scripts/check-release-binary.sh               # Release ohne Profiling-Code?
 - `Scripts/check-release-binary.sh` baut Release und sucht im App-Bundle nach
   `QuillSeedPages` und der Profiling-Bundle-ID. Gegenprobe: mit
   `SWIFT_ACTIVE_COMPILATION_CONDITIONS=QUILL_PROFILING` muss es scheitern.
-- Signposts (`QuillSignposts`, Subsystem `de.vogel.quill`, Points of Interest):
+- Signposts (`QuillSignposts`, Subsystem `io.github.vogelwild07.quill`, Points of Interest):
   - `launch`: Start des App-Delegates bis zur ersten gezeichneten Sidebar.
   - `sidebarLoad`: erster Aufbau der Sidebar (Seitenbaum, Laden, Zeichnen).
   - `sidebarReload`: neue Seite (⌘N oder „Neue Seite“) bis zur neu geladenen,
