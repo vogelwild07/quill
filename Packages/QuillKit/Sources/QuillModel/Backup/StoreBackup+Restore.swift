@@ -94,6 +94,14 @@ extension StoreBackup {
         try data.write(to: restoreRequestURL, options: .atomic)
     }
 
+    /// Nimmt die Vormerkung zurück (Beenden abgebrochen). `true`, wenn eine bestand.
+    @discardableResult
+    public func withdrawRestoreRequest() throws -> Bool {
+        guard isRestorePending else { return false }
+        try FileManager.default.removeItem(at: restoreRequestURL)
+        return true
+    }
+
     /// Ordnername des vorgemerkten Backups; die Rotation lässt es stehen.
     var pendingRestoreBackupName: String? {
         guard let data = try? Data(contentsOf: restoreRequestURL) else { return nil }

@@ -16,6 +16,9 @@
     "Ausblenden" : {
 
     },
+    "Backup bleibt vorgemerkt" : {
+
+    },
     "Backup nicht wiederhergestellt" : {
 
     },
@@ -92,6 +95,9 @@
 
     },
     "Die Vormerkung ließ sich nicht löschen. Damit das Wiederherstellen nicht bei jedem Start erneut läuft, wurde nichts getauscht." : {
+
+    },
+    "Die Vormerkung ließ sich nicht zurücknehmen. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt dann als Backup „Vor dem Wiederherstellen“." : {
 
     },
     "Durchgestrichen" : {
@@ -217,6 +223,9 @@
     "Quill wird danach beendet. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt als Backup „Vor dem Wiederherstellen“ erhalten." : {
 
     },
+    "Quill wurde nicht beendet. Das Backup ist nicht mehr vorgemerkt, der aktuelle Stand bleibt. Wähle es bei Bedarf erneut über Ablage › Backup wiederherstellen …" : {
+
+    },
     "Schnell öffnen (⌘O)" : {
 
     },
@@ -287,6 +296,9 @@
 
     },
     "Wiederherstellen" : {
+
+    },
+    "Wiederherstellen abgebrochen" : {
 
     },
     "Wiederherstellen und beenden" : {

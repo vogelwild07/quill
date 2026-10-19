@@ -131,6 +131,35 @@ public final class QuillPersistence {
         try await Task.detached(priority: .userInitiated) { try backup.requestRestore(entry) }.value
     }
 
+    /// Das Beenden wurde abgebrochen (Rückfrage bei ungespeicherten Änderungen): Ein
+    /// vorgemerktes Backup würde sonst beim nächsten Start unbemerkt eingespielt.
+    /// Nimmt die Vormerkung zurück und meldet es über `notify` (Titel, Text).
+    public func quitWasCancelled(notify: @MainActor (String, String) -> Void = QuillPersistence.showAlert) {
+        guard let backup else { return }
+        do {
+            guard try backup.withdrawRestoreRequest() else { return }
+            notify(
+                String(localized: "Wiederherstellen abgebrochen", bundle: .module),
+                String(localized: "Quill wurde nicht beendet. Das Backup ist nicht mehr vorgemerkt, der aktuelle Stand bleibt. Wähle es bei Bedarf erneut über Ablage › Backup wiederherstellen …", bundle: .module)
+            )
+        } catch {
+            Self.logger.error("Vormerkung nicht zurückgenommen: \(error, privacy: .public)")
+            notify(
+                String(localized: "Backup bleibt vorgemerkt", bundle: .module),
+                String(localized: "Die Vormerkung ließ sich nicht zurücknehmen. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt dann als Backup „Vor dem Wiederherstellen“.", bundle: .module)
+            )
+        }
+    }
+
+    public static func showAlert(title: String, message: String) {
+        #if canImport(AppKit)
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.runModal()
+        #endif
+    }
+
     /// Ergebnis der Wiederherstellung beim Start, einmal: Das erste Fenster zeigt es.
     public func takeRestoreOutcome() -> RestoreOutcome? {
         defer { restoreOutcome = nil }
