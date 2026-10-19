@@ -47,6 +47,18 @@ Aufräumen aus dem Review von PR #8, nicht eingeplant (Urteile, kein Fehler):
 - `QuillSignposts.beginSidebarLoadIfNeeded()` läuft als Seiteneffekt in
   `SidebarView.body`; einen Ort außerhalb von `body` suchen, der genauso früh misst.
 
+Aus dem Review von PR #9, nicht eingeplant (Urteile, kein Fehler):
+- Lexer in `LocalizationTests`: Raw-Strings `#"…"#`, Regex-Literale `/…/`, verschachtelte
+  Blockkommentare und `\` am Zeilenende mehrzeiliger Literale werden nicht richtig
+  gelesen; mehrzeilige Literale behalten ihre Einrückung (Abgleich mit dem Katalog);
+  Ternary in `Text(c ? "A" : "B")` wird uneinheitlich eingestuft; einzelne
+  kleingeschriebene Wörter und Kürzel wie „OK“ gelten nicht als Prosa. Kommt heute im
+  Code nicht vor.
+- `LocalizationTests.swift` vereint Lexer, Katalog- und Projektdatei-Parser; aufteilen.
+- Touch-Bar-Ausnahme im Audit steht doppelt (`sufficientElementDescription`, `action`).
+- `TestImage.png(spec:)` parst einen String statt eines kleinen Enum.
+- `current!` im Rotor „Überschriften“ (`BlockTextView+Accessibility.swift`) per `map` vermeiden.
+
 Infrastruktur, nicht eingeplant:
 - CI-Workflow auf GitHub (macOS-Runner): Build, Package- und App-Tests ohne Warnungen bei jedem PR. Bisher wird nur lokal getestet; PR #5 wurde auf Basis der lokalen Tests gemergt.
 

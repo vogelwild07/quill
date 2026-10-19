@@ -27,7 +27,7 @@ Darstellung prüfen ohne Bildschirmfotos: `EditorSnapshotTests` und `EmptyStateS
 Die Datenbank liegt in `~/Library/Containers/de.vogel.quill/Data/Library/Application Support/Quill/Store/`. Automatische Backups (beim Start höchstens einmal pro Tag, vor jeder Migration, beim Beenden nach Änderungen) liegen daneben in `Backups/` und sind über **Ablage → Backups im Finder zeigen** erreichbar. Wiederherstellen über **Ablage → Backup wiederherstellen …**: Quill beendet sich und spielt das Backup beim nächsten Start ein, der vorherige Stand bleibt als Backup erhalten. Falls Quill nicht mehr startet: [von Hand](docs/data-model.md#backup-von-hand-wiederherstellen).
 
 Startargumente für UI-Tests:
-Beide Store-Argumente wirken nur aus der Kommandozeile und nur in Debug-Builds (ADR-019).
+Alle wirken nur aus der Kommandozeile und nur in Debug-Builds (ADR-019, ADR-021).
 - `-QuillInMemoryStore YES`: Daten nur im Arbeitsspeicher, keine Backups.
 - `-QuillStoreDirectory <Name>`: Datenbank und Backups in einem Unterordner des temporären Ordners der App (UI-Test über Neustarts).
 - `-QuillPasteboardName <Name>`: Kopieren und Einsetzen im Editor über eine eigene Zwischenablage statt der allgemeinen.

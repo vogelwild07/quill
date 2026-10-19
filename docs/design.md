@@ -70,11 +70,13 @@ beim ersten Zeichen.
 
 - Jedes Bedienelement hat eine Beschriftung; Listen heißen „Seiten“, „Seiten im
   Papierkorb“, „Backups“; Panels „Schnell öffnen“ (modal) und „Block einfügen“.
-- Tab-Schleife: Sidebar → Symbol → Titel → Editor, ⌃Tab zurück zur Sidebar.
+- Tab-Schleife: Sidebar →Tab→ Titel →Tab→ Editor →⌃Tab→ Sidebar (Tab allein rückt im
+  Editor ein). Rückwärts: Sidebar →⇧Tab→ Editor →⇧⌃Tab→ Titel →⇧Tab→ Symbol →⇧Tab→
+  Sidebar; das Symbol liegt nur auf dem Rückweg.
 - Kontrast mindestens 4,5:1 auf matten Flächen (geprüft in `EmptyStateSnapshotTests`).
   Ausnahmen im Audit (`AccessibilityAuditUITests`) nur einzeln mit Begründung: Systemstil
   von Source-List und Symbolleiste, Text auf Glas (Sidebar, Hinweise in Schnell öffnen und
-  Slash-Menü), gedimmter Inhalt hinter Sheets.
+  Slash-Menü), die gedimmte Papierkorb-Zeile hinter dem Sheet „Backup wiederherstellen“.
 
 ## App-Icon
 
