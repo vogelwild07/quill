@@ -25,8 +25,11 @@ public struct RootView: View {
     @Environment(\.quillPersistence) private var persistence
     @Environment(\.undoManager) private var undoManager
     @Environment(\.openWindow) private var openWindow
-    @Query(filter: #Predicate<Page> { $0.trashedAt == nil })
-    private var activePages: [Page]
+    @Environment(\.modelContext) private var context
+    /// Nur Favoriten: Der Stern braucht nicht alle Seiten. Eine Abfrage über alle Seiten
+    /// liefe bei jeder Änderung neu (docs/performance.md).
+    @Query(filter: #Predicate<Page> { $0.trashedAt == nil && $0.isFavorite })
+    private var activeFavorites: [Page]
 
     public init() {}
 
@@ -197,7 +200,7 @@ public struct RootView: View {
     }
 
     private func isFavorite(_ pageID: UUID?) -> Bool {
-        activePages.first { $0.id == pageID }?.isFavorite ?? false
+        activeFavorites.contains { $0.id == pageID }
     }
 
     /// Stern in der Symbolleiste: Seite zu den Favoriten (ADR-017).
@@ -237,16 +240,21 @@ public struct RootView: View {
     private func exportPage(_ pageID: UUID) {
         #if canImport(AppKit)
         guard let store else { return }
-        let title = activePages.first { $0.id == pageID }?.title ?? ""
+        let title = activePages().first { $0.id == pageID }?.title ?? ""
         PageExport.run(pageID: pageID, title: title, store: store, window: window)
         #endif
+    }
+
+    /// Seiten außerhalb des Papierkorbs, erst beim Ausführen einer Aktion gelesen.
+    private func activePages() -> [Page] {
+        (try? context.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.trashedAt == nil }))) ?? []
     }
 
     /// Bleibt die Auswahl nach dem Papierkorb gültig? Liegt sie in der
     /// weggeworfenen Seite oder darunter, geht sie an die Elternseite.
     private func selectionAfterTrashing(_ trashed: UUID) -> UUID? {
         guard let selection else { return nil }
-        let tree = PageTree.build(activePages.map(PageTree.Entry.init))
+        let tree = PageTree.build(activePages().map(PageTree.Entry.init))
         guard PageTree.isSelfOrDescendant(selection, of: trashed, in: tree) else { return selection }
         return PageTree.ancestors(of: trashed, in: tree)?.last
     }

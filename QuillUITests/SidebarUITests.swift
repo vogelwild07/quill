@@ -144,13 +144,17 @@ final class SidebarUITests: XCTestCase {
         XCTAssertEqual(groupTitles(), ["Seiten"], "Ohne Favoriten kein Abschnitt")
 
         // Stern in der Symbolleiste.
+        let star = app.windows.firstMatch.buttons["page.favorite"]
         row(1).click()
-        app.windows.firstMatch.buttons["page.favorite"].click()
+        XCTAssertEqual(star.label, "Zu Favoriten hinzufügen", "Stern leer, solange kein Favorit")
+        star.click()
         assertFavorites(["Zwei"])
         XCTAssertEqual(groupTitles(), ["Favoriten", "Seiten"])
+        XCTAssertEqual(star.label, "Aus Favoriten entfernen", "Stern gefüllt nach dem Hinzufügen")
 
         // Menü „Seite“.
         row(0).click()
+        XCTAssertEqual(star.label, "Zu Favoriten hinzufügen", "Stern folgt der Auswahl")
         app.menuBars.menuBarItems["Seite"].click()
         app.menuBars.menuItems["Zu Favoriten hinzufügen"].click()
         assertFavorites(["Zwei", "Eins"])
