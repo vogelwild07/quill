@@ -1,3 +1,6 @@
+#if canImport(AppKit)
+import AppKit
+#endif
 import SwiftUI
 
 /// Design-Tokens für Quill. Werte siehe `docs/design.md`.
@@ -57,4 +60,25 @@ public enum QuillDesign {
         /// Code-Block, Hinweis unter einem Bild.
         public static let large: CGFloat = 8
     }
+
+    #if canImport(AppKit)
+    /// Bewegung. Bei „Bewegung reduzieren“ (Bedienungshilfen) blenden Zeilen ein
+    /// statt zu gleiten, Hinweise verschwinden ohne Animation.
+    public enum Motion {
+        public static var isReduced: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+
+        /// Zeilen einfügen oder entfernen (Sidebar).
+        public static func rowAnimation(
+            _ preferred: NSTableView.AnimationOptions,
+            reduceMotion: Bool = isReduced
+        ) -> NSTableView.AnimationOptions {
+            reduceMotion ? .effectFade : preferred
+        }
+
+        /// Ausblenden eines Hinweises in Sekunden.
+        public static func fadeOutDuration(reduceMotion: Bool = isReduced) -> TimeInterval {
+            reduceMotion ? 0 : 0.3
+        }
+    }
+    #endif
 }

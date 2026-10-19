@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillDesign
 import QuillModel
 import SwiftUI
 
@@ -355,7 +356,7 @@ struct PageOutlineView: NSViewRepresentable {
         ) {
             guard favoriteNodes.isEmpty, dropTarget == .hidden, (draggedItems.first as? Item)?.role == .page else { return }
             dropTarget = .dragging
-            outlineView.insertItems(at: IndexSet(integer: 0), inParent: nil, withAnimation: .slideDown)
+            outlineView.insertItems(at: IndexSet(integer: 0), inParent: nil, withAnimation: QuillDesign.Motion.rowAnimation(.slideDown))
             outlineView.expandItem(favoritesGroup)
         }
 
@@ -381,7 +382,7 @@ struct PageOutlineView: NSViewRepresentable {
 
         private func hideEmptyFavorites() {
             dropTarget = .hidden
-            outline?.removeItems(at: IndexSet(integer: 0), inParent: nil, withAnimation: .slideUp)
+            outline?.removeItems(at: IndexSet(integer: 0), inParent: nil, withAnimation: QuillDesign.Motion.rowAnimation(.slideUp))
         }
 
         func outlineView(

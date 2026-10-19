@@ -324,7 +324,7 @@ final class EditorNoticeView: NSVisualEffectView {
         hideTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(3))
             guard !Task.isCancelled, let self else { return }
-            await NSAnimationContext.runAnimationGroup { $0.duration = 0.3; self.animator().alphaValue = 0 }
+            await NSAnimationContext.runAnimationGroup { $0.duration = QuillDesign.Motion.fadeOutDuration(); self.animator().alphaValue = 0 }
             if !Task.isCancelled { self.isHidden = true }
         }
     }
