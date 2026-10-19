@@ -215,23 +215,28 @@ public struct StoreBackup: Sendable {
             includingPropertiesForKeys: nil,
             options: .skipsHiddenFiles
         ) else { return [] }
-        return urls.compactMap { url in
-            let name = url.lastPathComponent
-            guard let separator = name.firstIndex(of: "_"),
-                  let date = Self.formatter.date(from: String(name[..<separator]))
-            else { return nil }
-            return Entry(url: url, date: date, kind: Kind(slug: name[name.index(after: separator)...]))
-        }
-        .sorted { $0.date > $1.date }
+        return urls.compactMap(Self.entry(at:)).sorted { $0.date > $1.date }
+    }
+
+    /// Liest Zeitpunkt und Anlass aus dem Ordnernamen `<Zeitpunkt>_<Anlass>`.
+    public static func entry(at url: URL) -> Entry? {
+        let name = url.lastPathComponent
+        guard let separator = name.firstIndex(of: "_"),
+              let date = formatter.date(from: String(name[..<separator]))
+        else { return nil }
+        return Entry(url: url, date: date, kind: Kind(slug: name[name.index(after: separator)...]))
     }
 
     /// Behält je das neueste Backup der letzten 7 Tage mit Backup (Tages-Backups)
     /// und davor der 4 nächstälteren Wochen mit Backup (Wochen-Backups); Backups
     /// vor einer Migration immer. Backups vor dem Leeren des Papierkorbs zählen
     /// 30 Tage lang nicht mit (höchstens 10), der Stand vor dem Wiederherstellen
-    /// 30 Tage lang gar nicht. Entfernt Reste abgebrochener Backups.
+    /// 30 Tage lang gar nicht. Ein zum Wiederherstellen vorgemerktes Backup bleibt
+    /// immer: Das Backup beim Beenden direkt danach verdrängt sonst ein Backup vom
+    /// selben Tag. Entfernt Reste abgebrochener Backups.
     public func prune() throws {
         let fileManager = FileManager.default
+        let pending = pendingRestoreBackupName
         var keep = Set<URL>()
         var days = Set<DateComponents>()
         var weeksWithDaily = Set<DateComponents>()
@@ -239,7 +244,7 @@ public struct StoreBackup: Sendable {
         var trashBackups = 0
         // Neueste zuerst: Das erste Backup eines Tages oder einer Woche ist das neueste.
         for entry in try entries() {
-            if entry.isBeforeMigration {
+            if entry.isBeforeMigration || entry.url.lastPathComponent == pending {
                 keep.insert(entry.url)
                 continue
             }

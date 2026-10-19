@@ -273,6 +273,28 @@ import Testing
         #expect(backup.applyPendingRestore() == nil)
     }
 
+    /// Nach dem Vormerken beendet sich Quill und legt ein Backup an. Die Rotation
+    /// (ein Backup pro Tag) darf das gewählte Backup vom selben Tag nicht löschen.
+    @Test func quitBackupAfterRequestKeepsRequestedBackup() throws {
+        let morning = Date(timeIntervalSince1970: 1_792_400_000)
+        try addPages(["Eins"])
+        let saved = try backup(at: morning).createBackup(reason: .quit)
+        try addPages(["Zwei"])
+        let backup = backup(at: morning.addingTimeInterval(3600))
+        try backup.requestRestore(try entry(saved, in: backup))
+
+        let quit = try #require(try backup.backupOnQuitIfChanged())
+        #expect(exists(saved))
+        #expect(exists(quit))
+
+        guard case .restored(let name, _) = backup.applyPendingRestore() else {
+            Issue.record("Nicht wiederhergestellt")
+            return
+        }
+        #expect(name == saved.lastPathComponent)
+        #expect(try titles() == ["Eins"])
+    }
+
     /// Der Stand vor dem Wiederherstellen bleibt 30 Tage, auch bei vielen Backups danach.
     @Test func pruneKeepsBeforeRestoreForThirtyDays() throws {
         let now = Date(timeIntervalSince1970: 1_792_400_000)

@@ -82,6 +82,12 @@ extension StoreBackup {
         try data.write(to: restoreRequestURL, options: .atomic)
     }
 
+    /// Ordnername des vorgemerkten Backups; die Rotation lässt es stehen.
+    var pendingRestoreBackupName: String? {
+        guard let data = try? Data(contentsOf: restoreRequestURL) else { return nil }
+        return try? JSONDecoder().decode(RestoreRequest.self, from: data).backup
+    }
+
     /// Ob ein Backup für den nächsten Start vorgemerkt ist.
     public var isRestorePending: Bool {
         FileManager.default.fileExists(atPath: restoreRequestURL.path(percentEncoded: false))
@@ -232,7 +238,7 @@ extension StoreBackup {
     }
 
     /// Belegte Größe eines Ordners samt Unterordnern in Bytes.
-    static func size(of directory: URL) -> Int64 {
+    public static func size(of directory: URL) -> Int64 {
         let keys: [URLResourceKey] = [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey]
         guard let enumerator = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: keys) else { return 0 }
         var total: Int64 = 0
