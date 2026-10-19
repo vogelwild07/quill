@@ -8,7 +8,7 @@ import SwiftUI
 /// Die ausgewählte Seite ist Zustand des Fensters (Scene Storage, ADR-004).
 public struct RootView: View {
     @SceneStorage("selectedPageID") private var storedSelection = ""
-    @State private var selection: UUID?
+    @State private var pageSelection = PageSelection()
     @State private var renameRequest: UUID?
     @State private var titleFocusRequest: UUID?
     @State private var isShowingTrash = false
@@ -17,6 +17,11 @@ public struct RootView: View {
     @State private var isRestoreShown = false
     @State private var quitsAfterRestoreSheet = false
     @State private var launchNotice: LaunchNotice?
+    @State private var sidebarActions = PageOutlineActions()
+    private var selection: UUID? {
+        get { pageSelection.pageID }
+        nonmutating set { pageSelection.pageID = newValue }
+    }
     #if canImport(AppKit)
     @State private var window: NSWindow?
     #endif
@@ -37,11 +42,10 @@ public struct RootView: View {
         NavigationSplitView {
             if let operations {
                 SidebarView(
-                    selection: $selection,
+                    selection: pageSelection,
                     renameRequest: $renameRequest,
                     isShowingTrash: $isShowingTrash,
-                    actions: outlineActions(operations),
-                    search: { isQuickOpenShown = true }
+                    actions: outlineActions(operations)
                 )
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
             }
@@ -132,18 +136,20 @@ public struct RootView: View {
         )
     }
 
+    /// Immer dieselbe Instanz mit den aktuellen Closures (siehe `PageOutlineActions`).
     private func outlineActions(_ operations: PageOperations) -> PageOutlineActions {
-        PageOutlineActions(
-            create: { operations.create(in: $0) },
-            rename: { operations.rename($0, to: $1, from: $2) },
-            move: { operations.move($0, to: $1, at: $2) },
-            trash: { operations.trash($0, selectionAfter: selectionAfterTrashing($0)) },
-            setFavorite: { operations.setFavorite($0, $1, at: $2) },
-            moveFavorite: { operations.moveFavorite($0, at: $1) },
-            openInTab: { open($0, asTab: true) },
-            openInWindow: { open($0, asTab: false) },
-            export: { exportPage($0) }
-        )
+        let actions = sidebarActions
+        actions.create = { operations.create(in: $0) }
+        actions.rename = { operations.rename($0, to: $1, from: $2) }
+        actions.move = { operations.move($0, to: $1, at: $2) }
+        actions.trash = { operations.trash($0, selectionAfter: selectionAfterTrashing($0)) }
+        actions.setFavorite = { operations.setFavorite($0, $1, at: $2) }
+        actions.moveFavorite = { operations.moveFavorite($0, at: $1) }
+        actions.openInTab = { open($0, asTab: true) }
+        actions.openInWindow = { open($0, asTab: false) }
+        actions.export = { exportPage($0) }
+        actions.search = { isQuickOpenShown = true }
+        return actions
     }
 
     private func pageActions(_ operations: PageOperations) -> PageActions {

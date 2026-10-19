@@ -3,20 +3,30 @@ import SwiftData
 import SwiftUI
 
 /// Sidebar eines Fensters: Favoriten, Seitenbaum, „Neue Seite“ und Papierkorb.
-struct SidebarView: View {
-    @Binding var selection: UUID?
+///
+/// `body` baut den Seitenbaum aus allen Seiten und läuft deshalb nur neu, wenn sich
+/// Seiten ändern, nicht bei jeder Auswahl (docs/performance.md). Dafür ist die Auswahl
+/// ein Objekt (`PageSelection`), und `==` vergleicht Bindings nach Wert: SwiftUI hält
+/// zwei Bindings auf denselben Zustand sonst für verschieden.
+struct SidebarView: View, Equatable {
+    let selection: PageSelection
     @Binding var renameRequest: UUID?
     @Binding var isShowingTrash: Bool
     let actions: PageOutlineActions
-    /// Öffnet „Schnell öffnen“ (⌘O).
-    let search: @MainActor () -> Void
 
     @Query(filter: #Predicate<Page> { $0.trashedAt == nil })
     private var pages: [Page]
 
+    nonisolated static func == (lhs: SidebarView, rhs: SidebarView) -> Bool {
+        MainActor.assumeIsolated {
+            lhs.selection === rhs.selection && lhs.actions === rhs.actions
+                && lhs.renameRequest == rhs.renameRequest && lhs.isShowingTrash == rhs.isShowingTrash
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button(action: search) {
+            Button(action: actions.search) {
                 HStack {
                     Label(String(localized: "Suchen", bundle: .module), systemImage: "magnifyingglass")
                     Spacer()
@@ -42,7 +52,7 @@ struct SidebarView: View {
             PageOutlineView(
                 nodes: tree,
                 favorites: PageTree.favorites(entries, in: tree),
-                selection: $selection,
+                selection: selection,
                 renameRequest: $renameRequest,
                 actions: actions
             )
@@ -61,7 +71,7 @@ struct SidebarView: View {
 
             Divider()
             Button {
-                selection = nil
+                selection.pageID = nil
                 isShowingTrash = true
             } label: {
                 Label(String(localized: "Papierkorb", bundle: .module), systemImage: "trash")
