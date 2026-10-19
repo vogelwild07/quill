@@ -55,6 +55,8 @@ struct PageHeaderView: View {
             .frame(width: 56)
             .focused($focusedField, equals: .icon)
             .help(String(localized: "Emoji eingeben oder mit ⌃⌘Leertaste auswählen", bundle: .module))
+            .accessibilityLabel(String(localized: "Seitensymbol", bundle: .module))
+            .accessibilityValue(icon.isEmpty ? String(localized: "Kein Symbol", bundle: .module) : icon)
             .accessibilityIdentifier("detail.icon")
 
             TextField(
@@ -68,6 +70,7 @@ struct PageHeaderView: View {
             .font(.system(size: QuillDesign.Typography.pageTitleSize, weight: .bold))
             .focused($focusedField, equals: .title)
             .onSubmit { submitTitle() }
+            .accessibilityLabel(String(localized: "Seitentitel", bundle: .module))
             .accessibilityIdentifier("detail.title")
         }
         .frame(maxWidth: .infinity, alignment: .leading)

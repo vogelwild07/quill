@@ -166,6 +166,9 @@
     "Inhalt" : {
 
     },
+    "Kein Symbol" : {
+
+    },
     "Keine Seite ausgewählt" : {
 
     },
@@ -260,6 +263,15 @@
 
     },
     "Seiten: %lld · Bilder: %lld" : {
+
+    },
+    "Seitenkopf" : {
+
+    },
+    "Seitensymbol" : {
+
+    },
+    "Seitentitel" : {
 
     },
     "Sonstiges" : {

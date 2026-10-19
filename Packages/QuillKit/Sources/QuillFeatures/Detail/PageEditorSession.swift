@@ -41,7 +41,9 @@ final class PageEditorSession {
             setIcon: setIcon,
             submitTitle: { [weak controller] in controller?.focusStart() }
         )
-        controller.header = EditorHeaderView(rootView: header.modelContext(context))
+        let headerView = EditorHeaderView(rootView: header.modelContext(context))
+        headerView.setAccessibilityLabel(String(localized: "Seitenkopf", bundle: .module))
+        controller.header = headerView
         controller.onExitTop = { [headerFocus] in headerFocus.requestTitle() }
     }
 
