@@ -21,4 +21,6 @@ final class PageOutlineActions {
     var export: (_ id: UUID) -> Void = { _ in }
     /// „Schnell öffnen“ (⌘O).
     var search: () -> Void = {}
+    /// Tab aus der Sidebar: Fokus in Titel oder Editor der ausgewählten Seite.
+    var focusPage: (_ target: PageFocusTarget) -> Void = { _ in }
 }

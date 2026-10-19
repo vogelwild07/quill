@@ -8,6 +8,8 @@ import SwiftUI
 struct PageDetailView: View {
     let pageID: UUID
     @Binding var titleFocusRequest: UUID?
+    /// ⇧Tab aus der Sidebar: Fokus in den Editor (`WindowFocus`).
+    @Binding var editorFocusRequest: UUID?
     /// Fundstelle aus „Schnell öffnen“; wird nach dem Springen zurückgesetzt.
     @Binding var revealRequest: RevealRequest?
     let rename: @MainActor (_ id: UUID, _ title: String) -> Void
@@ -24,12 +26,14 @@ struct PageDetailView: View {
     init(
         pageID: UUID,
         titleFocusRequest: Binding<UUID?>,
+        editorFocusRequest: Binding<UUID?>,
         revealRequest: Binding<RevealRequest?>,
         rename: @escaping @MainActor (UUID, String) -> Void,
         setIcon: @escaping @MainActor (UUID, String?) -> Void
     ) {
         self.pageID = pageID
         self._titleFocusRequest = titleFocusRequest
+        self._editorFocusRequest = editorFocusRequest
         self._revealRequest = revealRequest
         self.rename = rename
         self.setIcon = setIcon
@@ -79,6 +83,7 @@ struct PageDetailView: View {
         }
         .onDisappear { session?.close() }
         .onChange(of: titleFocusRequest) { applyTitleFocusRequest() }
+        .onChange(of: editorFocusRequest) { applyEditorFocusRequest() }
         .onChange(of: revealRequest) { applyRevealRequest() }
     }
 
@@ -97,6 +102,12 @@ struct PageDetailView: View {
         guard titleFocusRequest == pageID, let session else { return }
         session.headerFocus.requestTitle()
         titleFocusRequest = nil
+    }
+
+    private func applyEditorFocusRequest() {
+        guard editorFocusRequest == pageID, let session else { return }
+        editorFocusRequest = nil
+        session.controller.focus()
     }
     #else
     private var editor: some View { EmptyView() }

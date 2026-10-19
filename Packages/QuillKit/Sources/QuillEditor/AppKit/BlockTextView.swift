@@ -104,6 +104,22 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         return children
     }
 
+    /// ⌃Tab verlässt den Editor zur Sidebar, ⇧⌃Tab zum Titel; Tab allein rückt ein.
+    override func keyDown(with event: NSEvent) {
+        let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
+        if event.keyCode == 48, !hasMarkedText(), let editor {
+            switch modifiers {
+            case .control:
+                if let exit = editor.onExitForward { exit(); return }
+            case [.control, .shift]:
+                if let exit = editor.onExitTop { exit(); return }
+            default:
+                break
+            }
+        }
+        super.keyDown(with: event)
+    }
+
     /// Fokus woanders (Sidebar, anderer Tab): Slash-Menü schließen.
     override func resignFirstResponder() -> Bool {
         let resigned = super.resignFirstResponder()

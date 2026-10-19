@@ -498,6 +498,10 @@ struct PageOutlineView: NSViewRepresentable {
         }
 
         /// ↩ benennt um, ⌘⌫ legt in den Papierkorb (auch aus den Favoriten heraus).
+        func moveFocus(to target: PageFocusTarget) {
+            parent?.actions.focusPage(target)
+        }
+
         func handleKey(_ event: NSEvent) -> Bool {
             guard let outline, let item = outline.item(atRow: outline.selectedRow) as? Item, !item.isGroup else { return false }
             // Nur echte Modifikatoren; .function/.numericPad hängen je nach Tastatur dran.
@@ -537,7 +541,13 @@ final class PageOutlineTableView: NSOutlineView {
         super.mouseDown(with: event)
     }
 
+    /// Tab verlässt die Sidebar zum Titel, ⇧Tab zum Editor (`WindowFocus`), statt in
+    /// das Titelfeld einer Zeile zu springen. Mit ⌃ genauso.
     override func keyDown(with event: NSEvent) {
+        if event.keyCode == 48, let coordinator {
+            coordinator.moveFocus(to: event.modifierFlags.contains(.shift) ? .editor : .title)
+            return
+        }
         if coordinator?.handleKey(event) == true { return }
         super.keyDown(with: event)
     }

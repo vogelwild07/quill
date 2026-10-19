@@ -58,6 +58,14 @@ struct PageHeaderView: View {
             .accessibilityLabel(String(localized: "Seitensymbol", bundle: .module))
             .accessibilityValue(icon.isEmpty ? String(localized: "Kein Symbol", bundle: .module) : icon)
             .accessibilityIdentifier("detail.icon")
+            .onKeyPress(keys: Self.tabKeys) { press in
+                if press.modifiers.contains(.shift) {
+                    focusSidebar()
+                } else {
+                    focusedField = .title
+                }
+                return .handled
+            }
 
             TextField(
                 String(localized: "Titel", bundle: .module),
@@ -70,6 +78,14 @@ struct PageHeaderView: View {
             .font(.system(size: QuillDesign.Typography.pageTitleSize, weight: .bold))
             .focused($focusedField, equals: .title)
             .onSubmit { submitTitle() }
+            .onKeyPress(keys: Self.tabKeys) { press in
+                if press.modifiers.contains(.shift) {
+                    focusedField = .icon
+                } else {
+                    submitTitle()
+                }
+                return .handled
+            }
             .accessibilityLabel(String(localized: "Seitentitel", bundle: .module))
             .accessibilityIdentifier("detail.title")
         }
@@ -88,6 +104,16 @@ struct PageHeaderView: View {
     }
 
     private var page: Page? { pages.first }
+
+    /// Tab und ⇧Tab (U+0019) im Kopf: Titel →Tab→ Editor, ⇧Tab → Symbol → Sidebar
+    /// (`WindowFocus`).
+    private static let tabKeys: Set<KeyEquivalent> = [.tab, KeyEquivalent("\u{19}")]
+
+    private func focusSidebar() {
+        #if canImport(AppKit)
+        WindowFocus.sidebar(in: NSApp.keyWindow)
+        #endif
+    }
 
     /// Behält nur das erste Zeichen (ein Emoji); leer entfernt das Icon.
     private func applyIcon() {

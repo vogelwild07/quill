@@ -45,6 +45,7 @@ final class PageEditorSession {
         headerView.setAccessibilityLabel(String(localized: "Seitenkopf", bundle: .module))
         controller.header = headerView
         controller.onExitTop = { [headerFocus] in headerFocus.requestTitle() }
+        controller.onExitForward = { [weak controller] in WindowFocus.sidebar(in: controller?.scrollView.window) }
     }
 
     func load() async {

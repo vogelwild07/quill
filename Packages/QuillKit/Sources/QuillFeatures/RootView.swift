@@ -11,6 +11,7 @@ public struct RootView: View {
     @State private var pageSelection = PageSelection()
     @State private var renameRequest: UUID?
     @State private var titleFocusRequest: UUID?
+    @State private var editorFocusRequest: UUID?
     @State private var isShowingTrash = false
     @State private var isQuickOpenShown = false
     @State private var revealRequest: RevealRequest?
@@ -56,6 +57,7 @@ public struct RootView: View {
                 PageDetailView(
                     pageID: selection,
                     titleFocusRequest: $titleFocusRequest,
+                    editorFocusRequest: $editorFocusRequest,
                     revealRequest: $revealRequest,
                     rename: { id, title in Task { try? await store.rename(id, to: title) } },
                     setIcon: { id, icon in Task { try? await store.setIcon(id, to: icon) } }
@@ -159,6 +161,13 @@ public struct RootView: View {
         actions.openInWindow = { open($0, asTab: false) }
         actions.export = { exportPage($0) }
         actions.search = { isQuickOpenShown = true }
+        actions.focusPage = { target in
+            guard let selection else { return }
+            switch target {
+            case .title: titleFocusRequest = selection
+            case .editor: editorFocusRequest = selection
+            }
+        }
     }
 
     private func pageActions(_ operations: PageOperations) -> PageActions {

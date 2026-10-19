@@ -29,9 +29,47 @@ final class AccessibilityUITests: XCTestCase {
         XCTAssertEqual(header.textFields["detail.title"].label, "Seitentitel")
     }
 
+    /// Tastaturfokus (A4): Sidebar →Tab→ Titel →Tab→ Editor →⌃Tab→ Sidebar,
+    /// rückwärts mit ⇧; ⇧Tab im Titel → Symbol. Tab im Editor rückt weiter ein.
+    func testKeyboardFocusLoop() throws {
+        createPage("Fokus")
+        app.typeText("\rText")
+        let sidebar = window.outlines["sidebar.pages"]
+        let title = window.descendants(matching: .any)["detail.title"]
+        let icon = window.descendants(matching: .any)["detail.icon"]
+        let editor = window.textViews["editor.text"]
+
+        sidebar.pageRows.element(boundBy: 0).click()
+        expectFocus(on: sidebar, "Sidebar nach Klick")
+        app.typeKey(.tab, modifierFlags: [])
+        expectFocus(on: title, "Sidebar →Tab→ Titel")
+        app.typeKey(.tab, modifierFlags: [])
+        expectFocus(on: editor, "Titel →Tab→ Editor")
+        app.typeKey(.tab, modifierFlags: .control)
+        expectFocus(on: sidebar, "Editor →⌃Tab→ Sidebar")
+        app.typeKey(.tab, modifierFlags: .shift)
+        expectFocus(on: editor, "Sidebar →⇧Tab→ Editor")
+        app.typeKey(.tab, modifierFlags: [.control, .shift])
+        expectFocus(on: title, "Editor →⇧⌃Tab→ Titel")
+        app.typeKey(.tab, modifierFlags: .shift)
+        expectFocus(on: icon, "Titel →⇧Tab→ Symbol")
+        app.typeKey(.tab, modifierFlags: [])
+        expectFocus(on: title, "Symbol →Tab→ Titel")
+        app.typeKey(.tab, modifierFlags: .shift)
+        app.typeKey(.tab, modifierFlags: .shift)
+        expectFocus(on: sidebar, "Symbol →⇧Tab→ Sidebar")
+        XCTAssertEqual(title.value as? String, "Fokus", "Tab hat den Titel verändert")
+    }
+
     // MARK: - Hilfen
 
     private var window: XCUIElement { app.windows.firstMatch }
+
+    private func expectFocus(on element: XCUIElement, _ step: String) {
+        let focused = NSPredicate { _, _ in element.value(forKey: "hasKeyboardFocus") as? Bool == true }
+        let result = XCTWaiter().wait(for: [expectation(for: focused, evaluatedWith: nil)], timeout: 3)
+        XCTAssertEqual(result, .completed, step)
+    }
 
     /// ⌘N, dann Titel tippen (der Fokus liegt danach im Titelfeld).
     private func createPage(_ name: String) {
