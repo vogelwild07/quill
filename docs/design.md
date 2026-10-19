@@ -76,7 +76,8 @@ beim ersten Zeichen.
 - Kontrast mindestens 4,5:1 auf matten Flächen (geprüft in `EmptyStateSnapshotTests`).
   Ausnahmen im Audit (`AccessibilityAuditUITests`) nur einzeln mit Begründung: Systemstil
   von Source-List und Symbolleiste, Text auf Glas (Sidebar, Hinweise in Schnell öffnen und
-  Slash-Menü), die gedimmte Papierkorb-Zeile hinter dem Sheet „Backup wiederherstellen“.
+  Slash-Menü), gedimmte Zeilen und Kopf des Papierkorbs hinter dem Sheet „Backup
+  wiederherstellen“ (Kennungen `trash.row`, `trash.header.title`, `trash.header.subtitle`).
 
 ## App-Icon
 

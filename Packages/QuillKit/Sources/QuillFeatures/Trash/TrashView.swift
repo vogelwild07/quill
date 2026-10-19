@@ -109,9 +109,11 @@ struct TrashView: View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Papierkorb", bundle: .module).font(.title2.weight(.semibold))
+                    .accessibilityIdentifier("trash.header.title")
                 Text("Seiten werden nach \(QuillPersistence.trashRetentionDays) Tagen endgültig gelöscht.", bundle: .module)
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("trash.header.subtitle")
             }
             Spacer()
             Button(String(localized: "Papierkorb leeren …", bundle: .module)) { pendingDeletion = .all }
