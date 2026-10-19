@@ -27,6 +27,9 @@ struct QuillApp: App {
 /// Öffnet die Datenbank vor dem ersten Fenster und sichert beim Beenden.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Vor `persistence`: Eigenschaften werden in dieser Reihenfolge initialisiert, so
+    /// zählt das Öffnen der Datenbank zum gemessenen Start (`docs/performance.md`).
+    private let launchSignpost: Void = QuillSignposts.beginLaunch()
     let persistence = Result { try QuillPersistence.open() }
 
     /// Speichert offene Änderungen aller Editoren, bevor die App endet (und vor dem Backup).

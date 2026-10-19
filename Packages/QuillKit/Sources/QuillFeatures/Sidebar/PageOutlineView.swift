@@ -109,6 +109,7 @@ struct PageOutlineView: NSViewRepresentable {
         private var items: [UUID: Item] = [:]
         private var favoriteItems: [UUID: Item] = [:]
         private var isSyncingSelection = false
+        private var hasReloaded = false
         /// „Favoriten“ auch leer zeigen, während eine Seite gezogen wird und kurz
         /// nach dem Ablegen dort.
         private var dropTarget: SidebarSection.DropTarget = .hidden
@@ -131,7 +132,12 @@ struct PageOutlineView: NSViewRepresentable {
                 roots.forEach { outline.expandItem($0) }
                 restoreExpansion(in: pagesGroup.children)
                 isSyncingSelection = false
+                QuillSignposts.sidebarDidReload()
+            } else if !hasReloaded {
+                // Erster Aufruf ohne Seiten: Die Sidebar steht trotzdem.
+                QuillSignposts.sidebarDidReload()
             }
+            hasReloaded = true
             syncSelection(to: view.selection)
             if let id = view.renameRequest {
                 DispatchQueue.main.async { [weak self] in
@@ -273,6 +279,7 @@ struct PageOutlineView: NSViewRepresentable {
             guard !isSyncingSelection, let outline else { return }
             let id = (outline.item(atRow: outline.selectedRow) as? Item)?.id
             if parent?.selection != id {
+                if id != nil { QuillSignposts.beginPageSwitch() }
                 parent?.selection = id
             }
         }

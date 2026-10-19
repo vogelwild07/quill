@@ -36,6 +36,7 @@ struct SidebarView: View {
             .accessibilityIdentifier("sidebar.search")
 
             #if canImport(AppKit)
+            let _ = QuillSignposts.beginSidebarLoadIfNeeded()
             let entries = pages.map(PageTree.Entry.init)
             let tree = PageTree.build(entries)
             PageOutlineView(
