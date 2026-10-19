@@ -715,10 +715,10 @@ struct ClipboardAndMoveTests {
     @Test func ownClipboardNeverFallsBackToGeneral() throws {
         let board = pasteboard()
         defer { board.releaseGlobally() }
-        #expect(!BlockTextView.fallsBackToTextView(handled: false, clipboard: board))
-        #expect(!BlockTextView.fallsBackToTextView(handled: true, clipboard: board))
-        #expect(BlockTextView.fallsBackToTextView(handled: false, clipboard: .general))
-        #expect(!BlockTextView.fallsBackToTextView(handled: true, clipboard: .general))
+        #expect(!BlockTextView.shouldFallBackToTextView(handled: false, clipboard: board))
+        #expect(!BlockTextView.shouldFallBackToTextView(handled: true, clipboard: board))
+        #expect(BlockTextView.shouldFallBackToTextView(handled: false, clipboard: .general))
+        #expect(!BlockTextView.shouldFallBackToTextView(handled: true, clipboard: .general))
     }
 
     /// Nichts Brauchbares in der eigenen Zwischenablage: Der Text bleibt, wie er ist.

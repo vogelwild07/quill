@@ -345,23 +345,23 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     /// Übernimmt `NSTextView`, wenn der Editor nichts tun konnte? Die Text-View kennt
     /// nur die allgemeine Zwischenablage; mit einer eigenen bleibt es deshalb dabei,
     /// sonst läse ein UI-Test die Zwischenablage des Nutzers.
-    static func fallsBackToTextView(handled: Bool, clipboard: NSPasteboard) -> Bool {
+    static func shouldFallBackToTextView(handled: Bool, clipboard: NSPasteboard) -> Bool {
         !handled && clipboard.name == .general
     }
 
     override func copy(_ sender: Any?) {
         let handled = editor?.copySelection(to: clipboard) == true
-        if Self.fallsBackToTextView(handled: handled, clipboard: clipboard) { super.copy(sender) }
+        if Self.shouldFallBackToTextView(handled: handled, clipboard: clipboard) { super.copy(sender) }
     }
 
     override func cut(_ sender: Any?) {
         let handled = editor?.cutSelection(to: clipboard) == true
-        if Self.fallsBackToTextView(handled: handled, clipboard: clipboard) { super.cut(sender) }
+        if Self.shouldFallBackToTextView(handled: handled, clipboard: clipboard) { super.cut(sender) }
     }
 
     override func paste(_ sender: Any?) {
         let handled = editor?.paste(from: clipboard) == true
-        if Self.fallsBackToTextView(handled: handled, clipboard: clipboard) { super.paste(sender) }
+        if Self.shouldFallBackToTextView(handled: handled, clipboard: clipboard) { super.paste(sender) }
     }
 
     /// „Einsetzen und Stil anpassen“: mit eigener Zwischenablage als Klartext aus ihr.
