@@ -9,7 +9,7 @@ import Testing
 @Suite("Editor: Testbild für UI-Tests")
 struct TestImageTests {
     @Test func putsImageOnOwnPasteboard() throws {
-        let pasteboard = NSPasteboard(name: NSPasteboard.Name("de.vogel.quill.tests.\(UUID().uuidString)"))
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("io.github.vogelwild07.quill.tests.\(UUID().uuidString)"))
         defer { pasteboard.releaseGlobally() }
         #expect(TestImage.put(arguments: ["Quill", "-QuillTestImage", "120x60"], on: pasteboard))
         let data = try #require(pasteboard.data(forType: .png))

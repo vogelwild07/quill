@@ -11,7 +11,7 @@ set -eu
 setopt pipefail
 root=${0:A:h:h}
 dist=$root/dist
-bundle_id=de.vogel.quill
+bundle_id=io.github.vogelwild07.quill
 min_macos=26.0
 
 fail() { echo "FEHLER: $*" >&2; exit 1 }

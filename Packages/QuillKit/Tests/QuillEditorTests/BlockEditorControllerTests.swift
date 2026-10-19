@@ -686,7 +686,7 @@ struct InsertButtonTests {
 @Suite("Editor: Zwischenablage, Verschieben, Checkbox", .serialized)
 struct ClipboardAndMoveTests {
     /// Eigenes Pasteboard pro Test; mit `defer { board.releaseGlobally() }` freigeben.
-    private func pasteboard() -> NSPasteboard { NSPasteboard(name: .init("de.vogel.quill.tests.\(UUID().uuidString)")) }
+    private func pasteboard() -> NSPasteboard { NSPasteboard(name: .init("io.github.vogelwild07.quill.tests.\(UUID().uuidString)")) }
 
     private func sample() -> Harness {
         Harness(SampleDocuments.mixed)
@@ -936,7 +936,7 @@ struct FormattingIntegrationTests {
             EditorBlock(kind: .heading1, text: "Ziel"),
         ])
         select(h, from: BlockPosition(block: 0, offset: 4), to: BlockPosition(block: 0, offset: 8))
-        let board = NSPasteboard(name: .init("de.vogel.quill.tests.\(UUID().uuidString)"))
+        let board = NSPasteboard(name: .init("io.github.vogelwild07.quill.tests.\(UUID().uuidString)"))
         defer { board.releaseGlobally() }
         #expect(h.editor.copySelection(to: board))
         #expect(board.string(forType: .markdown) == "o **We**")

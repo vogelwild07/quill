@@ -4,10 +4,10 @@ import QuillModel
 
 extension NSPasteboard.PasteboardType {
     /// Quill-Blöcke als JSON mit Version (`BlockClipboard`).
-    static let quillBlocks = NSPasteboard.PasteboardType("de.vogel.quill.blocks")
+    static let quillBlocks = NSPasteboard.PasteboardType("io.github.vogelwild07.quill.blocks")
     static let markdown = NSPasteboard.PasteboardType("net.daringfireball.markdown")
     /// Interner Ziehvorgang: IDs der gezogenen Blöcke.
-    static let quillBlockDrag = NSPasteboard.PasteboardType("de.vogel.quill.block-drag")
+    static let quillBlockDrag = NSPasteboard.PasteboardType("io.github.vogelwild07.quill.block-drag")
 }
 
 /// Zwischenablage: Kopieren über Blockgrenzen in vier Formaten, verlustfreies Einsetzen.

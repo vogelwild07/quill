@@ -1,6 +1,6 @@
 import Foundation
 
-/// Format der Quill-Blöcke in der Zwischenablage (`de.vogel.quill.blocks`).
+/// Format der Quill-Blöcke in der Zwischenablage (`io.github.vogelwild07.quill.blocks`).
 ///
 /// Version 2: `{"version":2,"blocks":[…]}`, jeder Block mit `properties`.
 /// Version 1 (bis Phase 3) war ein bloßes Array mit flachen Feldern. Ältere,

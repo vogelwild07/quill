@@ -3,21 +3,21 @@ import QuillModel
 
 extension NSAttributedString.Key {
     /// Block-ID (`String`, UUID). Liegt auf jedem Zeichen eines Absatzes inkl. `\n`.
-    static let quillBlockID = NSAttributedString.Key("de.vogel.quill.blockID")
+    static let quillBlockID = NSAttributedString.Key("io.github.vogelwild07.quill.blockID")
     /// `BlockKind.rawValue`.
-    static let quillBlockKind = NSAttributedString.Key("de.vogel.quill.blockKind")
+    static let quillBlockKind = NSAttributedString.Key("io.github.vogelwild07.quill.blockKind")
     /// `BlockProperties`, nur über `textAttributes` / `init(textAttributes:)` lesen und schreiben.
-    static let quillIndent = NSAttributedString.Key("de.vogel.quill.indent")
-    static let quillChecked = NSAttributedString.Key("de.vogel.quill.checked")
-    static let quillCodeLanguage = NSAttributedString.Key("de.vogel.quill.codeLanguage")
+    static let quillIndent = NSAttributedString.Key("io.github.vogelwild07.quill.indent")
+    static let quillChecked = NSAttributedString.Key("io.github.vogelwild07.quill.checked")
+    static let quillCodeLanguage = NSAttributedString.Key("io.github.vogelwild07.quill.codeLanguage")
     /// `Asset.id` als `String`.
-    static let quillAssetID = NSAttributedString.Key("de.vogel.quill.assetID")
+    static let quillAssetID = NSAttributedString.Key("io.github.vogelwild07.quill.assetID")
     /// Nummer eines nummerierten Punkts; abgeleitet, wird nach jeder Änderung nachgeführt.
-    static let quillOrdinal = NSAttributedString.Key("de.vogel.quill.ordinal")
+    static let quillOrdinal = NSAttributedString.Key("io.github.vogelwild07.quill.ordinal")
     /// Inline-Marks eines Zeichens: sortierte Rohwerte, durch Leerzeichen getrennt (`"bold italic"`).
     /// Zusammen mit `.link` die Wahrheit über die Formatierung; Schrift, Hintergrund
     /// und Durchstreichung werden daraus abgeleitet.
-    static let quillMarks = NSAttributedString.Key("de.vogel.quill.marks")
+    static let quillMarks = NSAttributedString.Key("io.github.vogelwild07.quill.marks")
 }
 
 extension BlockProperties {

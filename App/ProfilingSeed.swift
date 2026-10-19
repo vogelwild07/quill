@@ -5,7 +5,7 @@ import QuillFeatures
 import QuillModel
 
 /// Testbestand für die Performance-UI-Tests, nur in der Konfiguration „Profiling“
-/// (eigene Bundle-ID `de.vogel.quill.profiling`, also eigener Sandbox-Container und
+/// (eigene Bundle-ID `io.github.vogelwild07.quill.profiling`, also eigener Sandbox-Container und
 /// eigener Store). In Debug und Release ist dieser Code nicht enthalten;
 /// `Scripts/check-release-binary.sh` prüft das (`docs/performance.md`).
 ///
@@ -13,8 +13,8 @@ import QuillModel
 /// 50 Blöcken anlegen (jede 50. mit Bild) und beenden. Gemessen wird erst danach.
 enum ProfilingSeed {
     static let argument = "QuillSeedPages"
-    static let bundleIdentifier = "de.vogel.quill.profiling"
-    private static let logger = Logger(subsystem: "de.vogel.quill", category: "profiling")
+    static let bundleIdentifier = "io.github.vogelwild07.quill.profiling"
+    private static let logger = Logger(subsystem: "io.github.vogelwild07.quill", category: "profiling")
 
     /// Angeforderte Seitenzahl, nur in der Profiling-App und nur aus der Kommandozeile
     /// (nie aus gespeicherten Einstellungen, sonst leerte jeder Start den Store).

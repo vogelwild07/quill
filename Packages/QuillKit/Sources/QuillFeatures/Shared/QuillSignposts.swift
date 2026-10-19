@@ -10,7 +10,7 @@ import OSLog
 /// Commit von Core Animation (`afterNextCommit`).
 @MainActor
 public enum QuillSignposts {
-    public static let subsystem = "de.vogel.quill"
+    public static let subsystem = "io.github.vogelwild07.quill"
     public static let category = OSLog.Category.pointsOfInterest
 
     /// Namen der Intervalle; die UI-Tests nutzen dieselben Zeichenketten.

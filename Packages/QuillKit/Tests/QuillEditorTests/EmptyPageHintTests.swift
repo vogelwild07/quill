@@ -58,7 +58,7 @@ struct EmptyPageHintTests {
     }
 
     @Test func copyingEmptyPageNeverCopiesHint() throws {
-        let pasteboard = NSPasteboard(name: NSPasteboard.Name("de.vogel.quill.tests.\(UUID().uuidString)"))
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("io.github.vogelwild07.quill.tests.\(UUID().uuidString)"))
         defer { pasteboard.releaseGlobally() }
         pasteboard.clearContents()
         textView.selectAll(nil)

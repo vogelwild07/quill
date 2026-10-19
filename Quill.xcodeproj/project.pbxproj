@@ -325,7 +325,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.vogel.quill;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.vogelwild07.quill;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -351,7 +351,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.vogel.quill;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.vogelwild07.quill;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -378,7 +378,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.vogel.quill.profiling;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.vogelwild07.quill.profiling;
 				PRODUCT_NAME = "Quill Profiling";
 			};
 			name = Profiling;
@@ -391,7 +391,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.vogel.quill.UITests;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.vogelwild07.quill.UITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_TARGET_NAME = Quill;
 			};
@@ -405,7 +405,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.vogel.quill.UITests;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.vogelwild07.quill.UITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_TARGET_NAME = Quill;
 			};
@@ -419,7 +419,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = de.vogel.quill.profiling.UITests;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.vogelwild07.quill.profiling.UITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_TARGET_NAME = Quill;
 			};

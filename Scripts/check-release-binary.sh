@@ -41,7 +41,7 @@ find "$app" -type f | while read -r file; do
 done
 
 found=0
-for marker in QuillSeedPages ProfilingSeed de.vogel.quill.profiling "Testbild in eigener Zwischenablage"; do
+for marker in QuillSeedPages ProfilingSeed io.github.vogelwild07.quill.profiling "Testbild in eigener Zwischenablage"; do
   hits=$(grep -r -l -a -F "$marker" "$copies" 2>/dev/null)
   if [ -n "$hits" ]; then
     echo "GEFUNDEN: „$marker“ in:"

@@ -13,7 +13,7 @@ enum PageExport {
     /// Unterseiten. Nie ein Pfad von außen.
     static let directoryArgument = "QuillExportDirectory"
 
-    private static let logger = Logger(subsystem: "de.vogel.quill", category: "export")
+    private static let logger = Logger(subsystem: "io.github.vogelwild07.quill", category: "export")
 
     static func run(pageID: UUID, title: String, store: PageStore, window: NSWindow?, defaults: UserDefaults = .standard) {
         if let name = defaults.string(forKey: directoryArgument), !name.isEmpty, !name.contains("/"), !name.hasPrefix(".") {

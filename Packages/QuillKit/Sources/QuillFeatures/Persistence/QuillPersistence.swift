@@ -51,7 +51,7 @@ public final class QuillPersistence {
     /// angezeigt wurde.
     private var preparation: StorePreparation?
 
-    private nonisolated static let logger = Logger(subsystem: "de.vogel.quill", category: "persistence")
+    private nonisolated static let logger = Logger(subsystem: "io.github.vogelwild07.quill", category: "persistence")
 
     /// Seiten liegen so lange im Papierkorb, dann löscht Quill sie endgültig.
     public nonisolated static let trashRetentionDays = 30
