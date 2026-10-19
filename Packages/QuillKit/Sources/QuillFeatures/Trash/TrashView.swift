@@ -41,6 +41,7 @@ struct TrashView: View {
                         TrashRow(entry: entry).tag(entry.id)
                     }
                 }
+                .accessibilityLabel(String(localized: "Seiten im Papierkorb", bundle: .module))
                 .accessibilityIdentifier("trash.list")
                 .focused($isListFocused)
                 .onAppear { isListFocused = true }

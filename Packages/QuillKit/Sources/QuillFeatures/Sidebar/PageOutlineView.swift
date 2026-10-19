@@ -47,6 +47,7 @@ struct PageOutlineView: NSViewRepresentable {
         // Verschieben im Baum, Kopieren (= als Favorit hinzufügen) in die Favoriten.
         outline.setDraggingSourceOperationMask([.move, .copy], forLocal: true)
         outline.setAccessibilityIdentifier("sidebar.pages")
+        outline.setAccessibilityLabel(String(localized: "Seiten", bundle: .module))
 
         let coordinator = context.coordinator
         coordinator.outline = outline

@@ -29,6 +29,19 @@ final class AccessibilityUITests: XCTestCase {
         XCTAssertEqual(header.textFields["detail.title"].label, "Seitentitel")
     }
 
+    /// Listen beschriftet (A5): Sidebar und Papierkorb.
+    func testListsAreLabeled() throws {
+        createPage("Weg")
+        let sidebar = window.outlines["sidebar.pages"]
+        XCTAssertEqual(sidebar.label, "Seiten")
+        sidebar.pageRows.element(boundBy: 0).click()
+        app.typeKey(.delete, modifierFlags: .command)
+        window.descendants(matching: .any)["sidebar.trash"].click()
+        let trash = window.outlines["trash.list"]
+        XCTAssertTrue(trash.waitForExistence(timeout: 5))
+        XCTAssertEqual(trash.label, "Seiten im Papierkorb")
+    }
+
     /// Tastaturfokus (A4): Sidebar →Tab→ Titel →Tab→ Editor →⌃Tab→ Sidebar,
     /// rückwärts mit ⇧; ⇧Tab im Titel → Symbol. Tab im Editor rückt weiter ein.
     func testKeyboardFocusLoop() throws {
