@@ -51,6 +51,18 @@ final class AccessibilityUITests: XCTestCase {
         expectFocus(on: panel.textFields["quickOpen.field"], "Suchfeld fokussiert")
     }
 
+    /// Slash-Menü (A7): Panel und Hülle beschriftet.
+    func testSlashMenuIsLabeled() throws {
+        createPage("Slash")
+        app.typeText("\r/")
+        let menu = app.descendants(matching: .any)["slash.menu"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 5))
+        let dialog = app.dialogs["Block einfügen"]
+        XCTAssertTrue(dialog.exists, "Panel ohne Beschriftung")
+        XCTAssertEqual(dialog.children(matching: .group).firstMatch.label, "Block einfügen")
+        app.typeKey(.escape, modifierFlags: [])
+    }
+
     /// Tastaturfokus (A4): Sidebar →Tab→ Titel →Tab→ Editor →⌃Tab→ Sidebar,
     /// rückwärts mit ⇧; ⇧Tab im Titel → Symbol. Tab im Editor rückt weiter ein.
     func testKeyboardFocusLoop() throws {
