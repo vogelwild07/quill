@@ -59,6 +59,10 @@ public struct QuillCommands: Commands {
                 persistence?.revealBackups()
             }
             .disabled(persistence == nil || persistence?.isInMemory == true)
+            Button(String(localized: "Backup wiederherstellen …", bundle: .module)) {
+                actions?.restoreBackup()
+            }
+            .disabled(actions == nil || persistence?.canRestoreBackups != true)
         }
 
         // Menü „Format“. Die Aktionen laufen über die Responder-Kette; ohne

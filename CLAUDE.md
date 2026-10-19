@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-Architekt, Swift-Entwickler.
 
-**Stand:** Phase 6 (Export) fertig, gemergt (PR #6, ADR-018, Review-Fixes drin). Nächstes: Phase 7 (Feinschliff). Neue Ideen nur unter „Später“ in `docs/roadmap.md`. Bekannte Probleme + Plan: `docs/roadmap.md`.
+**Stand:** Phase 6 (Export) fertig, gemergt (PR #6, ADR-018, Review-Fixes drin). In Arbeit: Phase 7 (Feinschliff), PR 7.1 Backup wiederherstellen (ADR-019) auf `phase-7.1/backup-restore`, danach 7.2 Aufräumen + Performance, 7.3 A11y, Leerzustände, Lokalisierung, Icon. Neue Ideen nur unter „Später“ in `docs/roadmap.md`. Bekannte Probleme + Plan: `docs/roadmap.md`.
 
 ## Kommunikation
 - Immer **Deutsch**. Kurz ok; Warnungen, Sicherheit, Entscheidungen in ganzen Sätzen.
@@ -13,7 +13,7 @@ Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-A
 - Swift 6 (strikte Concurrency), SwiftUI, AppKit nur wo nötig, SwiftData lokal. Sync später CloudKit.
 - Editor: eigener Block-Editor auf TextKit 2 / `NSTextView` (siehe `docs/architecture.md`).
 - Tests: Swift Testing (Unit), XCUITest (UI). Bundle-ID `de.vogel.quill`.
-- UI-Tests starten App immer via `XCUIApplication.quill()` (ignoriert gespeicherten Fensterzustand, ADR-008; Store nur im RAM via `-QuillInMemoryStore YES`). Nie gegen echten Store testen. Kopieren/Einsetzen-Tests nutzen eigene Zwischenablage (`-QuillPasteboardName`), nie allgemeine.
+- UI-Tests starten App immer via `XCUIApplication.quill()` (ignoriert gespeicherten Fensterzustand, ADR-008; Store nur im RAM via `-QuillInMemoryStore YES`; Tests über Neustarts via `quill(storeDirectory:)` im temporären Ordner der App; beide wirken nur aus der Kommandozeile und nur im Debug-Build, ADR-019). Nie gegen echten Store testen. Kopieren/Einsetzen-Tests nutzen eigene Zwischenablage (`-QuillPasteboardName`), nie allgemeine.
 - Build + Tests (App, Package, alle Test-Targets) **ohne Compiler-Warnungen**; neue Warnungen sofort beheben, nicht stummschalten. UI-Testklassen `@MainActor`, `setUp()`/`tearDown()` als `async throws` (`…WithError`-Varianten nonisolated).
 - UI-Strings lokalisierbar (`Localizable.xcstrings`), Ausgangssprache Deutsch.
 

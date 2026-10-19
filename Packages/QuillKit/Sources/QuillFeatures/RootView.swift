@@ -14,11 +14,15 @@ public struct RootView: View {
     @State private var isShowingTrash = false
     @State private var isQuickOpenShown = false
     @State private var revealRequest: RevealRequest?
+    @State private var isRestoreShown = false
+    @State private var quitsAfterRestoreSheet = false
+    @State private var launchNotice: LaunchNotice?
     #if canImport(AppKit)
     @State private var window: NSWindow?
     #endif
 
     @Environment(\.pageStore) private var store
+    @Environment(\.quillPersistence) private var persistence
     @Environment(\.undoManager) private var undoManager
     @Environment(\.openWindow) private var openWindow
     @Query(filter: #Predicate<Page> { $0.trashedAt == nil })
@@ -74,8 +78,37 @@ public struct RootView: View {
         })
         #endif
         .focusedSceneValue(\.pageActions, operations.map(pageActions))
+        #if canImport(AppKit)
+        .sheet(isPresented: $isRestoreShown, onDismiss: quitIfRestoreRequested) {
+            if let persistence {
+                BackupRestoreView(
+                    persistence: persistence,
+                    dismiss: { isRestoreShown = false },
+                    requested: {
+                        quitsAfterRestoreSheet = true
+                        isRestoreShown = false
+                    }
+                )
+            }
+        }
+        .alert(
+            launchNotice?.title ?? "",
+            isPresented: Binding(get: { launchNotice != nil }, set: { if !$0 { launchNotice = nil } }),
+            presenting: launchNotice
+        ) { _ in
+            Button(String(localized: "OK", bundle: .module)) {}
+        } message: { notice in
+            Text(notice.message)
+        }
+        #endif
         .onAppear {
             if selection == nil { selection = UUID(uuidString: storedSelection) }
+            // Ergebnis der Vorbereitung beim Start zeigt das erste Fenster (ADR-019).
+            #if canImport(AppKit)
+            if launchNotice == nil, let preparation = persistence?.takePreparation() {
+                launchNotice = BackupLabel.launchNotice(for: preparation)
+            }
+            #endif
             Task { try? await store?.ensureWorkspace() }
         }
         .onChange(of: selection) {
@@ -127,7 +160,8 @@ public struct RootView: View {
             toggleFavorite: { if let selection { operations.setFavorite(selection, !isFavorite(selection)) } },
             openInTab: { if let selection { open(selection, asTab: true) } },
             openInWindow: { if let selection { open(selection, asTab: false) } },
-            exportPage: { if let selection { exportPage(selection) } }
+            exportPage: { if let selection { exportPage(selection) } },
+            restoreBackup: { isRestoreShown = true }
         )
     }
 
@@ -189,6 +223,15 @@ public struct RootView: View {
         openWindow(id: WindowRouter.windowID)
         #endif
     }
+
+    #if canImport(AppKit)
+    /// Ein Backup ist vorgemerkt: beenden, beim nächsten Start wird getauscht (ADR-019).
+    private func quitIfRestoreRequested() {
+        guard quitsAfterRestoreSheet else { return }
+        quitsAfterRestoreSheet = false
+        NSApp.terminate(nil)
+    }
+    #endif
 
     /// Markdown-Export der Seite mit Ordnerdialog (ADR-018).
     private func exportPage(_ pageID: UUID) {

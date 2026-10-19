@@ -11,10 +11,18 @@ extension XCUIApplication {
     ///
     /// `-QuillInMemoryStore YES` sorgt dafür, dass Tests nie die echte Datenbank
     /// oder die Backups des Nutzers berühren (`QuillPersistence.inMemoryArgument`).
-    static func quill() -> XCUIApplication {
+    ///
+    /// Mit `storeDirectory` liegt die Datenbank stattdessen in diesem Unterordner
+    /// des temporären Ordners der App (`QuillPersistence.storeDirectoryArgument`),
+    /// für Tests über Neustarts hinweg; auch dann nie die echten Daten.
+    static func quill(storeDirectory: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments += ["-ApplePersistenceIgnoreState", "YES"]
-        app.launchArguments += ["-QuillInMemoryStore", "YES"]
+        if let storeDirectory {
+            app.launchArguments += ["-QuillStoreDirectory", storeDirectory]
+        } else {
+            app.launchArguments += ["-QuillInMemoryStore", "YES"]
+        }
         return app
     }
 }

@@ -17,6 +17,7 @@ public struct PageActions {
     var openInTab: @MainActor () -> Void
     var openInWindow: @MainActor () -> Void
     var exportPage: @MainActor () -> Void
+    var restoreBackup: @MainActor () -> Void
 }
 
 extension FocusedValues {

@@ -33,7 +33,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard EditorPersistenceBridge.hasAnyUnsavedChanges else { return .terminateNow }
         Task {
-            sender.reply(toApplicationShouldTerminate: await QuitGuard.shouldTerminate())
+            let terminate = await QuitGuard.shouldTerminate()
+            // Abgebrochen: Ein vorgemerktes Backup nicht unbemerkt beim nächsten Start einspielen.
+            if !terminate { try? persistence.get().quitWasCancelled() }
+            sender.reply(toApplicationShouldTerminate: terminate)
         }
         return .terminateLater
     }

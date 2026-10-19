@@ -1,5 +1,6 @@
 import Foundation
 import SQLite3
+import SwiftData
 
 /// Automatische Backups der Quill-Datenbank (ADR-010).
 ///
@@ -17,6 +18,15 @@ public struct StoreBackup: Sendable {
         case beforeMigration(from: String, to: String)
         /// Vor endgültigem Löschen aus dem Papierkorb (ADR-017).
         case beforeEmptyingTrash
+        /// Der Stand vor dem Einspielen eines Backups (ADR-019): die Dateien selbst,
+        /// verschoben statt kopiert. 30 Tage geschützt.
+        case beforeRestore
+        /// Vor dem einmaligen Umzug der Store-Dateien nach `Store/` (ADR-019). Wird
+        /// nie automatisch gelöscht.
+        case beforeMove
+        /// Store-Dateien im alten Ort, obwohl es `Store/` schon gab: verschoben statt
+        /// verwendet (ADR-019). Wird nie automatisch gelöscht.
+        case setAside
 
         var slug: String {
             switch self {
@@ -24,6 +34,9 @@ public struct StoreBackup: Sendable {
             case .quit: "beenden"
             case .beforeMigration(let from, let to): "\(Self.migrationPrefix)\(from)-\(to)"
             case .beforeEmptyingTrash: "vor-papierkorb-leeren"
+            case .beforeRestore: "vor-wiederherstellen"
+            case .beforeMove: "vor-umzug"
+            case .setAside: "beiseitegelegt"
             }
         }
 
@@ -35,12 +48,42 @@ public struct StoreBackup: Sendable {
         case integrityCheckFailed(String)
     }
 
+    /// Anlass eines vorhandenen Backups, aus dem Ordnernamen gelesen.
+    public enum Kind: Sendable, Equatable {
+        case launch, quit, beforeMigration, beforeEmptyingTrash, beforeRestore, beforeMove, setAside
+        /// Unbekannter Anlass (z. B. von einer späteren Version).
+        case other
+
+        init(slug: Substring) {
+            self = if slug.hasPrefix(Reason.migrationPrefix) {
+                .beforeMigration
+            } else if slug.hasPrefix(Reason.beforeEmptyingTrash.slug) {
+                .beforeEmptyingTrash
+            } else if slug.hasPrefix(Reason.beforeRestore.slug) {
+                .beforeRestore
+            } else if slug.hasPrefix(Reason.beforeMove.slug) {
+                .beforeMove
+            } else if slug.hasPrefix(Reason.setAside.slug) {
+                .setAside
+            } else if slug.hasPrefix(Reason.launch.slug) {
+                .launch
+            } else if slug.hasPrefix(Reason.quit.slug) {
+                .quit
+            } else {
+                .other
+            }
+        }
+    }
+
     /// Ein vorhandenes Backup.
-    public struct Entry: Sendable, Equatable {
+    public struct Entry: Sendable, Equatable, Identifiable {
         public let url: URL
         public let date: Date
-        public let isBeforeMigration: Bool
-        public let isBeforeEmptyingTrash: Bool
+        public let kind: Kind
+
+        public var id: String { url.lastPathComponent }
+        public var isBeforeMigration: Bool { kind == .beforeMigration }
+        public var isBeforeEmptyingTrash: Bool { kind == .beforeEmptyingTrash }
     }
 
     public let storeURL: URL
@@ -48,6 +91,10 @@ public struct StoreBackup: Sendable {
     public let schemaVersion: String
     public var calendar: Calendar
     public var now: @Sendable () -> Date
+    /// Schema-Versionen, deren Backups sich einspielen lassen (ADR-019).
+    public var knownSchemas: [any VersionedSchema.Type]
+    /// Freier Platz auf dem Volume eines Ordners; im Test ersetzbar.
+    public var availableCapacity: @Sendable (URL) -> Int64?
 
     public static let dailyBackupsToKeep = 7
     public static let weeklyBackupsToKeep = 4
@@ -56,19 +103,26 @@ public struct StoreBackup: Sendable {
     /// zusätzlich zu den regulären (ADR-017).
     public static let trashBackupRetention: TimeInterval = 30 * 24 * 60 * 60
     public static let trashBackupsToKeep = 10
+    /// Der Stand vor dem Wiederherstellen bleibt so lange, egal wie viele Backups
+    /// danach entstehen (ADR-019).
+    public static let restoreBackupRetention: TimeInterval = 30 * 24 * 60 * 60
 
     public init(
         storeURL: URL = QuillStore.defaultStoreURL,
         backupsURL: URL = QuillStore.directoryURL.appending(path: "Backups", directoryHint: .isDirectory),
         schemaVersion: String = QuillStore.schemaVersion,
         calendar: Calendar = .current,
-        now: @escaping @Sendable () -> Date = { Date.now }
+        now: @escaping @Sendable () -> Date = { Date.now },
+        knownSchemas: [any VersionedSchema.Type] = QuillMigrationPlan.schemas,
+        availableCapacity: @escaping @Sendable (URL) -> Int64? = StoreBackup.availableCapacity(at:)
     ) {
         self.storeURL = storeURL
         self.backupsURL = backupsURL
         self.schemaVersion = schemaVersion
         self.calendar = calendar
         self.now = now
+        self.knownSchemas = knownSchemas
+        self.availableCapacity = availableCapacity
     }
 
     // MARK: - Abläufe der App
@@ -136,7 +190,13 @@ public struct StoreBackup: Sendable {
     /// Legt sofort ein Backup an und gibt seinen Ordner zurück.
     @discardableResult
     public func createBackup(reason: Reason) throws -> URL {
+        try createBackup(reason: reason, of: storeURL)
+    }
+
+    /// Backup eines Stores an `store` (beim Umzug der Store im alten Ort).
+    func createBackup(reason: Reason, of store: URL) throws -> URL {
         let fileManager = FileManager.default
+        let supportURL = Self.supportURL(for: store)
         try fileManager.createDirectory(at: backupsURL, withIntermediateDirectories: true)
 
         let date = now()
@@ -146,18 +206,13 @@ public struct StoreBackup: Sendable {
         try fileManager.createDirectory(at: partial, withIntermediateDirectories: true)
 
         do {
-            let target = partial.appending(path: storeURL.lastPathComponent)
-            try Self.vacuum(storeURL, into: target)
+            let target = partial.appending(path: store.lastPathComponent)
+            try Self.vacuum(store, into: target)
             try Self.quickCheck(target)
             if fileManager.fileExists(atPath: supportURL.path(percentEncoded: false)) {
                 try fileManager.copyItem(at: supportURL, to: partial.appending(path: supportURL.lastPathComponent))
             }
-            var final = backupsURL.appending(path: name, directoryHint: .isDirectory)
-            var counter = 2
-            while fileManager.fileExists(atPath: final.path(percentEncoded: false)) {
-                final = backupsURL.appending(path: "\(name)-\(counter)", directoryHint: .isDirectory)
-                counter += 1
-            }
+            let final = backupsURL.appending(path: uniqueBackupName(name), directoryHint: .isDirectory)
             try fileManager.moveItem(at: partial, to: final)
             return final
         } catch {
@@ -173,26 +228,28 @@ public struct StoreBackup: Sendable {
             includingPropertiesForKeys: nil,
             options: .skipsHiddenFiles
         ) else { return [] }
-        return urls.compactMap { url in
-            let name = url.lastPathComponent
-            guard let separator = name.firstIndex(of: "_"),
-                  let date = Self.formatter.date(from: String(name[..<separator]))
-            else { return nil }
-            let reason = name[name.index(after: separator)...]
-            return Entry(
-                url: url, date: date, isBeforeMigration: reason.hasPrefix(Reason.migrationPrefix),
-                isBeforeEmptyingTrash: reason.hasPrefix(Reason.beforeEmptyingTrash.slug)
-            )
-        }
-        .sorted { $0.date > $1.date }
+        return urls.compactMap(Self.entry(at:)).sorted { $0.date > $1.date }
+    }
+
+    /// Liest Zeitpunkt und Anlass aus dem Ordnernamen `<Zeitpunkt>_<Anlass>`.
+    public static func entry(at url: URL) -> Entry? {
+        let name = url.lastPathComponent
+        guard let separator = name.firstIndex(of: "_"),
+              let date = formatter.date(from: String(name[..<separator]))
+        else { return nil }
+        return Entry(url: url, date: date, kind: Kind(slug: name[name.index(after: separator)...]))
     }
 
     /// Behält je das neueste Backup der letzten 7 Tage mit Backup (Tages-Backups)
     /// und davor der 4 nächstälteren Wochen mit Backup (Wochen-Backups); Backups
-    /// vor einer Migration immer. Backups vor dem Leeren des Papierkorbs zählen
-    /// 30 Tage lang nicht mit (höchstens 10). Entfernt Reste abgebrochener Backups.
+    /// vor einer Migration, vor dem Umzug und beiseitegelegte immer. Backups vor dem Leeren des Papierkorbs zählen
+    /// 30 Tage lang nicht mit (höchstens 10), der Stand vor dem Wiederherstellen
+    /// 30 Tage lang gar nicht. Ein zum Wiederherstellen vorgemerktes Backup bleibt
+    /// immer: Das Backup beim Beenden direkt danach verdrängt sonst ein Backup vom
+    /// selben Tag. Entfernt Reste abgebrochener Backups.
     public func prune() throws {
         let fileManager = FileManager.default
+        let pending = pendingRestoreBackupName
         var keep = Set<URL>()
         var days = Set<DateComponents>()
         var weeksWithDaily = Set<DateComponents>()
@@ -200,7 +257,11 @@ public struct StoreBackup: Sendable {
         var trashBackups = 0
         // Neueste zuerst: Das erste Backup eines Tages oder einer Woche ist das neueste.
         for entry in try entries() {
-            if entry.isBeforeMigration {
+            if entry.isBeforeMigration || entry.kind == .beforeMove || entry.kind == .setAside || entry.url.lastPathComponent == pending {
+                keep.insert(entry.url)
+                continue
+            }
+            if entry.kind == .beforeRestore, now().timeIntervalSince(entry.date) < Self.restoreBackupRetention {
                 keep.insert(entry.url)
                 continue
             }
@@ -235,19 +296,34 @@ public struct StoreBackup: Sendable {
 
     /// `.Quill_SUPPORT` neben `Quill.store` (so legt SwiftData externe Daten ab).
     var supportURL: URL {
-        storeURL.deletingLastPathComponent()
-            .appending(path: ".\(storeURL.deletingPathExtension().lastPathComponent)_SUPPORT", directoryHint: .isDirectory)
+        Self.supportURL(for: storeURL)
+    }
+
+    static func supportURL(for store: URL) -> URL {
+        store.deletingLastPathComponent()
+            .appending(path: ".\(store.deletingPathExtension().lastPathComponent)_SUPPORT", directoryHint: .isDirectory)
     }
 
     var versionFileURL: URL {
-        storeURL.deletingLastPathComponent().appending(path: "\(storeURL.lastPathComponent).version")
+        storeDirectoryURL.appending(path: "\(storeURL.lastPathComponent).version")
+    }
+
+    /// `name`, oder bei einem schon vorhandenen Backup gleichen Namens `name-2`, `name-3` …
+    func uniqueBackupName(_ name: String) -> String {
+        var candidate = name
+        var counter = 2
+        while FileManager.default.fileExists(atPath: backupsURL.appending(path: candidate).path(percentEncoded: false)) {
+            candidate = "\(name)-\(counter)"
+            counter += 1
+        }
+        return candidate
     }
 
     var lastOpenedSchemaVersion: String? {
         (try? Data(contentsOf: versionFileURL)).map { String(decoding: $0, as: UTF8.self) }
     }
 
-    private var storeExists: Bool {
+    var storeExists: Bool {
         FileManager.default.fileExists(atPath: storeURL.path(percentEncoded: false))
     }
 
@@ -259,7 +335,7 @@ public struct StoreBackup: Sendable {
     }
 
     /// UTC, ohne Doppelpunkte (Finder-tauglich), sekundengenau.
-    private static var formatter: DateFormatter {
+    static var formatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(identifier: "UTC")
@@ -276,8 +352,10 @@ public struct StoreBackup: Sendable {
         }
     }
 
-    private static func quickCheck(_ database: URL) throws {
-        try withDatabase(database) { db in
+    /// `readOnly`: für Backups, die unverändert bleiben sollen. Eine schreibende
+    /// Verbindung schriebe beim Schließen einen vorhandenen WAL in den Store zurück.
+    static func quickCheck(_ database: URL, readOnly: Bool = false) throws {
+        try withDatabase(database, readOnly: readOnly) { db in
             var statement: OpaquePointer?
             try check(sqlite3_prepare_v2(db, "PRAGMA quick_check", -1, &statement, nil), db)
             defer { sqlite3_finalize(statement) }
@@ -288,9 +366,9 @@ public struct StoreBackup: Sendable {
     }
 
     /// Öffnet ohne `CREATE`; `VACUUM INTO` liest die Quelle nur.
-    private static func withDatabase(_ url: URL, _ body: (OpaquePointer) throws -> Void) throws {
+    private static func withDatabase(_ url: URL, readOnly: Bool = false, _ body: (OpaquePointer) throws -> Void) throws {
         var db: OpaquePointer?
-        let status = sqlite3_open_v2(url.path(percentEncoded: false), &db, SQLITE_OPEN_READWRITE, nil)
+        let status = sqlite3_open_v2(url.path(percentEncoded: false), &db, readOnly ? SQLITE_OPEN_READONLY : SQLITE_OPEN_READWRITE, nil)
         defer { sqlite3_close_v2(db) }
         guard status == SQLITE_OK, let db else {
             throw Error.sqlite(code: status, message: String(cString: sqlite3_errstr(status)))

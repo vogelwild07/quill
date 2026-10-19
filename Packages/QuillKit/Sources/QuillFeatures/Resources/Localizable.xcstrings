@@ -10,13 +10,46 @@
     "Abhaken" : {
 
     },
+    "Alte Dateien beiseitegelegt" : {
+
+    },
     "Aus Favoriten entfernen" : {
 
     },
     "Ausblenden" : {
 
     },
+    "Backup bleibt vorgemerkt" : {
+
+    },
+    "Backup nicht wiederhergestellt" : {
+
+    },
+    "Backup vom %@ wiederherstellen?" : {
+
+    },
+    "Backup vom %@: %@ Der bisherige Stand ist unverändert und liegt in „Application Support/Quill/Store“." : {
+
+    },
+    "Backup wiederhergestellt" : {
+
+    },
+    "Backup wiederherstellen" : {
+
+    },
+    "Backup wiederherstellen …" : {
+
+    },
     "Backups im Finder zeigen" : {
+
+    },
+    "Beim Beenden" : {
+
+    },
+    "Beim Start" : {
+
+    },
+    "Beiseitegelegt (alter Speicherort)" : {
 
     },
     "Bild fehlt" : {
@@ -37,6 +70,15 @@
     "Code" : {
 
     },
+    "Das Backup gibt es nicht mehr." : {
+
+    },
+    "Das Backup stammt von einer neueren Quill-Version und kann hier nicht eingespielt werden." : {
+
+    },
+    "Das letzte Wiederherstellen brach vor dem Tausch ab. Der bisherige Stand ist unverändert und liegt in „Application Support/Quill/Store“." : {
+
+    },
     "Das lässt sich nicht rückgängig machen. Unterseiten werden mitgelöscht." : {
 
     },
@@ -46,7 +88,28 @@
     "Der Papierkorb ist leer" : {
 
     },
+    "Der vorherige Stand liegt als Backup „Vor dem Wiederherstellen“ bereit (Ablage › Backup wiederherstellen …), Ordner „Application Support/Quill/%@“." : {
+
+    },
+    "Der vorherige Stand liegt noch in „Application Support/Quill/%@“; Quill legt ihn beim nächsten Start zu den Backups." : {
+
+    },
+    "Die Dateien konnten nicht getauscht werden." : {
+
+    },
+    "Die Datenbank im Backup ist beschädigt." : {
+
+    },
+    "Die Vormerkung ließ sich nicht löschen. Damit das Wiederherstellen nicht bei jedem Start erneut läuft, wurde nichts getauscht." : {
+
+    },
+    "Die Vormerkung ließ sich nicht zurücknehmen. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt dann als Backup „Vor dem Wiederherstellen“." : {
+
+    },
     "Durchgestrichen" : {
+
+    },
+    "Eingespielt: Backup vom %@." : {
 
     },
     "Emoji eingeben oder mit ⌃⌘Leertaste auswählen" : {
@@ -82,7 +145,13 @@
     "Icon" : {
 
     },
+    "Im Backup fehlt die Datenbank." : {
+
+    },
     "Im Finder zeigen" : {
+
+    },
+    "Im alten Speicherort lagen noch Datenbankdateien, obwohl es „Store“ schon gab. Quill hat sie weder verwendet noch überschrieben, sondern nach „Application Support/Quill/%@“ gelegt. Sie erscheinen unter Ablage › Backup wiederherstellen … als „Beiseitegelegt“." : {
 
     },
     "In den Papierkorb legen" : {
@@ -127,6 +196,9 @@
     "Nicht gespeichert" : {
 
     },
+    "Noch keine Backups" : {
+
+    },
     "Noch keine Seiten" : {
 
     },
@@ -157,6 +229,12 @@
     "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
 
     },
+    "Quill wird danach beendet. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt als Backup „Vor dem Wiederherstellen“ erhalten." : {
+
+    },
+    "Quill wurde nicht beendet. Das Backup ist nicht mehr vorgemerkt, der aktuelle Stand bleibt. Wähle es bei Bedarf erneut über Ablage › Backup wiederherstellen …" : {
+
+    },
     "Schnell öffnen (⌘O)" : {
 
     },
@@ -184,6 +262,9 @@
     "Seiten: %lld · Bilder: %lld" : {
 
     },
+    "Sonstiges" : {
+
+    },
     "Suchen" : {
 
     },
@@ -196,6 +277,9 @@
     "Umbenennen" : {
 
     },
+    "Ungesicherte Änderungen werden vorher gespeichert." : {
+
+    },
     "Unterseiten" : {
 
     },
@@ -205,10 +289,34 @@
     "Verschieben" : {
 
     },
+    "Vor dem Umzug des Speicherorts" : {
+
+    },
+    "Vor dem Wiederherstellen" : {
+
+    },
+    "Vor dem endgültigen Löschen" : {
+
+    },
+    "Vor einer Aktualisierung der Datenbank" : {
+
+    },
     "Wenn du Quill jetzt beendest, gehen diese Änderungen verloren. Solange Quill geöffnet bleibt, wird das Speichern weiter versucht.\n\n%@" : {
 
     },
     "Wiederherstellen" : {
+
+    },
+    "Wiederherstellen abgebrochen" : {
+
+    },
+    "Wiederherstellen und beenden" : {
+
+    },
+    "Wiederherstellen unterbrochen" : {
+
+    },
+    "Wiederherstellen …" : {
 
     },
     "Wähle links eine Seite oder lege mit ⌘N eine neue an." : {
@@ -217,7 +325,13 @@
     "Zu Favoriten hinzufügen" : {
 
     },
+    "Zu wenig freier Speicher: %@ nötig, %@ frei." : {
+
+    },
     "Zuletzt bearbeitet" : {
+
+    },
+    "unbekannt" : {
 
     },
     "Änderungen konnten nicht gespeichert werden" : {

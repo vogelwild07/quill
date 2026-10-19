@@ -13,11 +13,43 @@ public final class QuillPersistence {
     /// Startargument `-QuillInMemoryStore YES`: Daten nur im Arbeitsspeicher, keine
     /// Backups. Für UI-Tests, damit sie nie die echten Daten berühren.
     public static let inMemoryArgument = "QuillInMemoryStore"
+    /// Startargument `-QuillStoreDirectory <Name>`: Store und Backups in diesem
+    /// Unterordner des temporären Ordners der App. Für UI-Tests, die Backups und
+    /// Wiederherstellen über Neustarts brauchen (ADR-019); nie der echte Store.
+    public static let storeDirectoryArgument = "QuillStoreDirectory"
+
+    /// Speicher für UI-Tests statt des echten Stores.
+    enum TestStore: Equatable {
+        case inMemory
+        case directory(String)
+    }
+
+    /// Liest die Startargumente für UI-Tests nur aus der Kommandozeile, nie aus
+    /// gespeicherten Einstellungen: Ein `defaults write` darf den echten Store nicht
+    /// still durch einen leeren ersetzen. In Release-Builds immer `nil`.
+    static func testStore(arguments: [String]) -> TestStore? {
+        #if DEBUG
+        func value(_ name: String) -> String? {
+            guard let index = arguments.firstIndex(of: "-\(name)"), arguments.indices.contains(index + 1) else { return nil }
+            return arguments[index + 1]
+        }
+        if let flag = value(inMemoryArgument), ["YES", "1", "true"].contains(flag) {
+            return .inMemory
+        }
+        if let name = value(storeDirectoryArgument), !name.isEmpty, !name.contains("/"), !name.hasPrefix(".") {
+            return .directory(name)
+        }
+        #endif
+        return nil
+    }
 
     public let container: ModelContainer
     public let store: PageStore
     public let isInMemory: Bool
     private let backup: StoreBackup?
+    /// Was beim Start vorbereitet wurde (Wiederherstellen, Beiseitelegen), bis es
+    /// angezeigt wurde.
+    private var preparation: StorePreparation?
 
     private nonisolated static let logger = Logger(subsystem: "de.vogel.quill", category: "persistence")
 
@@ -25,22 +57,30 @@ public final class QuillPersistence {
     public nonisolated static let trashRetentionDays = 30
     public nonisolated static let trashRetention = TimeInterval(trashRetentionDays * 24 * 60 * 60)
 
-    init(container: ModelContainer, backup: StoreBackup?) {
+    init(container: ModelContainer, backup: StoreBackup?, preparation: StorePreparation? = nil) {
         self.container = container
         self.store = PageStore(modelContainer: container)
         self.backup = backup
         self.isInMemory = backup == nil
+        self.preparation = preparation
     }
 
     /// Öffnet den Store. Vor einer Migration muss das Backup gelingen, sonst wird
     /// nicht geöffnet; andere Backup-Fehler werden nur protokolliert.
-    public static func open(defaults: UserDefaults = .standard) throws -> QuillPersistence {
-        if defaults.bool(forKey: inMemoryArgument) {
+    public static func open(arguments: [String] = ProcessInfo.processInfo.arguments) throws -> QuillPersistence {
+        let testStore = testStore(arguments: arguments)
+        if testStore == .inMemory {
             logger.notice("Store nur im Arbeitsspeicher (\(inMemoryArgument, privacy: .public))")
             return QuillPersistence(container: try QuillStore.makeInMemoryContainer(), backup: nil)
         }
 
-        let backup = StoreBackup()
+        let backup = makeBackup(testStore)
+        // Vor allem anderen: unter Sperre umziehen und ein vorgemerktes Backup
+        // einspielen (ADR-019). Scheitert das, wird nicht geöffnet.
+        let preparation = try backup.prepareStore()
+        if preparation != StorePreparation() {
+            logger.notice("Vorbereitet: \(String(describing: preparation), privacy: .private)")
+        }
         do {
             if let folder = try backup.backupBeforeOpening() {
                 logger.notice("Backup angelegt: \(folder.lastPathComponent, privacy: .public)")
@@ -49,16 +89,82 @@ public final class QuillPersistence {
             logger.error("Backup beim Start fehlgeschlagen: \(error, privacy: .public)")
             if backup.isMigrationPending { throw error }
         }
-        let container = try QuillStore.makeContainer()
+        let container = try QuillStore.makeContainer(storeURL: backup.storeURL)
         do {
             try backup.markOpened()
         } catch {
             logger.error("Schema-Version nicht gespeichert: \(error, privacy: .public)")
         }
-        let persistence = QuillPersistence(container: container, backup: backup)
+        let persistence = QuillPersistence(container: container, backup: backup, preparation: preparation)
         persistence.removeOrphanedAssets()
         persistence.scheduleTrashAutoEmpty()
         return persistence
+    }
+
+    /// Echter Store, oder für UI-Tests einer im temporären Ordner der App.
+    private static func makeBackup(_ testStore: TestStore?) -> StoreBackup {
+        guard case .directory(let name) = testStore else { return StoreBackup() }
+        let directory = FileManager.default.temporaryDirectory.appending(path: name, directoryHint: .isDirectory)
+        logger.notice("Store im temporären Ordner (\(storeDirectoryArgument, privacy: .public))")
+        return StoreBackup(
+            storeURL: directory.appending(path: "Store/Quill.store", directoryHint: .notDirectory),
+            backupsURL: directory.appending(path: "Backups", directoryHint: .isDirectory)
+        )
+    }
+
+    // MARK: Wiederherstellen (ADR-019)
+
+    /// Ob Backups wiederhergestellt werden können (nicht bei einem Store nur im Arbeitsspeicher).
+    public var canRestoreBackups: Bool { backup != nil }
+
+    /// Vorhandene Backups, neuestes zuerst, mit Größe.
+    public func backupEntries() async throws -> [BackupListEntry] {
+        guard let backup else { return [] }
+        return try await Task.detached(priority: .userInitiated) {
+            try backup.entries().map { BackupListEntry(entry: $0, size: StoreBackup.size(of: $0.url)) }
+        }.value
+    }
+
+    /// Prüft das Backup und merkt es für den nächsten Start vor; danach beendet
+    /// sich die App. Wirft, wenn es nicht eingespielt werden kann.
+    public func requestRestore(_ entry: StoreBackup.Entry) async throws {
+        guard let backup else { return }
+        try await Task.detached(priority: .userInitiated) { try backup.requestRestore(entry) }.value
+    }
+
+    /// Das Beenden wurde abgebrochen (Rückfrage bei ungespeicherten Änderungen): Ein
+    /// vorgemerktes Backup würde sonst beim nächsten Start unbemerkt eingespielt.
+    /// Nimmt die Vormerkung zurück und meldet es über `notify` (Titel, Text).
+    public func quitWasCancelled(notify: @MainActor (String, String) -> Void = QuillPersistence.showAlert) {
+        guard let backup else { return }
+        do {
+            guard try backup.withdrawRestoreRequest() else { return }
+            notify(
+                String(localized: "Wiederherstellen abgebrochen", bundle: .module),
+                String(localized: "Quill wurde nicht beendet. Das Backup ist nicht mehr vorgemerkt, der aktuelle Stand bleibt. Wähle es bei Bedarf erneut über Ablage › Backup wiederherstellen …", bundle: .module)
+            )
+        } catch {
+            Self.logger.error("Vormerkung nicht zurückgenommen: \(error, privacy: .public)")
+            notify(
+                String(localized: "Backup bleibt vorgemerkt", bundle: .module),
+                String(localized: "Die Vormerkung ließ sich nicht zurücknehmen. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt dann als Backup „Vor dem Wiederherstellen“.", bundle: .module)
+            )
+        }
+    }
+
+    public static func showAlert(title: String, message: String) {
+        #if canImport(AppKit)
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.runModal()
+        #endif
+    }
+
+    /// Was beim Start vorbereitet wurde, einmal: Das erste Fenster zeigt es.
+    public func takePreparation() -> StorePreparation? {
+        defer { preparation = nil }
+        return preparation == StorePreparation() ? nil : preparation
     }
 
     /// Bilder, die seit 30 Tagen keinem Block mehr gehören (ADR-015). Läuft nach dem
@@ -141,6 +247,15 @@ public final class QuillPersistence {
         NSWorkspace.shared.open(backup.backupsURL)
     }
     #endif
+}
+
+/// Ein Backup in der Liste „Backup wiederherstellen“.
+public struct BackupListEntry: Identifiable, Equatable, Sendable {
+    public let entry: StoreBackup.Entry
+    /// Belegter Platz in Bytes.
+    public let size: Int64
+
+    public var id: String { entry.id }
 }
 
 extension EnvironmentValues {
