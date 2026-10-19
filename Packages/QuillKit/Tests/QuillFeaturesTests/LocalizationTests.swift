@@ -12,19 +12,42 @@ import Testing
 /// - jeder sichtbare Info.plist-Eintrag im `InfoPlist.xcstrings`.
 @Suite("Lokalisierung: Kataloge vollständig")
 struct LocalizationTests {
-    /// Prosa-Literale, die bewusst nicht lokalisiert werden: Datei (Ende des Pfads),
-    /// Anfang des Literals, Begründung.
-    static let allowed: [(file: String, prefix: String, reason: String)] = [
-        ("App/ProfilingSeed.swift", "", "Nur im Schema „Quill Profiling“ (QUILL_PROFILING): Testbestand und Abbrüche."),
-        ("QuillModel/Schema/SchemaV1.swift", "Mein Workspace", "Vorgabe im eingefrorenen Schema V1 (ADR-011), nirgends angezeigt."),
-        ("QuillModel/Backup/StoreBackup+Layout.swift", "", "`StoreLayoutError.description` nur fürs Protokoll; angezeigt wird `PersistenceErrorView.detail(for:)`."),
-        ("QuillModel/Backup/StoreBackup+Restore.swift", "Alte Markierung", "`RestoreError.fileOperation` nur fürs Protokoll; angezeigt wird `BackupRestoreView.message(for:)`."),
-        ("QuillModel/Backup/StoreBackup+Restore.swift", "Tausch nicht möglich", "`RestoreError.fileOperation` nur fürs Protokoll; angezeigt wird `BackupRestoreView.message(for:)`."),
-        ("QuillModel/Backup/StoreBackup.swift", "VACUUM INTO", "SQL."),
-        ("QuillModel/Backup/StoreBackup.swift", "PRAGMA", "SQL."),
-        ("QuillExport/ExportWriter.swift", "(Quill ", "Ordnername mit Produktname und ISO-Datum, sprachneutral."),
-        ("QuillExport/MarkdownExporter.swift", "---", "YAML-Kopf; Schlüssel gehören zum Format, nicht zur Sprache."),
-        ("QuillFeatures/Shared/QuillSignposts.swift", "", "Signpost-Namen für Instruments (docs/performance.md)."),
+    /// Ein Prosa-Literal, das bewusst nicht lokalisiert wird. `text` ist der ganze Text
+    /// (Interpolationen als „…“), nur mit `isPrefix` sein Anfang; jeder Eintrag muss
+    /// genau `occurrences` Literale seiner Datei treffen, sonst ist er veraltet.
+    struct Allowed {
+        let file: String
+        let text: String
+        var isPrefix = false
+        var occurrences = 1
+        let reason: String
+    }
+
+    static let allowed: [Allowed] = [
+        Allowed(file: "App/ProfilingSeed.swift", text: "Seite …",
+                reason: "Testbestand, nur im Schema „Quill Profiling“ (QUILL_PROFILING)."),
+        Allowed(file: "App/ProfilingSeed.swift", text: "Seite …, Absatz …: Quill speichert lokal, startet schnell und hält den Text im Mittelpunkt.",
+                reason: "Testbestand, nur im Schema „Quill Profiling“ (QUILL_PROFILING)."),
+        Allowed(file: "QuillModel/Schema/SchemaV1.swift", text: "Mein Workspace", occurrences: 2,
+                reason: "Vorgabe im eingefrorenen Schema V1 (ADR-011), nirgends angezeigt."),
+        Allowed(file: "QuillModel/Backup/StoreBackup+Layout.swift", text: "Eine andere Quill-Instanz richtet gerade die Datenbank ein.",
+                reason: "`StoreLayoutError.description` nur fürs Protokoll; angezeigt wird `PersistenceErrorView.detail(for:)`."),
+        Allowed(file: "QuillModel/Backup/StoreBackup+Layout.swift", text: "Sperre nicht möglich: …",
+                reason: "`StoreLayoutError.description` nur fürs Protokoll; angezeigt wird `PersistenceErrorView.detail(for:)`."),
+        Allowed(file: "QuillModel/Backup/StoreBackup+Layout.swift", text: "Umzug angehalten, im Ziel liegt schon: …",
+                reason: "`StoreLayoutError.description` nur fürs Protokoll; angezeigt wird `PersistenceErrorView.detail(for:)`."),
+        Allowed(file: "QuillModel/Backup/StoreBackup+Layout.swift", text: "Unvollständiger Vorgang, Dateien liegen in: …",
+                reason: "`StoreLayoutError.description` nur fürs Protokoll; angezeigt wird `PersistenceErrorView.detail(for:)`."),
+        Allowed(file: "QuillModel/Backup/StoreBackup+Restore.swift", text: "Alte Markierung in Store/",
+                reason: "`RestoreError.fileOperation` nur fürs Protokoll; angezeigt wird `BackupRestoreView.message(for:)`."),
+        Allowed(file: "QuillModel/Backup/StoreBackup+Restore.swift", text: "Tausch nicht möglich: …",
+                reason: "`RestoreError.fileOperation` nur fürs Protokoll; angezeigt wird `BackupRestoreView.message(for:)`."),
+        Allowed(file: "QuillModel/Backup/StoreBackup.swift", text: "VACUUM INTO '…'", reason: "SQL."),
+        Allowed(file: "QuillModel/Backup/StoreBackup.swift", text: "PRAGMA quick_check", reason: "SQL."),
+        Allowed(file: "QuillExport/ExportWriter.swift", text: "(Quill …)",
+                reason: "Ordnername mit Produktname und ISO-Datum, sprachneutral."),
+        Allowed(file: "QuillExport/MarkdownExporter.swift", text: "---", isPrefix: true,
+                reason: "YAML-Kopf; Schlüssel gehören zum Format, nicht zur Sprache."),
     ]
 
     /// Zahlen in diesen Sätzen brauchen keine Pluralform (Form „Wort: Zahl“ oder Maße).
@@ -45,6 +68,11 @@ struct LocalizationTests {
         let catalog: String?
         let isPackage: Bool
         var testDescription: String { name }
+
+        /// Gehört die Datei (Ende des Pfads wie in `Allowed.file`) zu diesem Modul?
+        func contains(_ file: String) -> Bool {
+            file.split(separator: "/").first.map(String.init) == URL(filePath: sources).lastPathComponent
+        }
     }
 
     static let modules: [Module] = [
@@ -64,9 +92,16 @@ struct LocalizationTests {
         #expect(Set(names) == Set(Self.modules.filter(\.isPackage).map { URL(filePath: $0.sources).lastPathComponent }))
     }
 
+    @Test func everyExceptionNamesAModule() {
+        for entry in Self.allowed {
+            #expect(Self.modules.contains { $0.contains(entry.file) }, "Keinem Modul zugeordnet: \(entry.file)")
+        }
+    }
+
     @Test(arguments: modules)
     func noHardcodedText(_ module: Module) throws {
         let scan = try SourceScan(module: module)
+        var hits: [Int: Int] = [:]
         for literal in scan.literals where literal.isProse {
             switch literal.usage {
             case .localized(let hasModuleBundle):
@@ -78,11 +113,16 @@ struct LocalizationTests {
             case .technical:
                 break
             case .unknown:
-                let file = literal.file
-                if !Self.allowed.contains(where: { file.hasSuffix($0.file) && literal.trimmedText.hasPrefix($0.prefix) }) {
-                    Issue.record("\(literal.location): hart codierter Text: \(literal.trimmedText)")
+                let matches = Self.allowed.indices.filter { Self.allowed[$0].matches(literal) }
+                if matches.isEmpty {
+                    Issue.record("\(literal.location): hart codierter Text: \(literal.readableText)")
                 }
+                for index in matches { hits[index, default: 0] += 1 }
             }
+        }
+        for (index, entry) in Self.allowed.enumerated() where module.contains(entry.file) {
+            #expect(hits[index, default: 0] == entry.occurrences,
+                    "Ausnahme trifft \(hits[index, default: 0]) statt \(entry.occurrences) Literale: \(entry.file) „\(entry.text)“")
         }
     }
 
@@ -173,6 +213,12 @@ struct LocalizationTests {
     }
 }
 
+extension LocalizationTests.Allowed {
+    func matches(_ literal: SourceScan.Literal) -> Bool {
+        literal.file.hasSuffix(file) && (isPrefix ? literal.readableText.hasPrefix(text) : literal.readableText == text)
+    }
+}
+
 // MARK: - Quellen lesen
 
 /// String-Literale eines Moduls mit dem Aufruf, in dem sie stehen.
@@ -206,6 +252,9 @@ struct SourceScan {
 
         /// Ohne Einrückung und Zeilenumbrüche am Rand (mehrzeilige Literale).
         var trimmedText: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        /// Wie im Quelltext lesbar: Interpolationen als „…“.
+        var readableText: String { trimmedText.replacing("\u{1}", with: "…") }
     }
 
     /// Aufrufe, deren erstes Argument lokalisiert wird (SwiftUI nimmt dort einen
