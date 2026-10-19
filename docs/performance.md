@@ -12,8 +12,9 @@ Refactor wird gegen diese Baseline verglichen.
   Produktziel.
 - Eine gerissene Schwelle wird erst gezeigt und besprochen, dann optimiert.
 - Ausnahmen nach den Optimierungen (19.10.2026, so entschieden): Sidebar beim Start
-  200 ms (erstes Layout des Fensters, kein Umbau), Neuladen nach ⌘N 130 ms (SwiftData,
-  siehe unten; Umbau unter „Später“ in `roadmap.md`).
+  200 ms (erstes Layout des Fensters, kein Umbau), Neuladen nach ⌘N 180 ms (SwiftData,
+  siehe unten; Umbau unter „Später“ in `roadmap.md`). Erst 130 ms; nach dem Review von
+  PR #8 misst `sidebarReload` ab dem Anlegen der Seite, seitdem 180 ms.
 - Gemessen wird nur optimiert: im Package mit `swift test -c release`, in der App mit
   der Konfiguration „Profiling“.
 
@@ -73,7 +74,9 @@ Scripts/check-release-binary.sh               # Release ohne Profiling-Code?
 - Signposts (`QuillSignposts`, Subsystem `de.vogel.quill`, Points of Interest):
   - `launch`: Start des App-Delegates bis zur ersten gezeichneten Sidebar.
   - `sidebarLoad`: erster Aufbau der Sidebar (Seitenbaum, Laden, Zeichnen).
-  - `sidebarReload`: jedes weitere Neuladen der Sidebar.
+  - `sidebarReload`: neue Seite (⌘N oder „Neue Seite“) bis zur neu geladenen,
+    gezeichneten Sidebar: Speichern, Abfrage, Seitenbaum, Neuladen. Andere Änderungen
+    laden die Sidebar auch neu, werden aber nicht gemessen.
   - `pageSwitch`: Klick auf eine Seite bis zum gezeichneten Editor.
 
   Intervalle enden nach dem nächsten Commit von Core Animation.
@@ -206,6 +209,16 @@ unverändert.
 | `sidebarLoad` | 181 | 171 | 200 |
 | `sidebarReload` | 131 | 104 | 130 |
 | `pageSwitch` | 96 | 76,5 | 100 |
+
+### Messpunkt `sidebarReload` korrigiert (Review PR #8)
+
+Bis hier begann `sidebarReload` erst nach `reloadData()`: Speichern, Abfrage,
+`SidebarView.body`, Seitenbaum und Neuladen fehlten im Wert. Seitdem beginnt das
+Intervall beim Anlegen der Seite (`PageOperations.create`) und endet nach dem Zeichnen
+der neu geladenen Sidebar. Zwei Läufe ohne Last: Median 140,3 und 140,1 ms, Einzelwerte
+134–163 ms. Schwelle 180 ms, so entschieden. Gegenprobe: ohne Beginn beim Anlegen meldet
+`Scripts/perf-ui.py` „FEHLT“, Exit 1. Die Werte oben (104 ms) gelten für den alten
+Messpunkt.
 
 ### Warum `SidebarView.body` lief
 

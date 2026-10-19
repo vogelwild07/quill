@@ -19,7 +19,8 @@ public enum QuillSignposts {
         public static let launch: StaticString = "launch"
         /// Erster Aufbau der Sidebar: Seitenbaum berechnen, laden, zeichnen.
         public static let sidebarLoad: StaticString = "sidebarLoad"
-        /// Jedes weitere Neuladen der Sidebar nach geänderten Seiten.
+        /// Neue Seite (⌘N oder „Neue Seite“) bis zur neu geladenen, gezeichneten Sidebar:
+        /// Speichern, Abfrage, Seitenbaum, Neuladen der Outline.
         public static let sidebarReload: StaticString = "sidebarReload"
         /// Klick auf eine Seite in der Sidebar bis zum gezeichneten Editor.
         public static let pageSwitch: StaticString = "pageSwitch"
@@ -30,6 +31,7 @@ public enum QuillSignposts {
     private static var launch: OSSignpostIntervalState?
     private static var sidebarLoad: OSSignpostIntervalState?
     private static var hasLoadedSidebar = false
+    private static var sidebarReload: OSSignpostIntervalState?
     private static var pageSwitch: OSSignpostIntervalState?
 
     // MARK: Start
@@ -44,8 +46,20 @@ public enum QuillSignposts {
         sidebarLoad = signposter.beginInterval(Name.sidebarLoad)
     }
 
+    /// Vor dem Anlegen einer neuen Seite. Läuft schon eins, zählt das erste.
+    static func beginSidebarReload() {
+        guard hasLoadedSidebar, sidebarReload == nil else { return }
+        sidebarReload = signposter.beginInterval(Name.sidebarReload)
+    }
+
+    /// Anlegen gescheitert: Das Intervall endet nicht, damit kein späteres Neuladen
+    /// einen falschen Wert liefert.
+    static func cancelSidebarReload() {
+        sidebarReload = nil
+    }
+
     /// Nach jedem Neuladen der Outline. Das erste beendet `sidebarLoad` und `launch`,
-    /// jedes weitere ist ein eigenes `sidebarReload`, das hier beginnt.
+    /// ein späteres ein begonnenes `sidebarReload`.
     static func sidebarDidReload() {
         if !hasLoadedSidebar {
             hasLoadedSidebar = true
@@ -59,7 +73,8 @@ public enum QuillSignposts {
             }
             return
         }
-        let reload = signposter.beginInterval(Name.sidebarReload)
+        guard let reload = sidebarReload else { return }
+        sidebarReload = nil
         afterNextCommit { signposter.endInterval(Name.sidebarReload, reload) }
     }
 

@@ -227,7 +227,7 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 **Entscheidung:**
 - Package: `QuillPerformanceTests`, nur optimiert (`swift test -c release`, sonst übersprungen), mit Schwellen in `Performance.limits`; `Scripts/perf-package.py` wiederholt und zeigt Median, Minimum, Maximum.
 - App: eigene Konfiguration „Profiling“ (optimiert wie Release, Produkt „Quill Profiling“, Bundle-ID `de.vogel.quill.profiling`, also eigener Sandbox-Container und Store). Den Bestand legt `-QuillSeedPages` an, nur unter `QUILL_PROFILING` kompiliert und nur in dieser Bundle-ID; gemessen wird per Signposts (`QuillSignposts`) und `XCTOSSignpostMetric` in `PerformanceUITests`, ausgewertet von `Scripts/perf-ui.py`. `Scripts/check-release-binary.sh` prüft, dass Release keinen Profiling-Code enthält.
-- Schwellen: Produktziele fest; neue Messungen max(Baseline × 3, Baseline + 5 ms), nie über einem Ziel. Ausnahmen nur nach Rücksprache (Sidebar beim Start 200 ms, nach ⌘N 130 ms; `docs/performance.md`).
+- Schwellen: Produktziele fest; neue Messungen max(Baseline × 3, Baseline + 5 ms), nie über einem Ziel. Ausnahmen nur nach Rücksprache (Sidebar beim Start 200 ms, nach ⌘N 180 ms ab Anlegen der Seite; `docs/performance.md`).
 
 **Konsequenzen:**
 - Messungen brauchen Netzteil, keine Last und dasselbe Gerät; die Bedingungen stehen in `docs/performance.md`.
