@@ -134,8 +134,15 @@ public actor PageStore {
     }
 
     func fetchPage(_ id: UUID) throws -> Page {
+        try fetchPage(id, prefetching: [])
+    }
+
+    /// Mit `relationships` lädt SwiftData die verbundenen Modelle in derselben Abfrage,
+    /// statt jedes beim ersten Lesen einzeln (docs/performance.md).
+    func fetchPage(_ id: UUID, prefetching relationships: [PartialKeyPath<Page>]) throws -> Page {
         var descriptor = FetchDescriptor<Page>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
+        descriptor.relationshipKeyPathsForPrefetching = relationships
         guard let page = try modelContext.fetch(descriptor).first else {
             throw PageStoreError.pageNotFound(id)
         }
@@ -241,7 +248,7 @@ public actor PageStore {
 extension PageStore {
     /// Blöcke einer Seite in Anzeigereihenfolge.
     public func blocks(of pageID: UUID) throws -> [BlockSnapshot] {
-        try orderedBlocks(of: fetchPage(pageID)).map(\.snapshot)
+        try orderedBlocks(of: fetchPage(pageID, prefetching: [\.blocks])).map(\.snapshot)
     }
 
     /// Übernimmt Änderungen an Blöcken in einem Speichervorgang.
@@ -251,7 +258,7 @@ extension PageStore {
     /// richtig stehen (längste aufsteigende Teilfolge), wie bei Seiten (ADR-009).
     public func applyEdits(_ pageID: UUID, _ edits: BlockEdits) throws {
         guard !edits.isEmpty else { return }
-        let page = try fetchPage(pageID)
+        let page = try fetchPage(pageID, prefetching: [\.blocks])
         var byID: [UUID: Block] = [:]
         for block in page.blocks ?? [] where byID[block.id] == nil {
             byID[block.id] = block

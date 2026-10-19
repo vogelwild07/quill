@@ -26,11 +26,11 @@ enum Performance {
         "editorTyping": 16,
         "editorEnter": 16,
         "search": 100,
+        "exportPlan": 2000,
         // Baseline 19.10.2026 × 3, gerundet nach oben
         "applyEditsMove": 178,
         "applyEditsReverse": 309,
         "bridgeLoad": 300, // 3 × 106 = 319, gedeckelt durch Produktziel Laden
-        "exportPlan": 13_611,
         "pageTreeBuild": 175, // 5000 Seiten; Sidebar-Ziel 100 ms gilt für 1000 (App-Messung)
     ]
 
