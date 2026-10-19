@@ -38,16 +38,39 @@ extension PageStore {
     /// Seite (und auf Wunsch ihre Unterseiten) für den Export, in einem Lesevorgang.
     /// Seiten im Papierkorb werden nicht exportiert.
     public func exportSnapshot(of pageID: UUID, includeSubpages: Bool) throws -> PageExportSnapshot {
-        let page = try fetchPage(pageID)
+        let page = try fetchPage(pageID, prefetching: [\.blocks])
         guard !isInTrash(page) else { throw PageStoreError.pageNotFound(pageID) }
+        if includeSubpages {
+            try prefetchBlocks(ofSubtree: page)
+        }
         return exportSnapshot(of: page, includeSubpages: includeSubpages)
+    }
+
+    /// Lädt Blöcke und Unterseiten aller Seiten unter `root` gesammelt. Sonst holt
+    /// SwiftData beim Lesen jeden Block und jede Liste von Unterseiten einzeln nach, bei
+    /// 1000 Seiten Zehntausende Abfragen (docs/performance.md). Ändert nichts am
+    /// Ergebnis, nur am Zwischenspeicher.
+    private func prefetchBlocks(ofSubtree root: Page) throws {
+        let pages = try modelContext.fetch(FetchDescriptor<Page>())
+        let byParent = Dictionary(grouping: pages) { $0.parent?.id }
+        var ids: [UUID] = []
+        var queue = [root.id]
+        var seen: Set<UUID> = []
+        while let id = queue.popLast() {
+            guard seen.insert(id).inserted else { continue }
+            ids.append(id)
+            queue.append(contentsOf: (byParent[id] ?? []).map(\.id))
+        }
+        var descriptor = FetchDescriptor<Page>(predicate: #Predicate { ids.contains($0.id) })
+        descriptor.relationshipKeyPathsForPrefetching = [\.blocks, \.children]
+        _ = try modelContext.fetch(descriptor)
     }
 
     private func exportSnapshot(of page: Page, includeSubpages: Bool) -> PageExportSnapshot {
         let children = includeSubpages
             ? (page.children ?? [])
                 .filter { $0.trashedAt == nil }
-                .sorted { ($0.sortKey, $0.createdAt, $0.id.uuidString) < ($1.sortKey, $1.createdAt, $1.id.uuidString) }
+                .sortedInSiblingOrder(by: \.siblingOrder)
                 .map { exportSnapshot(of: $0, includeSubpages: true) }
             : []
         let blocks = orderedBlocks(of: page)

@@ -68,7 +68,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     }
 
     var checkboxRect: CGRect {
-        let size: CGFloat = 14
+        let size = QuillDesign.EditorLayout.checkboxSize
         let centerY = firstBaseline - markerFont.capHeight / 2
         return CGRect(x: markerOriginX + 3, y: centerY - size / 2, width: size, height: size)
     }
@@ -144,7 +144,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         case .paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .todo, .divider, .image: break
         }
         for rect in inlineCodeRects {
-            fillRoundedRect(rect, radius: 4, color: EditorColor.quaternaryFill, in: context)
+            fillRoundedRect(rect, radius: QuillDesign.Radius.small, color: EditorColor.quaternaryFill, in: context)
         }
         context.restoreGState()
 
@@ -164,13 +164,13 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     }
 
     private func drawCodeBackground(in context: CGContext) {
-        fillRoundedRect(codeBackgroundRect, radius: 8, color: EditorColor.quaternaryFill, in: context)
+        fillRoundedRect(codeBackgroundRect, radius: QuillDesign.Radius.large, color: EditorColor.quaternaryFill, in: context)
     }
 
     private func drawQuoteBar(in context: CGContext) {
         let bounds = contentBounds.isNull ? CGRect(x: 0, y: 0, width: 0, height: 20) : contentBounds
-        let bar = CGRect(x: markerOriginX + 2, y: bounds.minY + 2, width: 3, height: bounds.height - 4)
-        fillRoundedRect(bar, radius: 1.5, color: EditorColor.accent.withAlphaComponent(0.6), in: context)
+        let bar = CGRect(x: markerOriginX + 2, y: bounds.minY + 2, width: QuillDesign.EditorLayout.quoteBarWidth, height: bounds.height - 4)
+        fillRoundedRect(bar, radius: QuillDesign.EditorLayout.quoteBarWidth / 2, color: EditorColor.accent.withAlphaComponent(0.6), in: context)
     }
 
     private func drawBullet(in context: CGContext) {
@@ -219,12 +219,12 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     private func drawImage(in context: CGContext) {
         let rect = imageRect
         guard let image = assetID.flatMap({ EditorImageCache.shared.entry(for: $0)?.image }) else {
-            fillRoundedRect(rect, radius: 6, color: EditorColor.quaternaryFill, in: context)
+            fillRoundedRect(rect, radius: QuillDesign.Radius.medium, color: EditorColor.quaternaryFill, in: context)
             return
         }
         // Der Kontext ist gespiegelt (y nach unten), `draw` erwartet y nach oben.
         context.saveGState()
-        context.addPath(Self.roundedRect(rect, radius: 4))
+        context.addPath(Self.roundedRect(rect, radius: QuillDesign.Radius.small))
         context.clip()
         context.translateBy(x: rect.minX, y: rect.maxY)
         context.scaleBy(x: 1, y: -1)
@@ -235,7 +235,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
 
     private func drawCheckbox(in context: CGContext) {
         let rect = checkboxRect
-        let box = Self.roundedRect(rect, radius: 4)
+        let box = Self.roundedRect(rect, radius: QuillDesign.Radius.small)
         if isChecked {
             context.addPath(box)
             context.setFillColor(EditorColor.accent.cgColor)

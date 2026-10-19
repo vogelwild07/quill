@@ -8,31 +8,31 @@ import QuillModel
 
 /// Typografie und Absatzformate pro Blockart.
 enum BlockStyle {
-    typealias T = QuillDesign.Typography
-    typealias S = QuillDesign.Spacing
+    typealias Typography = QuillDesign.Typography
+    typealias Spacing = QuillDesign.Spacing
 
     static func font(for kind: BlockKind) -> PlatformFont {
         switch kind {
-        case .heading1: .systemFont(ofSize: T.heading1Size, weight: .bold)
-        case .heading2: .systemFont(ofSize: T.heading2Size, weight: .semibold)
-        case .heading3: .systemFont(ofSize: T.heading3Size, weight: .semibold)
-        case .code: .monospacedSystemFont(ofSize: T.codeSize, weight: .regular)
-        case .paragraph, .bulleted, .numbered, .todo, .quote, .divider, .image: .systemFont(ofSize: T.bodySize)
+        case .heading1: .systemFont(ofSize: Typography.heading1Size, weight: .bold)
+        case .heading2: .systemFont(ofSize: Typography.heading2Size, weight: .semibold)
+        case .heading3: .systemFont(ofSize: Typography.heading3Size, weight: .semibold)
+        case .code: .monospacedSystemFont(ofSize: Typography.codeSize, weight: .regular)
+        case .paragraph, .bulleted, .numbered, .todo, .quote, .divider, .image: .systemFont(ofSize: Typography.bodySize)
         }
     }
 
     /// Linker Rand des Textes eines Blocks (ohne Marker).
     static func textInset(kind: BlockKind, indent: Int) -> CGFloat {
-        var inset = CGFloat(indent) * S.indentStep
-        if kind.isListItem { inset += S.indentStep }
-        if kind == .quote { inset += S.quoteInset }
-        if kind == .code { inset += S.codePadding }
+        var inset = CGFloat(indent) * Spacing.indentStep
+        if kind.isListItem { inset += Spacing.indentStep }
+        if kind == .quote { inset += Spacing.quoteInset }
+        if kind == .code { inset += Spacing.codePadding }
         return inset
     }
 
     /// Linker Rand samt Listenmarker: Dort enden Griff und ＋, dort beginnt die Einfügelinie.
     static func leadingInset(kind: BlockKind, indent: Int) -> CGFloat {
-        textInset(kind: kind, indent: indent) - (kind.isListItem ? S.indentStep : 0)
+        textInset(kind: kind, indent: indent) - (kind.isListItem ? Spacing.indentStep : 0)
     }
 
     static func paragraphStyle(kind: BlockKind, indent: Int) -> NSParagraphStyle {
@@ -40,21 +40,21 @@ enum BlockStyle {
         let inset = textInset(kind: kind, indent: indent)
         style.firstLineHeadIndent = inset
         style.headIndent = inset
-        style.paragraphSpacing = S.blockGap
+        style.paragraphSpacing = Spacing.blockGap
         switch kind {
         case .heading1, .heading2, .heading3:
-            style.lineHeightMultiple = T.headingLineHeight
-            style.paragraphSpacingBefore = S.beforeHeading
+            style.lineHeightMultiple = Typography.headingLineHeight
+            style.paragraphSpacingBefore = Spacing.beforeHeading
         case .code:
-            style.lineHeightMultiple = T.codeLineHeight
-            style.tailIndent = -S.codePadding
-            style.paragraphSpacingBefore = S.codePadding
-            style.paragraphSpacing = S.codePadding + S.blockGap
+            style.lineHeightMultiple = Typography.codeLineHeight
+            style.tailIndent = -Spacing.codePadding
+            style.paragraphSpacingBefore = Spacing.codePadding
+            style.paragraphSpacing = Spacing.codePadding + Spacing.blockGap
         case .image:
-            style.lineHeightMultiple = T.bodyLineHeight
-            style.paragraphSpacingBefore = S.blockGap
+            style.lineHeightMultiple = Typography.bodyLineHeight
+            style.paragraphSpacingBefore = Spacing.blockGap
         case .paragraph, .bulleted, .numbered, .todo, .quote, .divider:
-            style.lineHeightMultiple = T.bodyLineHeight
+            style.lineHeightMultiple = Typography.bodyLineHeight
         }
         return style
     }

@@ -17,8 +17,19 @@ struct PageOperations {
     private static let logger = Logger(subsystem: "de.vogel.quill", category: "pages")
 
     func create(in parentID: UUID?) {
+        #if canImport(AppKit)
+        QuillSignposts.beginSidebarReload()
+        #endif
         perform {
-            let id = try await store.createPage(in: parentID)
+            let id: UUID
+            do {
+                id = try await store.createPage(in: parentID)
+            } catch {
+                #if canImport(AppKit)
+                QuillSignposts.cancelSidebarReload()
+                #endif
+                throw error
+            }
             select(id)
             focusTitle(id)
             register(String(localized: "Seite anlegen", bundle: .module),

@@ -94,10 +94,10 @@ import Testing
     @Test func folderNameHasDateAndCounter() {
         let date = Date(timeIntervalSince1970: 1_792_400_000)
         let utc = TimeZone(identifier: "UTC")!
-        #expect(ExportFileName.folderName(title: "Projekte", untitled: "Ohne Titel", date: date, counter: 1, timeZone: utc) == "Projekte (Quill 2026-10-19)")
-        #expect(ExportFileName.folderName(title: "Projekte", untitled: "Ohne Titel", date: date, counter: 2, timeZone: utc) == "Projekte (Quill 2026-10-19) 2")
-        #expect(ExportFileName.folderName(title: "", untitled: "Ohne Titel", date: date, counter: 1, timeZone: utc) == "Ohne Titel (Quill 2026-10-19)")
-        let long = ExportFileName.folderName(title: String(repeating: "ü", count: 200), untitled: "", date: date, counter: 3, timeZone: utc)
+        #expect(ExportFileName.folderName(base: "Projekte", date: date, counter: 1, timeZone: utc) == "Projekte (Quill 2026-10-19)")
+        #expect(ExportFileName.folderName(base: "Projekte", date: date, counter: 2, timeZone: utc) == "Projekte (Quill 2026-10-19) 2")
+        #expect(ExportFileName.folderName(base: ExportFileName.base(for: "", untitled: "Ohne Titel"), date: date, counter: 1, timeZone: utc) == "Ohne Titel (Quill 2026-10-19)")
+        let long = ExportFileName.folderName(base: ExportFileName.base(for: String(repeating: "ü", count: 200), untitled: ""), date: date, counter: 3, timeZone: utc)
         #expect(long.utf8.count <= ExportFileName.maxBytes)
         #expect(long.hasSuffix(" (Quill 2026-10-19) 3"))
     }

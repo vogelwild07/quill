@@ -28,19 +28,26 @@ public struct StoreBackup: Sendable {
         /// verwendet (ADR-019). Wird nie automatisch gelöscht.
         case setAside
 
-        var slug: String {
+        var kind: Kind {
             switch self {
-            case .launch: "start"
-            case .quit: "beenden"
-            case .beforeMigration(let from, let to): "\(Self.migrationPrefix)\(from)-\(to)"
-            case .beforeEmptyingTrash: "vor-papierkorb-leeren"
-            case .beforeRestore: "vor-wiederherstellen"
-            case .beforeMove: "vor-umzug"
-            case .setAside: "beiseitegelegt"
+            case .launch: .launch
+            case .quit: .quit
+            case .beforeMigration: .beforeMigration
+            case .beforeEmptyingTrash: .beforeEmptyingTrash
+            case .beforeRestore: .beforeRestore
+            case .beforeMove: .beforeMove
+            case .setAside: .setAside
             }
         }
 
-        static let migrationPrefix = "vor-migration-"
+        /// Anlass im Ordnernamen; vor einer Migration mit beiden Versionen.
+        var slug: String {
+            let base = kind.slug ?? ""
+            return switch self {
+            case .beforeMigration(let from, let to): "\(base)\(from)-\(to)"
+            case .launch, .quit, .beforeEmptyingTrash, .beforeRestore, .beforeMove, .setAside: base
+            }
+        }
     }
 
     public enum Error: Swift.Error, Equatable {
@@ -49,29 +56,30 @@ public struct StoreBackup: Sendable {
     }
 
     /// Anlass eines vorhandenen Backups, aus dem Ordnernamen gelesen.
-    public enum Kind: Sendable, Equatable {
+    public enum Kind: Sendable, Equatable, CaseIterable {
         case launch, quit, beforeMigration, beforeEmptyingTrash, beforeRestore, beforeMove, setAside
         /// Unbekannter Anlass (z. B. von einer späteren Version).
         case other
 
-        init(slug: Substring) {
-            self = if slug.hasPrefix(Reason.migrationPrefix) {
-                .beforeMigration
-            } else if slug.hasPrefix(Reason.beforeEmptyingTrash.slug) {
-                .beforeEmptyingTrash
-            } else if slug.hasPrefix(Reason.beforeRestore.slug) {
-                .beforeRestore
-            } else if slug.hasPrefix(Reason.beforeMove.slug) {
-                .beforeMove
-            } else if slug.hasPrefix(Reason.setAside.slug) {
-                .setAside
-            } else if slug.hasPrefix(Reason.launch.slug) {
-                .launch
-            } else if slug.hasPrefix(Reason.quit.slug) {
-                .quit
-            } else {
-                .other
+        /// Anfang des Anlasses im Ordnernamen. Die einzige Stelle dieser Zuordnung;
+        /// die Texte stehen so in vorhandenen Backups und dürfen sich nicht ändern.
+        /// Keiner ist Anfang eines anderen, die Reihenfolge beim Lesen ist also egal.
+        var slug: String? {
+            switch self {
+            case .launch: "start"
+            case .quit: "beenden"
+            case .beforeMigration: "vor-migration-"
+            case .beforeEmptyingTrash: "vor-papierkorb-leeren"
+            case .beforeRestore: "vor-wiederherstellen"
+            case .beforeMove: "vor-umzug"
+            case .setAside: "beiseitegelegt"
+            case .other: nil
             }
+        }
+
+        /// Liest den Anlass; Anhänge (Versionen, Zähler für doppelte Namen) zählen nicht.
+        init(slug: Substring) {
+            self = Self.allCases.first { kind in kind.slug.map { slug.hasPrefix($0) } ?? false } ?? .other
         }
     }
 
@@ -82,6 +90,7 @@ public struct StoreBackup: Sendable {
         public let kind: Kind
 
         public var id: String { url.lastPathComponent }
+        public var name: BackupName { BackupName(url.lastPathComponent) }
         public var isBeforeMigration: Bool { kind == .beforeMigration }
         public var isBeforeEmptyingTrash: Bool { kind == .beforeEmptyingTrash }
     }
@@ -200,8 +209,8 @@ public struct StoreBackup: Sendable {
         try fileManager.createDirectory(at: backupsURL, withIntermediateDirectories: true)
 
         let date = now()
-        let name = "\(Self.formatter.string(from: date))_\(reason.slug)"
-        let partial = backupsURL.appending(path: ".\(name).partial", directoryHint: .isDirectory)
+        let name = backupName(reason, at: date)
+        let partial = backupsURL.appending(path: ".\(name.rawValue).partial", directoryHint: .isDirectory)
         try? fileManager.removeItem(at: partial)
         try fileManager.createDirectory(at: partial, withIntermediateDirectories: true)
 
@@ -212,7 +221,7 @@ public struct StoreBackup: Sendable {
             if fileManager.fileExists(atPath: supportURL.path(percentEncoded: false)) {
                 try fileManager.copyItem(at: supportURL, to: partial.appending(path: supportURL.lastPathComponent))
             }
-            let final = backupsURL.appending(path: uniqueBackupName(name), directoryHint: .isDirectory)
+            let final = backupsURL.appending(path: uniqueBackupName(name).rawValue, directoryHint: .isDirectory)
             try fileManager.moveItem(at: partial, to: final)
             return final
         } catch {
@@ -257,7 +266,7 @@ public struct StoreBackup: Sendable {
         var trashBackups = 0
         // Neueste zuerst: Das erste Backup eines Tages oder einer Woche ist das neueste.
         for entry in try entries() {
-            if entry.isBeforeMigration || entry.kind == .beforeMove || entry.kind == .setAside || entry.url.lastPathComponent == pending {
+            if entry.isBeforeMigration || entry.kind == .beforeMove || entry.kind == .setAside || entry.name == pending {
                 keep.insert(entry.url)
                 continue
             }
@@ -308,15 +317,20 @@ public struct StoreBackup: Sendable {
         storeDirectoryURL.appending(path: "\(storeURL.lastPathComponent).version")
     }
 
+    /// `<Zeitpunkt>_<Anlass>`.
+    func backupName(_ reason: Reason, at date: Date) -> BackupName {
+        BackupName("\(Self.formatter.string(from: date))_\(reason.slug)")
+    }
+
     /// `name`, oder bei einem schon vorhandenen Backup gleichen Namens `name-2`, `name-3` …
-    func uniqueBackupName(_ name: String) -> String {
-        var candidate = name
+    func uniqueBackupName(_ name: BackupName) -> BackupName {
+        var candidate = name.rawValue
         var counter = 2
         while FileManager.default.fileExists(atPath: backupsURL.appending(path: candidate).path(percentEncoded: false)) {
-            candidate = "\(name)-\(counter)"
+            candidate = "\(name.rawValue)-\(counter)"
             counter += 1
         }
-        return candidate
+        return BackupName(candidate)
     }
 
     var lastOpenedSchemaVersion: String? {

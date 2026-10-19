@@ -27,9 +27,9 @@ public enum RestoreError: Error, Equatable, Sendable {
 public enum RestoreOutcome: Equatable, Sendable {
     /// Eingespielt. `previous`: wo der vorherige Stand liegt, relativ zu `Quill/`
     /// (meist `Backups/<Zeit>_vor-wiederherstellen`); `nil`, wenn es keinen gab.
-    case restored(backup: String, previous: String?)
+    case restored(backup: BackupName, previous: String?)
     /// Nicht eingespielt; der Stand in `Store/` ist unverändert.
-    case failed(backup: String, RestoreError)
+    case failed(backup: BackupName, RestoreError)
     /// Ein früherer Versuch brach vor dem Tausch ab (z. B. Absturz); `Store/` ist
     /// unverändert, die halbe Kopie ist weg.
     case interrupted
@@ -53,13 +53,13 @@ public enum RestoreOutcome: Equatable, Sendable {
 /// verwirft er die Kopie.
 extension StoreBackup {
     struct RestoreRequest: Codable {
-        var backup: String
+        var backup: BackupName
     }
 
     /// Liegt im vorbereiteten Ordner und wandert beim Tausch mit nach `Store/`.
     struct RestoreTag: Codable {
-        var backup: String
-        var safety: String
+        var backup: BackupName
+        var safety: BackupName
     }
 
     static let restoreTagName = ".quill-restore"
@@ -90,7 +90,7 @@ extension StoreBackup {
     /// nicht eingespielt werden kann; dann beendet sich die App nicht.
     public func requestRestore(_ entry: Entry) throws {
         _ = try validateForRestore(entry)
-        let data = try JSONEncoder().encode(RestoreRequest(backup: entry.url.lastPathComponent))
+        let data = try JSONEncoder().encode(RestoreRequest(backup: entry.name))
         try data.write(to: restoreRequestURL, options: .atomic)
     }
 
@@ -103,7 +103,7 @@ extension StoreBackup {
     }
 
     /// Ordnername des vorgemerkten Backups; die Rotation lässt es stehen.
-    var pendingRestoreBackupName: String? {
+    var pendingRestoreBackupName: BackupName? {
         guard let data = try? Data(contentsOf: restoreRequestURL) else { return nil }
         return try? JSONDecoder().decode(RestoreRequest.self, from: data).backup
     }
@@ -168,11 +168,11 @@ extension StoreBackup {
         do {
             try fileManager.removeItem(at: restoreRequestURL)
         } catch {
-            return .failed(backup: request?.backup ?? "", .requestNotRemovable)
+            return .failed(backup: request?.backup ?? BackupName(""), .requestNotRemovable)
         }
         guard let request else { return nil }
 
-        guard let entry = (try? entries())?.first(where: { $0.url.lastPathComponent == request.backup }) else {
+        guard let entry = (try? entries())?.first(where: { $0.name == request.backup }) else {
             return .failed(backup: request.backup, .backupMissing)
         }
         let version: String
@@ -243,7 +243,7 @@ extension StoreBackup {
     /// Start versucht es wieder.
     private func finishRestore(_ tag: RestoreTag, stoppingAfter stop: RestoreStep?) -> RestoreOutcome? {
         let fileManager = FileManager.default
-        let safety = backupsURL.appending(path: tag.safety, directoryHint: .isDirectory)
+        let safety = backupsURL.appending(path: tag.safety.rawValue, directoryHint: .isDirectory)
         if exists(stagingURL) {
             do {
                 try fileManager.createDirectory(at: backupsURL, withIntermediateDirectories: true)
@@ -254,7 +254,7 @@ extension StoreBackup {
             if stop == .previousMoved { return nil }
         }
         try? fileManager.removeItem(at: storeDirectoryURL.appending(path: Self.restoreTagName))
-        return .restored(backup: tag.backup, previous: exists(safety) ? "\(backupsURL.lastPathComponent)/\(tag.safety)" : nil)
+        return .restored(backup: tag.backup, previous: exists(safety) ? "\(backupsURL.lastPathComponent)/\(tag.safety.rawValue)" : nil)
     }
 
     /// Reste eines abgebrochenen Starts: Mit Markierung in `Store/` wurde schon
@@ -264,7 +264,7 @@ extension StoreBackup {
         let tagURL = storeDirectoryURL.appending(path: Self.restoreTagName)
         if exists(tagURL) {
             let tag = (try? JSONDecoder().decode(RestoreTag.self, from: Data(contentsOf: tagURL)))
-                ?? RestoreTag(backup: "", safety: newSafetyName())
+                ?? RestoreTag(backup: BackupName(""), safety: newSafetyName())
             return finishRestore(tag, stoppingAfter: stop)
         }
         guard exists(stagingURL) else { return nil }
@@ -273,8 +273,8 @@ extension StoreBackup {
     }
 
     /// Freier Name für den Stand vor dem Wiederherstellen.
-    private func newSafetyName() -> String {
-        uniqueBackupName("\(Self.formatter.string(from: now()))_\(Reason.beforeRestore.slug)")
+    private func newSafetyName() -> BackupName {
+        uniqueBackupName(backupName(.beforeRestore, at: now()))
     }
 
     /// Tauscht zwei Ordner auf demselben Volume in einem Schritt (APFS). Ohne

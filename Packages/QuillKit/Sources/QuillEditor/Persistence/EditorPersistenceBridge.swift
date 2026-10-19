@@ -98,10 +98,14 @@ public final class EditorPersistenceBridge {
         for other in Self.live.allObjects where other !== self && other.pageID == pageID && other.hasUnsavedChanges {
             await other.flush()
         }
-        let snapshots = try await store.blocks(of: pageID)
-        let blocks = snapshots.map(EditorBlock.init(snapshot:))
+        let blocks = try await storedBlocks()
         setBaseline(blocks)
         return EditorDocument(blocks: blocks)
+    }
+
+    /// Blöcke der Seite, wie sie im Store stehen.
+    private func storedBlocks() async throws -> [EditorBlock] {
+        try await store.blocks(of: pageID).map(EditorBlock.init(snapshot:))
     }
 
     /// Nach jeder Änderung im Editor aufrufen; speichert entprellt.
@@ -217,9 +221,8 @@ public final class EditorPersistenceBridge {
     /// Lädt neu, wenn dieser Editor keine offenen Änderungen hat.
     func reloadIfUnchanged() async {
         guard !hasUnsavedChanges, let onExternalChange,
-              let snapshots = try? await store.blocks(of: pageID),
+              let blocks = try? await storedBlocks(),
               !hasUnsavedChanges else { return }
-        let blocks = snapshots.map(EditorBlock.init(snapshot:))
         // Lehnt der Editor ab, bleibt der alte Stand die Vergleichsbasis: Sonst würden
         // seine veralteten Blöcke beim nächsten Speichern als Änderung gelten.
         guard onExternalChange(EditorDocument(blocks: blocks)) else {

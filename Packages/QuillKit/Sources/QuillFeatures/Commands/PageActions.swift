@@ -17,9 +17,15 @@ public struct PageActions {
     var openInTab: @MainActor () -> Void
     var openInWindow: @MainActor () -> Void
     var exportPage: @MainActor () -> Void
+}
+
+/// Befehle des fokussierten Fensters, die nicht von einer Seite abhängen.
+public struct WindowActions {
+    /// Öffnet das Sheet „Backup wiederherstellen“ in diesem Fenster.
     var restoreBackup: @MainActor () -> Void
 }
 
 extension FocusedValues {
     @Entry public var pageActions: PageActions?
+    @Entry public var windowActions: WindowActions?
 }

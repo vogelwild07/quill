@@ -119,7 +119,7 @@ extension StoreBackup {
         guard !items.isEmpty else { return nil }
 
         let target = backupsURL.appending(
-            path: uniqueBackupName("\(Self.formatter.string(from: now()))_\(Reason.setAside.slug)"),
+            path: uniqueBackupName(backupName(.setAside, at: now())).rawValue,
             directoryHint: .isDirectory
         )
         try fileManager.createDirectory(at: target, withIntermediateDirectories: true)

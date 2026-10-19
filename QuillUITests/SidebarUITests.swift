@@ -44,6 +44,41 @@ final class SidebarUITests: XCTestCase {
         assertTitles(["Projekte", "Quill"])
     }
 
+    /// Auswahl in der Sidebar und angezeigte Seite bleiben gleich: beim Anlegen,
+    /// Anklicken, Umbenennen, Papierkorb (Auswahl geht an die Elternseite), Undo und
+    /// „Schnell öffnen“ (Phase 7.2, Sidebar baut ihren Baum nur bei geänderten Seiten).
+    func testSelectionStaysInSync() throws {
+        createPage("Eltern")
+        createPage("Kind", subpage: true)
+        createPage("Andere")
+        assertTitles(["Eltern", "Kind", "Andere"])
+        assertSelected("Andere")
+
+        row(1).click()
+        assertSelected("Kind")
+
+        app.typeKey(.return, modifierFlags: [])
+        app.typeKey("a", modifierFlags: .command)
+        app.typeText("Kind neu\r")
+        assertTitles(["Eltern", "Kind neu", "Andere"])
+        assertSelected("Kind neu")
+
+        app.typeKey(.delete, modifierFlags: .command)
+        assertTitles(["Eltern", "Andere"])
+        assertSelected("Eltern")
+
+        app.typeKey("z", modifierFlags: .command)
+        assertTitles(["Eltern", "Kind neu", "Andere"])
+        assertSelected("Eltern")
+
+        app.typeKey("o", modifierFlags: .command)
+        app.typeText("Andere")
+        let hit = app.windows.firstMatch.descendants(matching: .any).matching(identifier: "quickOpen.row").firstMatch
+        XCTAssertTrue(hit.waitForExistence(timeout: 5))
+        app.typeKey(.return, modifierFlags: [])
+        assertSelected("Andere")
+    }
+
     /// Übersprungen: Synthetische Drags von XCUITest (`press(forDuration:thenDragTo:)`,
     /// auch langsam und per Koordinate auf dem Icon) starten in der `NSOutlineView`
     /// kein Ziehen; von Hand funktioniert es (geprüft 2026-10-18). Abgedeckt durch
@@ -144,13 +179,17 @@ final class SidebarUITests: XCTestCase {
         XCTAssertEqual(groupTitles(), ["Seiten"], "Ohne Favoriten kein Abschnitt")
 
         // Stern in der Symbolleiste.
+        let star = app.windows.firstMatch.buttons["page.favorite"]
         row(1).click()
-        app.windows.firstMatch.buttons["page.favorite"].click()
+        XCTAssertEqual(star.label, "Zu Favoriten hinzufügen", "Stern leer, solange kein Favorit")
+        star.click()
         assertFavorites(["Zwei"])
         XCTAssertEqual(groupTitles(), ["Favoriten", "Seiten"])
+        XCTAssertEqual(star.label, "Aus Favoriten entfernen", "Stern gefüllt nach dem Hinzufügen")
 
         // Menü „Seite“.
         row(0).click()
+        XCTAssertEqual(star.label, "Zu Favoriten hinzufügen", "Stern folgt der Auswahl")
         app.menuBars.menuBarItems["Seite"].click()
         app.menuBars.menuItems["Zu Favoriten hinzufügen"].click()
         assertFavorites(["Zwei", "Eins"])
@@ -248,6 +287,19 @@ final class SidebarUITests: XCTestCase {
         app.typeText(title)
         let shown = NSPredicate { _, _ in self.titles().contains(title) }
         wait(for: [expectation(for: shown, evaluatedWith: nil)], timeout: 5)
+    }
+
+    /// Fenstertitel und ausgewählte Zeile der Sidebar zeigen dieselbe Seite.
+    private func assertSelected(_ title: String, file: StaticString = #filePath, line: UInt = #line) {
+        func selected() -> [String] {
+            outline.pageRows.allElementsBoundByIndex.filter(\.isSelected).map { $0.textFields.firstMatch.value as? String ?? "" }
+        }
+        let matches = NSPredicate { _, _ in self.app.windows.firstMatch.title == title && selected() == [title] }
+        let result = XCTWaiter.wait(for: [expectation(for: matches, evaluatedWith: nil)], timeout: 5)
+        XCTAssertEqual(
+            result, .completed,
+            "Fenster „\(app.windows.firstMatch.title)“, Auswahl \(selected()) statt „\(title)“", file: file, line: line
+        )
     }
 
     private func assertTitles(_ expected: [String], file: StaticString = #filePath, line: UInt = #line) {

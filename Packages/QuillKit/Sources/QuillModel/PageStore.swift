@@ -98,7 +98,7 @@ public actor PageStore {
     public func location(of pageID: UUID) throws -> PageLocation {
         let page = try fetchPage(pageID)
         let siblings = try siblings(of: page.parent, excluding: page)
-        let previous = siblings.last { ($0.sortKey, $0.createdAt, $0.id.uuidString) < (page.sortKey, page.createdAt, page.id.uuidString) }
+        let previous = siblings.last { $0.siblingOrder < page.siblingOrder }
         return PageLocation(parentID: page.parent?.id, position: previous.map { .after($0.id) } ?? .first)
     }
 
@@ -134,8 +134,15 @@ public actor PageStore {
     }
 
     func fetchPage(_ id: UUID) throws -> Page {
+        try fetchPage(id, prefetching: [])
+    }
+
+    /// Mit `relationships` lädt SwiftData die verbundenen Modelle in derselben Abfrage,
+    /// statt jedes beim ersten Lesen einzeln (docs/performance.md).
+    func fetchPage(_ id: UUID, prefetching relationships: [PartialKeyPath<Page>]) throws -> Page {
         var descriptor = FetchDescriptor<Page>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
+        descriptor.relationshipKeyPathsForPrefetching = relationships
         guard let page = try modelContext.fetch(descriptor).first else {
             throw PageStoreError.pageNotFound(id)
         }
@@ -184,7 +191,7 @@ public actor PageStore {
         }
         return candidates
             .filter { $0.id != page.id }
-            .sorted { ($0.sortKey, $0.createdAt, $0.id.uuidString) < ($1.sortKey, $1.createdAt, $1.id.uuidString) }
+            .sortedInSiblingOrder(by: \.siblingOrder)
     }
 
     /// Neuer Schlüssel für `position`. Sind die Schlüssel der Geschwister doppelt
@@ -241,7 +248,7 @@ public actor PageStore {
 extension PageStore {
     /// Blöcke einer Seite in Anzeigereihenfolge.
     public func blocks(of pageID: UUID) throws -> [BlockSnapshot] {
-        try orderedBlocks(of: fetchPage(pageID)).map(\.snapshot)
+        try orderedBlocks(of: fetchPage(pageID, prefetching: [\.blocks])).map(\.snapshot)
     }
 
     /// Übernimmt Änderungen an Blöcken in einem Speichervorgang.
@@ -251,7 +258,7 @@ extension PageStore {
     /// richtig stehen (längste aufsteigende Teilfolge), wie bei Seiten (ADR-009).
     public func applyEdits(_ pageID: UUID, _ edits: BlockEdits) throws {
         guard !edits.isEmpty else { return }
-        let page = try fetchPage(pageID)
+        let page = try fetchPage(pageID, prefetching: [\.blocks])
         var byID: [UUID: Block] = [:]
         for block in page.blocks ?? [] where byID[block.id] == nil {
             byID[block.id] = block
@@ -316,7 +323,7 @@ extension PageStore {
     // MARK: - Hilfen
 
     func orderedBlocks(of page: Page) -> [Block] {
-        (page.blocks ?? []).sorted { ($0.sortKey, $0.createdAt, $0.id.uuidString) < ($1.sortKey, $1.createdAt, $1.id.uuidString) }
+        (page.blocks ?? []).sortedInSiblingOrder(by: \.siblingOrder)
     }
 
     /// Vergibt Schlüssel so, dass `order` aufsteigend ist, und ändert dabei möglichst
@@ -324,7 +331,7 @@ extension PageStore {
     /// einem anderen Fenster); ihre Schlüssel werden nie doppelt vergeben.
     /// Gibt zurück, ob sich ein Schlüssel geändert hat.
     private func assignSortKeys(order: [Block], others: [Block]) -> Bool {
-        let keep = Self.longestIncreasingRun(order.map(\.sortKey))
+        let keep = Self.indicesOfLongestIncreasingSubsequence(order.map(\.sortKey))
         let foreignKeys = others.map(\.sortKey).filter(FractionalIndex.isValid).sorted()
         var changed = false
         var index = 0
@@ -364,7 +371,7 @@ extension PageStore {
     }
 
     /// Indizes einer längsten streng aufsteigenden Teilfolge gültiger Schlüssel (O(n log n)).
-    static func longestIncreasingRun(_ keys: [String]) -> Set<Int> {
+    static func indicesOfLongestIncreasingSubsequence(_ keys: [String]) -> Set<Int> {
         var tails: [Int] = []
         var previous = [Int](repeating: -1, count: keys.count)
         for (index, key) in keys.enumerated() where FractionalIndex.isValid(key) {

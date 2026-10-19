@@ -38,6 +38,12 @@ let package = Package(
             exclude: ["Golden"]
         ),
         .testTarget(name: "QuillFeaturesTests", dependencies: ["QuillFeatures", "QuillModel", "QuillEditor"]),
+        // Messungen gegen Schwellen, nur optimiert sinnvoll (docs/performance.md):
+        // swift test -c release -Xswiftc -enable-testing --filter QuillPerformanceTests
+        .testTarget(
+            name: "QuillPerformanceTests",
+            dependencies: ["QuillModel", "QuillEditor", "QuillExport", "QuillFeatures", "QuillTestFixtures"]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

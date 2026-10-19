@@ -68,6 +68,7 @@ struct PageDetailView: View {
             applyTitleFocusRequest()
             await session.load()
             isLoaded = true
+            QuillSignposts.pageDidLoad()
             applyRevealRequest()
         }
         .overlay(alignment: .topTrailing) {

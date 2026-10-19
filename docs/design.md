@@ -27,8 +27,12 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
 ## Layout
 
 - Sidebar 220–320 pt (`NavigationSplitView`)
-- Editor-Textkörper max. 720 pt, zentriert, 96 pt Rand oben
+- Editor-Textkörper max. 720 pt, zentriert, mindestens 56 pt Rand seitlich, 96 pt Rand
+  über dem Seitenkopf, 12 pt zwischen Kopf und erstem Block
 - 4-pt-Raster; Block-Abstand 4 pt, vor Überschriften 16 pt
+- Eckenradien 4 pt (Inline-Code, Checkbox, Bild), 6 pt (Bild-Platzhalter), 8 pt
+  (Code-Block, Hinweise)
+- Alle Werte als Tokens in `QuillDesign` (`Typography`, `Spacing`, `EditorLayout`, `Radius`)
 - Block-Griff nur bei Hover im linken Rand
 
 ## Interaktionsprinzipien

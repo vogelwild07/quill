@@ -4,7 +4,7 @@ import AppKit
 import QuillTestFixtures
 
 /// Messung Laden, Tippen und Enter bei vielen Blöcken (Spike-Kriterium 1, ADR-007).
-/// Läuft im Performance-Test (Debug-Build, also strenger als in der App).
+/// Schwellen und Wiederholungen: `EditorPerformanceTests`.
 @MainActor
 enum EditorBenchmark {
     struct Result: Codable, Sendable {

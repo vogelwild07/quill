@@ -710,6 +710,64 @@ struct ClipboardAndMoveTests {
         #expect(blocks.map(\.kind) == [.heading1, .todo, .numbered])
     }
 
+    /// Mit eigener Zwischenablage (UI-Tests) nie zurück auf `NSTextView`, die nur die
+    /// allgemeine kennt. Geprüft ohne die allgemeine anzufassen.
+    @Test func ownClipboardNeverFallsBackToGeneral() throws {
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        #expect(!BlockTextView.shouldFallBackToTextView(handled: false, clipboard: board))
+        #expect(!BlockTextView.shouldFallBackToTextView(handled: true, clipboard: board))
+        #expect(BlockTextView.shouldFallBackToTextView(handled: false, clipboard: .general))
+        #expect(!BlockTextView.shouldFallBackToTextView(handled: true, clipboard: .general))
+    }
+
+    /// Nichts Brauchbares in der eigenen Zwischenablage: Der Text bleibt, wie er ist.
+    @Test func pastingFromEmptyOwnClipboardChangesNothing() throws {
+        let h = Harness([EditorBlock(text: "Hallo")])
+        let textView = try #require(h.textView as? BlockTextView)
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        board.clearContents()
+        textView.clipboard = board
+        h.caret(at: 0, 5)
+        textView.paste(nil)
+        textView.pasteAsPlainText(nil)
+        textView.pasteAsRichText(nil)
+        #expect(h.texts == ["Hallo"])
+    }
+
+    /// „Einsetzen und Stil anpassen“ liest Klartext aus der eigenen Zwischenablage.
+    @Test func pasteAsPlainTextUsesOwnClipboard() throws {
+        let h = Harness([EditorBlock(text: "Hallo")])
+        let textView = try #require(h.textView as? BlockTextView)
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        board.clearContents()
+        board.setString(" Welt", forType: .string)
+        textView.clipboard = board
+        h.caret(at: 0, 5)
+        textView.pasteAsPlainText(nil)
+        #expect(h.texts == ["Hallo Welt"])
+    }
+
+    /// Mehrzeiliger Klartext wird zu eigenen Blöcken mit Attributen auf jedem Zeichen
+    /// und ist ein Schritt zum Rückgängigmachen.
+    @Test func pasteAsPlainTextSplitsLinesIntoBlocks() throws {
+        let h = Harness([EditorBlock(text: "Hallo")])
+        let textView = try #require(h.textView as? BlockTextView)
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        board.clearContents()
+        board.setString(" Welt\nzwei\ndrei", forType: .string)
+        textView.clipboard = board
+        h.caret(at: 0, 5)
+        textView.pasteAsPlainText(nil)
+        #expect(h.texts == ["Hallo Welt", "zwei", "drei"])
+        h.expectConsistent()
+        h.undo()
+        #expect(h.texts == ["Hallo"])
+    }
+
     @Test func pastingDividerAtEndKeepsEditableParagraph() throws {
         let h = Harness([EditorBlock(text: "A"), EditorBlock(kind: .divider), EditorBlock(text: "B")])
         let board = pasteboard()
@@ -961,15 +1019,6 @@ struct PerformanceTests {
         #expect(harness.textView.selectedRange().length == 1)
         #expect(!harness.editor.reveal(blockID: UUID(), range: NSRange(location: 0, length: 1)))
         #expect(harness.textView.selectedRange().length == 1)
-    }
-
-    @Test func typingStaysWithinOneFrameAt1000Blocks() {
-        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 1100, height: 800), styleMask: [.titled], backing: .buffered, defer: false)
-        let result = EditorBenchmark.run(in: window, blockCount: 1000, keystrokes: 200, enters: 50)
-        #expect(result.blocks == 1050)
-        #expect(result.typing.p95 < 16, "Tippen p95 \(result.typing.p95) ms")
-        #expect(result.enter.p95 < 16, "Enter p95 \(result.enter.p95) ms")
-        #expect(result.loadMilliseconds < 300, "Laden \(result.loadMilliseconds) ms")
     }
 }
 #endif

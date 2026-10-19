@@ -150,8 +150,8 @@ import Testing
         #expect(Set(blocks.map(\.sortKey)).count == 3)
     }
 
-    @Test func longestIncreasingRunIgnoresInvalidKeys() {
-        let keep = PageStore.longestIncreasingRun(["a1", "", "a3", "a2", "a4"])
+    @Test func longestIncreasingSubsequenceIgnoresInvalidKeys() {
+        let keep = PageStore.indicesOfLongestIncreasingSubsequence(["a1", "", "a3", "a2", "a4"])
         #expect(keep == [0, 2, 4] || keep == [0, 3, 4])
     }
 }

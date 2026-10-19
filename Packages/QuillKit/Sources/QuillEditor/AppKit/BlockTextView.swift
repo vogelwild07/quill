@@ -39,7 +39,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     // MARK: Layout: zentrierte Textspalte
 
     /// Abstand über dem Text bzw. über dem Kopf.
-    var topPadding: CGFloat = 48 {
+    var topPadding: CGFloat = QuillDesign.EditorLayout.topPadding {
         didSet { needsLayout = true }
     }
 
@@ -53,8 +53,6 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         }
     }
 
-    private static let headerGap: CGFloat = 12
-
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
         updateInsets()
@@ -67,14 +65,14 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     /// Zentrierte Textspalte; oben Platz für den Kopf.
     private func updateInsets() {
-        let side = max(56, (bounds.width - QuillDesign.contentMaxWidth) / 2)
+        let side = max(QuillDesign.EditorLayout.minSideMargin, (bounds.width - QuillDesign.contentMaxWidth) / 2)
         var top = topPadding
         if let headerView {
             let padding = textContainer?.lineFragmentPadding ?? 5
             let width = max(0, bounds.width - 2 * side - 2 * padding)
             let height = headerHeight(headerView, width: width)
             headerView.frame = CGRect(x: side + padding, y: topPadding, width: width, height: height)
-            top += height + Self.headerGap
+            top += height + QuillDesign.EditorLayout.headerGap
         }
         if abs(textContainerInset.width - side) > 0.5 || abs(textContainerInset.height - top) > 0.5 {
             textContainerInset = NSSize(width: side, height: top)
@@ -188,11 +186,14 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         let frame = viewFrame(of: fragment)
         let lineTop = fragment.textLineFragments.first.map { $0.typographicBounds.minY } ?? 0
         let lineHeight = fragment.textLineFragments.first.map { $0.typographicBounds.height } ?? 20
-        let x = textContainerOrigin.x + BlockStyle.leadingInset(kind: fragment.kind, indent: fragment.indent) - 26
-        let y = frame.minY + lineTop + (lineHeight - 22) / 2
+        let width = QuillDesign.EditorLayout.blockControlWidth
+        let height = QuillDesign.EditorLayout.blockControlHeight
+        let x = textContainerOrigin.x + BlockStyle.leadingInset(kind: fragment.kind, indent: fragment.indent)
+            - (width + QuillDesign.EditorLayout.blockControlGap)
+        let y = frame.minY + lineTop + (lineHeight - height) / 2
         // „⋮⋮ ＋ Text“: der ＋ direkt vor dem Text, der Griff links daneben.
-        insertButton.frame = CGRect(x: x, y: y, width: 20, height: 22)
-        handle.frame = CGRect(x: x - 20, y: y, width: 20, height: 22)
+        insertButton.frame = CGRect(x: x, y: y, width: width, height: height)
+        handle.frame = CGRect(x: x - width, y: y, width: width, height: height)
         handle.characterOffset = offset
         insertButton.characterOffset = offset
         setHoverControlsHidden(false)
@@ -336,19 +337,42 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     /// eigene Zwischenablage. Für UI-Tests, damit die des Nutzers unberührt bleibt.
     public static let pasteboardArgument = "QuillPasteboardName"
 
-    static let clipboard: NSPasteboard = UserDefaults.standard.string(forKey: pasteboardArgument)
+    static let defaultClipboard: NSPasteboard = UserDefaults.standard.string(forKey: pasteboardArgument)
         .map { NSPasteboard(name: NSPasteboard.Name($0)) } ?? .general
 
+    var clipboard = BlockTextView.defaultClipboard
+
+    /// Übernimmt `NSTextView`, wenn der Editor nichts tun konnte? Die Text-View kennt
+    /// nur die allgemeine Zwischenablage; mit einer eigenen bleibt es deshalb dabei,
+    /// sonst läse ein UI-Test die Zwischenablage des Nutzers.
+    static func shouldFallBackToTextView(handled: Bool, clipboard: NSPasteboard) -> Bool {
+        !handled && clipboard.name == .general
+    }
+
     override func copy(_ sender: Any?) {
-        if editor?.copySelection(to: Self.clipboard) != true { super.copy(sender) }
+        let handled = editor?.copySelection(to: clipboard) == true
+        if Self.shouldFallBackToTextView(handled: handled, clipboard: clipboard) { super.copy(sender) }
     }
 
     override func cut(_ sender: Any?) {
-        if editor?.cutSelection(to: Self.clipboard) != true { super.cut(sender) }
+        let handled = editor?.cutSelection(to: clipboard) == true
+        if Self.shouldFallBackToTextView(handled: handled, clipboard: clipboard) { super.cut(sender) }
     }
 
     override func paste(_ sender: Any?) {
-        if editor?.paste(from: Self.clipboard) != true { super.paste(sender) }
+        let handled = editor?.paste(from: clipboard) == true
+        if Self.shouldFallBackToTextView(handled: handled, clipboard: clipboard) { super.paste(sender) }
+    }
+
+    /// „Einsetzen und Stil anpassen“: mit eigener Zwischenablage als Klartext aus ihr.
+    override func pasteAsPlainText(_ sender: Any?) {
+        guard clipboard.name != .general else { return super.pasteAsPlainText(sender) }
+        if let string = clipboard.string(forType: .string) { insertText(string, replacementRange: selectedRange()) }
+    }
+
+    override func pasteAsRichText(_ sender: Any?) {
+        guard clipboard.name != .general else { return super.pasteAsRichText(sender) }
+        paste(sender)
     }
 }
 

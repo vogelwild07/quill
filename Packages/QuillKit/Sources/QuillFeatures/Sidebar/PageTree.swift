@@ -56,6 +56,9 @@ public enum PageTree {
                 favoriteSortKey: page.favoriteSortKey
             )
         }
+
+        var siblingOrder: SiblingOrder { SiblingOrder(sortKey: sortKey, createdAt: createdAt, id: id) }
+        var favoriteOrder: SiblingOrder { SiblingOrder(sortKey: favoriteSortKey, createdAt: createdAt, id: id) }
     }
 
     /// Baut den Baum aus aktiven Seiten, ausgehend von der obersten Ebene. Seiten,
@@ -65,8 +68,9 @@ public enum PageTree {
         let byParent = Dictionary(grouping: entries, by: \.parentID)
 
         func nodes(under parentID: UUID?) -> [PageNode] {
+            // Werttypen: direkt vergleichen, `sortedInSiblingOrder` lohnt nur bei SwiftData.
             (byParent[parentID] ?? [])
-                .sorted { ($0.sortKey, $0.createdAt, $0.id.uuidString) < ($1.sortKey, $1.createdAt, $1.id.uuidString) }
+                .sorted { $0.siblingOrder < $1.siblingOrder }
                 .map { PageNode(id: $0.id, title: $0.title, icon: $0.icon, children: nodes(under: $0.id)) }
         }
         return nodes(under: nil)
@@ -77,10 +81,7 @@ public enum PageTree {
     public static func favorites(_ entries: [Entry], in tree: [PageNode]) -> [PageNode] {
         entries
             .filter { $0.isFavorite && find($0.id, in: tree) != nil }
-            .sorted {
-                Page.favoriteOrder(sortKey: $0.favoriteSortKey, createdAt: $0.createdAt, id: $0.id)
-                    < Page.favoriteOrder(sortKey: $1.favoriteSortKey, createdAt: $1.createdAt, id: $1.id)
-            }
+            .sorted { $0.favoriteOrder < $1.favoriteOrder }
             .map { PageNode(id: $0.id, title: $0.title, icon: $0.icon) }
     }
 

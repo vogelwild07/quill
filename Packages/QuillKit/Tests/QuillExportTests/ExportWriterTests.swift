@@ -29,7 +29,7 @@ import Testing
     }
 
     private var folderName: String {
-        ExportFileName.folderName(title: "Projekte", untitled: "Ohne Titel", date: SampleDocuments.exportDate, counter: 1)
+        ExportFileName.folderName(base: "Projekte", date: SampleDocuments.exportDate, counter: 1)
     }
 
     @Test func writesAllFilesIntoNewFolder() async throws {

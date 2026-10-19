@@ -8,7 +8,7 @@ import SwiftUI
 /// Die ausgewählte Seite ist Zustand des Fensters (Scene Storage, ADR-004).
 public struct RootView: View {
     @SceneStorage("selectedPageID") private var storedSelection = ""
-    @State private var selection: UUID?
+    @State private var pageSelection = PageSelection()
     @State private var renameRequest: UUID?
     @State private var titleFocusRequest: UUID?
     @State private var isShowingTrash = false
@@ -17,6 +17,11 @@ public struct RootView: View {
     @State private var isRestoreShown = false
     @State private var quitsAfterRestoreSheet = false
     @State private var launchNotice: LaunchNotice?
+    @State private var sidebarActions = PageOutlineActions()
+    private var selection: UUID? {
+        get { pageSelection.pageID }
+        nonmutating set { pageSelection.pageID = newValue }
+    }
     #if canImport(AppKit)
     @State private var window: NSWindow?
     #endif
@@ -25,20 +30,22 @@ public struct RootView: View {
     @Environment(\.quillPersistence) private var persistence
     @Environment(\.undoManager) private var undoManager
     @Environment(\.openWindow) private var openWindow
-    @Query(filter: #Predicate<Page> { $0.trashedAt == nil })
-    private var activePages: [Page]
+    @Environment(\.modelContext) private var context
+    /// Nur Favoriten: Der Stern braucht nicht alle Seiten. Eine Abfrage über alle Seiten
+    /// liefe bei jeder Änderung neu (docs/performance.md).
+    @Query(filter: #Predicate<Page> { $0.trashedAt == nil && $0.isFavorite })
+    private var activeFavorites: [Page]
 
     public init() {}
 
     public var body: some View {
         NavigationSplitView {
-            if let operations {
+            if operations != nil {
                 SidebarView(
-                    selection: $selection,
+                    selection: pageSelection,
                     renameRequest: $renameRequest,
                     isShowingTrash: $isShowingTrash,
-                    actions: outlineActions(operations),
-                    search: { isQuickOpenShown = true }
+                    actions: sidebarActions
                 )
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
             }
@@ -78,6 +85,7 @@ public struct RootView: View {
         })
         #endif
         .focusedSceneValue(\.pageActions, operations.map(pageActions))
+        .focusedSceneValue(\.windowActions, persistence.map { _ in WindowActions(restoreBackup: { isRestoreShown = true }) })
         #if canImport(AppKit)
         .sheet(isPresented: $isRestoreShown, onDismiss: quitIfRestoreRequested) {
             if let persistence {
@@ -111,6 +119,7 @@ public struct RootView: View {
             #endif
             Task { try? await store?.ensureWorkspace() }
         }
+        .onChange(of: actionDependencies, initial: true) { updateSidebarActions() }
         .onChange(of: selection) {
             storedSelection = selection?.uuidString ?? ""
             if selection != nil { isShowingTrash = false }
@@ -129,18 +138,27 @@ public struct RootView: View {
         )
     }
 
-    private func outlineActions(_ operations: PageOperations) -> PageOutlineActions {
-        PageOutlineActions(
-            create: { operations.create(in: $0) },
-            rename: { operations.rename($0, to: $1, from: $2) },
-            move: { operations.move($0, to: $1, at: $2) },
-            trash: { operations.trash($0, selectionAfter: selectionAfterTrashing($0)) },
-            setFavorite: { operations.setFavorite($0, $1, at: $2) },
-            moveFavorite: { operations.moveFavorite($0, at: $1) },
-            openInTab: { open($0, asTab: true) },
-            openInWindow: { open($0, asTab: false) },
-            export: { exportPage($0) }
-        )
+    /// Wovon die Closures der Sidebar abhängen: Store und Undo-Manager aus der Umgebung.
+    /// Zustand des Fensters lesen sie beim Ausführen selbst.
+    private var actionDependencies: [ObjectIdentifier?] {
+        [store.map(ObjectIdentifier.init), undoManager.map(ObjectIdentifier.init)]
+    }
+
+    /// Setzt die Closures der immer gleichen Instanz (siehe `PageOutlineActions`), nur
+    /// wenn sich ihre Abhängigkeiten ändern, nie während `body`.
+    private func updateSidebarActions() {
+        guard let operations else { return }
+        let actions = sidebarActions
+        actions.create = { operations.create(in: $0) }
+        actions.rename = { operations.rename($0, to: $1, from: $2) }
+        actions.move = { operations.move($0, to: $1, at: $2) }
+        actions.trash = { operations.trash($0, selectionAfter: selectionAfterTrashing($0)) }
+        actions.setFavorite = { operations.setFavorite($0, $1, at: $2) }
+        actions.moveFavorite = { operations.moveFavorite($0, at: $1) }
+        actions.openInTab = { open($0, asTab: true) }
+        actions.openInWindow = { open($0, asTab: false) }
+        actions.export = { exportPage($0) }
+        actions.search = { isQuickOpenShown = true }
     }
 
     private func pageActions(_ operations: PageOperations) -> PageActions {
@@ -160,8 +178,7 @@ public struct RootView: View {
             toggleFavorite: { if let selection { operations.setFavorite(selection, !isFavorite(selection)) } },
             openInTab: { if let selection { open(selection, asTab: true) } },
             openInWindow: { if let selection { open(selection, asTab: false) } },
-            exportPage: { if let selection { exportPage(selection) } },
-            restoreBackup: { isRestoreShown = true }
+            exportPage: { if let selection { exportPage(selection) } }
         )
     }
 
@@ -197,7 +214,7 @@ public struct RootView: View {
     }
 
     private func isFavorite(_ pageID: UUID?) -> Bool {
-        activePages.first { $0.id == pageID }?.isFavorite ?? false
+        activeFavorites.contains { $0.id == pageID }
     }
 
     /// Stern in der Symbolleiste: Seite zu den Favoriten (ADR-017).
@@ -237,16 +254,21 @@ public struct RootView: View {
     private func exportPage(_ pageID: UUID) {
         #if canImport(AppKit)
         guard let store else { return }
-        let title = activePages.first { $0.id == pageID }?.title ?? ""
+        let title = activePages().first { $0.id == pageID }?.title ?? ""
         PageExport.run(pageID: pageID, title: title, store: store, window: window)
         #endif
+    }
+
+    /// Seiten außerhalb des Papierkorbs, erst beim Ausführen einer Aktion gelesen.
+    private func activePages() -> [Page] {
+        (try? context.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.trashedAt == nil }))) ?? []
     }
 
     /// Bleibt die Auswahl nach dem Papierkorb gültig? Liegt sie in der
     /// weggeworfenen Seite oder darunter, geht sie an die Elternseite.
     private func selectionAfterTrashing(_ trashed: UUID) -> UUID? {
         guard let selection else { return nil }
-        let tree = PageTree.build(activePages.map(PageTree.Entry.init))
+        let tree = PageTree.build(activePages().map(PageTree.Entry.init))
         guard PageTree.isSelfOrDescendant(selection, of: trashed, in: tree) else { return selection }
         return PageTree.ancestors(of: trashed, in: tree)?.last
     }
