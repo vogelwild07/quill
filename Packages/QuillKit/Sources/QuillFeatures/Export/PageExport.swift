@@ -60,9 +60,8 @@ enum PageExport {
             defer { if accessing { destination.stopAccessingSecurityScopedResource() } }
             do {
                 let snapshot = try await store.exportSnapshot(of: pageID, includeSubpages: includeSubpages)
-                let result = try await ExportWriter.write(
-                    MarkdownExporter.plan(for: snapshot, strings: strings),
-                    title: snapshot.title, untitled: strings.untitled, into: destination,
+                let result = try await ExportWriter.export(
+                    snapshot, strings: strings, into: destination,
                     imageData: { try await store.imageData($0)?.data }
                 )
                 report(result, title: PageLabel.title(snapshot.title), window: window)

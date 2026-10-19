@@ -36,6 +36,9 @@ public struct ExportPlan: Equatable, Sendable {
     }
 
     public var files: [File]
+    /// Bilder, die als Kommentar statt als Link im Markdown stehen, weil ihr Asset
+    /// oder seine Daten fehlen.
+    public var missingImageCount = 0
 
     public var pageCount: Int {
         files.count { if case .markdown = $0.content { true } else { false } }
@@ -56,20 +59,34 @@ public enum MarkdownExporter {
     /// Ordner der Bilder im Export.
     public static let assetsFolder = "assets"
 
-    public static func plan(for root: PageExportSnapshot, strings: ExportStrings) -> ExportPlan {
-        var builder = Builder(strings: strings)
+    /// `missingImages`: Bilder, deren Daten beim Laden fehlten; sie werden wie
+    /// fehlende Assets zum Kommentar.
+    public static func plan(for root: PageExportSnapshot, strings: ExportStrings, missingImages: Set<UUID> = []) -> ExportPlan {
+        var builder = Builder(strings: strings, missingImages: missingImages)
         var names = ExportNameRegistry(reserved: [assetsFolder])
         builder.add(root, in: [], names: &names)
-        return ExportPlan(files: builder.files)
+        return ExportPlan(files: builder.files, missingImageCount: builder.missingImageCount)
+    }
+
+    /// Alle Bilder des Baums mit vorhandenem Asset, in Export-Reihenfolge.
+    public static func imageIDs(in root: PageExportSnapshot) -> [UUID] {
+        let own = root.blocks.compactMap { block -> UUID? in
+            guard block.kindRaw == BlockKind.image.rawValue, let id = block.properties.assetID, root.imageTypes[id] != nil else { return nil }
+            return id
+        }
+        return own + root.children.flatMap(imageIDs(in:))
     }
 
     private struct Builder {
         let strings: ExportStrings
+        let missingImages: Set<UUID>
         var files: [ExportPlan.File] = []
         var assetNames = ExportNameRegistry()
+        var missingImageCount = 0
 
-        init(strings: ExportStrings) {
+        init(strings: ExportStrings, missingImages: Set<UUID>) {
             self.strings = strings
+            self.missingImages = missingImages
         }
 
         /// Legt die Seite in `directory` an (Pfadteile ab Export-Ordner), ihre
@@ -116,7 +133,8 @@ public enum MarkdownExporter {
         /// `![](../assets/3F2A9C1E.png)`; fehlt das Asset, ein Kommentar statt eines
         /// Links ins Leere.
         mutating func imageLine(_ block: EditorBlock, page: PageExportSnapshot, toRoot: String) -> String {
-            guard let id = block.assetID, let uti = page.imageTypes[id] else {
+            guard let id = block.assetID, let uti = page.imageTypes[id], !missingImages.contains(id) else {
+                missingImageCount += 1
                 return "<!-- " + strings.missingImage + " -->"
             }
             let ext = UTType(uti)?.preferredFilenameExtension ?? "bin"

@@ -80,6 +80,21 @@ import Testing
         let page = try #require(markdown(at: "Projekte/quill 2.md"))
         #expect(page.contains("<!-- Bild fehlt -->"))
         #expect(!page.contains("!["))
+        #expect(plan.missingImageCount == 1)
+    }
+
+    /// Bilder, deren Daten beim Laden fehlten, werden wie fehlende Assets behandelt.
+    @Test func imagesWithoutDataBecomeComments() throws {
+        let root = SampleDocuments.exportProject()
+        #expect(MarkdownExporter.imageIDs(in: root) == [SampleDocuments.exportImageID, SampleDocuments.exportImage2ID])
+        let partial = MarkdownExporter.plan(for: root, strings: Self.strings, missingImages: [SampleDocuments.exportImageID])
+        #expect(partial.imageCount == 1)
+        #expect(partial.missingImageCount == 2)
+        guard case .markdown(let text) = partial.files[0].content else {
+            Issue.record("Keine Seite")
+            return
+        }
+        #expect(!text.contains("![]("))
     }
 
     @Test func linksWithSpacesUseAngleBrackets() throws {

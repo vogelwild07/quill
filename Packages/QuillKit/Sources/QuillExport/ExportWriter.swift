@@ -1,4 +1,5 @@
 import Foundation
+import QuillModel
 
 /// Ergebnis eines Exports für die Rückmeldung in der App.
 public struct ExportResult: Equatable, Sendable {
@@ -6,58 +7,65 @@ public struct ExportResult: Equatable, Sendable {
     public var folder: URL
     public var pageCount: Int
     public var imageCount: Int
-    /// Bilder, deren Daten beim Schreiben fehlten (sollte nicht vorkommen).
+    /// Bilder, die als Kommentar statt als Link exportiert wurden, weil Asset oder
+    /// Daten fehlten.
     public var missingImageCount: Int
 }
 
-/// Schreibt einen `ExportPlan` auf die Platte (ADR-018).
+/// Schreibt eine Seite (mit Unterseiten) als Markdown-Ordner (ADR-018).
 ///
-/// Erst in einen versteckten Zwischenordner im Ziel, dann ein Umbenennen in
-/// „<Seite> (Quill JJJJ-MM-TT)“. So entsteht nie ein halber Export, und
-/// Vorhandenes wird nie überschrieben: Gibt es den Namen schon, bekommt der neue
-/// Ordner einen Zähler („… 2“).
+/// Erst in einen Zwischenordner, dann ein Umbenennen in „<Seite> (Quill JJJJ-MM-TT)“.
+/// So entsteht nie ein halber Export, und Vorhandenes wird nie überschrieben: Gibt
+/// es den Namen schon, bekommt der neue Ordner einen Zähler („… 2“).
 public enum ExportWriter {
-    public static func write(
-        _ plan: ExportPlan,
-        title: String,
-        untitled: String,
+    public static func export(
+        _ root: PageExportSnapshot,
+        strings: ExportStrings,
         into destination: URL,
         date: Date = .now,
         imageData: @Sendable (UUID) async throws -> Data?
     ) async throws -> ExportResult {
         let fileManager = FileManager()
         let staging = destination.appending(path: ".quill-export-\(UUID().uuidString)", directoryHint: .isDirectory)
-        try fileManager.createDirectory(at: staging, withIntermediateDirectories: false)
-        do {
-            var missing = 0
-            for file in plan.files {
-                let url = staging.appending(path: file.path, directoryHint: .notDirectory)
-                try fileManager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-                switch file.content {
-                case .markdown(let text):
-                    try Data(text.utf8).write(to: url)
-                case .image(let id):
-                    guard let data = try await imageData(id) else {
-                        missing += 1
-                        continue
-                    }
-                    try data.write(to: url)
-                }
+        // `export/` wird am Ende umbenannt, `images/` hält die Bilder bis dahin.
+        let output = staging.appending(path: "export", directoryHint: .isDirectory)
+        let images = staging.appending(path: "images", directoryHint: .isDirectory)
+        try fileManager.createDirectory(at: output, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: images, withIntermediateDirectories: false)
+        defer { try? fileManager.removeItem(at: staging) }
+
+        // Erst die Bilder: Fehlen Daten, steht im Markdown ein Kommentar statt eines
+        // Links ins Leere.
+        var missing: Set<UUID> = []
+        for id in MarkdownExporter.imageIDs(in: root) {
+            guard let data = try await imageData(id) else {
+                missing.insert(id)
+                continue
             }
-            let folder = try moveIntoPlace(staging, title: title, untitled: untitled, in: destination, date: date, fileManager: fileManager)
-            return ExportResult(
-                folder: folder, pageCount: plan.pageCount,
-                imageCount: plan.imageCount - missing, missingImageCount: missing
-            )
-        } catch {
-            try? fileManager.removeItem(at: staging)
-            throw error
+            try data.write(to: images.appending(path: id.uuidString))
         }
+
+        let plan = MarkdownExporter.plan(for: root, strings: strings, missingImages: missing)
+        for file in plan.files {
+            let url = output.appending(path: file.path, directoryHint: .notDirectory)
+            try fileManager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            switch file.content {
+            case .markdown(let text):
+                try Data(text.utf8).write(to: url)
+            case .image(let id):
+                try fileManager.moveItem(at: images.appending(path: id.uuidString), to: url)
+            }
+        }
+        let folder = try moveIntoPlace(output, title: root.title, untitled: strings.untitled, in: destination, date: date, fileManager: fileManager)
+        return ExportResult(
+            folder: folder, pageCount: plan.pageCount,
+            imageCount: plan.imageCount, missingImageCount: plan.missingImageCount
+        )
     }
 
-    /// Benennt den Zwischenordner in den ersten freien Namen um.
+    /// Benennt den fertigen Ordner in den ersten freien Namen um.
     private static func moveIntoPlace(
-        _ staging: URL, title: String, untitled: String, in destination: URL, date: Date, fileManager: FileManager
+        _ output: URL, title: String, untitled: String, in destination: URL, date: Date, fileManager: FileManager
     ) throws -> URL {
         var counter = 1
         while true {
@@ -65,7 +73,7 @@ public enum ExportWriter {
             let target = destination.appending(path: name, directoryHint: .isDirectory)
             if !fileManager.fileExists(atPath: target.path(percentEncoded: false)) {
                 do {
-                    try fileManager.moveItem(at: staging, to: target)
+                    try fileManager.moveItem(at: output, to: target)
                     return target
                 } catch CocoaError.fileWriteFileExists {
                     // Zwischen Prüfen und Umbenennen angelegt: nächster Name.

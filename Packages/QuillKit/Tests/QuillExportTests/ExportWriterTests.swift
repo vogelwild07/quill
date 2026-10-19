@@ -8,6 +8,7 @@ import Testing
 @Suite struct ExportWriterTests {
     private let destination: URL
     private let plan = MarkdownExporter.plan(for: SampleDocuments.exportProject(), strings: MarkdownExporterTests.strings)
+    private static let quillPage = "Projekte/Quill.md"
     private let utc = TimeZone(identifier: "UTC")!
 
     init() throws {
@@ -16,8 +17,8 @@ import Testing
     }
 
     private func export(imageData: @escaping @Sendable (UUID) async throws -> Data? = { Data($0.uuidString.utf8) }) async throws -> ExportResult {
-        try await ExportWriter.write(
-            plan, title: "Projekte", untitled: "Ohne Titel", into: destination,
+        try await ExportWriter.export(
+            SampleDocuments.exportProject(), strings: MarkdownExporterTests.strings, into: destination,
             date: SampleDocuments.exportDate, imageData: imageData
         )
     }
@@ -37,7 +38,8 @@ import Testing
         #expect(result.folder.lastPathComponent == folderName)
         #expect(result.pageCount == 7)
         #expect(result.imageCount == 2)
-        #expect(result.missingImageCount == 0)
+        // Das Bild ohne Asset auf „quill“.
+        #expect(result.missingImageCount == 1)
         #expect(try contents() == [folderName], "Kein Zwischenordner übrig")
         for file in plan.files {
             let data = try Data(contentsOf: result.folder.appending(path: file.path))
@@ -75,11 +77,19 @@ import Testing
         #expect(try contents().isEmpty)
     }
 
-    @Test func countsMissingImageData() async throws {
+    /// Fehlen die Daten eines Bildes, steht im Markdown ein Kommentar statt eines
+    /// Links ins Leere, und die Meldung zählt es mit.
+    @Test func missingImageDataBecomesCommentNotDeadLink() async throws {
         defer { try? FileManager.default.removeItem(at: destination) }
         let missing = SampleDocuments.exportImage2ID
         let result = try await export { $0 == missing ? nil : Data() }
         #expect(result.imageCount == 1)
-        #expect(result.missingImageCount == 1)
+        #expect(result.missingImageCount == 2)
+
+        let page = try String(contentsOf: result.folder.appending(path: Self.quillPage), encoding: .utf8)
+        #expect(page.contains("<!-- Bild fehlt -->"))
+        #expect(!page.contains("!["))
+        let assets = try FileManager.default.contentsOfDirectory(atPath: result.folder.appending(path: "assets").path(percentEncoded: false))
+        #expect(assets == ["3F2A9C1E.png"])
     }
 }
