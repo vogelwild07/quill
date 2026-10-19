@@ -360,8 +360,21 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     /// eigene Zwischenablage. Für UI-Tests, damit die des Nutzers unberührt bleibt.
     public static let pasteboardArgument = "QuillPasteboardName"
 
+    /// Name der eigenen Zwischenablage nur aus der Kommandozeile, nie aus gespeicherten
+    /// Einstellungen: Ein `defaults write` darf Kopieren und Einsetzen nicht still
+    /// umleiten (wie die Store-Argumente, ADR-019). In Release-Builds immer `nil`.
+    static func clipboardName(arguments: [String]) -> String? {
+        #if DEBUG
+        guard let index = arguments.firstIndex(of: "-\(pasteboardArgument)"), arguments.indices.contains(index + 1),
+              !arguments[index + 1].isEmpty else { return nil }
+        return arguments[index + 1]
+        #else
+        return nil
+        #endif
+    }
+
     static let defaultClipboard: NSPasteboard = {
-        guard let name = UserDefaults.standard.string(forKey: pasteboardArgument) else { return .general }
+        guard let name = clipboardName(arguments: ProcessInfo.processInfo.arguments) else { return .general }
         let pasteboard = NSPasteboard(name: NSPasteboard.Name(name))
         #if DEBUG
         TestImage.put(arguments: ProcessInfo.processInfo.arguments, on: pasteboard)
