@@ -28,7 +28,7 @@ final class QuickOpenModel {
     /// Erst nach dem ersten Laden „Keine Treffer“ zeigen.
     private(set) var hasLoaded = false
 
-    private static let logger = Logger(subsystem: "de.vogel.quill", category: "search")
+    private static let logger = Logger(subsystem: "io.github.vogelwild07.quill", category: "search")
 
     var hits: [SearchHit] { sections.flatMap(\.hits) }
 

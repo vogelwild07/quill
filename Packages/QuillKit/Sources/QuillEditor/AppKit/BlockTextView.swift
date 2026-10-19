@@ -356,9 +356,12 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     // MARK: Zwischenablage
 
+    #if DEBUG
     /// Startargument `-QuillPasteboardName <Name>`: Kopieren und Einsetzen nutzen eine
     /// eigene Zwischenablage. Für UI-Tests, damit die des Nutzers unberührt bleibt.
+    /// Nur in Debug, damit Release den Namen nicht enthält (`check-release-binary.sh`).
     public static let pasteboardArgument = "QuillPasteboardName"
+    #endif
 
     /// Name der eigenen Zwischenablage nur aus der Kommandozeile, nie aus gespeicherten
     /// Einstellungen: Ein `defaults write` darf Kopieren und Einsetzen nicht still

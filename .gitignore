@@ -48,3 +48,6 @@ notes.local.md
 
 # Icon-Entwürfe (Icon Composer), nicht committen
 Design/IconDrafts/
+
+# Release-Ausgabe (Scripts/make-release.sh)
+dist/

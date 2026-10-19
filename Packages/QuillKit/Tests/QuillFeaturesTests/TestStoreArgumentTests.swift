@@ -1,8 +1,10 @@
+#if DEBUG
 import Foundation
 import Testing
 @testable import QuillFeatures
 
-/// Startargumente für UI-Tests wirken nur aus der Kommandozeile (ADR-019).
+/// Startargumente für UI-Tests wirken nur aus der Kommandozeile (ADR-019). Nur in
+/// Debug: In Release gibt es die Argumente samt Namen nicht (ADR-022).
 @MainActor
 @Suite struct TestStoreArgumentTests {
     @Test func readsArgumentsFromCommandLine() {
@@ -31,3 +33,4 @@ import Testing
         #expect(QuillPersistence.testStore(arguments: ProcessInfo.processInfo.arguments) == nil)
     }
 }
+#endif

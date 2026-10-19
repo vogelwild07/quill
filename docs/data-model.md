@@ -85,7 +85,7 @@ DatabaseView         (später)  id, name, layoutRaw (table|board|calendar), conf
 
 ## Speicherort und Backups
 
-- Store: `~/Library/Containers/de.vogel.quill/Data/Library/Application Support/Quill/Store/Quill.store` (plus `-wal`, `-shm`, `.Quill_SUPPORT/` für externe Daten, `Quill.store.version`). Bis Phase 7.1 lagen diese Dateien direkt in `Quill/`; der erste Start einer neueren Version zieht sie nach einem Backup `vor-umzug` um. Gibt es `Store/` schon, kommen Reste im alten Ort in ein Backup `beiseitegelegt` (ADR-019).
+- Store: `~/Library/Containers/io.github.vogelwild07.quill/Data/Library/Application Support/Quill/Store/Quill.store` (plus `-wal`, `-shm`, `.Quill_SUPPORT/` für externe Daten, `Quill.store.version`). Bis Phase 7.1 lagen diese Dateien direkt in `Quill/`; der erste Start einer neueren Version zieht sie nach einem Backup `vor-umzug` um. Gibt es `Store/` schon, kommen Reste im alten Ort in ein Backup `beiseitegelegt` (ADR-019).
 - Backups: daneben in `Backups/`, Regeln siehe ADR-010.
 
 ### Backup wiederherstellen
@@ -102,3 +102,14 @@ Nur falls Quill nicht mehr startet:
 4. Einen neuen, leeren Ordner `Store/` anlegen und aus `Backups/<Zeitpunkt>_<Anlass>/` die Dateien `Quill.store`, falls vorhanden `Quill.store-wal` und `Quill.store-shm` (immer zusammen) sowie `.Quill_SUPPORT` hineinkopieren.
 5. Keine `Quill.store.version` mitkopieren. Beim nächsten Start entsteht dann vorsorglich ein Backup `vor-migration-unbekannt-…`, und eine nötige Migration läuft normal.
 6. Quill starten.
+
+### Umzug aus `de.vogel.quill` (einmalig, vor v0.1.0)
+
+Bis Phase 8 hieß die Bundle-ID `de.vogel.quill` (ADR-022). Eine neue Bundle-ID bekommt einen neuen, leeren Sandbox-Container; die App selbst darf den alten nicht lesen. Der Umzug läuft deshalb einmal von Hand über „Backup wiederherstellen“:
+
+1. In der alten Quill eine bleibende Änderung machen, z. B. eine neue Seite „Umzug“ anlegen, dann Quill beenden. Nur nach einer Änderung entsteht beim Beenden ein Backup `<Zeitpunkt>_beenden`, das sicher den aktuellen Stand enthält.
+2. Sicherung: Im Finder ⇧⌘G, `~/Library/Containers/de.vogel.quill/Data/Library/Application Support/` öffnen und den Ordner `Quill` mit gedrückter ⌥-Taste nach `~/Documents/` ziehen (kopiert ihn). Den Ordner `Quill-Sicherung-<Datum>` nennen. Den alten Container nicht verändern.
+3. Die neue Quill (`io.github.vogelwild07.quill`) einmal starten und wieder beenden. Dabei legt macOS den neuen Container an.
+4. In `~/Library/Containers/de.vogel.quill/Data/Library/Application Support/Quill/Backups/` den neuesten Ordner `…_beenden` (Zeit in UTC) als Ganzes nach `~/Library/Containers/io.github.vogelwild07.quill/Data/Library/Application Support/Quill/Backups/` kopieren; fehlt dort `Backups/`, den Ordner anlegen. Fragt macOS, ob der Zugriff auf Daten einer anderen App erlaubt werden soll, **erlauben**, sonst scheitert das Kopieren. Die Kopie dann umbenennen: Endung `_beenden` durch `_vor-umzug` ersetzen (z. B. `2026-10-19T20-15-03Z_vor-umzug`). Sonst räumt der nächste Start sie weg, weil das Backup aus Schritt 3 vom selben Tag jünger ist; Backups `vor-umzug` bleiben immer (`StoreMoveBackupTests`).
+5. Die neue Quill starten, Ablage › „Backup wiederherstellen …“, das kopierte Backup („Vor dem Umzug des Speicherorts“) wählen und bestätigen. Quill beendet sich; beim nächsten Start ist der Stand da, der leere Stand bleibt als Backup „Vor dem Wiederherstellen“.
+6. Seiten, Bilder, Favoriten und Papierkorb prüfen. Alter Container und Sicherung bleiben unverändert liegen.

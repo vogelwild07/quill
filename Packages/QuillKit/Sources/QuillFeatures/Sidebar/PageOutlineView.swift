@@ -7,9 +7,9 @@ import SwiftUI
 
 extension NSPasteboard.PasteboardType {
     /// Gezogene Seite innerhalb der Sidebar (UUID als String).
-    static let quillPageID = NSPasteboard.PasteboardType("de.vogel.quill.page-id")
+    static let quillPageID = NSPasteboard.PasteboardType("io.github.vogelwild07.quill.page-id")
     /// Zusätzlich gesetzt, wenn aus den Favoriten gezogen wird.
-    static let quillFavoriteDrag = NSPasteboard.PasteboardType("de.vogel.quill.favorite-drag")
+    static let quillFavoriteDrag = NSPasteboard.PasteboardType("io.github.vogelwild07.quill.favorite-drag")
 }
 
 /// Seitenbaum als `NSOutlineView`, darüber die Favoriten als eigener Abschnitt

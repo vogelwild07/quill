@@ -10,13 +10,16 @@ import AppKit
 /// Öffnet die Datenbank der App samt Backups (ADR-010) und hält Container und Store.
 @MainActor
 public final class QuillPersistence {
+    #if DEBUG
     /// Startargument `-QuillInMemoryStore YES`: Daten nur im Arbeitsspeicher, keine
-    /// Backups. Für UI-Tests, damit sie nie die echten Daten berühren.
+    /// Backups. Für UI-Tests, damit sie nie die echten Daten berühren. Nur in Debug,
+    /// damit Release den Namen nicht enthält (`check-release-binary.sh`).
     public static let inMemoryArgument = "QuillInMemoryStore"
     /// Startargument `-QuillStoreDirectory <Name>`: Store und Backups in diesem
     /// Unterordner des temporären Ordners der App. Für UI-Tests, die Backups und
     /// Wiederherstellen über Neustarts brauchen (ADR-019); nie der echte Store.
     public static let storeDirectoryArgument = "QuillStoreDirectory"
+    #endif
 
     /// Speicher für UI-Tests statt des echten Stores.
     enum TestStore: Equatable {
@@ -51,7 +54,7 @@ public final class QuillPersistence {
     /// angezeigt wurde.
     private var preparation: StorePreparation?
 
-    private nonisolated static let logger = Logger(subsystem: "de.vogel.quill", category: "persistence")
+    private nonisolated static let logger = Logger(subsystem: "io.github.vogelwild07.quill", category: "persistence")
 
     /// Seiten liegen so lange im Papierkorb, dann löscht Quill sie endgültig.
     public nonisolated static let trashRetentionDays = 30
@@ -69,10 +72,12 @@ public final class QuillPersistence {
     /// nicht geöffnet; andere Backup-Fehler werden nur protokolliert.
     public static func open(arguments: [String] = ProcessInfo.processInfo.arguments) throws -> QuillPersistence {
         let testStore = testStore(arguments: arguments)
+        #if DEBUG
         if testStore == .inMemory {
             logger.notice("Store nur im Arbeitsspeicher (\(inMemoryArgument, privacy: .public))")
             return QuillPersistence(container: try QuillStore.makeInMemoryContainer(), backup: nil)
         }
+        #endif
 
         let backup = makeBackup(testStore)
         // Vor allem anderen: unter Sperre umziehen und ein vorgemerktes Backup
@@ -103,13 +108,17 @@ public final class QuillPersistence {
 
     /// Echter Store, oder für UI-Tests einer im temporären Ordner der App.
     private static func makeBackup(_ testStore: TestStore?) -> StoreBackup {
-        guard case .directory(let name) = testStore else { return StoreBackup() }
-        let directory = FileManager.default.temporaryDirectory.appending(path: name, directoryHint: .isDirectory)
-        logger.notice("Store im temporären Ordner (\(storeDirectoryArgument, privacy: .public))")
-        return StoreBackup(
-            storeURL: directory.appending(path: "Store/Quill.store", directoryHint: .notDirectory),
-            backupsURL: directory.appending(path: "Backups", directoryHint: .isDirectory)
-        )
+        #if DEBUG
+        if case .directory(let name) = testStore {
+            let directory = FileManager.default.temporaryDirectory.appending(path: name, directoryHint: .isDirectory)
+            logger.notice("Store im temporären Ordner (\(storeDirectoryArgument, privacy: .public))")
+            return StoreBackup(
+                storeURL: directory.appending(path: "Store/Quill.store", directoryHint: .notDirectory),
+                backupsURL: directory.appending(path: "Backups", directoryHint: .isDirectory)
+            )
+        }
+        #endif
+        return StoreBackup()
     }
 
     // MARK: Wiederherstellen (ADR-019)

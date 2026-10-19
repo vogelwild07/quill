@@ -11,7 +11,7 @@ import OSLog
 enum TestImage {
     static let argument = "QuillTestImage"
 
-    private static let logger = Logger(subsystem: "de.vogel.quill", category: "editor")
+    private static let logger = Logger(subsystem: "io.github.vogelwild07.quill", category: "editor")
 
     /// Legt das Testbild aus den Startargumenten in `pasteboard`. Gibt zurück, ob
     /// ein Bild gelegt wurde.

@@ -11,7 +11,7 @@ import XCTest
 final class AccessibilityAuditUITests: XCTestCase {
     private var app: XCUIApplication!
     private let storeDirectory = "uitest-audit-\(UUID().uuidString)"
-    private let pasteboard = NSPasteboard(name: NSPasteboard.Name("de.vogel.quill.uitests.\(UUID().uuidString)"))
+    private let pasteboard = NSPasteboard(name: NSPasteboard.Name("io.github.vogelwild07.quill.uitests.\(UUID().uuidString)"))
 
     override func setUp() async throws {
         continueAfterFailure = true

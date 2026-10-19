@@ -226,7 +226,7 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 
 **Entscheidung:**
 - Package: `QuillPerformanceTests`, nur optimiert (`swift test -c release`, sonst übersprungen), mit Schwellen in `Performance.limits`; `Scripts/perf-package.py` wiederholt und zeigt Median, Minimum, Maximum.
-- App: eigene Konfiguration „Profiling“ (optimiert wie Release, Produkt „Quill Profiling“, Bundle-ID `de.vogel.quill.profiling`, also eigener Sandbox-Container und Store). Den Bestand legt `-QuillSeedPages` an, nur unter `QUILL_PROFILING` kompiliert und nur in dieser Bundle-ID; gemessen wird per Signposts (`QuillSignposts`) und `XCTOSSignpostMetric` in `PerformanceUITests`, ausgewertet von `Scripts/perf-ui.py`. `Scripts/check-release-binary.sh` prüft, dass Release keinen Profiling-Code enthält.
+- App: eigene Konfiguration „Profiling“ (optimiert wie Release, Produkt „Quill Profiling“, Bundle-ID `io.github.vogelwild07.quill.profiling`, also eigener Sandbox-Container und Store). Den Bestand legt `-QuillSeedPages` an, nur unter `QUILL_PROFILING` kompiliert und nur in dieser Bundle-ID; gemessen wird per Signposts (`QuillSignposts`) und `XCTOSSignpostMetric` in `PerformanceUITests`, ausgewertet von `Scripts/perf-ui.py`. `Scripts/check-release-binary.sh` prüft, dass Release keinen Profiling-Code enthält.
 - Schwellen: Produktziele fest; neue Messungen max(Baseline × 3, Baseline + 5 ms), nie über einem Ziel. Ausnahmen nur nach Rücksprache (Sidebar beim Start 200 ms, nach ⌘N 180 ms ab Anlegen der Seite; `docs/performance.md`).
 
 **Konsequenzen:**
@@ -249,3 +249,19 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Neue UI-Texte brauchen einen Katalogeintrag, sonst ist `LocalizationTests` rot; neue Meldungen der Bedienungshilfen machen den Audit rot.
 - Der Audit hängt teils vom Bildschirm ab (Glas, Hell/Dunkel); deshalb prüfen die Snapshot-Tests den Kontrast auf festem Hintergrund zusätzlich.
 - „Kontrast erhöhen“ ließ sich offscreen nicht prüfen; im dunklen Modus zeichnet macOS den Icon-Hintergrund selbst dunkel, die eigene Variante für Dunkel greift dort nicht.
+
+## ADR-022: Release ohne Developer ID und Notarisierung (2026-10-19)
+
+**Kontext:** v0.1.0 soll als .dmg auf GitHub erscheinen. Es gibt nur ein Personal Team (gratis), also weder Developer-ID-Zertifikat noch Notarisierung. Auf diesem Mac liegt keine Signier-Identität im Schlüsselbund.
+
+**Entscheidung:**
+- Die App wird nur ad hoc signiert (`CODE_SIGN_IDENTITY=-`, ohne Team und Profil), mit Hardened Runtime und App Sandbox. Nutzer bestätigen die Gatekeeper-Meldung selbst über Systemeinstellungen › Datenschutz & Sicherheit › „Dennoch öffnen“ (seit macOS 15 der einzige Weg). Die Anleitung empfiehlt kein `xattr`.
+- Nur Apple Silicon (`arm64`), ab macOS 26.0, wie im Projekt festgelegt (CLAUDE.md). Ein Intel-Build ließe sich nicht testen.
+- `Scripts/make-release.sh` baut alles aus einer sauberen Arbeitskopie: `xcodebuild archive` (nur das Archiv entfernt Debug-Symbole und damit Pfade wie `/Users/…`), prüft Version, Bundle-ID, Architektur, Mindestversion, Ad-hoc-Signatur ohne Team, Hardened Runtime, Sandbox, kein `get-task-allow`, keine persönlichen Pfade und per `check-release-binary.sh --app` keinen Profiling- oder Testcode (Merkmale des Seeds und des Testbilds, die Namen aller drei Startargumente für UI-Tests, die deshalb samt Konstanten nur in Debug existieren, keine `.xctest`/`PlugIns`). Danach .dmg mit `Quill.app` und Verknüpfung „Programme“ → `/Applications`, nur lesend eingehängt und geprüft (Inhalt, Signatur, gleicher CDHash wie der Build), dazu `Quill-<Version>.dmg.sha256`. Ausgabe in `dist/` (ignoriert).
+- Bundle-ID `io.github.vogelwild07.quill` statt `de.vogel.quill` (ein Namensraum, der zum GitHub-Konto gehört, statt einer fremden Domain), vor dem ersten Release, solange nur ein Store umziehen muss. Alle internen Kennungen (Zwischenablage, Drag, Textattribute, Notification, Logger, Signposts, Profiling, UI-Test-Runner) folgen; `BundleIdentifierTests` hält die alte Kennung aus dem Repo. Der Umzug des eigenen Stores läuft einmal von Hand über „Backup wiederherstellen“ (`docs/data-model.md`): Die Kopie des Backups heißt `…_vor-umzug`, sonst räumt der Start sie neben dem jüngeren Backup vom selben Tag weg (`StoreMoveBackupTests`). Die History wird nicht umgeschrieben.
+- Lizenz GPL-3.0-or-later für den Quellcode; das App-Icon ist ausgenommen, alle Rechte vorbehalten (`LICENSE`).
+
+**Konsequenzen:**
+- Jede neue Version hat eine neue Ad-hoc-Signatur. Nutzer müssen „Dennoch öffnen“ eventuell erneut bestätigen, und macOS kann fragen, ob Quill auf die Daten im bisherigen Container zugreifen darf.
+- Die .dmg ist nicht bitgleich reproduzierbar (Zeitstempel im Image), aber jederzeit aus demselben Commit mit demselben Befehl baubar; die Prüfsumme gilt für die veröffentlichte Datei.
+- Developer ID, Notarisierung und Auto-Update stehen unter „Später“.

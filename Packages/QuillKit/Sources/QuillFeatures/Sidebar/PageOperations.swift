@@ -14,7 +14,7 @@ struct PageOperations {
     /// Setzt den Fokus auf das Titelfeld einer neuen Seite.
     let focusTitle: @MainActor (UUID) -> Void
 
-    private static let logger = Logger(subsystem: "de.vogel.quill", category: "pages")
+    private static let logger = Logger(subsystem: "io.github.vogelwild07.quill", category: "pages")
 
     func create(in parentID: UUID?) {
         #if canImport(AppKit)

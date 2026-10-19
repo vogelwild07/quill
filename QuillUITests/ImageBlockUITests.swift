@@ -12,7 +12,7 @@ import XCTest
 @MainActor
 final class ImageBlockUITests: XCTestCase {
     private var app: XCUIApplication!
-    private let pasteboard = NSPasteboard(name: NSPasteboard.Name("de.vogel.quill.uitests.\(UUID().uuidString)"))
+    private let pasteboard = NSPasteboard(name: NSPasteboard.Name("io.github.vogelwild07.quill.uitests.\(UUID().uuidString)"))
     private let image = "\u{FFFC}"
 
     // Die async-Varianten laufen auf dem Main Actor wie die XCUITest-APIs;

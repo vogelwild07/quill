@@ -18,7 +18,7 @@ import QuillModel
 @MainActor
 @Observable
 public final class EditorPersistenceBridge {
-    public static let didSave = Notification.Name("de.vogel.quill.editorDidSave")
+    public static let didSave = Notification.Name("io.github.vogelwild07.quill.editorDidSave")
 
     public let pageID: UUID
     @ObservationIgnored private let store: PageStore

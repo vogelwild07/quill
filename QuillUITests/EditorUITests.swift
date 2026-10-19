@@ -8,7 +8,7 @@ import XCTest
 final class EditorUITests: XCTestCase {
     private var app: XCUIApplication!
     /// Eigene Zwischenablage statt der des Nutzers (`-QuillPasteboardName`).
-    private let pasteboard = NSPasteboard(name: NSPasteboard.Name("de.vogel.quill.uitests.\(UUID().uuidString)"))
+    private let pasteboard = NSPasteboard(name: NSPasteboard.Name("io.github.vogelwild07.quill.uitests.\(UUID().uuidString)"))
 
     // Die async-Varianten laufen auf dem Main Actor wie die XCUITest-APIs;
     // `setUpWithError`/`tearDownWithError` wären nonisolated.

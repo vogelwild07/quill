@@ -54,7 +54,7 @@ struct ImageBlockEditorTests {
         return output as Data
     }
 
-    private func pasteboard() -> NSPasteboard { NSPasteboard(name: .init("de.vogel.quill.tests.\(UUID().uuidString)")) }
+    private func pasteboard() -> NSPasteboard { NSPasteboard(name: .init("io.github.vogelwild07.quill.tests.\(UUID().uuidString)")) }
 
     private func waitUntil(_ condition: () -> Bool) async throws {
         let deadline = Date.now.addingTimeInterval(10)

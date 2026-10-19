@@ -17,7 +17,7 @@ final class PageEditorSession {
     /// Beobachtbar: `lastError` zeigt den Hinweis „nicht gespeichert“.
     let bridge: EditorPersistenceBridge
 
-    private static let logger = Logger(subsystem: "de.vogel.quill", category: "editor")
+    private static let logger = Logger(subsystem: "io.github.vogelwild07.quill", category: "editor")
 
     init(
         pageID: UUID,

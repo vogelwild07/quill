@@ -4,7 +4,7 @@ import XCTest
 /// Kaltstart, Sidebar und Seitenwechsel mit 1000 Seiten (`docs/performance.md`).
 ///
 /// Nur im Schema „Quill Profiling“: Die App heißt dort „Quill Profiling“, hat die
-/// Bundle-ID `de.vogel.quill.profiling` und damit einen eigenen Container und Store.
+/// Bundle-ID `io.github.vogelwild07.quill.profiling` und damit einen eigenen Container und Store.
 /// Testargumente für den Store gibt es dort nicht (Package ohne `DEBUG`); den
 /// Bestand legt `-QuillSeedPages` einmal vor den Messungen an, nicht mitgemessen.
 /// Die Schwellen prüft `Scripts/perf-ui.py` aus dem Ergebnis-Bundle.
@@ -13,7 +13,7 @@ final class PerformanceUITests: XCTestCase {
     private static let pages = 1000
     private static var isSeeded = false
 
-    private let subsystem = "de.vogel.quill"
+    private let subsystem = "io.github.vogelwild07.quill"
     private let category = "PointsOfInterest"
 
     override func setUp() async throws {
