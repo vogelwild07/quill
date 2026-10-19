@@ -32,7 +32,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         audit("Fenster ohne Seite")
 
         createPage("Leer")
-        audit("Leere Seite (Titel fokussiert)")
+        audit("Leere Seite (Titel fokussiert)", orphans: .focusedTextField)
         app.typeText("\r")
         audit("Leere Seite (Editor fokussiert)")
 
@@ -48,11 +48,11 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.typeKey(.escape, modifierFlags: [])
 
         app.typeKey("o", modifierFlags: .command)
-        audit("Schnell öffnen (leer)")
+        audit("Schnell öffnen (leer)", orphans: .quickOpen)
         app.typeText("Inh")
-        audit("Schnell öffnen (Treffer)")
+        audit("Schnell öffnen (Treffer)", orphans: .quickOpen)
         app.typeText("xyzq")
-        audit("Schnell öffnen (keine Treffer)")
+        audit("Schnell öffnen (keine Treffer)", orphans: .quickOpen)
         app.typeKey(.escape, modifierFlags: [])
 
         window.descendants(matching: .any)["sidebar.trash"].click()
@@ -84,8 +84,6 @@ final class AccessibilityAuditUITests: XCTestCase {
         var touchBarEmojiFrame: CGRect?
         /// Elemente im Sheet; alle anderen liegen dahinter.
         var sheetElementFrames: [CGRect]?
-        var isTextFieldFocused: Bool
-        var isQuickOpenShown: Bool
     }
 
     private func viewState() -> ViewState {
@@ -101,30 +99,36 @@ final class AccessibilityAuditUITests: XCTestCase {
             headerContentFrame: header.exists ? header.frame : nil,
             toolbarFrame: toolbar.exists ? toolbar.frame : nil,
             touchBarEmojiFrame: emoji.exists ? emoji.frame : nil,
-            sheetElementFrames: sheet.exists ? [sheet.frame] + frames(sheet.descendants(matching: .any)) : nil,
-            isTextFieldFocused: app.textFields.matching(NSPredicate(format: "hasKeyboardFocus == true")).count > 0,
-            isQuickOpenShown: window.groups["quickOpen.panel"].exists
+            sheetElementFrames: sheet.exists ? [sheet.frame] + frames(sheet.descendants(matching: .any)) : nil
         )
     }
 
-    private func audit(_ view: String) {
-        Thread.sleep(forTimeInterval: 0.5)
+    /// Meldungen ohne Element lassen sich keiner Ursache zuordnen. Sie werden deshalb
+    /// je Ansicht und Prüfart genau erwartet; eine mehr oder weniger ist ein Fehler.
+    private struct Orphans {
+        var parentChild = 0
+
+        /// Feld-Editor von AppKit eines fokussierten SwiftUI-Textfelds (A6).
+        static let focusedTextField = Orphans(parentChild: 1)
+        /// Zusätzlich `.isModal` an „Schnell öffnen“, damit VoiceOver im Panel bleibt
+        /// (A6, Entscheidung Nutzer).
+        static let quickOpen = Orphans(parentChild: 2)
+
+        func expected(_ type: XCUIAccessibilityAuditType) -> Int {
+            type == .parentChild ? parentChild : 0
+        }
+    }
+
+    private func audit(_ view: String, orphans: Orphans = Orphans()) {
+        waitUntilSettled(view)
         let state = viewState()
         var unexpected: [String] = []
-        // Eltern-Kind-Fehler ohne Element lassen sich keiner Ursache zuordnen; deshalb
-        // gezählt, je Ursache einer:
-        // - Feld-Editor von AppKit eines fokussierten Textfelds, tritt bei jedem
-        //   SwiftUI-Textfeld auf (A6).
-        // - `.isModal` an „Schnell öffnen“, damit VoiceOver im Panel bleibt (A6,
-        //   Entscheidung Nutzer).
-        var orphans = (state.isTextFieldFocused ? 1 : 0) + (state.isQuickOpenShown ? 1 : 0)
+        var orphanCounts: [UInt64: (type: XCUIAccessibilityAuditType, count: Int)] = [:]
         do {
             try app.performAccessibilityAudit(for: .all) { issue in
-                if issue.auditType == .parentChild, issue.element == nil, orphans > 0 {
-                    orphans -= 1
-                    return true
-                }
-                if self.exception(for: issue, in: state) == nil {
+                if issue.element == nil {
+                    orphanCounts[issue.auditType.rawValue, default: (issue.auditType, 0)].count += 1
+                } else if self.exception(for: issue, in: state) == nil {
                     unexpected.append(Self.describe(issue))
                 }
                 return true
@@ -135,6 +139,29 @@ final class AccessibilityAuditUITests: XCTestCase {
         for issue in unexpected {
             XCTFail("\(view): \(issue)")
         }
+        for (type, count) in orphanCounts.values where count != orphans.expected(type) {
+            XCTFail("\(view): \(count) Meldungen ohne Element [\(type.rawValue)], erwartet \(orphans.expected(type))")
+        }
+        if orphanCounts[XCUIAccessibilityAuditType.parentChild.rawValue] == nil, orphans.parentChild > 0 {
+            XCTFail("\(view): 0 Meldungen ohne Element [parentChild], erwartet \(orphans.parentChild)")
+        }
+    }
+
+    /// Wartet, bis sich der Baum der Bedienungshilfen nicht mehr ändert (Animationen
+    /// und Einblenden vorbei), statt eine feste Zeit zu schlafen. Verglichen werden
+    /// Art, Kennung, Beschriftung und Rahmen, nicht Werte: Relative Daten im
+    /// Papierkorb („vor 1 Sekunde“) laufen weiter.
+    private func waitUntilSettled(_ view: String) {
+        let window = window
+        var previous: [String]?
+        let settled = NSPredicate { _, _ in
+            guard let snapshot = try? window.snapshot() else { return false }
+            let current = Self.layout(of: snapshot)
+            defer { previous = current }
+            return current == previous
+        }
+        let result = XCTWaiter().wait(for: [expectation(for: settled, evaluatedWith: nil)], timeout: 10)
+        XCTAssertEqual(result, .completed, "\(view): Ansicht kommt nicht zur Ruhe")
     }
 
     /// Einzelne Ausnahmen, je mit Begründung. Alles andere ist ein Fehler.
@@ -176,16 +203,21 @@ final class AccessibilityAuditUITests: XCTestCase {
             if ["quickOpen.hint", "quickOpen.emptyState.message", "slash.hint"].contains(identifier) {
                 return "secondary auf Glas im Systemstil (A11, Entscheidung zu A11)."
             }
+            if identifier == "trash.row", let sheet = state.sheetElementFrames, !sheet.contains(frame) {
+                return "Zeile im Papierkorb hinter dem Sheet „Backup wiederherstellen“, das System zeichnet sie gedimmt."
+            }
             if identifier == "sidebar.emptyState.message" {
                 return "primary auf dem Glas der Sidebar; der Kontrast hängt vom Hintergrund hinter dem Fenster ab. Auf festem Hintergrund prüft EmptyStateSnapshotTests 4,5:1 (A15, Entscheidung zum Sidebar-Glas)."
-            }
-            if let sheet = state.sheetElementFrames, !sheet.contains(frame) {
-                return "Inhalt hinter einem Sheet zeichnet das System gedimmt."
             }
         default:
             break
         }
         return nil
+    }
+
+    private static func layout(of snapshot: any XCUIElementSnapshot) -> [String] {
+        ["\(snapshot.elementType.rawValue) \(snapshot.identifier) \(snapshot.label) \(snapshot.frame)"]
+            + snapshot.children.flatMap { layout(of: $0) }
     }
 
     private static func describe(_ issue: XCUIAccessibilityAuditIssue) -> String {
