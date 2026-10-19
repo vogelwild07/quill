@@ -17,15 +17,17 @@ struct EmptyStateSnapshotTests {
 
     @Test(arguments: EmptyState.allCases, appearances)
     func emptyStateIsLegible(_ state: EmptyState, _ appearance: NSAppearance.Name) throws {
-        let view = EmptyStateView(state, id: "test", actionTitle: state == .noSelection ? "Neue Seite" : nil, action: {})
+        let hasAction = state == .noSelection
+        let view = EmptyStateView(state, id: "test", actionTitle: hasAction ? "Neue Seite" : nil, action: {})
         let image = try Snapshot(view, size: CGSize(width: 420, height: 320), appearance: appearance)
         try image.writePNG(named: "empty-\(state)-\(appearance.rawValue)")
         try expectSystemColors(image, appearance: appearance)
-        // Jede Zeile außer dem Symbol (oben, absichtlich grau): Titel, Erklärung, Knopf (A15).
-        let lines = image.textBands
-        #expect(lines.count >= 3, "Symbol, Titel und Erklärung erwartet: \(lines)")
-        for rows in lines.dropFirst() {
-            #expect(image.strongestContrast(rows: rows) >= 4.5, "Zeile \(rows) kaum lesbar: \(image.strongestContrast(rows: rows))")
+        // Zeilen von oben: Symbol (absichtlich grau), Titel, Erklärung (1–2 Zeilen), Knopf.
+        let layout = try #require(EmptyStateLayout(bands: image.textBands, hasAction: hasAction),
+                                  "Symbol, Titel, Erklärung\(hasAction ? ", Knopf" : "") nicht getrennt: \(image.textBands)")
+        let lines = [("Titel", layout.title)] + layout.message.map { ("Erklärung", $0) }
+        for (name, rows) in lines {
+            #expect(image.strongestContrast(rows: rows) >= 4.5, "\(name) (Zeilen \(rows)) kaum lesbar: \(image.strongestContrast(rows: rows))")
         }
     }
 
@@ -59,6 +61,27 @@ struct EmptyStateSnapshotTests {
             // Text dunkler als der Hintergrund (Knöpfe dürfen heller sein).
             #expect(image.minimumBrightness < image.backgroundBrightness - 0.3, "Kein dunkler Text im Hellmodus")
         }
+    }
+}
+
+/// Benannte Zeilen eines gerenderten Leerzustands. `nil`, wenn die Zeilen nicht zur
+/// Form „Symbol, Titel, Erklärung (1–2 Zeilen), Knopf“ passen, etwa weil Symbol und
+/// Titel ineinanderlaufen; dann würde der Titel sonst als Symbol übersprungen.
+struct EmptyStateLayout {
+    let symbol: Range<Int>
+    let title: Range<Int>
+    let message: [Range<Int>]
+    let action: Range<Int>?
+
+    init?(bands: [Range<Int>], hasAction: Bool) {
+        let messageCount = bands.count - 2 - (hasAction ? 1 : 0)
+        guard (1...2).contains(messageCount) else { return nil }
+        symbol = bands[0]
+        title = bands[1]
+        message = Array(bands[2..<(2 + messageCount)])
+        action = hasAction ? bands.last : nil
+        // Das Symbol ist deutlich höher als eine Textzeile.
+        guard symbol.count > title.count + 8 else { return nil }
     }
 }
 
