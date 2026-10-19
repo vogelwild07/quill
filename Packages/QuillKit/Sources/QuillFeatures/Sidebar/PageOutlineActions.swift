@@ -4,8 +4,8 @@ import QuillModel
 /// Aktionen, die die Sidebar auslöst. Bezugsseite ist die angeklickte, nicht
 /// zwingend die ausgewählte Seite.
 ///
-/// Referenztyp: `RootView` legt ihn einmal an und setzt bei jedem Durchlauf die
-/// aktuellen Closures. So bleibt `SidebarView` bei einem Seitenwechsel gleich, und
+/// Referenztyp: `RootView` legt ihn einmal an und setzt die Closures neu, wenn sich
+/// Store oder Undo-Manager ändern. So bleibt `SidebarView` bei einem Seitenwechsel gleich, und
 /// SwiftUI baut den Seitenbaum nicht neu auf (docs/performance.md). Closures als
 /// Werte würden jede `SidebarView` als geändert erscheinen lassen.
 @MainActor

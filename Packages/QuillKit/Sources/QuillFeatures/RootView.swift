@@ -40,12 +40,12 @@ public struct RootView: View {
 
     public var body: some View {
         NavigationSplitView {
-            if let operations {
+            if operations != nil {
                 SidebarView(
                     selection: pageSelection,
                     renameRequest: $renameRequest,
                     isShowingTrash: $isShowingTrash,
-                    actions: outlineActions(operations)
+                    actions: sidebarActions
                 )
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
             }
@@ -119,6 +119,7 @@ public struct RootView: View {
             #endif
             Task { try? await store?.ensureWorkspace() }
         }
+        .onChange(of: actionDependencies, initial: true) { updateSidebarActions() }
         .onChange(of: selection) {
             storedSelection = selection?.uuidString ?? ""
             if selection != nil { isShowingTrash = false }
@@ -137,8 +138,16 @@ public struct RootView: View {
         )
     }
 
-    /// Immer dieselbe Instanz mit den aktuellen Closures (siehe `PageOutlineActions`).
-    private func outlineActions(_ operations: PageOperations) -> PageOutlineActions {
+    /// Wovon die Closures der Sidebar abhängen: Store und Undo-Manager aus der Umgebung.
+    /// Zustand des Fensters lesen sie beim Ausführen selbst.
+    private var actionDependencies: [ObjectIdentifier?] {
+        [store.map(ObjectIdentifier.init), undoManager.map(ObjectIdentifier.init)]
+    }
+
+    /// Setzt die Closures der immer gleichen Instanz (siehe `PageOutlineActions`), nur
+    /// wenn sich ihre Abhängigkeiten ändern, nie während `body`.
+    private func updateSidebarActions() {
+        guard let operations else { return }
         let actions = sidebarActions
         actions.create = { operations.create(in: $0) }
         actions.rename = { operations.rename($0, to: $1, from: $2) }
@@ -150,7 +159,6 @@ public struct RootView: View {
         actions.openInWindow = { open($0, asTab: false) }
         actions.export = { exportPage($0) }
         actions.search = { isQuickOpenShown = true }
-        return actions
     }
 
     private func pageActions(_ operations: PageOperations) -> PageActions {
