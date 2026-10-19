@@ -135,7 +135,7 @@ Der Spike ist in Phase 3 nach `QuillEditor` überführt und gelöscht worden (AD
 
 ## Persistenz und Fenster (Phase 2)
 
-- **Start:** `AppDelegate` ruft `QuillPersistence.open()` vor dem ersten Fenster auf: Backup vor dem Öffnen (ADR-010), `ModelContainer` mit `QuillMigrationPlan`, danach `markOpened()`. Scheitert das Backup vor einer Migration, wird nicht geöffnet. Lässt sich der Store nicht öffnen, zeigt das Fenster `PersistenceErrorView`; es wird nie auf einen leeren Store ausgewichen. Beim Beenden `backupOnQuit()`.
+- **Start:** `AppDelegate` ruft `QuillPersistence.open()` vor dem ersten Fenster auf: vorgemerktes Backup einspielen (ADR-019), Backup vor dem Öffnen (ADR-010), `ModelContainer` mit `QuillMigrationPlan`, danach `markOpened()`. Scheitert das Backup vor einer Migration, wird nicht geöffnet. Lässt sich der Store nicht öffnen, zeigt das Fenster `PersistenceErrorView`; es wird nie auf einen leeren Store ausgewichen. Beim Beenden `backupOnQuit()`.
 - **Schreiben:** `PageStore` (`@ModelActor`) über `EnvironmentValues.pageStore`; Schnittstelle nur mit `UUID`s. `PageOperations` registriert Undo/Redo für Anlegen, Umbenennen (Sidebar), Verschieben und Papierkorb.
 - **Lesen:** `@Query` in `RootView`, `SidebarView` und `PageDetailView`. `PageTree` baut daraus einen unveränderlichen Baum (`PageNode`), plattformneutral und getestet.
 - **Sidebar:** `PageOutlineView` = `NSOutlineView` in `NSViewRepresentable` (ADR-012). Aufklappzustand in `UserDefaults`. Ein Klick in die Sidebar holt den Tastaturfokus dorthin (sonst blieben ↩ und ⌘⌫ im Titelfeld).
@@ -147,6 +147,7 @@ Der Spike ist in Phase 3 nach `QuillEditor` überführt und gelöscht worden (AD
 - **Suche:** `PageStore.search` und `recentPages` liefern `SearchHit`s (Seite oder Inhalt mit Block und Fundstelle). `QuickOpenModel` teilt sie in Abschnitte und hält die Auswahl, `QuickOpenView` ist das schwebende Feld über dem Fenster (`RootView`). Inhaltstreffer gehen als `RevealRequest` an `PageDetailView`, die nach dem Laden `BlockEditorController.reveal(blockID:range:)` aufruft.
 - **Favoriten:** `PageTree.favorites` (nur Seiten im aktiven Baum) und Gruppenzeilen in `PageOutlineView`; eine favorisierte Seite hat zwei Zeilen, also zwei Items. `SidebarDrop` entscheidet, was ein Drop bewirkt (Seite verschieben, Favorit hinzufügen oder umsortieren).
 - **Papierkorb:** `TrashView` liest per `@Query`; Löschen und Leeren über `QuillPersistence` (`\.quillPersistence`), das vorher ein Backup anlegt. Auto-Leeren startet `QuillPersistence.open()`.
+- **Backup wiederherstellen:** `BackupRestoreView` (Sheet aus `RootView`, Menü über `PageActions.restoreBackup`) → `QuillPersistence.requestRestore` → Beenden nach dem Schließen des Sheets. `QuillPersistence.open()` ruft zuerst `StoreBackup.applyPendingRestore()` auf; das Ergebnis holt das erste Fenster per `takeRestoreOutcome()` ab (ADR-019).
 
 | Kürzel | Befehl |
 |---|---|

@@ -88,7 +88,13 @@ DatabaseView         (später)  id, name, layoutRaw (table|board|calendar), conf
 - Store: `~/Library/Containers/de.vogel.quill/Data/Library/Application Support/Quill/Quill.store` (plus `-wal`, `-shm`, `.Quill_SUPPORT/` für externe Daten, `Quill.store.version`).
 - Backups: daneben in `Backups/`, Regeln siehe ADR-010.
 
+### Backup wiederherstellen
+
+In der App: Ablage › „Backup wiederherstellen …“, Backup wählen, bestätigen. Quill beendet sich und spielt es beim nächsten Start ein; der vorherige Stand bleibt als Backup „Vor dem Wiederherstellen“ (ADR-019).
+
 ### Backup von Hand wiederherstellen
+
+Nur falls Quill nicht mehr startet:
 
 1. Quill beenden.
 2. Im Finder den Ordner `…/Application Support/Quill/` öffnen (⇧⌘G, Pfad oben). Versteckte Dateien mit ⇧⌘. einblenden.

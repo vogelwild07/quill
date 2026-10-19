@@ -201,3 +201,17 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Bricht die App beim Export auf ein anderes Volume ab, bleibt bis zum nächsten Export dorthin ein versteckter `.quill-export-<UUID>`-Ordner im Ziel; auf demselben Volume räumt das System seinen temporären Ordner selbst auf.
 - Links zwischen Seiten gibt es bisher nur als Unterseiten-Liste; Seitenlinks im Text kämen als relative `.md`-Links dazu.
 - Der Ordnerdialog läuft in der Sandbox außerhalb der App und wird von Hand geprüft; der UI-Test schreibt per `-QuillExportDirectory` in den temporären Ordner der App.
+
+## ADR-019: Backup wiederherstellen (2026-10-19)
+
+**Kontext:** Backups (ADR-010) ließen sich bisher nur von Hand im Finder einspielen. Vor v0.1 braucht es einen sicheren Weg in der App. Ein offener `ModelContainer` lässt sich nicht gefahrlos austauschen.
+**Entscheidung:**
+- **Ablauf:** Ablage › „Backup wiederherstellen …“ → Liste (neuestes zuerst, Datum, Anlass, Größe) → Bestätigung → `requestRestore` prüft das Backup und schreibt den Merker `Quill.store.restore` → das Sheet schließt, Quill beendet sich (solange ein Sheet offen ist, ignoriert AppKit `terminate`). Beim nächsten Start tauscht `StoreBackup.applyPendingRestore()` die Dateien, **bevor** Backups entstehen und der Container öffnet. Das erste Fenster meldet, welches Backup eingespielt wurde, warum nicht oder dass ein abgebrochener Austausch zurückgerollt wurde.
+- **Prüfen vor dem Beenden** (und noch einmal beim Start): Ordner und `Quill.store` vorhanden, Schema passt zu einer bekannten Version (`isConfiguration(withName:compatibleWithStoreMetadata:)` gegen `QuillMigrationPlan.schemas`; neuere oder fremde Datenbanken werden abgelehnt), `quick_check` **nur lesend** (ein schreibendes Öffnen schriebe den WAL ins Backup zurück), freier Platz mindestens Größe des Backups plus 100 MB. Scheitert etwas, bleibt Quill offen und zeigt den Grund.
+- **Austausch:** Merker zuerst löschen (kein Wiederherstellungs-Loop), Journal `Quill.store.restore-journal` schreiben, aktuellen Stand (`Quill.store` immer mit `-wal`/`-shm`, `.Quill_SUPPORT`, Versionsdatei) unverändert nach `Backups/<Zeit>_vor-wiederherstellen/` verschieben, Backup samt `.Quill_SUPPORT` hineinkopieren, prüfen, Version setzen, Journal löschen. Scheitert ein Schritt, kommt der alte Stand zurück; findet ein Start das Journal (Absturz mittendrin), rollt er zurück.
+- **Rückweg:** „Vor dem Wiederherstellen“ erscheint in der Liste und lässt sich selbst wiederherstellen. Die Rotation behält es 30 Tage, ebenso immer das gerade vorgemerkte Backup (das Backup beim Beenden direkt danach würde sonst ein Backup vom selben Tag verdrängen).
+- **Tests:** Unit-Tests in `StoreRestoreTests` mit Stores im Temp-Ordner (Austausch, WAL/SHM, Schema, Platz, Beschädigung, Abbruch nach jedem Schritt, Rotation). Der UI-Test läuft über drei Starts mit `-QuillStoreDirectory <Name>`: Store und Backups im temporären Ordner der App, nie der echte Store.
+**Konsequenzen:**
+- Wiederherstellen kostet einen Neustart, dafür ist nie ein Container offen, während Dateien wechseln.
+- Bricht der Nutzer das Beenden ab (Rückfrage bei ungespeicherten Änderungen), bleibt das Backup vorgemerkt und wird beim nächsten Start eingespielt.
+- Im Store-Ordner liegen kurzzeitig Merker und Journal; beide sind klein und werden beim Start verbraucht.
