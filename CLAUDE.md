@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-Architekt, Swift-Entwickler.
 
-**Stand:** Phase 6 (Export) fertig, gemergt (PR #6, ADR-018, Review-Fixes drin). Phase 7 (Feinschliff): 7.1 Backup wiederherstellen fertig, gemergt (PR #7, ADR-019, Store in `Store/`, Review-Fixes drin). 7.2 Aufräumen + Performance fertig, gemergt (PR #8, ADR-020, `docs/performance.md`, Review-Fixes drin; `sidebarReload` 140–155 ms statt Ziel 100 ms, für v0.1 akzeptiert). 7.3 A11y, Leerzustände, Lokalisierung, Icon fertig (ADR-021), PR offen. Nächstes: Phase 8 Release. Neue Ideen nur unter „Später“ in `docs/roadmap.md`. Bekannte Probleme + Plan: `docs/roadmap.md`.
+**Stand:** Phase 6 (Export) fertig, gemergt (PR #6, ADR-018, Review-Fixes drin). Phase 7 (Feinschliff): 7.1 Backup wiederherstellen fertig, gemergt (PR #7, ADR-019, Store in `Store/`, Review-Fixes drin). 7.2 Aufräumen + Performance fertig, gemergt (PR #8, ADR-020, `docs/performance.md`, Review-Fixes drin; `sidebarReload` 140–155 ms statt Ziel 100 ms, für v0.1 akzeptiert). 7.3 A11y, Leerzustände, Lokalisierung, Icon fertig, gemergt (PR #9, ADR-021, Review-Fixes drin). Phase 7 abgeschlossen. Aktuell: Phase 8 Release v0.1.0 (ad hoc signiert, .dmg, nur Apple Silicon, macOS 26.0, GPL-3.0 ohne Icon). Neue Ideen nur unter „Später“ in `docs/roadmap.md`. Bekannte Probleme + Plan: `docs/roadmap.md`.
 
 ## Kommunikation
 - Immer **Deutsch**. Kurz ok; Warnungen, Sicherheit, Entscheidungen in ganzen Sätzen.
