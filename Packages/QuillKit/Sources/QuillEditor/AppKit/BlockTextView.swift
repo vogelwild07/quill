@@ -359,8 +359,14 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     /// eigene Zwischenablage. Für UI-Tests, damit die des Nutzers unberührt bleibt.
     public static let pasteboardArgument = "QuillPasteboardName"
 
-    static let defaultClipboard: NSPasteboard = UserDefaults.standard.string(forKey: pasteboardArgument)
-        .map { NSPasteboard(name: NSPasteboard.Name($0)) } ?? .general
+    static let defaultClipboard: NSPasteboard = {
+        guard let name = UserDefaults.standard.string(forKey: pasteboardArgument) else { return .general }
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name(name))
+        #if DEBUG
+        TestImage.put(arguments: ProcessInfo.processInfo.arguments, on: pasteboard)
+        #endif
+        return pasteboard
+    }()
 
     var clipboard = BlockTextView.defaultClipboard
 

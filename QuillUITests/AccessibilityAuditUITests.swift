@@ -16,7 +16,8 @@ final class AccessibilityAuditUITests: XCTestCase {
     override func setUp() async throws {
         continueAfterFailure = true
         app = XCUIApplication.quill(storeDirectory: storeDirectory)
-        app.launchArguments += ["-QuillPasteboardName", pasteboard.name.rawValue]
+        // Testbild erzeugt die App selbst in ihrer Zwischenablage (siehe `ImageBlockUITests`).
+        app.launchArguments += ["-QuillPasteboardName", pasteboard.name.rawValue, "-QuillTestImage", "120x60"]
         app.launch()
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
         app.windows.firstMatch.click()
@@ -38,8 +39,6 @@ final class AccessibilityAuditUITests: XCTestCase {
         createPage("Inhalt")
         app.typeText("\r")
         app.typeText("# Überschrift\rText mit Inhalt\r[] Aufgabe\r\r> Zitat\r\r")
-        pasteboard.clearContents()
-        pasteboard.setData(Self.png(width: 120, height: 60), forType: .png)
         app.typeKey("v", modifierFlags: .command)
         window.buttons["page.favorite"].click()
         audit("Seite mit Inhalt, Favorit")
@@ -206,16 +205,5 @@ final class AccessibilityAuditUITests: XCTestCase {
         let focused = NSPredicate { _, _ in title.value(forKey: "hasKeyboardFocus") as? Bool == true }
         wait(for: [expectation(for: focused, evaluatedWith: nil)], timeout: 5)
         app.typeText(name)
-    }
-
-    private static func png(width: Int, height: Int) -> Data {
-        let context = CGContext(
-            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
-            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
-        )!
-        context.setFillColor(CGColor(red: 0.2, green: 0.5, blue: 0.8, alpha: 1))
-        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
-        let rep = NSBitmapImageRep(cgImage: context.makeImage()!)
-        return rep.representation(using: .png, properties: [:])!
     }
 }
