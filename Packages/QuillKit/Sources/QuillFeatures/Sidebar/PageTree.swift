@@ -68,8 +68,9 @@ public enum PageTree {
         let byParent = Dictionary(grouping: entries, by: \.parentID)
 
         func nodes(under parentID: UUID?) -> [PageNode] {
+            // Werttypen: direkt vergleichen, `sortedInSiblingOrder` lohnt nur bei SwiftData.
             (byParent[parentID] ?? [])
-                .sortedInSiblingOrder(by: \.siblingOrder)
+                .sorted { $0.siblingOrder < $1.siblingOrder }
                 .map { PageNode(id: $0.id, title: $0.title, icon: $0.icon, children: nodes(under: $0.id)) }
         }
         return nodes(under: nil)
@@ -80,7 +81,7 @@ public enum PageTree {
     public static func favorites(_ entries: [Entry], in tree: [PageNode]) -> [PageNode] {
         entries
             .filter { $0.isFavorite && find($0.id, in: tree) != nil }
-            .sortedInSiblingOrder(by: \.favoriteOrder)
+            .sorted { $0.favoriteOrder < $1.favoriteOrder }
             .map { PageNode(id: $0.id, title: $0.title, icon: $0.icon) }
     }
 

@@ -17,16 +17,26 @@ public struct SiblingOrder: Comparable, Sendable {
         self.id = id
     }
 
+    /// Wie `(sortKey, createdAt, id.uuidString) < …`; die Zeichenkette der `id` entsteht
+    /// nur bei Gleichstand der ersten beiden.
     public static func < (lhs: SiblingOrder, rhs: SiblingOrder) -> Bool {
-        (lhs.sortKey, lhs.createdAt, lhs.id.uuidString) < (rhs.sortKey, rhs.createdAt, rhs.id.uuidString)
+        if lhs.sortKey != rhs.sortKey { return lhs.sortKey < rhs.sortKey }
+        if lhs.createdAt != rhs.createdAt { return lhs.createdAt < rhs.createdAt }
+        return lhs.id.uuidString < rhs.id.uuidString
     }
 }
 
 extension Sequence {
     /// Sortiert nach `SiblingOrder`. Stabil: Bei gleichem Schlüssel bleibt die
     /// bisherige Reihenfolge.
+    ///
+    /// Liest den Schlüssel einmal pro Element, nicht pro Vergleich: Bei SwiftData-Objekten
+    /// kostet jeder Getter einige Mikrosekunden (`docs/performance.md`). Werttypen mit
+    /// billigen Eigenschaften (`PageTree.Entry`) vergleichen besser direkt mit `<`.
     public func sortedInSiblingOrder(by order: (Element) -> SiblingOrder) -> [Element] {
-        sorted { order($0) < order($1) }
+        map { (order: order($0), element: $0) }
+            .sorted { $0.order < $1.order }
+            .map(\.element)
     }
 }
 
