@@ -7,7 +7,7 @@ Refactor wird gegen diese Baseline verglichen.
 
 - **Produktziele sind fest:** Tippen und Enter p95 < 16 ms, Laden einer Seite mit
   1000 Blöcken < 300 ms, Suche p95 < 100 ms, Kaltstart < 1 s; Sidebar und
-  Seitenwechsel < 100 ms.
+  Seitenwechsel < 100 ms; Export von 1000 Seiten (lesen und planen) < 2 s.
 - **Neue Messungen:** Schwelle = max(Baseline × 3, Baseline + 5 ms), nie über einem
   Produktziel.
 - Eine gerissene Schwelle wird erst gezeigt und besprochen, dann optimiert.
@@ -94,13 +94,72 @@ Zwei vollständige Läufe von `Scripts/perf-ui.py`; Median je Lauf über 5 Itera
 | `pageSwitch` (50 Blöcke, teils mit Bild) | 96,4 | 96,4 | 100 | knapp ok |
 
 - Per `log stream --signpost` geprüft: ein ⌘N erzeugt genau ein `sidebarReload`.
-- Beim ersten Start nach dem Seed lädt die Sidebar etwa 170-mal in 8 s neu, ohne
-  Eingabe; bei späteren Starts dreimal vor dem ersten Bild. Ursache offen (Phase 7.2).
+- Das scheinbare Dauer-Neuladen „beim ersten Start“ war der Seed-Prozess selbst
+  (siehe Analyse).
 - Gegenproben: Seitenwechsel mit 300 ms Verzögerung → „ZU LANGSAM“ (406,7 ms),
   Exit 1. Ohne Ende des Intervalls → „FEHLT“, Exit 1. Der UI-Test selbst bleibt in
   beiden Fällen grün; maßgeblich ist das Skript.
 - Release-Prüfung: ohne Treffer. Gegenprobe mit `QUILL_PROFILING` im Release-Build →
   alle drei Merkmale gefunden, Exit 1.
+
+## Analyse (19.10.2026)
+
+### Neuladen der Sidebar während des Seeds
+
+Mit `log stream --signpost` und `-com.apple.CoreData.SQLDebug 1` getrennt geprüft:
+
+- Seed (11 s): 209 × `sidebarReload` bei rund 110 000 INSERT/UPDATE und 4063 COMMIT.
+  Jede gespeicherte Seite meldet `@Query`, die Sidebar lädt neu. Erwartet.
+- Erster Start danach (15 s offen): 0 × `sidebarReload`, kein INSERT/UPDATE/DELETE
+  (17 SELECT, das Protokoll lief also).
+- Unter XCUITest ist `sidebarLoad` langsamer als per `open` gestartet (181 statt
+  134 ms), vermutlich wegen der aktiven Bedienungshilfen.
+
+### Time Profile (xctrace, Time Profiler + os_signpost, Profiling-Build)
+
+Nur Abtastungen auf dem Main Thread innerhalb der Intervalle, ohne Seed-Prozess. Der
+Main Thread rechnet fast durchgehend (größte Lücke 1–12 ms), die Intervalle sind also
+CPU-Arbeit, kein Warten.
+
+**Seitenwechsel** (12 Intervalle, Median 94 ms):
+
+| Anteil | Wo |
+|---:|---|
+| 10 % | `PageStore.blocks(of:)` → `orderedBlocks`: Sortieren von 50 Blöcken, der Vergleich liest pro Aufruf `sortKey`, `createdAt`, `id.uuidString` aus SwiftData |
+| 8 % | `SidebarView.body` läuft bei jedem Wechsel neu (Auswahl-Binding) und baut 1000 `PageTree.Entry` |
+| 2 % | Editor (`BlockEditorController` laden, Layout) |
+| Rest | SwiftUI-Graph, Layout, Commit |
+
+**Neuladen nach ⌘N** (7 Intervalle, Median 135 ms): 28 % SwiftData-Abfragen von
+`@Query`, davon zwei über alle aktiven Seiten (`SidebarView.pages` und
+`RootView.activePages`; Letztere nur für den Favoriten-Stern, 15 %); 18 %
+`SidebarView.body`; 18 % Layout; 18 % Tasks der neu gewählten Seite.
+
+**Aufbau der Sidebar beim Start** (2 Intervalle, Median 178 ms): 40 % erstes Layout
+von `NavigationSplitView` (`NSSplitViewController viewDidLoad`), dabei wertet SwiftUI
+Views aus: `SidebarView.body` 15 % (davon `@Query`-Abruf 12 %, Einträge 3 %); die
+Outline selbst (Zellen) rund 3 %.
+
+### Export: kein quadratisches Wachstum
+
+Lesen (`exportSnapshot`) und Planen getrennt, nacheinander, Release:
+
+| Seiten | Lesen | Planen |
+|---:|---:|---:|
+| 125 | 566 ms | 2 ms |
+| 250 | 1128 ms | 4 ms |
+| 500 | 2254 ms | 8 ms |
+| 1000 | 4520 ms | 17 ms |
+| 2000 | 9087 ms | 33 ms |
+
+Linear, aber 4,5 ms pro Seite. Time Profile: 91 % in der Vergleichsfunktion von
+`orderedBlocks` (rund 600 Vergleiche je Seite mit 50 Blöcken, je etwa 7 µs für sechs
+SwiftData-Getter und zwei `uuidString`). Dieselbe Funktion bremst `bridgeLoad`
+(106 ms für 1000 Blöcke) und den Seitenwechsel.
+
+Das Ziel von 2 s gilt ab der Optimierung als Schwelle (`Performance.limits`); bis dahin
+steht dort die Baseline-Schwelle, damit die Refactors vorher und nachher gleich grün
+vergleichbar bleiben.
 
 ## Messbedingungen
 
