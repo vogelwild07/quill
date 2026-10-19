@@ -16,6 +16,7 @@ public struct PageActions {
     var toggleFavorite: @MainActor () -> Void
     var openInTab: @MainActor () -> Void
     var openInWindow: @MainActor () -> Void
+    var exportPage: @MainActor () -> Void
 }
 
 extension FocusedValues {

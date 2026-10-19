@@ -1,0 +1,3 @@
+// Kopie als Config/Local.xcconfig anlegen und die eigene Team-ID eintragen
+// (Xcode › Settings › Accounts). Die Datei wird nicht committet.
+DEVELOPMENT_TEAM =

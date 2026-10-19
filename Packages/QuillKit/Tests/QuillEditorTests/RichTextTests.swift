@@ -38,3 +38,28 @@ struct RichTextTests {
         #expect(json == #"{"runs":[{"link":"https://x.y/z","marks":["bold","italic"],"text":"a/b"}],"version":1}"#)
     }
 }
+
+@Suite("Markdown: Link-Ziele")
+struct MarkdownLinkDestinationTests {
+    @Test func plainTargetsStayAsTheyAre() {
+        #expect(MarkdownSerializer.linkDestination("https://apple.com/a?b=c#d") == "https://apple.com/a?b=c#d")
+        #expect(MarkdownSerializer.linkDestination("Quill/Notizen.md") == "Quill/Notizen.md")
+        #expect(MarkdownSerializer.linkDestination("../assets/3F2A9C1E.png") == "../assets/3F2A9C1E.png")
+    }
+
+    @Test func spacesParenthesesAndBracketsUseAngleBrackets() {
+        #expect(MarkdownSerializer.linkDestination("Ohne Titel.md") == "<Ohne Titel.md>")
+        #expect(MarkdownSerializer.linkDestination("Wiki_(Begriff)") == "<Wiki_(Begriff)>")
+        #expect(MarkdownSerializer.linkDestination("a<b>c") == #"<a\<b\>c>"#)
+        #expect(MarkdownSerializer.linkDestination("Zeile\nzwei") == "<Zeile zwei>")
+    }
+
+    @Test func inlineLinkWithSpaceIsBracketed() {
+        let text = InlineText("Siehe Notiz", spans: [InlineSpan(6..<11, marks: [], link: "Meine Notiz.md")])
+        #expect(MarkdownSerializer.inlineMarkdown(text) == "Siehe [Notiz](<Meine Notiz.md>)")
+    }
+
+    @Test func linkTextEscapesBrackets() {
+        #expect(MarkdownSerializer.linkText(#"[Entwurf] a\b"#) == #"\[Entwurf\] a\\b"#)
+    }
+}

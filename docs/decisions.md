@@ -62,7 +62,7 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 
 **Löschen:** Ja. Am Ende von Phase 3, im selben PR, sobald die Quill-App den Editor zeigt und alle übernommenen Tests grün sind, werden gelöscht: `Spikes/EditorSpike/`, das Target und Schema `EditorSpike`, das Modul `QuillEditorSpike` samt Produkt und Testtarget. Vorher wird der letzte Spike-Stand mit dem Git-Tag `editor-spike` markiert, damit er auffindbar bleibt.
 
-**Stand Phase 3:** Erledigt. Tag `editor-spike` gesetzt; `QuillEditorSpike` wurde mit Zustimmung des Nutzers schon nach dem ersten Prüfpunkt gelöscht, `Spikes/EditorSpike` samt Target und Scheme am Ende der Phase. `SpikeBenchmark` ist `EditorBenchmark` im Test-Target, `SpikeSamples` ist die Fixture `SampleDocuments` im Test-Target, `-snapshot` ersetzt `EditorSnapshotTests`.
+**Stand Phase 3:** Erledigt. Tag `editor-spike` gesetzt; `QuillEditorSpike` wurde mit Zustimmung des Nutzers schon nach dem ersten Prüfpunkt gelöscht, `Spikes/EditorSpike` samt Target und Scheme am Ende der Phase. `SpikeBenchmark` ist `EditorBenchmark` im Test-Target, `SpikeSamples` ist die Fixture `SampleDocuments` (seit Phase 6 im Target `QuillTestFixtures`), `-snapshot` ersetzt `EditorSnapshotTests`.
 
 ## ADR-008: UI-Tests starten ohne gespeicherten Fensterzustand (2026-10-18)
 
@@ -184,3 +184,20 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Endgültig gelöschte Seiten lassen sich nur noch aus einem Backup holen. Ein älterer Undo-Schritt „In den Papierkorb legen“ für eine inzwischen gelöschte Seite scheitert beim Rückgängigmachen und wird nur protokolliert.
 - Im Papierkorb lesend öffnen (mit Hinweisbanner) kommt später (Roadmap).
 - XCUITest kann die Ziehen-Gesten in der `NSOutlineView` nicht auslösen (siehe Phase 2); Ablegen auf Favoriten ist über `SidebarDrop` per Unit-Test abgedeckt und wird von Hand geprüft.
+
+## ADR-018: Markdown-Export (2026-10-19)
+
+**Kontext:** Phase 6 setzt ADR-006 um. Ziel ist ein beliebiger Ordner per Dialog (iCloud Drive, Obsidian-Vault, Dokumente); Links und Bilder müssen dort ohne Nacharbeit funktionieren.
+**Entscheidung:**
+- **Ablauf:** Seite › „Exportieren …“ (⇧⌘E) oder Kontextmenü der Sidebar → `NSOpenPanel` für einen Ordner mit Kästchen „Unterseiten einschließen“ (an) → Lesen in einem Schritt auf dem Actor von `PageStore` (`exportSnapshot`, reiner `Sendable`-Werttyp) → `ExportWriter.export` (`@concurrent`, nie auf dem Main Actor): erst die Bilder laden, dann das Markdown aufbauen (`MarkdownExporter.plan`), dann schreiben → Meldung mit Seiten-, Bild- und Fehlbildzahl und „Im Finder zeigen“.
+- **Ordner:** immer neu, „<Seite> (Quill JJJJ-MM-TT)“ (lokales Datum); gibt es ihn schon (auch in anderer Schreibweise), „… 2“, „… 3“. Geschrieben wird erst in einen Zwischenordner, dann umbenannt: kein halber Export, nie überschreiben. Der Zwischenordner liegt im temporären Ordner, den das System für das Ziel vorsieht (`.itemReplacementDirectory`, in der Sandbox im Container; geprüft für Dokumente und iCloud Drive), wenn er auf demselben Volume liegt. Sonst entsteht er als `.quill-export-<UUID>` im Ziel; der nächste Export dorthin löscht nur Ordner mit exakt diesem Namen, die älter als eine Stunde sind (jüngere könnten zu einem Export in einem anderen Fenster gehören).
+- **Aufbau:** eine `.md` pro Seite, Unterseiten im gleichnamigen Ordner daneben, ein `assets/` ganz oben für alle Bilder (Name: erste 8 Zeichen der Asset-ID plus Endung aus dem UTI). Seiten im Papierkorb fehlen; eine Seite im Papierkorb lässt sich nicht exportieren.
+- **Inhalt:** YAML-Frontmatter (`title`, `created`, `updated` als ISO 8601 UTC, `quill-id`), dann `# Titel`, dann die Blöcke über `MarkdownSerializer` (wie beim Kopieren), am Ende „## Unterseiten“ mit relativen `.md`-Links. Bilder als `![](../assets/…)` relativ zur Datei; fehlt ein Asset oder liefert es keine Daten, ein HTML-Kommentar statt eines Links ins Leere.
+- **Links:** Ziele mit Leerraum, Klammern oder `<>` in spitzen Klammern (`[Text](<Ohne Titel.md>)`), CommonMark-konform und in Obsidian lesbar; gilt auch für Links im Text und beim Kopieren als Markdown.
+- **Dateinamen:** `/ \ : * ? " < > | # ^ [ ] %` werden „-“; Steuer- und Zeilentrennzeichen ein Leerzeichen; führende Punkte „-“ (sonst unsichtbar); Zeichen über 64 Bytes (Buchstabe mit Hunderten Akzenten) „-“, damit das Kürzen nie einen leeren Namen ergibt; leer wird „Ohne Titel“. Höchstens 255 Bytes UTF-8 (APFS), gekürzt nur am Titel und an Zeichengrenzen (Emoji, Umlaute bleiben heil). Gleiche Namen im selben Ordner ohne Unterschied von Groß-/Kleinschreibung und Unicode-Normalform (wie APFS) bekommen „Titel 2“. Eine Seite mit Unterseiten belegt Datei und Ordner zugleich; `assets` ist ganz oben reserviert.
+- **Module:** `QuillExport` hängt von `QuillEditor` ab, nutzt aber nur dessen `Document`-Schicht (Serializer, `EditorBlock`), damit Kopieren und Export dasselbe Markdown erzeugen. Texte in den Dateien („Ohne Titel“, „Unterseiten“) kommen lokalisiert aus der App (`ExportStrings`). Die Beispieldokumente liegen dafür im eigenen Target `QuillTestFixtures`, das Editor- und Export-Tests teilen.
+**Konsequenzen:**
+- Der Export ist eine Momentaufnahme; ein Re-Import kann später über `quill-id` zuordnen.
+- Bricht die App beim Export auf ein anderes Volume ab, bleibt bis zum nächsten Export dorthin ein versteckter `.quill-export-<UUID>`-Ordner im Ziel; auf demselben Volume räumt das System seinen temporären Ordner selbst auf.
+- Links zwischen Seiten gibt es bisher nur als Unterseiten-Liste; Seitenlinks im Text kämen als relative `.md`-Links dazu.
+- Der Ordnerdialog läuft in der Sandbox außerhalb der App und wird von Hand geprüft; der UI-Test schreibt per `-QuillExportDirectory` in den temporären Ordner der App.

@@ -22,15 +22,21 @@ let package = Package(
             dependencies: ["QuillModel", "QuillDesign"],
             resources: [.process("Resources")]
         ),
-        .target(name: "QuillExport", dependencies: ["QuillModel"]),
+        .target(name: "QuillExport", dependencies: ["QuillModel", "QuillEditor"]),
         .target(
             name: "QuillFeatures",
             dependencies: ["QuillModel", "QuillEditor", "QuillExport", "QuillDesign"],
             resources: [.process("Resources")]
         ),
+        // Beispieldokumente für Editor- und Export-Tests; nicht Teil des Produkts.
+        .target(name: "QuillTestFixtures", dependencies: ["QuillEditor", "QuillModel"], path: "Tests/QuillTestFixtures"),
         .testTarget(name: "QuillModelTests", dependencies: ["QuillModel"]),
-        .testTarget(name: "QuillEditorTests", dependencies: ["QuillEditor", "QuillModel"]),
-        .testTarget(name: "QuillExportTests", dependencies: ["QuillExport"]),
+        .testTarget(name: "QuillEditorTests", dependencies: ["QuillEditor", "QuillModel", "QuillTestFixtures"]),
+        .testTarget(
+            name: "QuillExportTests",
+            dependencies: ["QuillExport", "QuillEditor", "QuillModel", "QuillTestFixtures"],
+            exclude: ["Golden"]
+        ),
         .testTarget(name: "QuillFeaturesTests", dependencies: ["QuillFeatures", "QuillModel", "QuillEditor"]),
     ],
     swiftLanguageModes: [.v6]

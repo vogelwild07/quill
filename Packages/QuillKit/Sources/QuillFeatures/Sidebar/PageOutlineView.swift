@@ -463,6 +463,10 @@ struct PageOutlineView: NSViewRepresentable {
                 self?.parent?.actions.openInWindow(id)
             })
             menu.addItem(.separator())
+            menu.addItem(menuItem(String(localized: "Exportieren …", bundle: .module)) { [weak self] in
+                self?.parent?.actions.export(id)
+            })
+            menu.addItem(.separator())
             if favoriteItems[id] != nil {
                 menu.addItem(menuItem(String(localized: "Aus Favoriten entfernen", bundle: .module)) { [weak self] in
                     self?.parent?.actions.setFavorite(id, false, .last)

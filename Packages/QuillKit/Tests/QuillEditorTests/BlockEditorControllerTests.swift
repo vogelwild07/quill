@@ -4,6 +4,7 @@ import QuillDesign
 import QuillModel
 import Testing
 @testable import QuillEditor
+import QuillTestFixtures
 
 /// Steuert Controller und Text-View wie Tastatureingaben, in einem Offscreen-Fenster.
 @MainActor

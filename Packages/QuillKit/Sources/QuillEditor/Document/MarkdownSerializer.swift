@@ -2,14 +2,19 @@ import Foundation
 
 /// Wandelt Blöcke in Markdown (CommonMark + Task-Listen) bzw. Klartext um.
 public enum MarkdownSerializer {
-    /// Markdown für eine Blockfolge. `ordinals` liefert die Nummer nummerierter Punkte.
-    public static func markdown(for blocks: [EditorBlock], ordinal: (Int) -> Int) -> String {
+    /// Markdown für eine Blockfolge. `ordinals` liefert die Nummer nummerierter Punkte,
+    /// `image` die Zeile eines Bild-Blocks (der Export setzt dort den Pfad ins Asset ein).
+    public static func markdown(
+        for blocks: [EditorBlock],
+        ordinal: (Int) -> Int,
+        image: (EditorBlock) -> String = imageLine
+    ) -> String {
         var output = ""
         for (index, block) in blocks.enumerated() {
             if index > 0 {
                 output += separator(between: blocks[index - 1], and: block)
             }
-            output += line(for: block, ordinal: ordinal(index))
+            output += line(for: block, ordinal: ordinal(index), image: image)
         }
         return output
     }
@@ -18,6 +23,38 @@ public enum MarkdownSerializer {
     public static func markdown(for document: EditorDocument, blocks range: Range<Int>) -> String {
         let slice = Array(document.blocks[range])
         return markdown(for: slice) { document.listOrdinal(at: range.lowerBound + $0) }
+    }
+
+    /// Markdown für ein ganzes Dokument (Export).
+    public static func markdown(for document: EditorDocument, image: (EditorBlock) -> String) -> String {
+        markdown(for: document.blocks, ordinal: document.listOrdinal(at:), image: image)
+    }
+
+    /// Link-Ziel für `[Text](Ziel)` und `![](Ziel)`. Mit Leerraum, Klammern oder
+    /// spitzen Klammern in spitzen Klammern (`<Ziel mit Leerzeichen.md>`), sonst
+    /// erkennt CommonMark das Ziel nicht; `<`, `>` und `\` werden darin maskiert.
+    public static func linkDestination(_ target: String) -> String {
+        let needsBrackets = target.isEmpty == false && target.contains { character in
+            character.isWhitespace || "()<>\\".contains(character)
+        }
+        guard needsBrackets else { return target }
+        var escaped = ""
+        for character in target {
+            if "<>\\".contains(character) { escaped.append("\\") }
+            // Zeilenumbrüche sind auch in spitzen Klammern nicht erlaubt.
+            escaped.append(character.isNewline ? " " : character)
+        }
+        return "<" + escaped + ">"
+    }
+
+    /// Linktext für `[Text](Ziel)`: eckige Klammern und `\` maskiert.
+    public static func linkText(_ text: String) -> String {
+        var escaped = ""
+        for character in text {
+            if "[]\\".contains(character) { escaped.append("\\") }
+            escaped.append(character)
+        }
+        return escaped
     }
 
     /// Klartext: ein Block pro Zeile, ohne Markierungen.
@@ -39,7 +76,12 @@ public enum MarkdownSerializer {
         return tight ? "\n" : "\n\n"
     }
 
-    private static func line(for block: EditorBlock, ordinal: Int) -> String {
+    /// Bild-Block ohne Export: Ziel ist der Blocktext (beim Kopieren leer).
+    public static func imageLine(_ block: EditorBlock) -> String {
+        "![](" + linkDestination(block.text) + ")"
+    }
+
+    private static func line(for block: EditorBlock, ordinal: Int, image: (EditorBlock) -> String) -> String {
         let indent = String(repeating: "    ", count: block.indent)
         let text = inlineMarkdown(block.content)
         switch block.kind {
@@ -56,7 +98,7 @@ public enum MarkdownSerializer {
             let fence = block.text.contains("```") ? "````" : "```"
             return fence + (block.codeLanguage ?? "") + "\n" + block.text + "\n" + fence
         case .divider: return "---"
-        case .image: return "![](\(block.text))"
+        case .image: return image(block)
         }
     }
 
@@ -94,7 +136,7 @@ public enum MarkdownSerializer {
         if style.marks.contains(.italic) { core = "_" + core + "_" }
         if style.marks.contains(.bold) { core = "**" + core + "**" }
         if style.marks.contains(.strikethrough) { core = "~~" + core + "~~" }
-        if let link = style.link { core = "[" + core + "](" + link + ")" }
+        if let link = style.link { core = "[" + core + "](" + linkDestination(link) + ")" }
         return leading + core + trailing
     }
 }

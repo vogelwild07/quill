@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-Architekt, Swift-Entwickler.
 
-**Stand:** Phase 5 (Navigation) fertig, gemergt (PR #5, ADR-017, Review-Fixes drin). Nächstes: Phase 6 (Export). Neue Ideen nur unter „Später“ in `docs/roadmap.md`. Bekannte Probleme + Plan: `docs/roadmap.md`.
+**Stand:** Phase 5 (Navigation) fertig, gemergt (PR #5, ADR-017, Review-Fixes drin). Nächstes: Phase 6 (Export) auf Branch `phase-6/export`, ADR-018. Neue Ideen nur unter „Später“ in `docs/roadmap.md`. Bekannte Probleme + Plan: `docs/roadmap.md`.
 
 ## Kommunikation
 - Immer **Deutsch**. Kurz ok; Warnungen, Sicherheit, Entscheidungen in ganzen Sätzen.
@@ -28,7 +28,7 @@ UUID-`id`, `createdAt`/`updatedAt`, alle Attribute optional oder mit Default, **
 - `BlockKind` nur in `QuillModel`. Switches über Blockart ohne `default:`; neue Arten müssen `BlockKindCoverageTests` bestehen.
 - Inline-Formatierung: `.quillMarks` + `.link` im Textspeicher = Quelle, Schrift/Farbe abgeleitet. Gespeichert als `Block.richText` (`RichText`-JSON, `nil` ohne Formatierung). Blöcke schreibt nur `EditorPersistenceBridge` via `PageStore.applyEdits` (ADR-013).
 - Speichern darf nie still scheitern: Bridge wiederholt mit Backoff, Seite zeigt `lastError`, Beenden fragt via `QuitGuard`. Neuladen aus anderen Fenstern nie bei markiertem Text.
-- Test-Beispieldokumente nur aus `SampleDocuments` (Tests/QuillEditorTests/Fixtures).
+- Test-Beispieldokumente nur aus `SampleDocuments` (Target `QuillTestFixtures`, Tests/QuillTestFixtures).
 - Selbst gezeichnete Elemente nur Systemfarben; SF Symbols nicht mit `NSColor.set()` einfärben (bleibt schwarz). Hell + dunkel per `EditorSnapshotTests` prüfen.
 
 ## Design
@@ -65,7 +65,7 @@ Fall back to grep or file reads only for what the graph does not model: literal 
 - Vor jedem Push `git status` + `git diff --staged` prüfen. Im Zweifel fragen.
 - Gegenproben (absichtliche Fehler) nie mit `git checkout`/`git restore` zurücksetzen, sondern aus vorher angelegter Dateikopie (Scratchpad). Sonst gehen uncommittete Änderungen verloren.
 - Gemergte Phasen-Branches direkt nach Merge lokal + auf GitHub löschen (`git branch -d`, `git push origin --delete`), ohne Rückfrage. Nur wenn Merge bestätigt.
-- `DEVELOPMENT_TEAM`-Zeilen in `project.pbxproj` lokal (Personal Team des Nutzers), nie committen. `project.pbxproj` daher nur gezielt stagen; Xcode-Nebenänderungen (z. B. Scheme-`version`) nicht mitcommitten.
+- Signier-Team (Personal Team des Nutzers) nur in `Config/Local.xcconfig` (git-ignoriert, nie committen), nie in `project.pbxproj`. Setzt Xcode dort `DEVELOPMENT_TEAM`, Zeile entfernen. `project.pbxproj` nur gezielt stagen; Xcode-Nebenänderungen (z. B. Scheme-`version`) nicht mitcommitten.
 - Niemals committen: `.env`, Keys, Tokens, Zertifikate, Provisioning-Profile, Datenbanken, Backups, private Notizen.
 - Aktuell halten: `README.md`, `CLAUDE.md`, `docs/architecture.md`, `docs/decisions.md`.
 
