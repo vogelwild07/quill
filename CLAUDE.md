@@ -59,11 +59,17 @@ Fall back to grep or file reads only for what the graph does not model: literal 
 - Graphify = externer Dienst, liest GitHub-Stand, nicht lokalen Mac. Ungepushte Änderungen fehlen dort → lokal lesen.
 - Nur Code + Doku aus diesem Repo. Nie Inhalte aus meinem echten Store, Backups, Notion, Secrets oder Dateien außerhalb Repo. Im Zweifel vorher fragen.
 
+## Tests und Gegenproben
+- Jeder UI-Testlauf mit `timeout 600`. Ein Timeout gilt als „greift nicht sauber“ und wird gemeldet, nie ignoriert.
+- Vor UI-Tests prüfen, ob Quill läuft (`pgrep -lf Quill.app/Contents/MacOS/Quill`). Läuft es, Nutzer fragen, nie selbst beenden (echter Store, ungespeicherte Änderungen).
+- Gegenproben nur aus einer Kopie im Scratchpad: Datei kopieren, Fehler einbauen, Test laufen lassen, Datei aus der Kopie zurück und per `cmp` prüfen. Nie `git checkout`/`git restore` (sonst gehen uncommittete Änderungen verloren).
+- Gegenproben, deren Code nicht kompiliert, zählen nicht und werden mit kompilierbarem Fehler wiederholt.
+
 ## Git
 - Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`), kleine Commits.
 - Auf `main` nur gebauter, getesteter Stand. Größere Änderungen: Branch + PR.
-- Vor jedem Push `git status` + `git diff --staged` prüfen. Im Zweifel fragen.
-- Gegenproben (absichtliche Fehler) nie mit `git checkout`/`git restore` zurücksetzen, sondern aus vorher angelegter Dateikopie (Scratchpad). Sonst gehen uncommittete Änderungen verloren.
+- Gepusht und gemergt wird erst nach OK des Nutzers.
+- Vor jedem Push `git status` + `git diff --staged` prüfen: Arbeitskopie sauber, keine Team-ID (`DEVELOPMENT_TEAM`) im Diff. Im Zweifel fragen.
 - Gemergte Phasen-Branches direkt nach Merge lokal + auf GitHub löschen (`git branch -d`, `git push origin --delete`), ohne Rückfrage. Nur wenn Merge bestätigt.
 - Signier-Team (Personal Team des Nutzers) nur in `Config/Local.xcconfig` (git-ignoriert, nie committen), nie in `project.pbxproj`. Setzt Xcode dort `DEVELOPMENT_TEAM`, Zeile entfernen. `project.pbxproj` nur gezielt stagen; Xcode-Nebenänderungen (z. B. Scheme-`version`) nicht mitcommitten.
 - Niemals committen: `.env`, Keys, Tokens, Zertifikate, Provisioning-Profile, Datenbanken, Backups, private Notizen.
