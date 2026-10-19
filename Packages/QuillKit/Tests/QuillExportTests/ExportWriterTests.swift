@@ -94,6 +94,21 @@ import Testing
         #expect(assets == ["3F2A9C1E.png"])
     }
 
+    /// Auch vom Main Actor aus aufgerufen, baut und schreibt der Export im Hintergrund.
+    @MainActor
+    @Test func plansAndWritesOffTheMainThread() async throws {
+        defer { try? FileManager.default.removeItem(at: destination) }
+        #expect(pthread_main_np() != 0)
+        let onMain = Mutex<Bool?>(nil)
+        _ = try await ExportWriter.export(
+            SampleDocuments.exportProject(), strings: MarkdownExporterTests.strings, into: destination,
+            date: SampleDocuments.exportDate, preferSystemTemporary: true,
+            willPlan: { onMain.withLock { $0 = pthread_main_np() != 0 } },
+            imageData: { _ in Data() }
+        )
+        #expect(onMain.withLock { $0 } == false)
+    }
+
     // MARK: - Zwischenordner
 
     /// Auf demselben Volume entsteht der Export im temporären Ordner des Systems:

@@ -30,6 +30,10 @@ public enum ExportWriter {
     /// Jüngere könnten zu einem Export gehören, der in einem anderen Fenster läuft.
     static let staleStagingAge: TimeInterval = 3600
 
+    /// Läuft nie auf dem Main Actor (`@concurrent`): Aufbau des Markdowns und
+    /// Schreiben brauchen bei großen Bäumen spürbar Zeit. `root` ist ein reiner
+    /// Werttyp; SwiftData liest nur `PageStore` auf seinem eigenen Actor.
+    @concurrent
     public static func export(
         _ root: PageExportSnapshot,
         strings: ExportStrings,
@@ -40,13 +44,16 @@ public enum ExportWriter {
         try await export(root, strings: strings, into: destination, date: date, preferSystemTemporary: true, imageData: imageData)
     }
 
-    /// `preferSystemTemporary: false` erzwingt den Zwischenordner im Ziel (Tests).
+    /// `preferSystemTemporary: false` erzwingt den Zwischenordner im Ziel,
+    /// `willPlan` meldet den Beginn des Markdown-Aufbaus (beides für Tests).
+    @concurrent
     static func export(
         _ root: PageExportSnapshot,
         strings: ExportStrings,
         into destination: URL,
         date: Date,
         preferSystemTemporary: Bool,
+        willPlan: @Sendable () -> Void = {},
         imageData: @Sendable (UUID) async throws -> Data?
     ) async throws -> ExportResult {
         let fileManager = FileManager()
@@ -69,6 +76,7 @@ public enum ExportWriter {
             try data.write(to: images.appending(path: id.uuidString))
         }
 
+        willPlan()
         let plan = MarkdownExporter.plan(for: root, strings: strings, missingImages: missing)
         for file in plan.files {
             let url = output.appending(path: file.path, directoryHint: .notDirectory)
