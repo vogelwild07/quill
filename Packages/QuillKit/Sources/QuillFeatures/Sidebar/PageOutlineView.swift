@@ -591,7 +591,7 @@ private extension NSFont {
 /// Zeile: Emoji oder Symbol, dann bearbeitbarer Titel.
 final class PageCellView: NSTableCellView {
     private let iconLabel = NSTextField(labelWithString: "")
-    private let symbolView = NSImageView()
+    private let symbolView = DecorativeImageView()
 
     init(identifier: NSUserInterfaceItemIdentifier) {
         super.init(frame: .zero)
@@ -639,5 +639,13 @@ final class PageCellView: NSTableCellView {
         symbolView.isHidden = !icon.isEmpty
         setAccessibilityLabel(PageLabel.title(node.title))
     }
+}
+
+/// Bild nur als Schmuck: VoiceOver liest den Titel der Zeile, nicht den Namen des
+/// Symbols („Textdokument“, Befund A9). Erst ohne Element und ohne Rolle
+/// verschwindet das Bild; `setAccessibilityElement(false)` allein reicht nicht.
+final class DecorativeImageView: NSImageView {
+    override func isAccessibilityElement() -> Bool { false }
+    override func accessibilityRole() -> NSAccessibility.Role? { nil }
 }
 #endif

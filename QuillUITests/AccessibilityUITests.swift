@@ -29,6 +29,14 @@ final class AccessibilityUITests: XCTestCase {
         XCTAssertEqual(header.textFields["detail.title"].label, "Seitentitel")
     }
 
+    /// Sidebar-Zeile (A9): Das Standardsymbol ist Schmuck, kein Bild für VoiceOver.
+    func testSidebarRowSymbolIsHidden() throws {
+        createPage("Ohne Symbol")
+        let row = window.outlines["sidebar.pages"].pageRows.element(boundBy: 0)
+        XCTAssertTrue(row.textFields["sidebar.page"].waitForExistence(timeout: 5))
+        XCTAssertEqual(row.images.count, 0, "Symbol als Bild sichtbar")
+    }
+
     /// Listen beschriftet (A5): Sidebar und Papierkorb.
     func testListsAreLabeled() throws {
         createPage("Weg")
