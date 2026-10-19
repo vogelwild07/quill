@@ -45,3 +45,6 @@ notes.local.md
 
 # Lokale Claude-Code-Einstellungen
 .claude/settings.local.json
+
+# Icon-Entwürfe (Icon Composer), nicht committen
+Design/IconDrafts/

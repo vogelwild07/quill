@@ -9,7 +9,7 @@
 | 4 Editor (Interaktion) ✅ | Block-Felder in `BlockProperties` (ADR-014), `BlockKind` nur in `QuillModel`, Bild-Block (ADR-015), Einfügen-Knopf ＋ (Escape nimmt den Klick zurück), Slash-Menü mit Abschnitten, Maus und VoiceOver, Kürzel in allen Textblöcken, Format › Blockart (⌥⌘0–7), Abhaken (⌘↩), Blöcke verschieben (⌥⌘↑/↓) und duplizieren (⌘D), Kontextmenü am Griff, Mitscrollen beim Ziehen (ADR-016), Ladeanzeige beim Lesen großer Bilder; gemergt (PR #4) | Editor MVP-komplett |
 | 5 Navigation ✅ | Schnell öffnen (⌘O) mit Sprung zur Fundstelle, Favoriten als Abschnitt der Sidebar, Papierkorb mit Vorschau und Auto-Leeren nach 30 Tagen, Backup vor jedem endgültigen Löschen (ADR-017), Review-Fixes; gemergt (PR #5) | Seiten schnell finden |
 | 6 Export ✅ | Markdown-Exporter (Seite/Baum, `assets/`), Golden-File-Tests; Ordner per Dialog, ⇧⌘E, YAML-Frontmatter, APFS-sichere Dateinamen, Zwischenordner außerhalb des Ziels (ADR-018), Review-Fixes; gemergt (PR #6) | Seiten als Markdown-Ordner |
-| 7 Feinschliff | Accessibility, Lokalisierung, Performance, Icon, Leerzustände, Aufräumen aus dem Review von Phase 3 (feste Layout-Zahlen im Editor als `QuillDesign`-Tokens, Namen wie `T`/`S` und `longestIncreasingRun`, doppelter Code beim Laden in `EditorPersistenceBridge`) und aus dem Review von Phase 6 (Sortiervergleich `(sortKey, createdAt, id)` an fünf Stellen zusammenfassen, `title`/`untitled` im Export als fertige Namensbasis übergeben), **„Backup wiederherstellen …“** (7.1 ✅, gemergt PR #7: Menüpunkt, Tausch von `Store/` in einem Schritt beim Start, Umzug, Rückweg, ADR-019); 7.2 Aufräumen + Performance ✅, gemergt PR #8 (Messung und Schwellen ADR-020, `docs/performance.md`; Produktziel `sidebarReload` 100 ms verfehlt, für v0.1 akzeptiert, Lösung unter „Später“), darin zusätzlich aus dem Review von PR #7: ein gemeinsames Mapping Slug ↔ Anlass für Backups (`Reason`, `Kind`, `BackupLabel`), Backup-Namen als eigener Typ statt `String`, `restoreBackup` als App-Aktion statt in `PageActions`; offen: Ursache der fremden Bildbytes (in 7.2 einmal in 50 Läufen ohne Serialisierung nachgestellt, ADR-019), solange laufen `DiskStoreSuites` nacheinander | v0.1 |
+| 7 Feinschliff | Accessibility, Lokalisierung, Performance, Icon, Leerzustände, Aufräumen aus dem Review von Phase 3 (feste Layout-Zahlen im Editor als `QuillDesign`-Tokens, Namen wie `T`/`S` und `longestIncreasingRun`, doppelter Code beim Laden in `EditorPersistenceBridge`) und aus dem Review von Phase 6 (Sortiervergleich `(sortKey, createdAt, id)` an fünf Stellen zusammenfassen, `title`/`untitled` im Export als fertige Namensbasis übergeben), **„Backup wiederherstellen …“** (7.1 ✅, gemergt PR #7: Menüpunkt, Tausch von `Store/` in einem Schritt beim Start, Umzug, Rückweg, ADR-019); 7.2 Aufräumen + Performance ✅, gemergt PR #8 (Messung und Schwellen ADR-020, `docs/performance.md`; Produktziel `sidebarReload` 100 ms verfehlt, für v0.1 akzeptiert, Lösung unter „Später“), darin zusätzlich aus dem Review von PR #7: ein gemeinsames Mapping Slug ↔ Anlass für Backups (`Reason`, `Kind`, `BackupLabel`), Backup-Namen als eigener Typ statt `String`, `restoreBackup` als App-Aktion statt in `PageActions`; offen: Ursache der fremden Bildbytes (in 7.2 einmal in 50 Läufen ohne Serialisierung nachgestellt, ADR-019), solange laufen `DiskStoreSuites` nacheinander; 7.3 Bedienungshilfen, Leerzustände, Lokalisierung, Icon ✅ (Audit rot bei jeder neuen Meldung, `EmptyState`, `LocalizationTests`, `AppIcon.icon`, ADR-021), PR offen | v0.1 |
 | 8 Release | GitHub-Release v0.1 | – |
 
 Jede Phase auf eigenem Branch mit PR; auf `main` nur grüne Builds.
@@ -28,6 +28,9 @@ Ideen aus Phase 5, nicht eingeplant:
 
 Ideen aus Phase 7, nicht eingeplant:
 - Englische Lokalisierung (bisher nur Deutsch).
+- „Kontrast erhöhen“ von Hand prüfen (offscreen nicht nachstellbar, ADR-021).
+- Eigene Variante des Icons für den dunklen Modus in Icon Composer gestalten; bisher
+  dunkelt macOS den Hintergrund selbst ab.
 - Sidebar aus einer Momentaufnahme des `PageStore` statt aus beobachteten `Page`-Objekten
   bauen. SwiftData meldet nach jeder Store-Änderung `Page.parent` als geändert, dadurch
   läuft `SidebarView.body` dreimal statt einmal (`docs/performance.md`). Danach Schwelle
@@ -43,6 +46,18 @@ Aufräumen aus dem Review von PR #8, nicht eingeplant (Urteile, kein Fehler):
 - `ExportStrings.fileBase(for:)` und `PageStore.fetchPage(_:)` reichen nur weiter.
 - `QuillSignposts.beginSidebarLoadIfNeeded()` läuft als Seiteneffekt in
   `SidebarView.body`; einen Ort außerhalb von `body` suchen, der genauso früh misst.
+
+Aus dem Review von PR #9, nicht eingeplant (Urteile, kein Fehler):
+- Lexer in `LocalizationTests`: Raw-Strings `#"…"#`, Regex-Literale `/…/`, verschachtelte
+  Blockkommentare und `\` am Zeilenende mehrzeiliger Literale werden nicht richtig
+  gelesen; mehrzeilige Literale behalten ihre Einrückung (Abgleich mit dem Katalog);
+  Ternary in `Text(c ? "A" : "B")` wird uneinheitlich eingestuft; einzelne
+  kleingeschriebene Wörter und Kürzel wie „OK“ gelten nicht als Prosa. Kommt heute im
+  Code nicht vor.
+- `LocalizationTests.swift` vereint Lexer, Katalog- und Projektdatei-Parser; aufteilen.
+- Touch-Bar-Ausnahme im Audit steht doppelt (`sufficientElementDescription`, `action`).
+- `TestImage.png(spec:)` parst einen String statt eines kleinen Enum.
+- `current!` im Rotor „Überschriften“ (`BlockTextView+Accessibility.swift`) per `map` vermeiden.
 
 Infrastruktur, nicht eingeplant:
 - CI-Workflow auf GitHub (macOS-Runner): Build, Package- und App-Tests ohne Warnungen bei jedem PR. Bisher wird nur lokal getestet; PR #5 wurde auf Basis der lokalen Tests gemergt.

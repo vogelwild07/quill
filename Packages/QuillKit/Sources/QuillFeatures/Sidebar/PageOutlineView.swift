@@ -1,5 +1,7 @@
 #if canImport(AppKit)
 import AppKit
+import Carbon.HIToolbox
+import QuillDesign
 import QuillModel
 import SwiftUI
 
@@ -47,6 +49,7 @@ struct PageOutlineView: NSViewRepresentable {
         // Verschieben im Baum, Kopieren (= als Favorit hinzufügen) in die Favoriten.
         outline.setDraggingSourceOperationMask([.move, .copy], forLocal: true)
         outline.setAccessibilityIdentifier("sidebar.pages")
+        outline.setAccessibilityLabel(String(localized: "Seiten", bundle: .module))
 
         let coordinator = context.coordinator
         coordinator.outline = outline
@@ -354,7 +357,7 @@ struct PageOutlineView: NSViewRepresentable {
         ) {
             guard favoriteNodes.isEmpty, dropTarget == .hidden, (draggedItems.first as? Item)?.role == .page else { return }
             dropTarget = .dragging
-            outlineView.insertItems(at: IndexSet(integer: 0), inParent: nil, withAnimation: .slideDown)
+            outlineView.insertItems(at: IndexSet(integer: 0), inParent: nil, withAnimation: QuillDesign.Motion.rowAnimation(.slideDown))
             outlineView.expandItem(favoritesGroup)
         }
 
@@ -380,7 +383,7 @@ struct PageOutlineView: NSViewRepresentable {
 
         private func hideEmptyFavorites() {
             dropTarget = .hidden
-            outline?.removeItems(at: IndexSet(integer: 0), inParent: nil, withAnimation: .slideUp)
+            outline?.removeItems(at: IndexSet(integer: 0), inParent: nil, withAnimation: QuillDesign.Motion.rowAnimation(.slideUp))
         }
 
         func outlineView(
@@ -498,6 +501,10 @@ struct PageOutlineView: NSViewRepresentable {
         }
 
         /// ↩ benennt um, ⌘⌫ legt in den Papierkorb (auch aus den Favoriten heraus).
+        func moveFocus(to target: PageFocusTarget) {
+            parent?.actions.focusPage(target)
+        }
+
         func handleKey(_ event: NSEvent) -> Bool {
             guard let outline, let item = outline.item(atRow: outline.selectedRow) as? Item, !item.isGroup else { return false }
             // Nur echte Modifikatoren; .function/.numericPad hängen je nach Tastatur dran.
@@ -537,7 +544,13 @@ final class PageOutlineTableView: NSOutlineView {
         super.mouseDown(with: event)
     }
 
+    /// Tab verlässt die Sidebar zum Titel, ⇧Tab zum Editor (`WindowFocus`), statt in
+    /// das Titelfeld einer Zeile zu springen. Mit ⌃ genauso.
     override func keyDown(with event: NSEvent) {
+        if event.keyCode == UInt16(kVK_Tab), let coordinator {
+            coordinator.moveFocus(to: event.modifierFlags.contains(.shift) ? .editor : .title)
+            return
+        }
         if coordinator?.handleKey(event) == true { return }
         super.keyDown(with: event)
     }
@@ -548,9 +561,8 @@ final class GroupCellView: NSTableCellView {
     init(identifier: NSUserInterfaceItemIdentifier) {
         super.init(frame: .zero)
         self.identifier = identifier
+        // Schrift und Farbe setzt die Source-List für Gruppenzeilen selbst (Befund A10).
         let title = NSTextField(labelWithString: "")
-        title.font = .preferredFont(forTextStyle: .subheadline).withWeight(.semibold)
-        title.textColor = .secondaryLabelColor
         title.translatesAutoresizingMaskIntoConstraints = false
         addSubview(title)
         textField = title
@@ -570,17 +582,10 @@ final class GroupCellView: NSTableCellView {
     }
 }
 
-private extension NSFont {
-    func withWeight(_ weight: NSFont.Weight) -> NSFont {
-        let descriptor = fontDescriptor.addingAttributes([.traits: [NSFontDescriptor.TraitKey.weight: weight]])
-        return NSFont(descriptor: descriptor, size: pointSize) ?? self
-    }
-}
-
 /// Zeile: Emoji oder Symbol, dann bearbeitbarer Titel.
 final class PageCellView: NSTableCellView {
     private let iconLabel = NSTextField(labelWithString: "")
-    private let symbolView = NSImageView()
+    private let symbolView = DecorativeImageView()
 
     init(identifier: NSUserInterfaceItemIdentifier) {
         super.init(frame: .zero)
@@ -628,5 +633,13 @@ final class PageCellView: NSTableCellView {
         symbolView.isHidden = !icon.isEmpty
         setAccessibilityLabel(PageLabel.title(node.title))
     }
+}
+
+/// Bild nur als Schmuck: VoiceOver liest den Titel der Zeile, nicht den Namen des
+/// Symbols („Textdokument“, Befund A9). Erst ohne Element und ohne Rolle
+/// verschwindet das Bild; `setAccessibilityElement(false)` allein reicht nicht.
+final class DecorativeImageView: NSImageView {
+    override func isAccessibilityElement() -> Bool { false }
+    override func accessibilityRole() -> NSAccessibility.Role? { nil }
 }
 #endif

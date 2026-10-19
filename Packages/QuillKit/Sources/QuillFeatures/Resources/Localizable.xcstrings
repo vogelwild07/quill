@@ -2,7 +2,26 @@
   "sourceLanguage" : "de",
   "strings" : {
     "%lld Seiten endgültig löschen?" : {
-
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Seite endgültig löschen?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Seiten endgültig löschen?"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Abbrechen" : {
 
@@ -38,6 +57,9 @@
 
     },
     "Backup wiederherstellen …" : {
+
+    },
+    "Backups" : {
 
     },
     "Backups im Finder zeigen" : {
@@ -109,6 +131,9 @@
     "Durchgestrichen" : {
 
     },
+    "Eine andere Quill-Instanz richtet gerade die Datenbank ein." : {
+
+    },
     "Eingespielt: Backup vom %@." : {
 
     },
@@ -142,6 +167,9 @@
     "Fett" : {
 
     },
+    "Gelöschte Seiten bleiben hier 30 Tage und lassen sich wiederherstellen." : {
+
+    },
     "Icon" : {
 
     },
@@ -166,6 +194,12 @@
     "Inhalt" : {
 
     },
+    "Kein Seitentitel und kein Text passt zur Suche." : {
+
+    },
+    "Kein Symbol" : {
+
+    },
     "Keine Seite ausgewählt" : {
 
     },
@@ -179,6 +213,9 @@
 
     },
     "Löschen fehlgeschlagen" : {
+
+    },
+    "Mit ⌘N legst du die erste Seite an." : {
 
     },
     "Neue Seite" : {
@@ -223,16 +260,19 @@
     "Papierkorb leeren?" : {
 
     },
-    "Quill" : {
+    "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
 
     },
-    "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
+    "Quill sichert die Daten beim Start und beim Beenden." : {
 
     },
     "Quill wird danach beendet. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt als Backup „Vor dem Wiederherstellen“ erhalten." : {
 
     },
     "Quill wurde nicht beendet. Das Backup ist nicht mehr vorgemerkt, der aktuelle Stand bleibt. Wähle es bei Bedarf erneut über Ablage › Backup wiederherstellen …" : {
+
+    },
+    "Schnell öffnen" : {
 
     },
     "Schnell öffnen (⌘O)" : {
@@ -253,16 +293,53 @@
     "Seiten" : {
 
     },
+    "Seiten im Papierkorb" : {
+
+    },
     "Seiten und Inhalte durchsuchen" : {
 
     },
     "Seiten werden nach %lld Tagen endgültig gelöscht." : {
-
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Seiten werden nach %lld Tag endgültig gelöscht."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Seiten werden nach %lld Tagen endgültig gelöscht."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Seiten: %lld · Bilder: %lld" : {
 
     },
+    "Seitenkopf" : {
+
+    },
+    "Seitensymbol" : {
+
+    },
+    "Seitentitel" : {
+
+    },
+    "Sie wurde gelöscht oder liegt im Papierkorb." : {
+
+    },
     "Sonstiges" : {
+
+    },
+    "Sperre nicht möglich: %@" : {
 
     },
     "Suchen" : {
@@ -277,6 +354,9 @@
     "Umbenennen" : {
 
     },
+    "Umzug angehalten, im Ziel liegt schon: %@" : {
+
+    },
     "Ungesicherte Änderungen werden vorher gespeichert." : {
 
     },
@@ -284,6 +364,9 @@
 
     },
     "Unterseiten einschließen" : {
+
+    },
+    "Unvollständiger Vorgang, Dateien liegen in: %@" : {
 
     },
     "Verschieben" : {
@@ -319,7 +402,7 @@
     "Wiederherstellen …" : {
 
     },
-    "Wähle links eine Seite oder lege mit ⌘N eine neue an." : {
+    "Wähle links eine Seite oder lege eine neue an." : {
 
     },
     "Zu Favoriten hinzufügen" : {

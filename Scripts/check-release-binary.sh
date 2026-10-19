@@ -2,7 +2,8 @@
 # Prüft, dass der Release-Build keinen Profiling-Code enthält (docs/performance.md):
 # kein „QuillSeedPages“, kein Typ `ProfilingSeed` und keine Profiling-Bundle-ID im
 # App-Bundle. Kurze Zeichenketten (bis 15 Byte) legt Swift nicht als Text ab;
-# „QuillSeedPages“ steht deshalb in einer Lognachricht des Seeds.
+# „QuillSeedPages“ steht deshalb in einer Lognachricht des Seeds. Ebenso fehlt das
+# Testbild für UI-Tests (`TestImage`, nur Debug), erkannt an seiner Lognachricht.
 #
 # Aufruf: Scripts/check-release-binary.sh [zusätzliche xcodebuild-Einstellungen]
 # Die Einstellungen dienen nur der Gegenprobe, z. B.
@@ -35,7 +36,7 @@ find "$app" -type f | while read -r file; do
 done
 
 found=0
-for marker in QuillSeedPages ProfilingSeed de.vogel.quill.profiling; do
+for marker in QuillSeedPages ProfilingSeed de.vogel.quill.profiling "Testbild in eigener Zwischenablage"; do
   hits=$(grep -r -l -a -F "$marker" "$copies" 2>/dev/null)
   if [ -n "$hits" ]; then
     echo "GEFUNDEN: „$marker“ in:"
@@ -45,9 +46,9 @@ for marker in QuillSeedPages ProfilingSeed de.vogel.quill.profiling; do
 done
 
 if [ $found -eq 0 ]; then
-  echo "OK: Release-Bundle ohne Profiling-Code ($app)"
+  echo "OK: Release-Bundle ohne Profiling- und Testcode ($app)"
   rm -rf "$derived"
   exit 0
 fi
-echo "Release-Bundle enthält Profiling-Code (Build: $derived)"
+echo "Release-Bundle enthält Profiling- oder Testcode (Build: $derived)"
 exit 1

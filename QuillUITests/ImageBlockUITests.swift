@@ -2,8 +2,10 @@ import AppKit
 import XCTest
 
 /// Bild-Block: Einsetzen aus der Zwischenablage, Undo, Seitenwechsel, Hinweis beim
-/// Verkleinern. Bilder werden im Test erzeugt; die App nutzt eine eigene
-/// Zwischenablage (`-QuillPasteboardName`), die des Nutzers bleibt unberührt.
+/// Verkleinern. Die App nutzt eine eigene Zwischenablage (`-QuillPasteboardName`),
+/// die des Nutzers bleibt unberührt. Das Testbild erzeugt die App selbst
+/// (`-QuillTestImage`): Füllte der Test-Runner die Zwischenablage, sperrte der
+/// Datenschutz („Einsetzen aus anderen Apps“) das Einsetzen.
 /// Ein Bild-Block steht im Text der Bedienungshilfen als U+FFFC.
 /// Die Dateiauswahl (Slash-Menü „Bild“) läuft in der Sandbox außerhalb der App und
 /// wird von Hand geprüft; hier nur der Eintrag im Menü.
@@ -17,15 +19,21 @@ final class ImageBlockUITests: XCTestCase {
     // `setUpWithError`/`tearDownWithError` wären nonisolated.
     override func setUp() async throws {
         continueAfterFailure = false
+    }
+
+    /// Startet die App; mit `image` (`<Breite>x<Höhe>` oder `heavy`) liegt das
+    /// Testbild dann in ihrer Zwischenablage.
+    private func launch(image: String? = nil) {
         app = XCUIApplication.quill()
         app.launchArguments += ["-QuillPasteboardName", pasteboard.name.rawValue]
+        if let image { app.launchArguments += ["-QuillTestImage", image] }
         app.launch()
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 5))
         app.windows.firstMatch.click()
     }
 
     override func tearDown() async throws {
-        app.terminate()
+        app?.terminate()
         pasteboard.releaseGlobally()
     }
 
@@ -33,11 +41,11 @@ final class ImageBlockUITests: XCTestCase {
 
     func testPastedImageIsUndoableAndSurvivesPageSwitch() throws {
         let generalChangeCount = NSPasteboard.general.changeCount
+        launch(image: "120x60")
         createPage("Bilder")
         app.typeText("\r")
         waitForFocus(editor)
         app.typeText("Oben\r")
-        putImage(Self.png(width: 120, height: 60))
         app.typeKey("v", modifierFlags: .command)
         assertEditorText("Oben\n\(image)\n\n")
 
@@ -54,12 +62,12 @@ final class ImageBlockUITests: XCTestCase {
     }
 
     func testPastingImageOverSelectionIsOneUndoStep() throws {
+        launch(image: "40x40")
         createPage("Auswahl")
         app.typeText("\r")
         waitForFocus(editor)
         app.typeText("Hallo Welt")
         app.typeKey("a", modifierFlags: .command)
-        putImage(Self.png(width: 40, height: 40))
         app.typeKey("v", modifierFlags: .command)
         assertEditorText("\(image)\n\n")
 
@@ -67,13 +75,12 @@ final class ImageBlockUITests: XCTestCase {
         assertEditorText("Hallo Welt\n")
     }
 
+    /// Bild über 20 MB (`heavy`, `TestImageTests` prüft die Größe).
     func testHeavyImageShowsDownscaleNotice() throws {
+        launch(image: "heavy")
         createPage("Groß")
         app.typeText("\r")
         waitForFocus(editor)
-        let data = Self.heavyPNG()
-        XCTAssertGreaterThan(data.count, 20 * 1024 * 1024)
-        putImage(data)
         app.typeKey("v", modifierFlags: .command)
         assertEditorText("\(image)\n\n")
 
@@ -83,6 +90,7 @@ final class ImageBlockUITests: XCTestCase {
     }
 
     func testSlashMenuOffersImage() throws {
+        launch()
         createPage("Slash")
         app.typeText("\r")
         waitForFocus(editor)
@@ -92,36 +100,6 @@ final class ImageBlockUITests: XCTestCase {
         XCTAssertEqual(entry.label, "Bild")
         app.typeKey(.escape, modifierFlags: [])
         assertEditorText("/bild\n")
-    }
-
-    // MARK: - Testbilder
-
-    private func putImage(_ png: Data) {
-        pasteboard.clearContents()
-        pasteboard.setData(png, forType: .png)
-    }
-
-    static func png(width: Int, height: Int) -> Data {
-        let context = CGContext(
-            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
-            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
-        )!
-        context.setFillColor(CGColor(srgbRed: 0.2, green: 0.5, blue: 0.9, alpha: 1))
-        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
-        return NSBitmapImageRep(cgImage: context.makeImage()!).representation(using: .png, properties: [:])!
-    }
-
-    /// Rauschen lässt sich kaum komprimieren: ein PNG über 20 MB.
-    static func heavyPNG() -> Data {
-        let width = 2700, height = 2700
-        var bytes = [UInt8](repeating: 0, count: width * height * 4)
-        arc4random_buf(&bytes, bytes.count)
-        let image = CGImage(
-            width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: width * 4,
-            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
-            provider: CGDataProvider(data: Data(bytes) as CFData)!, decode: nil, shouldInterpolate: false, intent: .defaultIntent
-        )!
-        return NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])!
     }
 
     // MARK: - Hilfen (wie in `EditorUITests`)

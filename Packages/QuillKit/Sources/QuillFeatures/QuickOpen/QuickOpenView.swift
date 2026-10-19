@@ -47,6 +47,7 @@ struct QuickOpenView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
+                .accessibilityIdentifier("quickOpen.hint")
         }
         .frame(width: 560)
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
@@ -59,8 +60,11 @@ struct QuickOpenView: View {
         .onChange(of: isFieldFocused) { _, focused in
             if !focused { DispatchQueue.main.async { isFieldFocused = true } }
         }
+        // `.isModal`: VoiceOver bleibt im Panel. Das Merkmal bricht die Eltern-Kind-
+        // Kette einmal; im Audit eine gezählte Ausnahme (Befund A6).
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
+        .accessibilityLabel(String(localized: "Schnell öffnen", bundle: .module))
         .accessibilityIdentifier("quickOpen.panel")
     }
 
@@ -69,9 +73,8 @@ struct QuickOpenView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
                     if model.hasLoaded && model.hits.isEmpty {
-                        Text(model.query.isEmpty ? String(localized: "Noch keine Seiten", bundle: .module) : String(localized: "Keine Treffer", bundle: .module))
-                            .foregroundStyle(.secondary)
-                            .padding(8)
+                        EmptyStateView(model.query.isEmpty ? .noPages : .noResults, id: "quickOpen.emptyState")
+                            .frame(maxWidth: .infinity)
                     }
                     let offsets = sectionOffsets
                     ForEach(model.sections) { section in

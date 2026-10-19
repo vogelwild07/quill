@@ -175,7 +175,13 @@ final class SlashMenuController {
         panel.isOpaque = false
         panel.hasShadow = true
         panel.becomesKeyOnlyIfNeeded = true
-        panel.contentView = NSHostingView(rootView: SlashMenuView(model: model))
+        let content = NSHostingView(rootView: SlashMenuView(model: model))
+        // VoiceOver: Panel und Hosting-View (bleibt trotz `setAccessibilityElement(false)`
+        // eine Gruppe) tragen den Namen des Menüs.
+        let label = String(localized: "Block einfügen", bundle: .module)
+        panel.setAccessibilityLabel(label)
+        content.setAccessibilityLabel(label)
+        panel.contentView = content
         return panel
     }
 }
@@ -220,6 +226,7 @@ struct SlashMenuView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
+                .accessibilityIdentifier("slash.hint")
         }
         .frame(width: 280)
         .glassEffect(.regular, in: .rect(cornerRadius: 14))

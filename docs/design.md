@@ -41,10 +41,50 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
 - Keine modalen Dialoge außer „Endgültig löschen“
 - Autosave, kein Speichern-Befehl; Undo überall
 - Löschen = Papierkorb
-- Animationen ≤ 200 ms (Spring), respektieren „Bewegung reduzieren“
+- Animationen ≤ 200 ms (Spring), respektieren „Bewegung reduzieren“ (`QuillDesign.Motion`:
+  Überblenden statt Gleiten, Hinweise ohne Ausblenden)
 - Kontextmenüs überall
 - Vollständige Menüleiste: Ablage, Bearbeiten, Format, Darstellung, Seite, Fenster, Hilfe
 - Ein Fenster mit System-Tabs (⌘T); Seite optional in neuem Fenster
+
+## Leerzustände
+
+Nach HIG: Symbol, Titel, ein Satz Erklärung, wo es passt ein Knopf. Alle Fälle im Katalog
+`EmptyState` (`QuillFeatures/Shared/EmptyState.swift`), angezeigt über `EmptyStateView`:
+
+| Fall | Titel | Knopf |
+|---|---|---|
+| Keine Auswahl | Keine Seite ausgewählt | Neue Seite |
+| Sidebar, Schnell öffnen vor der ersten Seite | Noch keine Seiten | – |
+| Seite fehlt | Seite nicht gefunden | – |
+| Papierkorb | Der Papierkorb ist leer | – |
+| Backups | Noch keine Backups | – |
+| Schnell öffnen ohne Treffer | Keine Treffer | – |
+
+Symbol grau; Titel und Erklärung in primary, weil der Systemstil hell nur 3,1:1 erreicht
+(WCAG verlangt 4,5:1). Eine leere Seite zeigt im Editor „Leere Seite – mit „/“ wählst du
+eine Blockart.“ in der Platzhalterfarbe; der Hinweis ist nur gezeichnet und verschwindet
+beim ersten Zeichen.
+
+## Bedienungshilfen
+
+- Jedes Bedienelement hat eine Beschriftung; Listen heißen „Seiten“, „Seiten im
+  Papierkorb“, „Backups“; Panels „Schnell öffnen“ (modal) und „Block einfügen“.
+- Tab-Schleife: Sidebar →Tab→ Titel →Tab→ Editor →⌃Tab→ Sidebar (Tab allein rückt im
+  Editor ein). Rückwärts: Sidebar →⇧Tab→ Editor →⇧⌃Tab→ Titel →⇧Tab→ Symbol →⇧Tab→
+  Sidebar; das Symbol liegt nur auf dem Rückweg.
+- Kontrast mindestens 4,5:1 auf matten Flächen (geprüft in `EmptyStateSnapshotTests`).
+  Ausnahmen im Audit (`AccessibilityAuditUITests`) nur einzeln mit Begründung: Systemstil
+  von Source-List und Symbolleiste, Text auf Glas (Sidebar, Hinweise in Schnell öffnen und
+  Slash-Menü), die gedimmte Papierkorb-Zeile hinter dem Sheet „Backup wiederherstellen“.
+
+## App-Icon
+
+`App/Resources/AppIcon.icon` (Icon Composer): weißes Blatt, um 6° geneigt, eine Linie in
+Koralle (`#FF5A4E`) oben links, auf tiefem Grün. Eine Gruppe mit zwei Ebenen (Blatt mit
+Liquid Glass, Linie ohne), Hintergrund als Füllung der Datei. Minimalistisch, bei 16 pt
+erkennbar, im Dock klar anders als Notizen, Pages und Freeform. Anpassen nur in Icon
+Composer.
 
 ## Wireframes
 

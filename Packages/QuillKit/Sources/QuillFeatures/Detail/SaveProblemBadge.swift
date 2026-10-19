@@ -8,7 +8,8 @@ struct SaveProblemBadge: View {
     var body: some View {
         Label(String(localized: "Nicht gespeichert", bundle: .module), systemImage: "exclamationmark.triangle")
             .font(.caption)
-            .foregroundStyle(.secondary)
+            // primary: secondary auf quaternary war hell nur 3,6:1 (Befund A14).
+            .foregroundStyle(.primary)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .background(.quaternary, in: .capsule)

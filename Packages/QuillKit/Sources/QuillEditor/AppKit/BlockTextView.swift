@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import Carbon.HIToolbox
 import QuillDesign
 import QuillModel
 
@@ -18,6 +19,10 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     let insertButton = BlockInsertButton()
     private let dropIndicator = NSView()
     private var hoverTrackingArea: NSTrackingArea?
+    /// Checkboxen für VoiceOver, pro Block (`BlockTextView+Accessibility`).
+    var checkboxElements: [UUID: CheckboxAccessibilityElement] = [:]
+    /// Zuletzt gezeichneter Stand des Hinweises (`BlockTextView+EmptyPageHint`).
+    var isShowingEmptyPageHint = false
 
     override init(frame frameRect: NSRect, textContainer container: NSTextContainer?) {
         super.init(frame: frameRect, textContainer: container)
@@ -88,6 +93,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     /// Der Kopf ist für VoiceOver und XCUITest ein Kind der Text-View.
     override func accessibilityChildren() -> [Any]? {
+        prepareAttachmentCells()
         var children = super.accessibilityChildren() ?? []
         if let headerView, !children.contains(where: { ($0 as AnyObject) === headerView }) {
             children.insert(headerView, at: 0)
@@ -97,7 +103,24 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
             && !children.contains(where: { ($0 as AnyObject) === view }) {
             children.append(view)
         }
+        children.append(contentsOf: checkboxAccessibilityElements())
         return children
+    }
+
+    /// ⌃Tab verlässt den Editor zur Sidebar, ⇧⌃Tab zum Titel; Tab allein rückt ein.
+    override func keyDown(with event: NSEvent) {
+        let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
+        if event.keyCode == UInt16(kVK_Tab), !hasMarkedText(), let editor {
+            switch modifiers {
+            case .control:
+                if let exit = editor.onExitForward { exit(); return }
+            case [.control, .shift]:
+                if let exit = editor.onExitTop { exit(); return }
+            default:
+                break
+            }
+        }
+        super.keyDown(with: event)
     }
 
     /// Fokus woanders (Sidebar, anderer Tab): Slash-Menü schließen.
@@ -337,8 +360,27 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     /// eigene Zwischenablage. Für UI-Tests, damit die des Nutzers unberührt bleibt.
     public static let pasteboardArgument = "QuillPasteboardName"
 
-    static let defaultClipboard: NSPasteboard = UserDefaults.standard.string(forKey: pasteboardArgument)
-        .map { NSPasteboard(name: NSPasteboard.Name($0)) } ?? .general
+    /// Name der eigenen Zwischenablage nur aus der Kommandozeile, nie aus gespeicherten
+    /// Einstellungen: Ein `defaults write` darf Kopieren und Einsetzen nicht still
+    /// umleiten (wie die Store-Argumente, ADR-019). In Release-Builds immer `nil`.
+    static func clipboardName(arguments: [String]) -> String? {
+        #if DEBUG
+        guard let index = arguments.firstIndex(of: "-\(pasteboardArgument)"), arguments.indices.contains(index + 1),
+              !arguments[index + 1].isEmpty else { return nil }
+        return arguments[index + 1]
+        #else
+        return nil
+        #endif
+    }
+
+    static let defaultClipboard: NSPasteboard = {
+        guard let name = clipboardName(arguments: ProcessInfo.processInfo.arguments) else { return .general }
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name(name))
+        #if DEBUG
+        TestImage.put(arguments: ProcessInfo.processInfo.arguments, on: pasteboard)
+        #endif
+        return pasteboard
+    }()
 
     var clipboard = BlockTextView.defaultClipboard
 

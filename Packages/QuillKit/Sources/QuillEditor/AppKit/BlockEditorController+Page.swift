@@ -87,6 +87,9 @@ public final class EditorHeaderView: NSView, HeaderSizing {
         hosting.view.frame = bounds
         hosting.view.autoresizingMask = [.width, .height]
         addSubview(hosting.view)
+        // Für VoiceOver eine Gruppe; die Beschriftung setzt, wer den Kopf baut.
+        setAccessibilityElement(true)
+        setAccessibilityRole(.group)
         sizeObservation = hosting.observe(\.preferredContentSize) { [weak self] _, _ in
             MainActor.assumeIsolated { self?.superview?.needsLayout = true }
         }

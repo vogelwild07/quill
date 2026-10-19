@@ -15,11 +15,15 @@ import QuillModel
 public final class BlockEditorController: NSObject {
     public let scrollView: NSScrollView
     let textView: BlockTextView
-    public internal(set) var document: EditorDocument
+    public internal(set) var document: EditorDocument {
+        didSet { textView.updateEmptyPageHint() }
+    }
     /// Wird nach jeder Änderung des Dokuments aufgerufen.
     public var onChange: ((EditorDocument) -> Void)?
-    /// ↑ in der ersten Zeile: Fokus zurück in den Titel.
+    /// ↑ in der ersten Zeile oder ⇧⌃Tab: Fokus zurück in den Titel.
     public var onExitTop: (() -> Void)?
+    /// ⌃Tab: Fokus aus dem Editor zum nächsten Bereich (Sidebar). Tab rückt ein.
+    public var onExitForward: (() -> Void)?
     /// Eigener Undo-Stapel pro Editor. `load` leert nur ihn, nicht das Undo des
     /// Fensters (Sidebar-Aktionen).
     let undoManager = UndoManager()

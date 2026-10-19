@@ -32,15 +32,14 @@ struct TrashView: View {
             }
             Divider()
             if entries.isEmpty {
-                ContentUnavailableView {
-                    Label(String(localized: "Der Papierkorb ist leer", bundle: .module), systemImage: "trash")
-                }
+                EmptyStateView(.emptyTrash, id: "trash.emptyState")
             } else {
                 List(selection: $selection) {
                     ForEach(entries) { entry in
                         TrashRow(entry: entry).tag(entry.id)
                     }
                 }
+                .accessibilityLabel(String(localized: "Seiten im Papierkorb", bundle: .module))
                 .accessibilityIdentifier("trash.list")
                 .focused($isListFocused)
                 .onAppear { isListFocused = true }
@@ -172,7 +171,7 @@ private struct TrashRow: View {
                 }
                 Text(details)
                     .font(.caption)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 3)
