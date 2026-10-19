@@ -336,19 +336,42 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     /// eigene Zwischenablage. Für UI-Tests, damit die des Nutzers unberührt bleibt.
     public static let pasteboardArgument = "QuillPasteboardName"
 
-    static let clipboard: NSPasteboard = UserDefaults.standard.string(forKey: pasteboardArgument)
+    static let defaultClipboard: NSPasteboard = UserDefaults.standard.string(forKey: pasteboardArgument)
         .map { NSPasteboard(name: NSPasteboard.Name($0)) } ?? .general
 
+    var clipboard = BlockTextView.defaultClipboard
+
+    /// Übernimmt `NSTextView`, wenn der Editor nichts tun konnte? Die Text-View kennt
+    /// nur die allgemeine Zwischenablage; mit einer eigenen bleibt es deshalb dabei,
+    /// sonst läse ein UI-Test die Zwischenablage des Nutzers.
+    static func fallsBackToTextView(handled: Bool, clipboard: NSPasteboard) -> Bool {
+        !handled && clipboard.name == .general
+    }
+
     override func copy(_ sender: Any?) {
-        if editor?.copySelection(to: Self.clipboard) != true { super.copy(sender) }
+        let handled = editor?.copySelection(to: clipboard) == true
+        if Self.fallsBackToTextView(handled: handled, clipboard: clipboard) { super.copy(sender) }
     }
 
     override func cut(_ sender: Any?) {
-        if editor?.cutSelection(to: Self.clipboard) != true { super.cut(sender) }
+        let handled = editor?.cutSelection(to: clipboard) == true
+        if Self.fallsBackToTextView(handled: handled, clipboard: clipboard) { super.cut(sender) }
     }
 
     override func paste(_ sender: Any?) {
-        if editor?.paste(from: Self.clipboard) != true { super.paste(sender) }
+        let handled = editor?.paste(from: clipboard) == true
+        if Self.fallsBackToTextView(handled: handled, clipboard: clipboard) { super.paste(sender) }
+    }
+
+    /// „Einsetzen und Stil anpassen“: mit eigener Zwischenablage als Klartext aus ihr.
+    override func pasteAsPlainText(_ sender: Any?) {
+        guard clipboard.name != .general else { return super.pasteAsPlainText(sender) }
+        if let string = clipboard.string(forType: .string) { insertText(string, replacementRange: selectedRange()) }
+    }
+
+    override func pasteAsRichText(_ sender: Any?) {
+        guard clipboard.name != .general else { return super.pasteAsRichText(sender) }
+        paste(sender)
     }
 }
 

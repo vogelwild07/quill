@@ -710,6 +710,46 @@ struct ClipboardAndMoveTests {
         #expect(blocks.map(\.kind) == [.heading1, .todo, .numbered])
     }
 
+    /// Mit eigener Zwischenablage (UI-Tests) nie zurück auf `NSTextView`, die nur die
+    /// allgemeine kennt. Geprüft ohne die allgemeine anzufassen.
+    @Test func ownClipboardNeverFallsBackToGeneral() throws {
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        #expect(!BlockTextView.fallsBackToTextView(handled: false, clipboard: board))
+        #expect(!BlockTextView.fallsBackToTextView(handled: true, clipboard: board))
+        #expect(BlockTextView.fallsBackToTextView(handled: false, clipboard: .general))
+        #expect(!BlockTextView.fallsBackToTextView(handled: true, clipboard: .general))
+    }
+
+    /// Nichts Brauchbares in der eigenen Zwischenablage: Der Text bleibt, wie er ist.
+    @Test func pastingFromEmptyOwnClipboardChangesNothing() throws {
+        let h = Harness([EditorBlock(text: "Hallo")])
+        let textView = try #require(h.textView as? BlockTextView)
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        board.clearContents()
+        textView.clipboard = board
+        h.caret(at: 0, 5)
+        textView.paste(nil)
+        textView.pasteAsPlainText(nil)
+        textView.pasteAsRichText(nil)
+        #expect(h.texts == ["Hallo"])
+    }
+
+    /// „Einsetzen und Stil anpassen“ liest Klartext aus der eigenen Zwischenablage.
+    @Test func pasteAsPlainTextUsesOwnClipboard() throws {
+        let h = Harness([EditorBlock(text: "Hallo")])
+        let textView = try #require(h.textView as? BlockTextView)
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        board.clearContents()
+        board.setString(" Welt", forType: .string)
+        textView.clipboard = board
+        h.caret(at: 0, 5)
+        textView.pasteAsPlainText(nil)
+        #expect(h.texts == ["Hallo Welt"])
+    }
+
     @Test func pastingDividerAtEndKeepsEditableParagraph() throws {
         let h = Harness([EditorBlock(text: "A"), EditorBlock(kind: .divider), EditorBlock(text: "B")])
         let board = pasteboard()
