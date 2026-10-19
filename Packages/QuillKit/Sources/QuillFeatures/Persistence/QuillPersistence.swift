@@ -18,6 +18,31 @@ public final class QuillPersistence {
     /// Wiederherstellen über Neustarts brauchen (ADR-019); nie der echte Store.
     public static let storeDirectoryArgument = "QuillStoreDirectory"
 
+    /// Speicher für UI-Tests statt des echten Stores.
+    enum TestStore: Equatable {
+        case inMemory
+        case directory(String)
+    }
+
+    /// Liest die Startargumente für UI-Tests nur aus der Kommandozeile, nie aus
+    /// gespeicherten Einstellungen: Ein `defaults write` darf den echten Store nicht
+    /// still durch einen leeren ersetzen. In Release-Builds immer `nil`.
+    static func testStore(arguments: [String]) -> TestStore? {
+        #if DEBUG
+        func value(_ name: String) -> String? {
+            guard let index = arguments.firstIndex(of: "-\(name)"), arguments.indices.contains(index + 1) else { return nil }
+            return arguments[index + 1]
+        }
+        if let flag = value(inMemoryArgument), ["YES", "1", "true"].contains(flag) {
+            return .inMemory
+        }
+        if let name = value(storeDirectoryArgument), !name.isEmpty, !name.contains("/"), !name.hasPrefix(".") {
+            return .directory(name)
+        }
+        #endif
+        return nil
+    }
+
     public let container: ModelContainer
     public let store: PageStore
     public let isInMemory: Bool
@@ -41,13 +66,14 @@ public final class QuillPersistence {
 
     /// Öffnet den Store. Vor einer Migration muss das Backup gelingen, sonst wird
     /// nicht geöffnet; andere Backup-Fehler werden nur protokolliert.
-    public static func open(defaults: UserDefaults = .standard) throws -> QuillPersistence {
-        if defaults.bool(forKey: inMemoryArgument) {
+    public static func open(arguments: [String] = ProcessInfo.processInfo.arguments) throws -> QuillPersistence {
+        let testStore = testStore(arguments: arguments)
+        if testStore == .inMemory {
             logger.notice("Store nur im Arbeitsspeicher (\(inMemoryArgument, privacy: .public))")
             return QuillPersistence(container: try QuillStore.makeInMemoryContainer(), backup: nil)
         }
 
-        let backup = makeBackup(defaults: defaults)
+        let backup = makeBackup(testStore)
         // Vor allem anderen: Ein vorgemerktes Backup einspielen (ADR-019).
         let restoreOutcome = backup.applyPendingRestore()
         if let restoreOutcome {
@@ -74,9 +100,8 @@ public final class QuillPersistence {
     }
 
     /// Echter Store, oder für UI-Tests einer im temporären Ordner der App.
-    private static func makeBackup(defaults: UserDefaults) -> StoreBackup {
-        guard let name = defaults.string(forKey: storeDirectoryArgument), !name.isEmpty,
-              !name.contains("/"), !name.hasPrefix(".") else { return StoreBackup() }
+    private static func makeBackup(_ testStore: TestStore?) -> StoreBackup {
+        guard case .directory(let name) = testStore else { return StoreBackup() }
         let directory = FileManager.default.temporaryDirectory.appending(path: name, directoryHint: .isDirectory)
         logger.notice("Store im temporären Ordner (\(storeDirectoryArgument, privacy: .public))")
         return StoreBackup(
