@@ -98,7 +98,7 @@ public actor PageStore {
     public func location(of pageID: UUID) throws -> PageLocation {
         let page = try fetchPage(pageID)
         let siblings = try siblings(of: page.parent, excluding: page)
-        let previous = siblings.last { ($0.sortKey, $0.createdAt, $0.id.uuidString) < (page.sortKey, page.createdAt, page.id.uuidString) }
+        let previous = siblings.last { $0.siblingOrder < page.siblingOrder }
         return PageLocation(parentID: page.parent?.id, position: previous.map { .after($0.id) } ?? .first)
     }
 
@@ -184,7 +184,7 @@ public actor PageStore {
         }
         return candidates
             .filter { $0.id != page.id }
-            .sorted { ($0.sortKey, $0.createdAt, $0.id.uuidString) < ($1.sortKey, $1.createdAt, $1.id.uuidString) }
+            .sortedInSiblingOrder(by: \.siblingOrder)
     }
 
     /// Neuer Schlüssel für `position`. Sind die Schlüssel der Geschwister doppelt
@@ -316,7 +316,7 @@ extension PageStore {
     // MARK: - Hilfen
 
     func orderedBlocks(of page: Page) -> [Block] {
-        (page.blocks ?? []).sorted { ($0.sortKey, $0.createdAt, $0.id.uuidString) < ($1.sortKey, $1.createdAt, $1.id.uuidString) }
+        (page.blocks ?? []).sortedInSiblingOrder(by: \.siblingOrder)
     }
 
     /// Vergibt Schlüssel so, dass `order` aufsteigend ist, und ändert dabei möglichst

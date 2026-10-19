@@ -47,7 +47,7 @@ extension PageStore {
         let children = includeSubpages
             ? (page.children ?? [])
                 .filter { $0.trashedAt == nil }
-                .sorted { ($0.sortKey, $0.createdAt, $0.id.uuidString) < ($1.sortKey, $1.createdAt, $1.id.uuidString) }
+                .sortedInSiblingOrder(by: \.siblingOrder)
                 .map { exportSnapshot(of: $0, includeSubpages: true) }
             : []
         let blocks = orderedBlocks(of: page)

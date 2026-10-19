@@ -50,12 +50,6 @@ public struct TrashedPage: Sendable, Hashable, Identifiable {
 }
 
 extension Page {
-    /// Sortierschlüssel der Favoriten: `favoriteSortKey`, bei Gleichstand oder
-    /// fehlendem Schlüssel Anlagedatum und `id`. Store und Sidebar sortieren gleich.
-    public static func favoriteOrder(sortKey: String?, createdAt: Date, id: UUID) -> (String, Date, String) {
-        (sortKey ?? "", createdAt, id.uuidString)
-    }
-
     /// Titel der Elternseiten von oben nach unten.
     public var ancestorTitles: [String] {
         var titles: [String] = []
@@ -100,7 +94,7 @@ extension PageStore {
     public func favoritePosition(of pageID: UUID) throws -> SiblingPosition? {
         let page = try fetchPage(pageID)
         guard page.isFavorite else { return nil }
-        let before = try favorites(excluding: page).filter { favoriteOrder($0) < favoriteOrder(page) }
+        let before = try favorites(excluding: page).filter { $0.favoriteOrder < page.favoriteOrder }
         return before.last.map { .after($0.id) } ?? .first
     }
 
@@ -108,11 +102,7 @@ extension PageStore {
     private func favorites(excluding page: Page) throws -> [Page] {
         try modelContext.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.isFavorite }))
             .filter { $0.id != page.id }
-            .sorted { favoriteOrder($0) < favoriteOrder($1) }
-    }
-
-    private func favoriteOrder(_ page: Page) -> (String, Date, String) {
-        Page.favoriteOrder(sortKey: page.favoriteSortKey, createdAt: page.createdAt, id: page.id)
+            .sortedInSiblingOrder(by: \.favoriteOrder)
     }
 
     private func favoriteKey(at position: SiblingPosition, excluding page: Page) throws -> String {
