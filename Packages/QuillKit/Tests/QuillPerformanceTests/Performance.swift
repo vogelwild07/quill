@@ -6,7 +6,7 @@ import Testing
 /// - Nur in optimierten Builds (`swift test -c release`); in Debug übersprungen.
 /// - Pro Messung ein Aufwärmlauf, dann `runs` Läufe. Ein Lauf ergibt einen Wert (bei
 ///   mehreren Proben dessen p95), verglichen wird der Median der Läufe.
-/// - Jede Messung schreibt eine Zeile `PERF <Name> <ms>` für `scripts/perf-package.sh`.
+/// - Jede Messung schreibt eine Zeile `PERF <Name> <ms>` für `Scripts/perf-package.py`.
 enum Performance {
     static let isOptimized: Bool = {
         #if DEBUG

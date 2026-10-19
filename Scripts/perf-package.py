@@ -6,7 +6,8 @@ Aufruf: python3 Scripts/perf-package.py [Läufe, Standard 3]
 Jeder Lauf startet `swift test -c release` für QuillPerformanceTests. Die Tests
 selbst messen mit Aufwärmlauf plus fünf Läufen und prüfen ihre Schwellen; dieses
 Skript sammelt die Zeilen `PERF <Name> <ms>` und zeigt pro Messung Median, Minimum
-und Maximum über alle Läufe. Exit-Code 1, wenn ein Lauf rot war oder Werte fehlen.
+und Maximum über alle Läufe. Erwartet wird jede Messung mit Schwelle in
+`Performance.limits`. Exit-Code 1, wenn ein Lauf rot war oder Werte fehlen.
 """
 import re
 import statistics
@@ -15,12 +16,23 @@ import sys
 from pathlib import Path
 
 PACKAGE = Path(__file__).resolve().parent.parent / "Packages" / "QuillKit"
+LIMITS_FILE = PACKAGE / "Tests" / "QuillPerformanceTests" / "Performance.swift"
 COMMAND = ["swift", "test", "-c", "release", "-Xswiftc", "-enable-testing",
            "--filter", "QuillPerformanceTests"]
 
 
+def expected_names() -> set[str]:
+    """Schlüssel von `Performance.limits`: jede dieser Messungen muss Werte liefern."""
+    source = LIMITS_FILE.read_text()
+    block = re.search(r"static let limits: \[String: Double\] = \[(.*?)\n    \]", source, re.DOTALL)
+    if block is None:
+        sys.exit(f"Performance.limits nicht gefunden in {LIMITS_FILE}")
+    return set(re.findall(r'^\s*"(\w+)":', block.group(1), re.MULTILINE))
+
+
 def main() -> int:
     runs = int(sys.argv[1]) if len(sys.argv) > 1 else 3
+    expected = expected_names()
     values: dict[str, list[float]] = {}
     failed = False
     for run in range(1, runs + 1):
@@ -40,6 +52,10 @@ def main() -> int:
             failed = True
         for name, value in found:
             values.setdefault(name, []).append(float(value))
+
+    for name in sorted(expected - values.keys()):
+        print(f"{name}: keine Werte")
+        failed = True
 
     print(f"\n{'Messung':<20} {'Median':>10} {'Min':>10} {'Max':>10}  (ms, {runs} Läufe)")
     for name in sorted(values):
