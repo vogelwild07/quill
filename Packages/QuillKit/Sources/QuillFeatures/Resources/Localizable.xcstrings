@@ -10,6 +10,9 @@
     "Abhaken" : {
 
     },
+    "Alte Dateien beiseitegelegt" : {
+
+    },
     "Aus Favoriten entfernen" : {
 
     },
@@ -44,6 +47,9 @@
 
     },
     "Beim Start" : {
+
+    },
+    "Beiseitegelegt (alter Speicherort)" : {
 
     },
     "Bild fehlt" : {
@@ -143,6 +149,9 @@
 
     },
     "Im Finder zeigen" : {
+
+    },
+    "Im alten Speicherort lagen noch Datenbankdateien, obwohl es „Store“ schon gab. Quill hat sie weder verwendet noch überschrieben, sondern nach „Application Support/Quill/%@“ gelegt. Sie erscheinen unter Ablage › Backup wiederherstellen … als „Beiseitegelegt“." : {
 
     },
     "In den Papierkorb legen" : {

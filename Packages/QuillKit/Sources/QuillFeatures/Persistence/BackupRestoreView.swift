@@ -111,6 +111,13 @@ struct BackupRestoreView: View {
     }
 }
 
+/// Meldung im ersten Fenster nach dem Start.
+struct LaunchNotice: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
+}
+
 /// Texte zu Backups für Liste und Meldungen.
 enum BackupLabel {
     static func kind(_ kind: StoreBackup.Kind) -> String {
@@ -121,6 +128,7 @@ enum BackupLabel {
         case .beforeEmptyingTrash: String(localized: "Vor dem endgültigen Löschen", bundle: .module)
         case .beforeRestore: String(localized: "Vor dem Wiederherstellen", bundle: .module)
         case .beforeMove: String(localized: "Vor dem Umzug des Speicherorts", bundle: .module)
+        case .setAside: String(localized: "Beiseitegelegt (alter Speicherort)", bundle: .module)
         case .other: String(localized: "Sonstiges", bundle: .module)
         }
     }
@@ -161,6 +169,22 @@ enum BackupLabel {
             return restored + " " + String(localized: "Der vorherige Stand liegt als Backup „Vor dem Wiederherstellen“ bereit (Ablage › Backup wiederherstellen …), Ordner „Application Support/Quill/\(previous)“.", bundle: .module)
         }
         return restored + " " + String(localized: "Der vorherige Stand liegt noch in „Application Support/Quill/\(previous)“; Quill legt ihn beim nächsten Start zu den Backups.", bundle: .module)
+    }
+
+    /// Eine Meldung nach dem Start für alles, was `prepareStore` getan hat.
+    static func launchNotice(for preparation: StorePreparation) -> LaunchNotice? {
+        var parts: [(title: String, message: String)] = []
+        if let restore = preparation.restore {
+            parts.append(outcome(restore))
+        }
+        if let setAside = preparation.setAside {
+            parts.append((
+                String(localized: "Alte Dateien beiseitegelegt", bundle: .module),
+                String(localized: "Im alten Speicherort lagen noch Datenbankdateien, obwohl es „Store“ schon gab. Quill hat sie weder verwendet noch überschrieben, sondern nach „Application Support/Quill/\(setAside)“ gelegt. Sie erscheinen unter Ablage › Backup wiederherstellen … als „Beiseitegelegt“.", bundle: .module)
+            ))
+        }
+        guard let first = parts.first else { return nil }
+        return LaunchNotice(title: first.title, message: parts.map(\.message).joined(separator: "\n\n"))
     }
 
     /// Meldung nach dem Start: Titel und Text.

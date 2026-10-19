@@ -85,7 +85,7 @@ DatabaseView         (später)  id, name, layoutRaw (table|board|calendar), conf
 
 ## Speicherort und Backups
 
-- Store: `~/Library/Containers/de.vogel.quill/Data/Library/Application Support/Quill/Store/Quill.store` (plus `-wal`, `-shm`, `.Quill_SUPPORT/` für externe Daten, `Quill.store.version`). Bis Phase 7.1 lagen diese Dateien direkt in `Quill/`; der erste Start einer neueren Version zieht sie nach einem Backup `vor-umzug` um (ADR-019).
+- Store: `~/Library/Containers/de.vogel.quill/Data/Library/Application Support/Quill/Store/Quill.store` (plus `-wal`, `-shm`, `.Quill_SUPPORT/` für externe Daten, `Quill.store.version`). Bis Phase 7.1 lagen diese Dateien direkt in `Quill/`; der erste Start einer neueren Version zieht sie nach einem Backup `vor-umzug` um. Gibt es `Store/` schon, kommen Reste im alten Ort in ein Backup `beiseitegelegt` (ADR-019).
 - Backups: daneben in `Backups/`, Regeln siehe ADR-010.
 
 ### Backup wiederherstellen

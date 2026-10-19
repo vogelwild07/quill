@@ -16,7 +16,7 @@ public struct RootView: View {
     @State private var revealRequest: RevealRequest?
     @State private var isRestoreShown = false
     @State private var quitsAfterRestoreSheet = false
-    @State private var restoreOutcome: RestoreOutcome?
+    @State private var launchNotice: LaunchNotice?
     #if canImport(AppKit)
     @State private var window: NSWindow?
     #endif
@@ -92,19 +92,23 @@ public struct RootView: View {
             }
         }
         .alert(
-            restoreOutcome.map { BackupLabel.outcome($0).title } ?? "",
-            isPresented: Binding(get: { restoreOutcome != nil }, set: { if !$0 { restoreOutcome = nil } }),
-            presenting: restoreOutcome
+            launchNotice?.title ?? "",
+            isPresented: Binding(get: { launchNotice != nil }, set: { if !$0 { launchNotice = nil } }),
+            presenting: launchNotice
         ) { _ in
             Button(String(localized: "OK", bundle: .module)) {}
-        } message: { outcome in
-            Text(BackupLabel.outcome(outcome).message)
+        } message: { notice in
+            Text(notice.message)
         }
         #endif
         .onAppear {
             if selection == nil { selection = UUID(uuidString: storedSelection) }
-            // Ergebnis eines Wiederherstellens beim Start zeigt das erste Fenster (ADR-019).
-            if restoreOutcome == nil { restoreOutcome = persistence?.takeRestoreOutcome() }
+            // Ergebnis der Vorbereitung beim Start zeigt das erste Fenster (ADR-019).
+            #if canImport(AppKit)
+            if launchNotice == nil, let preparation = persistence?.takePreparation() {
+                launchNotice = BackupLabel.launchNotice(for: preparation)
+            }
+            #endif
             Task { try? await store?.ensureWorkspace() }
         }
         .onChange(of: selection) {

@@ -23,6 +23,20 @@ public enum StoreLayoutError: Error, Equatable, CustomStringConvertible {
     }
 }
 
+/// Was `prepareStore` beim Start getan hat, zur Anzeige.
+public struct StorePreparation: Equatable, Sendable {
+    /// Ergebnis eines vorgemerkten Wiederherstellens.
+    public var restore: RestoreOutcome?
+    /// Beiseitegelegte Dateien aus dem alten Ort, relativ zu `Quill/`
+    /// (`Backups/<Zeit>_beiseitegelegt`).
+    public var setAside: String?
+
+    public init(restore: RestoreOutcome? = nil, setAside: String? = nil) {
+        self.restore = restore
+        self.setAside = setAside
+    }
+}
+
 /// Ordner der Store-Dateien, Umzug aus dem alten Ort und Sperre (ADR-019).
 ///
 /// ```
@@ -36,6 +50,11 @@ public enum StoreLayoutError: Error, Equatable, CustomStringConvertible {
 /// ein Backup „vor-umzug“ an, verschiebt sie einzeln in `.Store-umzug/` und benennt
 /// den Ordner zuletzt in `Store/` um. Es wird nur verschoben, nie gelöscht; bricht
 /// der Umzug ab, macht der nächste Start dort weiter.
+///
+/// Gibt es `Store/` schon und liegen trotzdem Store-Dateien im alten Ort (oder ein
+/// `.Store-umzug/`), wird weder überschrieben noch gemischt: Sie kommen unverändert
+/// nach `Backups/<Zeit>_beiseitegelegt/`, erscheinen dort in der Liste und werden
+/// gemeldet.
 extension StoreBackup {
     /// `Quill/`: enthält `Store/`, `Backups/`, Sperre und Merker.
     var rootURL: URL {
@@ -70,11 +89,49 @@ extension StoreBackup {
 
     /// Beim Start aufrufen, **bevor** Backups entstehen und der Container öffnet:
     /// unter Sperre umziehen (falls nötig) und ein vorgemerktes Backup einspielen.
-    public func prepareStore(lockTimeout: TimeInterval = 30) throws -> RestoreOutcome? {
+    public func prepareStore(lockTimeout: TimeInterval = 30) throws -> StorePreparation {
         let lock = try StoreLock(at: lockURL, timeout: lockTimeout)
         defer { lock.release() }
+        let setAside = try setAsideLegacyFilesIfNeeded()
         try moveLegacyStoreIfNeeded()
-        return applyPendingRestore()
+        return StorePreparation(
+            restore: applyPendingRestore(),
+            setAside: setAside.map { "\(backupsURL.lastPathComponent)/\($0.lastPathComponent)" }
+        )
+    }
+
+    /// Gibt es `Store/` schon, kommen Store-Dateien im alten Ort und der Inhalt eines
+    /// `.Store-umzug/` unverändert in ein neues Backup `beiseitegelegt`. Nichts wird
+    /// überschrieben; liegt ein Name doppelt vor, wird angehalten und gemeldet.
+    @discardableResult
+    func setAsideLegacyFilesIfNeeded() throws -> URL? {
+        guard usesStoreDirectory, exists(storeDirectoryURL) else { return nil }
+        let fileManager = FileManager.default
+        var items: [(source: URL, name: String)] = []
+        if exists(moveURL) {
+            for name in try fileManager.contentsOfDirectory(atPath: moveURL.path(percentEncoded: false)) {
+                items.append((moveURL.appending(path: name), name))
+            }
+        }
+        for name in storeItemNames where exists(rootURL.appending(path: name)) {
+            items.append((rootURL.appending(path: name), name))
+        }
+        guard !items.isEmpty else { return nil }
+
+        let target = backupsURL.appending(
+            path: uniqueBackupName("\(Self.formatter.string(from: now()))_\(Reason.setAside.slug)"),
+            directoryHint: .isDirectory
+        )
+        try fileManager.createDirectory(at: target, withIntermediateDirectories: true)
+        for item in items {
+            let destination = target.appending(path: item.name)
+            guard !exists(destination) else { throw StoreLayoutError.moveConflict(destination.path(percentEncoded: false)) }
+            try fileManager.moveItem(at: item.source, to: destination)
+        }
+        if exists(moveURL), (try? fileManager.contentsOfDirectory(atPath: moveURL.path(percentEncoded: false)))?.isEmpty == true {
+            try fileManager.removeItem(at: moveURL)
+        }
+        return target
     }
 
     /// Schritte des Umzugs, für den Test eines Abbruchs mittendrin.
@@ -92,7 +149,7 @@ extension StoreBackup {
         let fileManager = FileManager.default
         var backup: URL?
         if !exists(moveURL) {
-            // Liegt der Store schon in `Store/`, bleibt eine Datei im alten Ort unberührt.
+            // Gibt es `Store/` schon, hat `setAsideLegacyFilesIfNeeded` den alten Ort geräumt.
             guard exists(legacyStoreURL), !exists(storeDirectoryURL) else { return nil }
             backup = try createBackup(reason: .beforeMove, of: legacyStoreURL)
             if stop == .backedUp { return backup }

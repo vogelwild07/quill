@@ -47,8 +47,9 @@ public final class QuillPersistence {
     public let store: PageStore
     public let isInMemory: Bool
     private let backup: StoreBackup?
-    /// Ergebnis einer beim Start eingespielten Wiederherstellung, bis es angezeigt wurde.
-    private var restoreOutcome: RestoreOutcome?
+    /// Was beim Start vorbereitet wurde (Wiederherstellen, Beiseitelegen), bis es
+    /// angezeigt wurde.
+    private var preparation: StorePreparation?
 
     private nonisolated static let logger = Logger(subsystem: "de.vogel.quill", category: "persistence")
 
@@ -56,12 +57,12 @@ public final class QuillPersistence {
     public nonisolated static let trashRetentionDays = 30
     public nonisolated static let trashRetention = TimeInterval(trashRetentionDays * 24 * 60 * 60)
 
-    init(container: ModelContainer, backup: StoreBackup?, restoreOutcome: RestoreOutcome? = nil) {
+    init(container: ModelContainer, backup: StoreBackup?, preparation: StorePreparation? = nil) {
         self.container = container
         self.store = PageStore(modelContainer: container)
         self.backup = backup
         self.isInMemory = backup == nil
-        self.restoreOutcome = restoreOutcome
+        self.preparation = preparation
     }
 
     /// Öffnet den Store. Vor einer Migration muss das Backup gelingen, sonst wird
@@ -76,9 +77,9 @@ public final class QuillPersistence {
         let backup = makeBackup(testStore)
         // Vor allem anderen: unter Sperre umziehen und ein vorgemerktes Backup
         // einspielen (ADR-019). Scheitert das, wird nicht geöffnet.
-        let restoreOutcome = try backup.prepareStore()
-        if let restoreOutcome {
-            logger.notice("Wiederherstellen: \(String(describing: restoreOutcome), privacy: .private)")
+        let preparation = try backup.prepareStore()
+        if preparation != StorePreparation() {
+            logger.notice("Vorbereitet: \(String(describing: preparation), privacy: .private)")
         }
         do {
             if let folder = try backup.backupBeforeOpening() {
@@ -94,7 +95,7 @@ public final class QuillPersistence {
         } catch {
             logger.error("Schema-Version nicht gespeichert: \(error, privacy: .public)")
         }
-        let persistence = QuillPersistence(container: container, backup: backup, restoreOutcome: restoreOutcome)
+        let persistence = QuillPersistence(container: container, backup: backup, preparation: preparation)
         persistence.removeOrphanedAssets()
         persistence.scheduleTrashAutoEmpty()
         return persistence
@@ -160,10 +161,10 @@ public final class QuillPersistence {
         #endif
     }
 
-    /// Ergebnis der Wiederherstellung beim Start, einmal: Das erste Fenster zeigt es.
-    public func takeRestoreOutcome() -> RestoreOutcome? {
-        defer { restoreOutcome = nil }
-        return restoreOutcome
+    /// Was beim Start vorbereitet wurde, einmal: Das erste Fenster zeigt es.
+    public func takePreparation() -> StorePreparation? {
+        defer { preparation = nil }
+        return preparation == StorePreparation() ? nil : preparation
     }
 
     /// Bilder, die seit 30 Tagen keinem Block mehr gehören (ADR-015). Läuft nach dem

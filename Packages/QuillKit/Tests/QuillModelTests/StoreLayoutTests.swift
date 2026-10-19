@@ -147,23 +147,75 @@ extension DiskStoreSuites {
             #expect(!exists(storeURL.deletingLastPathComponent()))
         }
 
-        /// Liegt schon ein Store in `Store/`, bleibt eine Datei im alten Ort unberührt.
-        @Test func existingStoreDirectoryWins() throws {
+        /// Store in `Store/` mit einer Seite „Aktuell“ und ohne Bild.
+        private func makeCurrentStore() throws {
+            let context = ModelContext(try QuillStore.makeContainer(storeURL: storeURL))
+            context.insert(Page(title: "Aktuell"))
+            try context.save()
+        }
+
+        /// Gibt es `Store/` schon, werden flache Dateien im alten Ort weder verwendet
+        /// noch überschrieben noch gemischt: Sie kommen unverändert in ein Backup
+        /// „beiseitegelegt“, das sich einspielen lässt, und werden gemeldet.
+        @Test func legacyFilesBesideStoreDirectoryAreSetAside() throws {
             defer { try? FileManager.default.removeItem(at: directory) }
             try makeLegacyStore()
-            try FileManager.default.createDirectory(at: storeURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try makeCurrentStore()
+            let backup = backup()
 
-            #expect(try backup().moveLegacyStoreIfNeeded() == nil)
+            let preparation = try backup.prepareStore()
+            let setAside = try #require(preparation.setAside)
+            #expect(setAside.hasPrefix("Backups/") && setAside.hasSuffix("_beiseitegelegt"))
+            #expect(preparation.restore == nil)
+
+            let folder = directory.appending(path: setAside)
             for name in legacyNames {
-                #expect(exists(directory.appending(path: name)))
+                #expect(!exists(directory.appending(path: name)), "\(name) liegt noch im alten Ort")
+                #expect(exists(folder.appending(path: name)), "\(name) fehlt in \(setAside)")
             }
+            #expect(try contents().titles == ["Aktuell"], "Store/ unverändert")
+            #expect(try moveBackups(backup).isEmpty, "Kein Umzug")
+
+            // Zweiter Start: nichts mehr zu tun.
+            #expect(try backup.prepareStore() == StorePreparation())
+
+            // Die beiseitegelegten Dateien lassen sich einspielen, samt WAL und Bild.
+            let entry = try #require(try backup.entries().first { $0.url.lastPathComponent == folder.lastPathComponent })
+            #expect(entry.kind == .setAside)
+            try backup.requestRestore(entry)
+            guard case .restored = try backup.prepareStore().restore else {
+                Issue.record("Beiseitegelegtes nicht eingespielt")
+                return
+            }
+            let (titles, images) = try contents()
+            #expect(titles == ["Nur im WAL"])
+            DiskStoreSuites.expectImageBytes(images, [7], store: storeURL)
+        }
+
+        /// Auch ein angefangener Umzug (`.Store-umzug/`) neben einem vorhandenen
+        /// `Store/` wird beiseitegelegt, statt das Öffnen zu verhindern.
+        @Test func interruptedMoveBesideStoreDirectoryIsSetAside() throws {
+            defer { try? FileManager.default.removeItem(at: directory) }
+            try makeLegacyStore()
+            let backup = backup()
+            try backup.moveLegacyStoreIfNeeded(stoppingAfter: .moved("Quill.store-wal"))
+            try makeCurrentStore()
+
+            let setAside = try #require(try backup.prepareStore().setAside)
+            let folder = directory.appending(path: setAside)
+            for name in legacyNames {
+                #expect(exists(folder.appending(path: name)), "\(name) fehlt in \(setAside)")
+                #expect(!exists(directory.appending(path: name)))
+            }
+            #expect(!exists(backup.moveURL))
+            #expect(try contents().titles == ["Aktuell"])
         }
 
         /// Ein neuer Mac ohne Store: kein Umzug, kein Backup.
         @Test func freshInstallNeedsNoMove() throws {
             defer { try? FileManager.default.removeItem(at: directory) }
             let backup = backup()
-            #expect(try backup.prepareStore() == nil)
+            #expect(try backup.prepareStore() == StorePreparation())
             #expect(try backup.entries().isEmpty)
         }
 
@@ -198,7 +250,7 @@ extension DiskStoreSuites {
 
         // MARK: - Rotation
 
-        @Test func pruneKeepsMoveBackupForever() throws {
+        @Test func pruneKeepsMoveAndSetAsideBackupsForever() throws {
             defer { try? FileManager.default.removeItem(at: directory) }
             let now = Date(timeIntervalSince1970: 1_792_400_000)
             let backup = StoreBackup(storeURL: storeURL, backupsURL: backupsURL, schemaVersion: "1.0.0", now: { now })
@@ -210,10 +262,12 @@ extension DiskStoreSuites {
                 return url
             }
             let moved = try folder(daysAgo: 400, "vor-umzug")
+            let setAside = try folder(daysAgo: 400, "beiseitegelegt")
             for day in 0..<60 { _ = try folder(daysAgo: Double(day), "start") }
 
             try backup.prune()
             #expect(exists(moved))
+            #expect(exists(setAside))
         }
     }
 }

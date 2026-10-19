@@ -24,6 +24,9 @@ public struct StoreBackup: Sendable {
         /// Vor dem einmaligen Umzug der Store-Dateien nach `Store/` (ADR-019). Wird
         /// nie automatisch gelöscht.
         case beforeMove
+        /// Store-Dateien im alten Ort, obwohl es `Store/` schon gab: verschoben statt
+        /// verwendet (ADR-019). Wird nie automatisch gelöscht.
+        case setAside
 
         var slug: String {
             switch self {
@@ -33,6 +36,7 @@ public struct StoreBackup: Sendable {
             case .beforeEmptyingTrash: "vor-papierkorb-leeren"
             case .beforeRestore: "vor-wiederherstellen"
             case .beforeMove: "vor-umzug"
+            case .setAside: "beiseitegelegt"
             }
         }
 
@@ -46,7 +50,7 @@ public struct StoreBackup: Sendable {
 
     /// Anlass eines vorhandenen Backups, aus dem Ordnernamen gelesen.
     public enum Kind: Sendable, Equatable {
-        case launch, quit, beforeMigration, beforeEmptyingTrash, beforeRestore, beforeMove
+        case launch, quit, beforeMigration, beforeEmptyingTrash, beforeRestore, beforeMove, setAside
         /// Unbekannter Anlass (z. B. von einer späteren Version).
         case other
 
@@ -59,6 +63,8 @@ public struct StoreBackup: Sendable {
                 .beforeRestore
             } else if slug.hasPrefix(Reason.beforeMove.slug) {
                 .beforeMove
+            } else if slug.hasPrefix(Reason.setAside.slug) {
+                .setAside
             } else if slug.hasPrefix(Reason.launch.slug) {
                 .launch
             } else if slug.hasPrefix(Reason.quit.slug) {
@@ -236,7 +242,7 @@ public struct StoreBackup: Sendable {
 
     /// Behält je das neueste Backup der letzten 7 Tage mit Backup (Tages-Backups)
     /// und davor der 4 nächstälteren Wochen mit Backup (Wochen-Backups); Backups
-    /// vor einer Migration und vor dem Umzug immer. Backups vor dem Leeren des Papierkorbs zählen
+    /// vor einer Migration, vor dem Umzug und beiseitegelegte immer. Backups vor dem Leeren des Papierkorbs zählen
     /// 30 Tage lang nicht mit (höchstens 10), der Stand vor dem Wiederherstellen
     /// 30 Tage lang gar nicht. Ein zum Wiederherstellen vorgemerktes Backup bleibt
     /// immer: Das Backup beim Beenden direkt danach verdrängt sonst ein Backup vom
@@ -251,7 +257,7 @@ public struct StoreBackup: Sendable {
         var trashBackups = 0
         // Neueste zuerst: Das erste Backup eines Tages oder einer Woche ist das neueste.
         for entry in try entries() {
-            if entry.isBeforeMigration || entry.kind == .beforeMove || entry.url.lastPathComponent == pending {
+            if entry.isBeforeMigration || entry.kind == .beforeMove || entry.kind == .setAside || entry.url.lastPathComponent == pending {
                 keep.insert(entry.url)
                 continue
             }
