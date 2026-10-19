@@ -258,7 +258,7 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Die App wird nur ad hoc signiert (`CODE_SIGN_IDENTITY=-`, ohne Team und Profil), mit Hardened Runtime und App Sandbox. Nutzer bestätigen die Gatekeeper-Meldung selbst über Systemeinstellungen › Datenschutz & Sicherheit › „Dennoch öffnen“ (seit macOS 15 der einzige Weg). Die Anleitung empfiehlt kein `xattr`.
 - Nur Apple Silicon (`arm64`), ab macOS 26.0, wie im Projekt festgelegt (CLAUDE.md). Ein Intel-Build ließe sich nicht testen.
 - `Scripts/make-release.sh` baut alles aus einer sauberen Arbeitskopie: `xcodebuild archive` (nur das Archiv entfernt Debug-Symbole und damit Pfade wie `/Users/…`), prüft Version, Bundle-ID, Architektur, Mindestversion, Ad-hoc-Signatur ohne Team, Hardened Runtime, Sandbox, kein `get-task-allow`, keine persönlichen Pfade und per `check-release-binary.sh --app` keinen Profiling- oder Testcode. Danach .dmg mit `Quill.app` und Verknüpfung „Programme“ → `/Applications`, nur lesend eingehängt und geprüft (Inhalt, Signatur, gleicher CDHash wie der Build), dazu `Quill-<Version>.dmg.sha256`. Ausgabe in `dist/` (ignoriert).
-- Lizenz GPL-3.0 für den Quellcode; das App-Icon ist ausgenommen, alle Rechte vorbehalten (`LICENSE`).
+- Lizenz GPL-3.0-or-later für den Quellcode; das App-Icon ist ausgenommen, alle Rechte vorbehalten (`LICENSE`).
 
 **Konsequenzen:**
 - Jede neue Version hat eine neue Ad-hoc-Signatur. Nutzer müssen „Dennoch öffnen“ eventuell erneut bestätigen, und macOS kann fragen, ob Quill auf die Daten im bisherigen Container zugreifen darf.

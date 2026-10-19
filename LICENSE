@@ -2,8 +2,10 @@ Quill
 Copyright (C) 2026 vogelwild07
 
 Der Quellcode von Quill ist freie Software: Sie können ihn unter den Bedingungen
-der GNU General Public License, Version 3, weitergeben und verändern. Der
-vollständige Lizenztext folgt unten.
+der GNU General Public License, wie von der Free Software Foundation
+veröffentlicht, weitergeben und verändern, entweder gemäß Version 3 der Lizenz
+oder (nach Ihrer Wahl) jeder späteren Version (SPDX: GPL-3.0-or-later). Der
+vollständige Text der Version 3 folgt unten.
 
 AUSGENOMMEN: DAS APP-ICON
 Das App-Icon steht nicht unter der GPL. Das betrifft den Ordner
@@ -12,7 +14,8 @@ Bilder, zum Beispiel im App-Bundle.
 Copyright (C) 2026 vogelwild07. Alle Rechte vorbehalten.
 Wer Quill verändert und weitergibt, ersetzt das Icon durch ein eigenes.
 
-(English: The source code is licensed under the GNU GPL, version 3. The app icon,
+(English: The source code is licensed under the GNU GPL, version 3 or (at your
+option) any later version. The app icon,
 App/Resources/AppIcon.icon and every image generated from it, is excluded:
 all rights reserved. Modified versions must use a different icon.)
 

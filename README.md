@@ -60,6 +60,6 @@ Alle wirken nur aus der Kommandozeile und nur in Debug-Builds (ADR-019, ADR-021)
 
 ## Lizenz
 
-Der Quellcode steht unter der [GNU General Public License, Version 3](LICENSE).
+Der Quellcode steht unter der [GNU General Public License, Version 3 oder jeder späteren Version](LICENSE) (GPL-3.0-or-later).
 
 **Ausgenommen ist das App-Icon** (`App/Resources/AppIcon.icon` und alle daraus erzeugten Bilder): Copyright © 2026 vogelwild07, alle Rechte vorbehalten. Wer Quill verändert und weitergibt, ersetzt das Icon durch ein eigenes.
