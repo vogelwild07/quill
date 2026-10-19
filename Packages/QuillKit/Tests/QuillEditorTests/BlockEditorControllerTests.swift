@@ -750,6 +750,24 @@ struct ClipboardAndMoveTests {
         #expect(h.texts == ["Hallo Welt"])
     }
 
+    /// Mehrzeiliger Klartext wird zu eigenen Blöcken mit Attributen auf jedem Zeichen
+    /// und ist ein Schritt zum Rückgängigmachen.
+    @Test func pasteAsPlainTextSplitsLinesIntoBlocks() throws {
+        let h = Harness([EditorBlock(text: "Hallo")])
+        let textView = try #require(h.textView as? BlockTextView)
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        board.clearContents()
+        board.setString(" Welt\nzwei\ndrei", forType: .string)
+        textView.clipboard = board
+        h.caret(at: 0, 5)
+        textView.pasteAsPlainText(nil)
+        #expect(h.texts == ["Hallo Welt", "zwei", "drei"])
+        h.expectConsistent()
+        h.undo()
+        #expect(h.texts == ["Hallo"])
+    }
+
     @Test func pastingDividerAtEndKeepsEditableParagraph() throws {
         let h = Harness([EditorBlock(text: "A"), EditorBlock(kind: .divider), EditorBlock(text: "B")])
         let board = pasteboard()
