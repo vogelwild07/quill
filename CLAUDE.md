@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-Architekt, Swift-Entwickler.
 
-**Stand:** Phase 4 (Editor Interaktion) fertig, gemergt (PR #4, ADR-014 bis ADR-016, Review-Fixes drin). Phase 5 (Navigation) auf `phase-5/navigation` inhaltlich fertig (ADR-017), Handtest durch den Nutzer und PR offen. Neue Ideen nur unter „Später“ in `docs/roadmap.md`. Bekannte Probleme + Plan: `docs/roadmap.md`.
+**Stand:** Phase 5 (Navigation) fertig, gemergt (PR #5, ADR-017, Review-Fixes drin). Nächstes: Phase 6 (Export). Neue Ideen nur unter „Später“ in `docs/roadmap.md`. Bekannte Probleme + Plan: `docs/roadmap.md`.
 
 ## Kommunikation
 - Immer **Deutsch**. Kurz ok; Warnungen, Sicherheit, Entscheidungen in ganzen Sätzen.

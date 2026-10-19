@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche Produktivitäts-App für macOS: Seiten, Notizen und Aufgaben in einem nativen Block-Editor.
 
-> Status: Phase 5 (Navigation) fertig, Handtest und PR offen: Schnell öffnen (⌘O), Favoriten, Papierkorb mit Auto-Leeren nach 30 Tagen. Seiten mit Block-Editor: Überschriften, Listen, To-dos, Zitat, Code, Trenner, Bilder, Inline-Formatierung und Links; Slash-Menü, Markdown-Kürzel, Blockart per ⌥⌘0–7, Blöcke ziehen, verschieben und duplizieren; Speichern automatisch.
+> Status: Phase 5 (Navigation) abgeschlossen; als Nächstes Phase 6 (Export). Schnell öffnen (⌘O), Favoriten, Papierkorb mit Auto-Leeren nach 30 Tagen. Seiten mit Block-Editor: Überschriften, Listen, To-dos, Zitat, Code, Trenner, Bilder, Inline-Formatierung und Links; Slash-Menü, Markdown-Kürzel, Blockart per ⌥⌘0–7, Blöcke ziehen, verschieben und duplizieren; Speichern automatisch.
 
 ## Voraussetzungen
 
