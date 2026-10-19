@@ -12,29 +12,32 @@ struct BundleIdentifierTests {
     static let oldPrefix = "de." + "vogel"
     /// Beschreiben den Umzug aus dem alten Container (`docs/data-model.md`, ADR-022).
     static let allowedFiles: Set<String> = ["docs/data-model.md", "docs/decisions.md"]
-    /// Ordner, die nicht zum Quelltext gehören (Builds, Ausgaben, lokale Entwürfe).
-    static let skippedDirectories: Set<String> = [
-        ".git", ".build", ".swiftpm", "build", "DerivedData", "dist", "xcuserdata", "IconDrafts",
-    ]
+
+    /// Nur Dateien im Repo, wie `git ls-files` sie nennt: Ignorierte lokale Dateien
+    /// (`Config/Local.xcconfig`, Builds, Entwürfe) gehören nicht dazu.
+    static func trackedFiles() throws -> [String] {
+        let git = Process()
+        git.executableURL = URL(filePath: "/usr/bin/git")
+        git.arguments = ["-C", root.path(percentEncoded: false), "ls-files", "-z"]
+        let output = Pipe()
+        git.standardOutput = output
+        try git.run()
+        let data = output.fileHandleForReading.readDataToEndOfFile()
+        git.waitUntilExit()
+        try #require(git.terminationStatus == 0, "git ls-files gescheitert")
+        return String(decoding: data, as: UTF8.self).split(separator: "\0").map(String.init)
+    }
 
     @Test func oldIdentifierIsGone() throws {
-        var hits: [String] = []
-        let enumerator = try #require(FileManager.default.enumerator(
-            at: Self.root, includingPropertiesForKeys: [.isDirectoryKey, .isRegularFileKey]
-        ))
-        for case let url as URL in enumerator {
-            let values = try url.resourceValues(forKeys: [.isDirectoryKey, .isRegularFileKey])
-            if values.isDirectory == true {
-                if Self.skippedDirectories.contains(url.lastPathComponent) { enumerator.skipDescendants() }
-                continue
-            }
-            guard values.isRegularFile == true,
-                  let text = try? String(contentsOf: url, encoding: .utf8),
-                  text.contains(Self.oldPrefix) else { continue }
-            let path = String(url.path(percentEncoded: false).dropFirst(Self.root.path(percentEncoded: false).count))
-            if !Self.allowedFiles.contains(path) { hits.append(path) }
+        let files = try Self.trackedFiles()
+        #expect(files.contains("Quill.xcodeproj/project.pbxproj"), "git ls-files liefert nicht das Repo")
+        // Byteweise statt als UTF-8: Auch Binärdateien und andere Kodierungen zählen.
+        let old = Data(Self.oldPrefix.utf8)
+        let hits = try files.filter { path in
+            guard !Self.allowedFiles.contains(path) else { return false }
+            return try Data(contentsOf: Self.root.appending(path: path)).range(of: old) != nil
         }
-        #expect(hits.isEmpty, "Alte Kennung in: \(hits.sorted().joined(separator: ", "))")
+        #expect(hits.isEmpty, "Alte Kennung in: \(hits.joined(separator: ", "))")
     }
 
     @Test func everyTargetUsesTheNewPrefix() throws {
@@ -42,8 +45,11 @@ struct BundleIdentifierTests {
             contentsOf: Self.root.appending(path: "Quill.xcodeproj/project.pbxproj"), encoding: .utf8
         )
         let identifiers = project.split(separator: "\n")
-            .filter { $0.contains("PRODUCT_BUNDLE_IDENTIFIER = ") }
-            .map { $0.split(separator: "=")[1].trimmingCharacters(in: CharacterSet(charactersIn: " ;\"")) }
+            .compactMap { line -> String? in
+                guard let range = line.range(of: "PRODUCT_BUNDLE_IDENTIFIER = ") else { return nil }
+                return line[range.upperBound...].trimmingCharacters(in: CharacterSet(charactersIn: " ;\""))
+            }
+        // App (Debug, Release), Profiling-App, UI-Tests (Debug, Release), Profiling-UI-Tests.
         #expect(identifiers.count == 6)
         for identifier in identifiers {
             #expect(identifier == Self.prefix || identifier.hasPrefix(Self.prefix + "."), "\(identifier)")
