@@ -18,8 +18,8 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     let insertButton = BlockInsertButton()
     private let dropIndicator = NSView()
     private var hoverTrackingArea: NSTrackingArea?
-    /// Checkboxen und Bilder für VoiceOver, pro Block (`BlockTextView+Accessibility`).
-    var blockElements: [UUID: BlockAccessibilityElement] = [:]
+    /// Checkboxen für VoiceOver, pro Block (`BlockTextView+Accessibility`).
+    var checkboxElements: [UUID: CheckboxAccessibilityElement] = [:]
 
     override init(frame frameRect: NSRect, textContainer container: NSTextContainer?) {
         super.init(frame: frameRect, textContainer: container)
@@ -90,6 +90,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     /// Der Kopf ist für VoiceOver und XCUITest ein Kind der Text-View.
     override func accessibilityChildren() -> [Any]? {
+        prepareAttachmentCells()
         var children = super.accessibilityChildren() ?? []
         if let headerView, !children.contains(where: { ($0 as AnyObject) === headerView }) {
             children.insert(headerView, at: 0)
@@ -99,7 +100,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
             && !children.contains(where: { ($0 as AnyObject) === view }) {
             children.append(view)
         }
-        children.append(contentsOf: blockAccessibilityElements())
+        children.append(contentsOf: checkboxAccessibilityElements())
         return children
     }
 

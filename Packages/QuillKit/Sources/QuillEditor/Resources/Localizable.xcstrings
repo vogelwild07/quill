@@ -31,6 +31,12 @@
     "Bild wurde verkleinert" : {
 
     },
+    "Bild, %lld × %lld Punkte" : {
+
+    },
+    "Bild, wird geladen" : {
+
+    },
     "Block einfügen" : {
 
     },

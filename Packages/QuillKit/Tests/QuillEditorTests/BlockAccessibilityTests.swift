@@ -5,7 +5,8 @@ import QuillModel
 import Testing
 @testable import QuillEditor
 
-/// VoiceOver im Editor: Checkboxen und Bilder als Elemente, Blockart im Text der
+/// VoiceOver im Editor: Checkboxen als Elemente, Bilder beschriftet, Trenner
+/// übergangen, Blockart im Text der
 /// Bedienungshilfen, Rotor „Überschriften“ (Befunde A1, A2 aus Phase 7.3).
 @MainActor
 @Suite("Editor: Bedienungshilfen", .serialized)
@@ -23,6 +24,7 @@ struct BlockAccessibilityTests {
             EditorBlock(kind: .numbered, text: "eins"),
             EditorBlock(kind: .numbered, text: "zwei", indent: 1),
             EditorBlock(kind: .image),
+            EditorBlock(kind: .divider),
             EditorBlock(kind: .heading2, text: "Später"),
             EditorBlock(text: "Ende"),
         ]))
@@ -31,15 +33,16 @@ struct BlockAccessibilityTests {
         editor.textView.layoutSubtreeIfNeeded()
     }
 
-    private var elements: [BlockAccessibilityElement] {
-        (textView.accessibilityChildren() ?? []).compactMap { $0 as? BlockAccessibilityElement }
+    private var elements: [CheckboxAccessibilityElement] {
+        (textView.accessibilityChildren() ?? []).compactMap { $0 as? CheckboxAccessibilityElement }
     }
 
-    @Test func todosAreCheckboxesAndImagesAreImages() {
+    @Test func todosAreCheckboxes() {
         let elements = elements
-        #expect(elements.map { $0.accessibilityRole() } == [.checkBox, .checkBox, .image])
-        #expect(elements.map { $0.accessibilityLabel() } == ["Milch", "To-do", "Bild"])
-        #expect(elements.map { $0.accessibilityValue() as? NSNumber } == [1, 0, nil])
+        #expect(elements.map { $0.accessibilityRole() } == [.checkBox, .checkBox])
+        #expect(elements.map { $0.accessibilityLabel() } == ["Milch", "To-do"])
+        #expect(elements.map { $0.accessibilityValue() as? NSNumber } == [1, 0])
+        #expect(elements.allSatisfy { $0.isAccessibilityEnabled() })
         #expect(elements.allSatisfy { $0.accessibilityParent() as AnyObject? === textView })
         // Dieselben Objekte bei der nächsten Abfrage, damit VoiceOver den Fokus behält.
         #expect(zip(elements, self.elements).allSatisfy { $0 === $1 })
@@ -53,8 +56,34 @@ struct BlockAccessibilityTests {
         textView.breakUndoCoalescing()
         textView.undoManager?.undo()
         #expect(editor.document[1].isChecked == true)
-        #expect(elements.first!.accessibilityPerformPress())
-        #expect(!elements.last!.accessibilityPerformPress(), "Ein Bild lässt sich nicht drücken")
+    }
+
+    /// Bild beschriftet, Trenner für VoiceOver unsichtbar. `NSTextView` meldet beide
+    /// über die Zelle ihres Attachments; dass VoiceOver sie so sieht, prüft der Audit
+    /// in `AccessibilityAuditUITests`.
+    @Test func imageIsLabeledAndDividerIsSkipped() throws {
+        _ = textView.accessibilityChildren()
+        var cells: [NSTextAttachmentCell] = []
+        textView.textStorage!.enumerateAttribute(.attachment, in: NSRange(location: 0, length: textView.textStorage!.length)) { value, _, _ in
+            if let cell = (value as? NSTextAttachment)?.attachmentCell as? NSTextAttachmentCell { cells.append(cell) }
+        }
+        #expect(cells.count == 2)
+        let image = try #require(cells.first as? ImageAttachmentCell)
+        #expect(image.isAccessibilityElement())
+        #expect(image.accessibilityRole() == .image)
+        #expect(image.accessibilityLabel() == "Bild, wird geladen")
+        // Mit geladenem Bild: natürliche Größe in der Beschriftung.
+        let assetID = UUID()
+        let context = CGContext(data: nil, width: 120, height: 60, bitsPerComponent: 8, bytesPerRow: 0,
+                                space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+        EditorImageCache.shared.store(.init(pointSize: CGSize(width: 120, height: 60), image: context.makeImage()!), for: assetID)
+        let attachment = ImageAttachment(assetID: assetID)
+        let loaded = ImageAttachmentCell()
+        attachment.attachmentCell = loaded
+        #expect(loaded.accessibilityLabel() == "Bild, 120 × 60 Punkte")
+        withExtendedLifetime(attachment) {}
+        #expect(cells.last is DecorativeAttachmentCell)
+        #expect(cells.last?.isAccessibilityElement() == false)
     }
 
     @Test func checkboxFrameIsTheDrawnCheckbox() throws {
@@ -85,8 +114,9 @@ struct BlockAccessibilityTests {
         #expect((attribute(.accessibilityListItemPrefix, block: 4) as? NSAttributedString)?.string == "1.")
         #expect(attribute(.accessibilityListItemLevel, block: 4) as? Int == 1)
         #expect(attribute(.accessibilityListItemIndex, block: 4) as? Int == 3)
-        #expect(attribute(.accessibilityListItemPrefix, block: 7) == nil)
-        #expect(attribute(.accessibilityCustomText, block: 7) as? [String] == ["Text"])
+        #expect(attribute(.accessibilityListItemPrefix, block: 8) == nil)
+        #expect(attribute(.accessibilityCustomText, block: 6) as? [String] == ["Trennlinie"])
+        #expect(attribute(.accessibilityCustomText, block: 8) as? [String] == ["Text"])
 
         // Ausschnitt: Attribute relativ zum Anfang des Bereichs.
         let todo = editor.paragraphRange(ofBlock: 2)

@@ -2,35 +2,29 @@
 import AppKit
 import QuillModel
 
-/// VoiceOver im Editor: Die Text-View liefert den Fließtext, dazu
-/// - je To-do eine Checkbox und je Bild ein Bild als eigenes Element,
+/// VoiceOver im Editor: Die Text-View liefert den Fließtext und Bilder
+/// (`ImageAttachmentCell`), dazu
+/// - je To-do eine Checkbox als eigenes Element,
 /// - die Blockart im Text der Bedienungshilfen (Listenpräfix, Ebene, Beschreibung),
 /// - einen Rotor „Überschriften“.
 extension BlockTextView: @MainActor NSAccessibilityCustomRotorItemSearchDelegate {
-    /// Checkboxen und Bilder in Dokumentreihenfolge. Elemente bleiben pro Block
-    /// erhalten, damit VoiceOver seinen Fokus behält.
-    func blockAccessibilityElements() -> [BlockAccessibilityElement] {
+    /// Checkboxen in Dokumentreihenfolge. Elemente bleiben pro Block erhalten,
+    /// damit VoiceOver seinen Fokus behält.
+    func checkboxAccessibilityElements() -> [CheckboxAccessibilityElement] {
         guard let editor else { return [] }
-        var kept: [UUID: BlockAccessibilityElement] = [:]
-        var result: [BlockAccessibilityElement] = []
-        for block in editor.document.blocks {
-            let role: BlockAccessibilityElement.Role
-            switch block.kind {
-            case .todo: role = .checkbox
-            case .image: role = .image
-            case .paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .quote, .code, .divider: continue
-            }
-            let element = blockElements[block.id].flatMap { $0.role == role ? $0 : nil }
-                ?? BlockAccessibilityElement(blockID: block.id, role: role, textView: self)
+        var kept: [UUID: CheckboxAccessibilityElement] = [:]
+        var result: [CheckboxAccessibilityElement] = []
+        for block in editor.document.blocks where block.kind == .todo {
+            let element = checkboxElements[block.id] ?? CheckboxAccessibilityElement(blockID: block.id, textView: self)
             kept[block.id] = element
             result.append(element)
         }
-        blockElements = kept
+        checkboxElements = kept
         return result
     }
 
-    /// Rahmen eines Blocks (oder seiner Checkbox) in Bildschirmkoordinaten.
-    func accessibilityScreenFrame(ofBlock blockID: UUID, checkbox: Bool) -> NSRect {
+    /// Rahmen der Checkbox eines To-dos in Bildschirmkoordinaten.
+    func checkboxScreenFrame(ofBlock blockID: UUID) -> NSRect {
         guard let editor, let window, let layoutManager = textLayoutManager,
               let index = editor.document.blocks.firstIndex(where: { $0.id == blockID }),
               let start = layoutManager.location(layoutManager.documentRange.location,
@@ -39,18 +33,13 @@ extension BlockTextView: @MainActor NSAccessibilityCustomRotorItemSearchDelegate
         layoutManager.ensureLayout(for: NSTextRange(location: start))
         guard let fragment = layoutManager.textLayoutFragment(for: start) as? BlockLayoutFragment else { return .zero }
         let frame = viewFrame(of: fragment)
-        let rect = checkbox ? fragment.checkboxRect.offsetBy(dx: frame.minX, dy: frame.minY) : frame
+        let rect = fragment.checkboxRect.offsetBy(dx: frame.minX, dy: frame.minY)
         return window.convertToScreen(convert(rect, to: nil))
     }
 
-    func accessibilityLabel(ofBlock blockID: UUID, role: BlockAccessibilityElement.Role) -> String {
-        switch role {
-        case .checkbox:
-            let text = editor?.document.blocks.first { $0.id == blockID }?.text ?? ""
-            return text.isEmpty ? String(localized: "To-do", bundle: .module) : text
-        case .image:
-            return String(localized: "Bild", bundle: .module)
-        }
+    func checkboxLabel(ofBlock blockID: UUID) -> String {
+        let text = editor?.document.blocks.first { $0.id == blockID }?.text ?? ""
+        return text.isEmpty ? String(localized: "To-do", bundle: .module) : text
     }
 
     func isChecked(block blockID: UUID) -> Bool {
@@ -62,6 +51,20 @@ extension BlockTextView: @MainActor NSAccessibilityCustomRotorItemSearchDelegate
         guard let editor, let index = editor.document.blocks.firstIndex(where: { $0.id == blockID }) else { return false }
         editor.toggleChecked(atCharacter: editor.paragraphRange(ofBlock: index).location)
         return true
+    }
+
+    /// Bilder und Trenner meldet `NSTextView` über die Zelle ihres Attachments. Die
+    /// Zellen setzt erst diese Abfrage (Main Actor); Attachments entstehen auch
+    /// außerhalb davon (`BlockRenderer`).
+    func prepareAttachmentCells() {
+        guard let storage = textStorage else { return }
+        storage.enumerateAttribute(.attachment, in: NSRange(location: 0, length: storage.length)) { value, _, _ in
+            if let image = value as? ImageAttachment, !(image.attachmentCell is ImageAttachmentCell) {
+                image.attachmentCell = ImageAttachmentCell()
+            } else if let divider = value as? DividerAttachment, !(divider.attachmentCell is DecorativeAttachmentCell) {
+                divider.attachmentCell = DecorativeAttachmentCell()
+            }
+        }
     }
 
     // MARK: Blockart im Text
@@ -154,59 +157,72 @@ extension BlockTextView: @MainActor NSAccessibilityCustomRotorItemSearchDelegate
     }
 }
 
-/// Checkbox eines To-dos oder Bild-Block als eigenes Element unter der Text-View.
-/// Rahmen, Wert und Beschriftung liest die Text-View bei jeder Abfrage aus dem Dokument.
+/// Checkbox eines To-dos als eigenes Element unter der Text-View. Rahmen, Wert
+/// und Beschriftung liest die Text-View bei jeder Abfrage aus dem Dokument.
 ///
 /// AppKit ruft die Bedienungshilfen nur auf dem Main Thread auf; die geerbten
 /// Methoden von `NSAccessibilityElement` sind aber nicht isoliert. Die Overrides
 /// reichen deshalb nur Sendable-Werte an die Text-View weiter (`MainActor.assumeIsolated`).
-final class BlockAccessibilityElement: NSAccessibilityElement {
-    enum Role: Sendable { case checkbox, image }
-
+final class CheckboxAccessibilityElement: NSAccessibilityElement {
     let blockID: UUID
-    let role: Role
     nonisolated(unsafe) private weak var textView: BlockTextView?
 
-    init(blockID: UUID, role: Role, textView: BlockTextView) {
+    init(blockID: UUID, textView: BlockTextView) {
         self.blockID = blockID
-        self.role = role
         self.textView = textView
         super.init()
-        setAccessibilityIdentifier(role == .checkbox ? "editor.todo" : "editor.image")
+        setAccessibilityIdentifier("editor.todo")
     }
 
     override func isAccessibilityElement() -> Bool { true }
 
+    override func isAccessibilityEnabled() -> Bool { true }
+
     override func accessibilityParent() -> Any? { textView }
 
-    override func accessibilityRole() -> NSAccessibility.Role? {
-        switch role {
-        case .checkbox: .checkBox
-        case .image: .image
-        }
-    }
+    override func accessibilityRole() -> NSAccessibility.Role? { .checkBox }
 
     override func accessibilityLabel() -> String? {
-        let (view, id, role) = (textView, blockID, role)
-        return MainActor.assumeIsolated { view?.accessibilityLabel(ofBlock: id, role: role) }
+        let (view, id) = (textView, blockID)
+        return MainActor.assumeIsolated { view?.checkboxLabel(ofBlock: id) }
     }
 
     override func accessibilityValue() -> Any? {
-        guard role == .checkbox else { return nil }
         let (view, id) = (textView, blockID)
         let isChecked = MainActor.assumeIsolated { view?.isChecked(block: id) ?? false }
         return NSNumber(value: isChecked)
     }
 
     override func accessibilityFrame() -> NSRect {
-        let (view, id, isCheckbox) = (textView, blockID, role == .checkbox)
-        return MainActor.assumeIsolated { view?.accessibilityScreenFrame(ofBlock: id, checkbox: isCheckbox) ?? .zero }
+        let (view, id) = (textView, blockID)
+        return MainActor.assumeIsolated { view?.checkboxScreenFrame(ofBlock: id) ?? .zero }
     }
 
     override func accessibilityPerformPress() -> Bool {
-        guard role == .checkbox else { return false }
         let (view, id) = (textView, blockID)
         return MainActor.assumeIsolated { view?.toggleChecked(block: id) ?? false }
     }
+}
+
+/// Das Bild für VoiceOver: `NSTextView` meldet die Zelle des Attachments als Kind.
+/// Rolle Bild, Beschriftung mit der natürlichen Größe.
+final class ImageAttachmentCell: NSTextAttachmentCell {
+    override func isAccessibilityElement() -> Bool { true }
+
+    override func accessibilityRole() -> NSAccessibility.Role? { .image }
+
+    override func accessibilityLabel() -> String? {
+        let size = (attachment as? ImageAttachment)?.assetID.flatMap { EditorImageCache.shared.entry(for: $0)?.pointSize }
+        guard let size else { return String(localized: "Bild, wird geladen", bundle: .module) }
+        let width = Int(size.width.rounded())
+        let height = Int(size.height.rounded())
+        return String(localized: "Bild, \(width) × \(height) Punkte", bundle: .module)
+    }
+}
+
+/// Zelle eines Attachments, das VoiceOver übergeht: Der Trenner ist Schmuck, die
+/// Blockart „Trennlinie“ steht schon im Text der Bedienungshilfen.
+final class DecorativeAttachmentCell: NSTextAttachmentCell {
+    override func isAccessibilityElement() -> Bool { false }
 }
 #endif
