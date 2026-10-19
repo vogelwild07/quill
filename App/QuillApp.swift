@@ -30,7 +30,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Vor `persistence`: Eigenschaften werden in dieser Reihenfolge initialisiert, so
     /// zählt das Öffnen der Datenbank zum gemessenen Start (`docs/performance.md`).
     private let launchSignpost: Void = QuillSignposts.beginLaunch()
+    #if QUILL_PROFILING
+    private let profilingReset: Void = ProfilingSeed.resetStoreIfRequested()
+    #endif
     let persistence = Result { try QuillPersistence.open() }
+
+    #if QUILL_PROFILING
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        if let persistence = try? persistence.get() {
+            ProfilingSeed.seedAndQuit(persistence)
+        }
+    }
+    #endif
 
     /// Speichert offene Änderungen aller Editoren, bevor die App endet (und vor dem Backup).
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
