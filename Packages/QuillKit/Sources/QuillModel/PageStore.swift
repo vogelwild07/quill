@@ -331,7 +331,7 @@ extension PageStore {
     /// einem anderen Fenster); ihre Schlüssel werden nie doppelt vergeben.
     /// Gibt zurück, ob sich ein Schlüssel geändert hat.
     private func assignSortKeys(order: [Block], others: [Block]) -> Bool {
-        let keep = Self.longestIncreasingRun(order.map(\.sortKey))
+        let keep = Self.indicesOfLongestIncreasingSubsequence(order.map(\.sortKey))
         let foreignKeys = others.map(\.sortKey).filter(FractionalIndex.isValid).sorted()
         var changed = false
         var index = 0
@@ -371,7 +371,7 @@ extension PageStore {
     }
 
     /// Indizes einer längsten streng aufsteigenden Teilfolge gültiger Schlüssel (O(n log n)).
-    static func longestIncreasingRun(_ keys: [String]) -> Set<Int> {
+    static func indicesOfLongestIncreasingSubsequence(_ keys: [String]) -> Set<Int> {
         var tails: [Int] = []
         var previous = [Int](repeating: -1, count: keys.count)
         for (index, key) in keys.enumerated() where FractionalIndex.isValid(key) {
