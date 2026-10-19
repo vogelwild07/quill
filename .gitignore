@@ -28,6 +28,7 @@ Package.resolved.orig
 *.backup
 
 # Secrets, Signing
+Config/Local.xcconfig
 .env
 .env.*
 *.p12

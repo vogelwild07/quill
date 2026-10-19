@@ -8,6 +8,7 @@ Local-first, Notion-ähnliche Produktivitäts-App für macOS: Seiten, Notizen un
 
 - macOS 26 oder neuer, Apple Silicon
 - Xcode 27+ (aktiv via `xcode-select`)
+- Optional Signier-Team: `Config/Local.xcconfig.example` nach `Config/Local.xcconfig` kopieren und die eigene Team-ID eintragen. Die Datei wird nicht committet; ohne sie baut Xcode mit „Sign to Run Locally“.
 
 ## Bauen und testen
 

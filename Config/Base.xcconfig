@@ -1,0 +1,6 @@
+// Gemeinsame Einstellungen für alle Targets (Projektebene).
+//
+// Das Signier-Team ist persönlich und gehört nicht ins Repo: Es steht in
+// Config/Local.xcconfig (von Git ignoriert, Vorlage: Local.xcconfig.example).
+// Fehlt die Datei, baut Xcode ohne Team ("Sign to Run Locally").
+#include? "Local.xcconfig"

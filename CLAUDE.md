@@ -65,7 +65,7 @@ Fall back to grep or file reads only for what the graph does not model: literal 
 - Vor jedem Push `git status` + `git diff --staged` prüfen. Im Zweifel fragen.
 - Gegenproben (absichtliche Fehler) nie mit `git checkout`/`git restore` zurücksetzen, sondern aus vorher angelegter Dateikopie (Scratchpad). Sonst gehen uncommittete Änderungen verloren.
 - Gemergte Phasen-Branches direkt nach Merge lokal + auf GitHub löschen (`git branch -d`, `git push origin --delete`), ohne Rückfrage. Nur wenn Merge bestätigt.
-- `DEVELOPMENT_TEAM`-Zeilen in `project.pbxproj` lokal (Personal Team des Nutzers), nie committen. `project.pbxproj` daher nur gezielt stagen; Xcode-Nebenänderungen (z. B. Scheme-`version`) nicht mitcommitten.
+- Signier-Team (Personal Team des Nutzers) nur in `Config/Local.xcconfig` (git-ignoriert, nie committen), nie in `project.pbxproj`. Setzt Xcode dort `DEVELOPMENT_TEAM`, Zeile entfernen. `project.pbxproj` nur gezielt stagen; Xcode-Nebenänderungen (z. B. Scheme-`version`) nicht mitcommitten.
 - Niemals committen: `.env`, Keys, Tokens, Zertifikate, Provisioning-Profile, Datenbanken, Backups, private Notizen.
 - Aktuell halten: `README.md`, `CLAUDE.md`, `docs/architecture.md`, `docs/decisions.md`.
 
