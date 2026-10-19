@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillDesign
 import QuillModel
 import UniformTypeIdentifiers
 
@@ -283,7 +284,7 @@ final class EditorNoticeView: NSVisualEffectView {
         state = .active
         blendingMode = .withinWindow
         wantsLayer = true
-        layer?.cornerRadius = 8
+        layer?.cornerRadius = QuillDesign.Radius.large
         label.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
         label.textColor = .secondaryLabelColor
         label.translatesAutoresizingMaskIntoConstraints = false

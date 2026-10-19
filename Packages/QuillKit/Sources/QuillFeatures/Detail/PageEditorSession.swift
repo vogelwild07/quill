@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import OSLog
+import QuillDesign
 import QuillEditor
 import QuillModel
 import SwiftData
@@ -29,7 +30,7 @@ final class PageEditorSession {
     ) {
         bridge = EditorPersistenceBridge(pageID: pageID, store: store)
         controller.imageStore = store
-        controller.topPadding = 96
+        controller.topPadding = QuillDesign.EditorLayout.pageTopPadding
         controller.isEditable = false
         let header = PageHeaderView(
             pageID: pageID,

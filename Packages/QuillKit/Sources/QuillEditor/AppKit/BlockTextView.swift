@@ -39,7 +39,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     // MARK: Layout: zentrierte Textspalte
 
     /// Abstand über dem Text bzw. über dem Kopf.
-    var topPadding: CGFloat = 48 {
+    var topPadding: CGFloat = QuillDesign.EditorLayout.topPadding {
         didSet { needsLayout = true }
     }
 
@@ -53,8 +53,6 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         }
     }
 
-    private static let headerGap: CGFloat = 12
-
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
         updateInsets()
@@ -67,14 +65,14 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     /// Zentrierte Textspalte; oben Platz für den Kopf.
     private func updateInsets() {
-        let side = max(56, (bounds.width - QuillDesign.contentMaxWidth) / 2)
+        let side = max(QuillDesign.EditorLayout.minSideMargin, (bounds.width - QuillDesign.contentMaxWidth) / 2)
         var top = topPadding
         if let headerView {
             let padding = textContainer?.lineFragmentPadding ?? 5
             let width = max(0, bounds.width - 2 * side - 2 * padding)
             let height = headerHeight(headerView, width: width)
             headerView.frame = CGRect(x: side + padding, y: topPadding, width: width, height: height)
-            top += height + Self.headerGap
+            top += height + QuillDesign.EditorLayout.headerGap
         }
         if abs(textContainerInset.width - side) > 0.5 || abs(textContainerInset.height - top) > 0.5 {
             textContainerInset = NSSize(width: side, height: top)
@@ -188,11 +186,14 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         let frame = viewFrame(of: fragment)
         let lineTop = fragment.textLineFragments.first.map { $0.typographicBounds.minY } ?? 0
         let lineHeight = fragment.textLineFragments.first.map { $0.typographicBounds.height } ?? 20
-        let x = textContainerOrigin.x + BlockStyle.leadingInset(kind: fragment.kind, indent: fragment.indent) - 26
-        let y = frame.minY + lineTop + (lineHeight - 22) / 2
+        let width = QuillDesign.EditorLayout.blockControlWidth
+        let height = QuillDesign.EditorLayout.blockControlHeight
+        let x = textContainerOrigin.x + BlockStyle.leadingInset(kind: fragment.kind, indent: fragment.indent)
+            - (width + QuillDesign.EditorLayout.blockControlGap)
+        let y = frame.minY + lineTop + (lineHeight - height) / 2
         // „⋮⋮ ＋ Text“: der ＋ direkt vor dem Text, der Griff links daneben.
-        insertButton.frame = CGRect(x: x, y: y, width: 20, height: 22)
-        handle.frame = CGRect(x: x - 20, y: y, width: 20, height: 22)
+        insertButton.frame = CGRect(x: x, y: y, width: width, height: height)
+        handle.frame = CGRect(x: x - width, y: y, width: width, height: height)
         handle.characterOffset = offset
         insertButton.characterOffset = offset
         setHoverControlsHidden(false)

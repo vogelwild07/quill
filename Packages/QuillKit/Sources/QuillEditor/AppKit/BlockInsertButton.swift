@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillDesign
 
 /// Einfügen-Knopf ＋ zwischen Griff und Block: neuer Block darunter (⌥: darüber) mit
 /// offenem Slash-Menü; Escape nimmt den Klick zurück. Erscheint mit dem Griff bei Hover.
@@ -29,7 +30,7 @@ final class BlockInsertButton: NSView {
     override func draw(_ dirtyRect: NSRect) {
         if isHovered {
             NSColor.quaternarySystemFill.setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 2), xRadius: 4, yRadius: 4).fill()
+            NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 2), xRadius: QuillDesign.Radius.small, yRadius: QuillDesign.Radius.small).fill()
         }
         (isHovered ? NSColor.secondaryLabelColor : NSColor.tertiaryLabelColor).setStroke()
         let center = CGPoint(x: bounds.midX.rounded(), y: bounds.midY.rounded())

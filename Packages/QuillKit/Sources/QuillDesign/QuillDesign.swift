@@ -28,4 +28,33 @@ public enum QuillDesign {
         public static let quoteInset: CGFloat = 16
         public static let codePadding: CGFloat = 12
     }
+
+    /// Maße der Editorseite und der selbst gezeichneten Elemente darin.
+    public enum EditorLayout {
+        /// Mindestabstand der Textspalte zum Fensterrand.
+        public static let minSideMargin: CGFloat = 56
+        /// Abstand über dem Text, wenn der Editor allein steht.
+        public static let topPadding: CGFloat = 48
+        /// Abstand über dem Kopf einer Seite (Icon, Titel).
+        public static let pageTopPadding: CGFloat = 96
+        /// Zwischen Kopf (Icon, Titel) und erstem Block.
+        public static let headerGap: CGFloat = 12
+        /// Griff ⋮⋮ und ＋ links vom Block, je ein Feld dieser Größe.
+        public static let blockControlWidth: CGFloat = 20
+        public static let blockControlHeight: CGFloat = 22
+        /// Zwischen ＋ und Textanfang.
+        public static let blockControlGap: CGFloat = 6
+        public static let checkboxSize: CGFloat = 14
+        public static let quoteBarWidth: CGFloat = 3
+    }
+
+    /// Eckenradien.
+    public enum Radius {
+        /// Inline-Code, Checkbox, Bild, Hover-Fläche des ＋.
+        public static let small: CGFloat = 4
+        /// Platzhalter eines Bildes, solange es lädt.
+        public static let medium: CGFloat = 6
+        /// Code-Block, Hinweis unter einem Bild.
+        public static let large: CGFloat = 8
+    }
 }
