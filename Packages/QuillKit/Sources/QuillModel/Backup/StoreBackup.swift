@@ -206,12 +206,7 @@ public struct StoreBackup: Sendable {
             if fileManager.fileExists(atPath: supportURL.path(percentEncoded: false)) {
                 try fileManager.copyItem(at: supportURL, to: partial.appending(path: supportURL.lastPathComponent))
             }
-            var final = backupsURL.appending(path: name, directoryHint: .isDirectory)
-            var counter = 2
-            while fileManager.fileExists(atPath: final.path(percentEncoded: false)) {
-                final = backupsURL.appending(path: "\(name)-\(counter)", directoryHint: .isDirectory)
-                counter += 1
-            }
+            let final = backupsURL.appending(path: uniqueBackupName(name), directoryHint: .isDirectory)
             try fileManager.moveItem(at: partial, to: final)
             return final
         } catch {
@@ -304,7 +299,18 @@ public struct StoreBackup: Sendable {
     }
 
     var versionFileURL: URL {
-        storeURL.deletingLastPathComponent().appending(path: "\(storeURL.lastPathComponent).version")
+        storeDirectoryURL.appending(path: "\(storeURL.lastPathComponent).version")
+    }
+
+    /// `name`, oder bei einem schon vorhandenen Backup gleichen Namens `name-2`, `name-3` …
+    func uniqueBackupName(_ name: String) -> String {
+        var candidate = name
+        var counter = 2
+        while FileManager.default.fileExists(atPath: backupsURL.appending(path: candidate).path(percentEncoded: false)) {
+            candidate = "\(name)-\(counter)"
+            counter += 1
+        }
+        return candidate
     }
 
     var lastOpenedSchemaVersion: String? {

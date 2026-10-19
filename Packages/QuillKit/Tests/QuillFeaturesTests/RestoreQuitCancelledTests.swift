@@ -1,5 +1,5 @@
 import Foundation
-import QuillModel
+@testable import QuillModel
 import Testing
 @testable import QuillFeatures
 

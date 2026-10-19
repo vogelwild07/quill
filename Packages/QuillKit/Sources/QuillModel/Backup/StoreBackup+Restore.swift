@@ -109,7 +109,7 @@ extension StoreBackup {
     }
 
     /// Ob ein Backup für den nächsten Start vorgemerkt ist.
-    public var isRestorePending: Bool {
+    var isRestorePending: Bool {
         FileManager.default.fileExists(atPath: restoreRequestURL.path(percentEncoded: false))
     }
 
@@ -191,7 +191,7 @@ extension StoreBackup {
 
         let tag = RestoreTag(
             backup: request.backup,
-            safety: uniqueBackupName("\(Self.formatter.string(from: now()))_\(Reason.beforeRestore.slug)")
+            safety: newSafetyName()
         )
         do {
             try prepareStaging(from: entry.url, version: version, tag: tag, stoppingAfter: stop)
@@ -264,12 +264,17 @@ extension StoreBackup {
         let tagURL = storeDirectoryURL.appending(path: Self.restoreTagName)
         if exists(tagURL) {
             let tag = (try? JSONDecoder().decode(RestoreTag.self, from: Data(contentsOf: tagURL)))
-                ?? RestoreTag(backup: "", safety: uniqueBackupName("\(Self.formatter.string(from: now()))_\(Reason.beforeRestore.slug)"))
+                ?? RestoreTag(backup: "", safety: newSafetyName())
             return finishRestore(tag, stoppingAfter: stop)
         }
         guard exists(stagingURL) else { return nil }
         try? FileManager.default.removeItem(at: stagingURL)
         return .interrupted
+    }
+
+    /// Freier Name für den Stand vor dem Wiederherstellen.
+    private func newSafetyName() -> String {
+        uniqueBackupName("\(Self.formatter.string(from: now()))_\(Reason.beforeRestore.slug)")
     }
 
     /// Tauscht zwei Ordner auf demselben Volume in einem Schritt (APFS). Ohne
@@ -280,15 +285,6 @@ extension StoreBackup {
         }
     }
 
-    private func uniqueBackupName(_ name: String) -> String {
-        var candidate = name
-        var counter = 2
-        while FileManager.default.fileExists(atPath: backupsURL.appending(path: candidate).path(percentEncoded: false)) {
-            candidate = "\(name)-\(counter)"
-            counter += 1
-        }
-        return candidate
-    }
 
     // MARK: - Hilfen
 
