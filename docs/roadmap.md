@@ -66,6 +66,10 @@ Ideen aus Phase 8, nicht eingeplant:
 - Release-Build in CI statt lokal.
 - Englische Fassung der Installationsanleitung.
 
+Aus dem Review von PR #10, nicht eingeplant (Urteile, kein Fehler):
+- Bundle-ID-Präfix und Mindestversion stehen in `make-release.sh`, `check-release-binary.sh` und `BundleIdentifierTests` zusätzlich zum Projekt; aus dem Build lesen (`xcodebuild -showBuildSettings`).
+- `BundleIdentifierTests` und `LocalizationTests` teilen sich `LocalizationTests.root`; eine gemeinsame Hilfe `RepoRoot` statt der Kopplung an eine fremde Testklasse.
+
 Infrastruktur, nicht eingeplant:
 - CI-Workflow auf GitHub (macOS-Runner): Build, Package- und App-Tests ohne Warnungen bei jedem PR. Bisher wird nur lokal getestet; PR #5 wurde auf Basis der lokalen Tests gemergt.
 
