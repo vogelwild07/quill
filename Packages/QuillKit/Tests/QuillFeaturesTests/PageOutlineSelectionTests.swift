@@ -111,5 +111,23 @@ struct PageOutlineSelectionTests {
         settle(hosting) { outline.selectedRow < 0 }
         #expect(outline.selectedRow < 0)
     }
+
+    /// Gleiche Objekte und gleiche Werte der Bindings: gleich, auch wenn die Bindings
+    /// neu gebaut sind. Nur so baut ein Seitenwechsel den Seitenbaum nicht neu.
+    @Test func sidebarViewComparesObjectsByIdentityAndBindingsByValue() {
+        let selection = PageSelection()
+        let actions = PageOutlineActions()
+        let request = UUID()
+        func view(_ selection: PageSelection, _ actions: PageOutlineActions, rename: UUID?, trash: Bool) -> SidebarView {
+            SidebarView(selection: selection, renameRequest: .constant(rename), isShowingTrash: .constant(trash), actions: actions)
+        }
+        let base = view(selection, actions, rename: request, trash: false)
+        selection.pageID = UUID()
+        #expect(base == view(selection, actions, rename: request, trash: false))
+        #expect(base != view(PageSelection(), actions, rename: request, trash: false))
+        #expect(base != view(selection, PageOutlineActions(), rename: request, trash: false))
+        #expect(base != view(selection, actions, rename: nil, trash: false))
+        #expect(base != view(selection, actions, rename: request, trash: true))
+    }
 }
 #endif

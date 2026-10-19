@@ -17,11 +17,11 @@ struct SidebarView: View, Equatable {
     @Query(filter: #Predicate<Page> { $0.trashedAt == nil })
     private var pages: [Page]
 
+    /// Ohne Zugriff auf den Main Actor: Objekte nach Identität, Bindings nach Wert.
     nonisolated static func == (lhs: SidebarView, rhs: SidebarView) -> Bool {
-        MainActor.assumeIsolated {
-            lhs.selection === rhs.selection && lhs.actions === rhs.actions
-                && lhs.renameRequest == rhs.renameRequest && lhs.isShowingTrash == rhs.isShowingTrash
-        }
+        lhs.selection === rhs.selection && lhs.actions === rhs.actions
+            && lhs._renameRequest.wrappedValue == rhs._renameRequest.wrappedValue
+            && lhs._isShowingTrash.wrappedValue == rhs._isShowingTrash.wrappedValue
     }
 
     var body: some View {
