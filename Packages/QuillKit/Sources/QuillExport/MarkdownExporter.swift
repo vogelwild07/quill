@@ -18,6 +18,16 @@ public struct ExportStrings: Sendable {
         self.subpages = subpages
         self.missingImage = missingImage
     }
+
+    /// Titel, wie er in Überschrift und Links steht.
+    func displayTitle(_ title: String) -> String {
+        title.isEmpty ? untitled : title
+    }
+
+    /// Titel als Namensbasis für Datei oder Ordner (`ExportFileName.base`).
+    func fileBase(for title: String) -> String {
+        ExportFileName.base(for: title, untitled: untitled)
+    }
 }
 
 /// Dateien eines Exports, relativ zum Export-Ordner. Reiner Werttyp, damit
@@ -94,8 +104,8 @@ public enum MarkdownExporter {
         /// Endung zurück.
         @discardableResult
         mutating func add(_ page: PageExportSnapshot, in directory: [String], names: inout ExportNameRegistry) -> String {
-            let title = page.title.isEmpty ? strings.untitled : page.title
-            let base = ExportFileName.base(for: page.title, untitled: strings.untitled)
+            let title = strings.displayTitle(page.title)
+            let base = strings.fileBase(for: page.title)
             let stem = names.claim(base: base, extensions: page.children.isEmpty ? ["md"] : ["md", ""])
             // Platz vor den Unterseiten freihalten, damit die Reihenfolge der Sidebar folgt.
             let path = (directory + [stem + ".md"]).joined(separator: "/")
@@ -116,7 +126,7 @@ public enum MarkdownExporter {
             var childLinks: [String] = []
             for child in page.children {
                 let childStem = add(child, in: directory + [stem], names: &childNames)
-                let childTitle = child.title.isEmpty ? strings.untitled : child.title
+                let childTitle = strings.displayTitle(child.title)
                 let target = MarkdownSerializer.linkDestination(stem + "/" + childStem + ".md")
                 childLinks.append("- [" + MarkdownSerializer.linkText(childTitle) + "](" + target + ")")
             }

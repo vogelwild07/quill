@@ -88,7 +88,7 @@ public enum ExportWriter {
                 try fileManager.moveItem(at: images.appending(path: id.uuidString), to: url)
             }
         }
-        let folder = try moveIntoPlace(output, title: root.title, untitled: strings.untitled, in: destination, date: date, fileManager: fileManager)
+        let folder = try moveIntoPlace(output, base: strings.fileBase(for: root.title), in: destination, date: date, fileManager: fileManager)
         return ExportResult(
             folder: folder, pageCount: plan.pageCount,
             imageCount: plan.imageCount, missingImageCount: plan.missingImageCount
@@ -138,11 +138,11 @@ public enum ExportWriter {
 
     /// Benennt den fertigen Ordner in den ersten freien Namen um.
     private static func moveIntoPlace(
-        _ output: URL, title: String, untitled: String, in destination: URL, date: Date, fileManager: FileManager
+        _ output: URL, base: String, in destination: URL, date: Date, fileManager: FileManager
     ) throws -> URL {
         var counter = 1
         while true {
-            let name = ExportFileName.folderName(title: title, untitled: untitled, date: date, counter: counter)
+            let name = ExportFileName.folderName(base: base, date: date, counter: counter)
             let target = destination.appending(path: name, directoryHint: .isDirectory)
             if !fileManager.fileExists(atPath: target.path(percentEncoded: false)) {
                 do {
@@ -159,10 +159,11 @@ public enum ExportWriter {
 
 extension ExportFileName {
     /// „Projekte (Quill 2026-10-19)“, ab dem zweiten Versuch mit Zähler („… 2“).
-    /// Das Datum ist lokal, wie der Nutzer es kennt.
-    public static func folderName(title: String, untitled: String, date: Date, counter: Int, timeZone: TimeZone = .current) -> String {
+    /// `base` ist die fertige Namensbasis (`base(for:untitled:)`). Das Datum ist lokal,
+    /// wie der Nutzer es kennt.
+    public static func folderName(base: String, date: Date, counter: Int, timeZone: TimeZone = .current) -> String {
         let day = date.formatted(Date.ISO8601FormatStyle(timeZone: timeZone).year().month().day().dateSeparator(.dash))
         let suffix = " (Quill \(day))" + (counter == 1 ? "" : " \(counter)")
-        return stem(base: base(for: title, untitled: untitled), suffix: suffix)
+        return stem(base: base, suffix: suffix)
     }
 }
