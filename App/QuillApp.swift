@@ -35,13 +35,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     #endif
     let persistence = Result { try QuillPersistence.open() }
 
-    #if QUILL_PROFILING
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if QUILL_PROFILING
         if let persistence = try? persistence.get() {
             ProfilingSeed.seedAndQuit(persistence)
         }
+        #endif
+        #if DEBUG
+        TestWindowSize.applyToFirstWindow()
+        #endif
     }
-    #endif
 
     /// Speichert offene Änderungen aller Editoren, bevor die App endet (und vor dem Backup).
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {

@@ -29,6 +29,10 @@ Ideen aus Phase 5, nicht eingeplant:
 Ideen aus Phase 7, nicht eingeplant:
 - Englische Lokalisierung (bisher nur Deutsch).
 - „Kontrast erhöhen“ von Hand prüfen (offscreen nicht nachstellbar, ADR-021).
+- UI-Tests legen das Fenster immer auf den Hauptbildschirm, damit Messungen (Kontrast-Audit,
+  README-Bilder) bei mehreren Monitoren vergleichbar sind. Mit zweitem Monitor meldete der
+  Audit zusätzlich den Erklärtext im Sheet „Backup wiederherstellen“, auf einem Bildschirm
+  mit neutralem Hintergrund nicht.
 - Eigene Variante des Icons für den dunklen Modus in Icon Composer gestalten; bisher
   dunkelt macOS den Hintergrund selbst ab.
 - Sidebar aus einer Momentaufnahme des `PageStore` statt aus beobachteten `Page`-Objekten
