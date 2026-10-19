@@ -176,6 +176,9 @@ final class AccessibilityAuditUITests: XCTestCase {
             if ["quickOpen.hint", "quickOpen.emptyState.message", "slash.hint"].contains(identifier) {
                 return "secondary auf Glas im Systemstil (A11, Entscheidung zu A11)."
             }
+            if identifier == "sidebar.emptyState.message" {
+                return "primary auf dem Glas der Sidebar; der Kontrast hängt vom Hintergrund hinter dem Fenster ab. Auf festem Hintergrund prüft EmptyStateSnapshotTests 4,5:1 (A15, Entscheidung zum Sidebar-Glas)."
+            }
             if let sheet = state.sheetElementFrames, !sheet.contains(frame) {
                 return "Inhalt hinter einem Sheet zeichnet das System gedimmt."
             }
