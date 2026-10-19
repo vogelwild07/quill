@@ -16,7 +16,31 @@
     "Ausblenden" : {
 
     },
+    "Backup nicht wiederhergestellt" : {
+
+    },
+    "Backup vom %@ wiederherstellen?" : {
+
+    },
+    "Backup vom %@: %@ Der bisherige Stand ist unverändert." : {
+
+    },
+    "Backup wiederhergestellt" : {
+
+    },
+    "Backup wiederherstellen" : {
+
+    },
+    "Backup wiederherstellen …" : {
+
+    },
     "Backups im Finder zeigen" : {
+
+    },
+    "Beim Beenden" : {
+
+    },
+    "Beim Start" : {
 
     },
     "Bild fehlt" : {
@@ -37,6 +61,15 @@
     "Code" : {
 
     },
+    "Das Backup gibt es nicht mehr." : {
+
+    },
+    "Das Backup stammt von einer neueren Quill-Version und kann hier nicht eingespielt werden." : {
+
+    },
+    "Das letzte Wiederherstellen wurde nicht abgeschlossen. Der vorherige Stand ist zurück." : {
+
+    },
     "Das lässt sich nicht rückgängig machen. Unterseiten werden mitgelöscht." : {
 
     },
@@ -46,7 +79,16 @@
     "Der Papierkorb ist leer" : {
 
     },
+    "Die Dateien konnten nicht getauscht werden." : {
+
+    },
+    "Die Datenbank im Backup ist beschädigt." : {
+
+    },
     "Durchgestrichen" : {
+
+    },
+    "Eingespielt: Backup vom %@. Der vorherige Stand liegt als Backup „Vor dem Wiederherstellen“ bereit (Ablage › Backup wiederherstellen …)." : {
 
     },
     "Emoji eingeben oder mit ⌃⌘Leertaste auswählen" : {
@@ -80,6 +122,9 @@
 
     },
     "Icon" : {
+
+    },
+    "Im Backup fehlt die Datenbank." : {
 
     },
     "Im Finder zeigen" : {
@@ -127,6 +172,9 @@
     "Nicht gespeichert" : {
 
     },
+    "Noch keine Backups" : {
+
+    },
     "Noch keine Seiten" : {
 
     },
@@ -157,6 +205,9 @@
     "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
 
     },
+    "Quill wird danach beendet. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt als Backup „Vor dem Wiederherstellen“ erhalten." : {
+
+    },
     "Schnell öffnen (⌘O)" : {
 
     },
@@ -184,6 +235,9 @@
     "Seiten: %lld · Bilder: %lld" : {
 
     },
+    "Sonstiges" : {
+
+    },
     "Suchen" : {
 
     },
@@ -196,6 +250,9 @@
     "Umbenennen" : {
 
     },
+    "Ungesicherte Änderungen werden vorher gespeichert." : {
+
+    },
     "Unterseiten" : {
 
     },
@@ -205,16 +262,37 @@
     "Verschieben" : {
 
     },
+    "Vor dem Wiederherstellen" : {
+
+    },
+    "Vor dem endgültigen Löschen" : {
+
+    },
+    "Vor einer Aktualisierung der Datenbank" : {
+
+    },
     "Wenn du Quill jetzt beendest, gehen diese Änderungen verloren. Solange Quill geöffnet bleibt, wird das Speichern weiter versucht.\n\n%@" : {
 
     },
     "Wiederherstellen" : {
 
     },
+    "Wiederherstellen und beenden" : {
+
+    },
+    "Wiederherstellen unterbrochen" : {
+
+    },
+    "Wiederherstellen …" : {
+
+    },
     "Wähle links eine Seite oder lege mit ⌘N eine neue an." : {
 
     },
     "Zu Favoriten hinzufügen" : {
+
+    },
+    "Zu wenig freier Speicher: %@ nötig, %@ frei." : {
 
     },
     "Zuletzt bearbeitet" : {
