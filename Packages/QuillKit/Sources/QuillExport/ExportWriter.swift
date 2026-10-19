@@ -17,7 +17,19 @@ public struct ExportResult: Equatable, Sendable {
 /// Erst in einen Zwischenordner, dann ein Umbenennen in „<Seite> (Quill JJJJ-MM-TT)“.
 /// So entsteht nie ein halber Export, und Vorhandenes wird nie überschrieben: Gibt
 /// es den Namen schon, bekommt der neue Ordner einen Zähler („… 2“).
+///
+/// Der Zwischenordner liegt im temporären Ordner, den das System für das Ziel
+/// vorsieht (`.itemReplacementDirectory`; in der Sandbox im Container der App), wenn
+/// er auf demselben Volume liegt: Dann bleibt nach einem Absturz nichts im Ziel, und
+/// das Umbenennen ist ein Schritt. Sonst (andere Volumes) entsteht er als
+/// `.quill-export-<UUID>` im Ziel; alte Reste davon räumt der nächste Export weg.
 public enum ExportWriter {
+    /// Name des Zwischenordners im Ziel, wenn der Systemordner nicht passt.
+    static let stagingPrefix = ".quill-export-"
+    /// Ältere Zwischenordner im Ziel gelten als Rest eines abgebrochenen Exports.
+    /// Jüngere könnten zu einem Export gehören, der in einem anderen Fenster läuft.
+    static let staleStagingAge: TimeInterval = 3600
+
     public static func export(
         _ root: PageExportSnapshot,
         strings: ExportStrings,
@@ -25,14 +37,26 @@ public enum ExportWriter {
         date: Date = .now,
         imageData: @Sendable (UUID) async throws -> Data?
     ) async throws -> ExportResult {
+        try await export(root, strings: strings, into: destination, date: date, preferSystemTemporary: true, imageData: imageData)
+    }
+
+    /// `preferSystemTemporary: false` erzwingt den Zwischenordner im Ziel (Tests).
+    static func export(
+        _ root: PageExportSnapshot,
+        strings: ExportStrings,
+        into destination: URL,
+        date: Date,
+        preferSystemTemporary: Bool,
+        imageData: @Sendable (UUID) async throws -> Data?
+    ) async throws -> ExportResult {
         let fileManager = FileManager()
-        let staging = destination.appending(path: ".quill-export-\(UUID().uuidString)", directoryHint: .isDirectory)
+        let staging = try makeStaging(for: destination, preferSystemTemporary: preferSystemTemporary, fileManager: fileManager)
+        defer { try? fileManager.removeItem(at: staging) }
         // `export/` wird am Ende umbenannt, `images/` hält die Bilder bis dahin.
         let output = staging.appending(path: "export", directoryHint: .isDirectory)
         let images = staging.appending(path: "images", directoryHint: .isDirectory)
         try fileManager.createDirectory(at: output, withIntermediateDirectories: true)
         try fileManager.createDirectory(at: images, withIntermediateDirectories: false)
-        defer { try? fileManager.removeItem(at: staging) }
 
         // Erst die Bilder: Fehlen Daten, steht im Markdown ein Kommentar statt eines
         // Links ins Leere.
@@ -61,6 +85,47 @@ public enum ExportWriter {
             folder: folder, pageCount: plan.pageCount,
             imageCount: plan.imageCount, missingImageCount: plan.missingImageCount
         )
+    }
+
+    /// Leerer Zwischenordner für einen Export nach `destination`.
+    private static func makeStaging(for destination: URL, preferSystemTemporary: Bool, fileManager: FileManager) throws -> URL {
+        if preferSystemTemporary,
+           let system = try? fileManager.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: destination, create: true) {
+            if isSameVolume(system, destination) { return system }
+            // Über Volumes hinweg wäre das Umbenennen ein Kopieren, das halb scheitern kann.
+            try? fileManager.removeItem(at: system)
+        }
+        removeStaleStaging(in: destination, fileManager: fileManager)
+        let staging = destination.appending(path: stagingPrefix + UUID().uuidString, directoryHint: .isDirectory)
+        try fileManager.createDirectory(at: staging, withIntermediateDirectories: false)
+        return staging
+    }
+
+    private static func isSameVolume(_ first: URL, _ second: URL) -> Bool {
+        let key: Set<URLResourceKey> = [.volumeIdentifierKey]
+        guard let a = try? first.resourceValues(forKeys: key).volumeIdentifier,
+              let b = try? second.resourceValues(forKeys: key).volumeIdentifier else { return false }
+        return a.isEqual(b)
+    }
+
+    /// Löscht im Ziel nur Ordner, die exakt `.quill-export-<UUID>` heißen (UUID wie
+    /// Quill sie schreibt) und älter als `staleStagingAge` sind. Alles andere bleibt.
+    static func removeStaleStaging(in destination: URL, now: Date = .now, fileManager: FileManager) {
+        let names = (try? fileManager.contentsOfDirectory(atPath: destination.path(percentEncoded: false))) ?? []
+        for name in names where isStagingName(name) {
+            let url = destination.appending(path: name, directoryHint: .isDirectory)
+            guard let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey, .contentModificationDateKey]),
+                  values.isDirectory == true, values.isSymbolicLink != true,
+                  let modified = values.contentModificationDate,
+                  now.timeIntervalSince(modified) > staleStagingAge else { continue }
+            try? fileManager.removeItem(at: url)
+        }
+    }
+
+    static func isStagingName(_ name: String) -> Bool {
+        guard name.hasPrefix(stagingPrefix) else { return false }
+        let rest = String(name.dropFirst(stagingPrefix.count))
+        return UUID(uuidString: rest)?.uuidString == rest
     }
 
     /// Benennt den fertigen Ordner in den ersten freien Namen um.
