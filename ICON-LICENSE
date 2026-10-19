@@ -1,0 +1,14 @@
+Quill – App-Icon
+Copyright (C) 2026 vogelwild07. Alle Rechte vorbehalten.
+
+Das App-Icon von Quill steht nicht unter der GNU General Public License, die für
+den Quellcode gilt (LICENSE). Das betrifft den Ordner App/Resources/AppIcon.icon
+mit allen Dateien darin und alle daraus erzeugten Bilder, zum Beispiel im
+App-Bundle.
+
+Wer Quill verändert und weitergibt, ersetzt das Icon durch ein eigenes.
+
+English: The Quill app icon (App/Resources/AppIcon.icon, all files in it, and
+every image generated from it) is not covered by the GNU GPL that applies to the
+source code (LICENSE). Copyright (C) 2026 vogelwild07. All rights reserved.
+Modified versions must use a different icon.

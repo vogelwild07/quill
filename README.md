@@ -2,7 +2,7 @@
 
 Local-first, Notion-ähnliche Produktivitäts-App für macOS: Seiten, Notizen und Aufgaben in einem nativen Block-Editor.
 
-> Status: Release v0.1.0 in Vorbereitung (Phase 8). Phase 7 (Feinschliff) abgeschlossen: Backup wiederherstellen, Aufräumen und Performance (Messung siehe `docs/performance.md`), Bedienungshilfen mit Audit, Leerzustände, vollständige deutsche Lokalisierung und App-Icon. Export einer Seite oder eines Seitenbaums als Markdown-Ordner mit Bildern (⇧⌘E), Schnell öffnen (⌘O), Favoriten, Papierkorb mit Auto-Leeren nach 30 Tagen. Seiten mit Block-Editor: Überschriften, Listen, To-dos, Zitat, Code, Trenner, Bilder, Inline-Formatierung und Links; Slash-Menü, Markdown-Kürzel, Blockart per ⌥⌘0–7, Blöcke ziehen, verschieben und duplizieren; Speichern automatisch.
+> Status: [v0.1.0 veröffentlicht](../../releases/tag/v0.1.0) (Phase 8, nur Apple Silicon, macOS 26). Phase 7 (Feinschliff) abgeschlossen: Backup wiederherstellen, Aufräumen und Performance (Messung siehe `docs/performance.md`), Bedienungshilfen mit Audit, Leerzustände, vollständige deutsche Lokalisierung und App-Icon. Export einer Seite oder eines Seitenbaums als Markdown-Ordner mit Bildern (⇧⌘E), Schnell öffnen (⌘O), Favoriten, Papierkorb mit Auto-Leeren nach 30 Tagen. Seiten mit Block-Editor: Überschriften, Listen, To-dos, Zitat, Code, Trenner, Bilder, Inline-Formatierung und Links; Slash-Menü, Markdown-Kürzel, Blockart per ⌥⌘0–7, Blöcke ziehen, verschieben und duplizieren; Speichern automatisch.
 
 ## Installation
 
@@ -60,6 +60,6 @@ Alle wirken nur aus der Kommandozeile und nur in Debug-Builds (ADR-019, ADR-021)
 
 ## Lizenz
 
-Der Quellcode steht unter der [GNU General Public License, Version 3 oder jeder späteren Version](LICENSE) (GPL-3.0-or-later).
+Copyright © 2026 vogelwild07. Der Quellcode ist freie Software: Du kannst ihn unter den Bedingungen der [GNU General Public License](LICENSE), wie von der Free Software Foundation veröffentlicht, weitergeben und verändern, entweder gemäß Version 3 der Lizenz oder (nach deiner Wahl) jeder späteren Version (SPDX: GPL-3.0-or-later). `LICENSE` enthält den unveränderten Text der Version 3.
 
-**Ausgenommen ist das App-Icon** (`App/Resources/AppIcon.icon` und alle daraus erzeugten Bilder): Copyright © 2026 vogelwild07, alle Rechte vorbehalten. Wer Quill verändert und weitergibt, ersetzt das Icon durch ein eigenes.
+**Ausgenommen ist das App-Icon** (`App/Resources/AppIcon.icon` und alle daraus erzeugten Bilder): alle Rechte vorbehalten, siehe [`ICON-LICENSE`](ICON-LICENSE). Wer Quill verändert und weitergibt, ersetzt das Icon durch ein eigenes.
