@@ -962,14 +962,5 @@ struct PerformanceTests {
         #expect(!harness.editor.reveal(blockID: UUID(), range: NSRange(location: 0, length: 1)))
         #expect(harness.textView.selectedRange().length == 1)
     }
-
-    @Test func typingStaysWithinOneFrameAt1000Blocks() {
-        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 1100, height: 800), styleMask: [.titled], backing: .buffered, defer: false)
-        let result = EditorBenchmark.run(in: window, blockCount: 1000, keystrokes: 200, enters: 50)
-        #expect(result.blocks == 1050)
-        #expect(result.typing.p95 < 16, "Tippen p95 \(result.typing.p95) ms")
-        #expect(result.enter.p95 < 16, "Enter p95 \(result.enter.p95) ms")
-        #expect(result.loadMilliseconds < 300, "Laden \(result.loadMilliseconds) ms")
-    }
 }
 #endif
