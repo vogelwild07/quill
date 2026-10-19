@@ -12,9 +12,9 @@ Quill ist nur ad hoc signiert und nicht von Apple notarisiert. macOS blockiert d
 
 1. `Quill-<Version>.dmg` laden und öffnen.
 2. Quill auf den Ordner „Programme“ im Fenster der .dmg ziehen. Danach die .dmg im Finder auswerfen.
-3. Quill im Ordner „Programme“ öffnen. macOS meldet, dass Quill nicht geöffnet wurde, weil Apple die App nicht auf Schadsoftware prüfen konnte. „Fertig“ klicken, nicht „In den Papierkorb legen“.
-4. Systemeinstellungen › Datenschutz & Sicherheit öffnen und nach unten zum Abschnitt „Sicherheit“ scrollen. Dort steht ein Hinweis zu Quill. „Dennoch öffnen“ klicken und mit Passwort oder Touch ID bestätigen.
-5. Quill erneut öffnen und in der Rückfrage „Dennoch öffnen“ wählen. Ab jetzt startet Quill normal.
+3. Quill im Ordner „Programme“ öffnen. macOS meldet, dass Quill nicht geöffnet werden kann, weil Apple die App nicht auf Schadsoftware prüfen konnte. Die Meldung schließen, ohne Quill in den Papierkorb zu legen.
+4. Systemeinstellungen › Datenschutz & Sicherheit öffnen und nach unten scrollen. Im Abschnitt zur Sicherheit steht ein Hinweis zu Quill. „Dennoch öffnen“ klicken und mit Passwort oder Touch ID bestätigen.
+5. Quill erneut öffnen und in der Rückfrage das Öffnen bestätigen. Ab jetzt startet Quill normal.
 
 **Nach Updates:** Jede neue Version ist neu signiert. Eventuell musst du Schritt 3 bis 5 wiederholen. macOS kann außerdem fragen, ob Quill auf die Daten der bisherigen Version zugreifen darf. Erlaube das, sonst findet Quill deine Seiten nicht. Deine Daten bleiben bei einem Update erhalten.
 
