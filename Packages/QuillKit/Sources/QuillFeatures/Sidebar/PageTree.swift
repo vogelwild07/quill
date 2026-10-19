@@ -77,7 +77,10 @@ public enum PageTree {
     public static func favorites(_ entries: [Entry], in tree: [PageNode]) -> [PageNode] {
         entries
             .filter { $0.isFavorite && find($0.id, in: tree) != nil }
-            .sorted { ($0.favoriteSortKey ?? "", $0.createdAt, $0.id.uuidString) < ($1.favoriteSortKey ?? "", $1.createdAt, $1.id.uuidString) }
+            .sorted {
+                Page.favoriteOrder(sortKey: $0.favoriteSortKey, createdAt: $0.createdAt, id: $0.id)
+                    < Page.favoriteOrder(sortKey: $1.favoriteSortKey, createdAt: $1.createdAt, id: $1.id)
+            }
             .map { PageNode(id: $0.id, title: $0.title, icon: $0.icon) }
     }
 
@@ -173,7 +176,24 @@ public enum SidebarSection: Equatable, Sendable {
     case favorites
     case pages
 
-    public static func visible(hasFavorites: Bool, isDraggingPage: Bool) -> [SidebarSection] {
-        hasFavorites || isDraggingPage ? [.favorites, .pages] : [.pages]
+    /// Der leere Abschnitt „Favoriten“ als Ablageziel.
+    public enum DropTarget: Equatable, Sendable {
+        case hidden
+        /// Eine Seite aus dem Baum wird gezogen.
+        case dragging
+        /// Dort abgelegt: Der Abschnitt bleibt, bis der Favorit ankommt, höchstens
+        /// `timeout` lang (scheitert das Speichern, verschwindet er wieder).
+        case awaitingFavorite(since: Date)
+
+        public static let timeout: TimeInterval = 2
+
+        public func isExpired(now: Date) -> Bool {
+            guard case .awaitingFavorite(let since) = self else { return false }
+            return now.timeIntervalSince(since) >= Self.timeout
+        }
+    }
+
+    public static func visible(hasFavorites: Bool, dropTarget: DropTarget) -> [SidebarSection] {
+        hasFavorites || dropTarget != .hidden ? [.favorites, .pages] : [.pages]
     }
 }

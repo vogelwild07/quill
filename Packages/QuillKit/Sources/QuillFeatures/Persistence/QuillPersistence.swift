@@ -22,7 +22,8 @@ public final class QuillPersistence {
     private nonisolated static let logger = Logger(subsystem: "de.vogel.quill", category: "persistence")
 
     /// Seiten liegen so lange im Papierkorb, dann löscht Quill sie endgültig.
-    public static let trashRetention: TimeInterval = 30 * 24 * 60 * 60
+    public nonisolated static let trashRetentionDays = 30
+    public nonisolated static let trashRetention = TimeInterval(trashRetentionDays * 24 * 60 * 60)
 
     init(container: ModelContainer, backup: StoreBackup?) {
         self.container = container
@@ -76,11 +77,11 @@ public final class QuillPersistence {
 
     // MARK: Papierkorb (ADR-017)
 
-    /// Löscht eine Seite aus dem Papierkorb endgültig. Vorher ein Backup (höchstens
-    /// eins pro Stunde); scheitert es, wird nichts gelöscht.
-    public func deletePermanently(_ pageID: UUID) async throws {
+    /// Löscht Seiten aus dem Papierkorb endgültig, in einem Schritt. Vorher ein Backup, außer der
+    /// Store ist seit dem letzten unverändert; scheitert es, wird nichts gelöscht.
+    public func deletePermanently(_ pageIDs: [UUID]) async throws {
         try await backupBeforeEmptyingTrash()
-        try await store.deletePermanently(pageID)
+        try await store.deletePermanently(pageIDs)
     }
 
     /// Leert den Papierkorb ganz; vorher ein Backup wie bei `deletePermanently`.

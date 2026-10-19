@@ -93,6 +93,12 @@ final class SidebarUITests: XCTestCase {
 
         app.windows.firstMatch.buttons["sidebar.trash"].click()
         waitForTrashRows(2)
+        // Symbol wie in der Sidebar statt Emoji; Doppelklick stellt nicht wieder her.
+        XCTAssertFalse(trashRowLabel(0).contains("📄"), trashRowLabel(0))
+        trashRows.element(boundBy: 0).doubleClick()
+        sleep(1)
+        waitForTrashRows(2)
+        assertTitles([])
 
         // Wiederherstellen: Seite ist wieder in der Sidebar.
         trashRows.element(boundBy: 0).click()
@@ -191,6 +197,11 @@ final class SidebarUITests: XCTestCase {
 
     private var trashRows: XCUIElementQuery {
         app.windows.firstMatch.descendants(matching: .any).matching(identifier: "trash.row")
+    }
+
+    private func trashRowLabel(_ index: Int) -> String {
+        let row = trashRows.element(boundBy: index)
+        return (row.value as? String) ?? row.label
     }
 
     private func waitForTrashRows(_ count: Int, file: StaticString = #filePath, line: UInt = #line) {

@@ -32,7 +32,7 @@ struct TrashPersistenceTests {
         try await persistence.store.createPage(title: "Bleibt")
         try await persistence.store.trash(id)
 
-        try await persistence.deletePermanently(id)
+        try await persistence.deletePermanently([id])
         #expect(try titles(persistence) == ["Bleibt"])
         #expect(backups().contains { $0.hasSuffix("_vor-papierkorb-leeren") })
     }
@@ -45,7 +45,7 @@ struct TrashPersistenceTests {
         let id = try await persistence.store.createPage(title: "Bleibt")
         try await persistence.store.trash(id)
 
-        await #expect(throws: (any Error).self) { try await persistence.deletePermanently(id) }
+        await #expect(throws: (any Error).self) { try await persistence.deletePermanently([id]) }
         await #expect(throws: (any Error).self) { try await persistence.emptyTrash() }
         await persistence.emptyExpiredTrash(now: .now.addingTimeInterval(QuillPersistence.trashRetention + 60))
         #expect(try titles(persistence) == ["Bleibt"])

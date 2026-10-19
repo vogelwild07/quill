@@ -160,15 +160,25 @@ import Testing
 
     // MARK: Vor dem Leeren des Papierkorbs (ADR-017)
 
-    @Test func backupBeforeEmptyingTrashAtMostHourly() throws {
+    /// Nur ohne Änderung seit dem letzten Backup entfällt es, auch wenn das letzte
+    /// erst Minuten alt ist: Eine eben angelegte, dann gelöschte Seite liegt im Backup.
+    @Test func backupBeforeEmptyingTrashOnlyAfterChanges() throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
         let container = try makeStore()
-        defer { _ = container }
-        let start = Date(timeIntervalSince1970: 1_800_000_000)
-        let first = try #require(try backup(at: start).backupBeforeEmptyingTrash())
+        let future = Date.now.addingTimeInterval(3600)
+        let first = try #require(try backup(at: future).backupBeforeEmptyingTrash())
         #expect(first.lastPathComponent.hasSuffix("_vor-papierkorb-leeren"))
-        #expect(try backup(at: start.addingTimeInterval(59 * 60)).backupBeforeEmptyingTrash() == nil)
-        #expect(try backup(at: start.addingTimeInterval(61 * 60)).backupBeforeEmptyingTrash() != nil)
-        #expect(try backup(at: start).entries().count == 2)
+        #expect(try backup(at: future.addingTimeInterval(60)).backupBeforeEmptyingTrash() == nil)
+
+        // Start-Backup vor wenigen Minuten, danach eine neue Seite.
+        let recent = Date.now.addingTimeInterval(-5 * 60)
+        try FileManager.default.removeItem(at: directory.appending(path: "Backups"))
+        try backup(at: recent).createBackup(reason: .launch)
+        let context = ModelContext(container)
+        context.insert(Page(title: "Neu"))
+        try context.save()
+
+        #expect(try backup(at: .now).backupBeforeEmptyingTrash() != nil)
     }
 
     /// Ein späteres Backup am selben Tag verdrängt das vor dem Leeren nicht; nach

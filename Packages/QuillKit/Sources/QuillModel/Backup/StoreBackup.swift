@@ -117,12 +117,13 @@ public struct StoreBackup: Sendable {
         return created
     }
 
-    /// Vor endgültigem Löschen: Backup, falls das letzte älter als `minimumInterval`
-    /// ist (ADR-017). So kostet mehrfaches Löschen hintereinander nur ein Backup.
+    /// Vor endgültigem Löschen: Backup, außer der Store ist seit dem letzten Backup
+    /// (gleich welcher Art) unverändert (ADR-017). So liegt jede gelöschte Seite in
+    /// einem Backup, und mehrfaches Löschen ohne Änderung dazwischen kostet keins.
     @discardableResult
-    public func backupBeforeEmptyingTrash(minimumInterval: TimeInterval = 60 * 60) throws -> URL? {
+    public func backupBeforeEmptyingTrash() throws -> URL? {
         guard storeExists else { return nil }
-        if let latest = try entries().first, now().timeIntervalSince(latest.date) < minimumInterval {
+        if let latest = try entries().first, let modified = storeModificationDate, modified <= latest.date {
             return nil
         }
         let created = try createBackup(reason: .beforeEmptyingTrash)

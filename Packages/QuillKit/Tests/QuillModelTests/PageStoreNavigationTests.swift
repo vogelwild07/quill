@@ -103,9 +103,9 @@ struct PageStoreNavigationTests {
         try await store.applyEdits(child, BlockEdits(upserts: [image], order: nil))
         let keep = try await page("Bleibt", text: ["bleibt"])
 
-        await #expect(throws: PageStoreError.notInTrash(parent)) { try await store.deletePermanently(parent) }
+        await #expect(throws: PageStoreError.notInTrash(parent)) { try await store.deletePermanently([parent]) }
         try await store.trash(parent)
-        try await store.deletePermanently(parent)
+        try await store.deletePermanently([parent])
 
         let context = ModelContext(container)
         #expect(try pages().map(\.id) == [keep])
@@ -117,8 +117,21 @@ struct PageStoreNavigationTests {
         let parent = try await page("Oben")
         let child = try await page("Unten", in: parent)
         try await store.trash(parent)
-        try await store.deletePermanently(child)
+        try await store.deletePermanently([child])
         #expect(try pages().map(\.title) == ["Oben"])
+    }
+
+    /// Elternseite und Unterseite mit eigenem Papierkorb-Datum zusammen ausgewählt:
+    /// ein Schritt, kein Fehler, weil die Unterseite mit der Elternseite geht.
+    @Test func deletePermanentlyHandlesParentAndChildTogether() async throws {
+        let parent = try await page("Oben")
+        let child = try await page("Unten", in: parent)
+        let keep = try await page("Bleibt")
+        try await store.trash(child)
+        try await store.trash(parent)
+        try await store.deletePermanently([child, parent])
+        #expect(try pages().map(\.id) == [keep])
+        await #expect(throws: PageStoreError.notInTrash(keep)) { try await store.deletePermanently([keep]) }
     }
 
     @Test func emptyTrashRespectsAgeAndSubpages() async throws {
@@ -187,6 +200,24 @@ struct PageStoreNavigationTests {
         let hits = try await store.search("apfel")
         #expect(hits.count == 1)
         #expect(hits.first?.excerpt == "vorne ein Apfel")
+    }
+
+    @Test func favoritesDoNotCountAsEdits() async throws {
+        let a = try await page("A")
+        let b = try await page("B")
+        let c = try await page("C")
+        for id in [a, b] { try await store.setFavorite(id, true) }
+        try await store.moveFavorite(a, at: .after(b))
+        // Ein Favorit ohne Schlüssel erzwingt beim nächsten Hinzufügen die Reparatur aller Schlüssel.
+        let context = ModelContext(container)
+        for page in try context.fetch(FetchDescriptor<Page>()) where page.id == a {
+            page.favoriteSortKey = nil
+        }
+        try context.save()
+        try await store.setFavorite(c, true, at: .first)
+        #expect(try pages().filter(\.isFavorite).allSatisfy { $0.favoriteSortKey.map(FractionalIndex.isValid) == true })
+        try await store.setFavorite(b, false)
+        #expect(try await store.recentPages().map(\.title) == ["C", "B", "A"])
     }
 
     @Test func recentPagesSkipTrash() async throws {

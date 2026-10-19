@@ -30,6 +30,14 @@ final class QuickOpenUITests: XCTestCase {
         waitForPanel(shown: false)
         XCTAssertEqual(app.windows.firstMatch.title, "Sonstiges")
 
+        // Nach ⇥ bleibt der Fokus im Feld, ⎋ schließt weiterhin.
+        app.typeKey("o", modifierFlags: .command)
+        waitForFocus(field)
+        app.typeKey(.tab, modifierFlags: [])
+        waitForFocus(field)
+        app.typeKey(.escape, modifierFlags: [])
+        waitForPanel(shown: false)
+
         // Titel vor Inhalt; ↓ ↩ springt zur Fundstelle und wählt sie aus.
         app.typeKey("o", modifierFlags: .command)
         waitForFocus(field)

@@ -109,9 +109,9 @@ struct PageOutlineView: NSViewRepresentable {
         private var items: [UUID: Item] = [:]
         private var favoriteItems: [UUID: Item] = [:]
         private var isSyncingSelection = false
-        /// Eine Seite aus dem Baum wird gezogen: „Favoriten“ auch leer zeigen.
-        /// Nach einem Ablegen dort bleibt der Abschnitt, bis der Favorit ankommt.
-        private var showsFavoritesDropTarget = false
+        /// „Favoriten“ auch leer zeigen, während eine Seite gezogen wird und kurz
+        /// nach dem Ablegen dort.
+        private var dropTarget: SidebarSection.DropTarget = .hidden
 
         private static let expandedKey = "QuillSidebarExpandedPages"
         private var expanded: Set<UUID> = Set(
@@ -122,7 +122,7 @@ struct PageOutlineView: NSViewRepresentable {
             parent = view
             guard let outline else { return }
             if view.nodes != nodes || view.favorites != favoriteNodes {
-                if !view.favorites.isEmpty { showsFavoritesDropTarget = false }
+                if !view.favorites.isEmpty { dropTarget = .hidden }
                 nodes = view.nodes
                 favoriteNodes = view.favorites
                 rebuildItems()
@@ -144,7 +144,7 @@ struct PageOutlineView: NSViewRepresentable {
         // MARK: Daten
 
         private var roots: [Item] {
-            SidebarSection.visible(hasFavorites: !favoriteNodes.isEmpty, isDraggingPage: showsFavoritesDropTarget).map { section in
+            SidebarSection.visible(hasFavorites: !favoriteNodes.isEmpty, dropTarget: dropTarget).map { section in
                 switch section {
                 case .favorites: favoritesGroup
                 case .pages: pagesGroup
@@ -344,8 +344,8 @@ struct PageOutlineView: NSViewRepresentable {
             willBeginAt screenPoint: NSPoint,
             forItems draggedItems: [Any]
         ) {
-            guard favoriteNodes.isEmpty, (draggedItems.first as? Item)?.role == .page else { return }
-            showsFavoritesDropTarget = true
+            guard favoriteNodes.isEmpty, dropTarget == .hidden, (draggedItems.first as? Item)?.role == .page else { return }
+            dropTarget = .dragging
             outlineView.insertItems(at: IndexSet(integer: 0), inParent: nil, withAnimation: .slideDown)
             outlineView.expandItem(favoritesGroup)
         }
@@ -356,10 +356,23 @@ struct PageOutlineView: NSViewRepresentable {
             endedAt screenPoint: NSPoint,
             operation: NSDragOperation
         ) {
-            // `.copy` heißt: als Favorit abgelegt; der Abschnitt bleibt, bis er ankommt.
-            guard showsFavoritesDropTarget, favoriteNodes.isEmpty, operation != .copy else { return }
-            showsFavoritesDropTarget = false
-            outlineView.removeItems(at: IndexSet(integer: 0), inParent: nil, withAnimation: .slideUp)
+            guard dropTarget == .dragging, favoriteNodes.isEmpty else { return }
+            guard operation == .copy else {
+                hideEmptyFavorites()
+                return
+            }
+            // Als Favorit abgelegt: Der Abschnitt bleibt, bis er ankommt. Kommt er
+            // nicht (Speichern gescheitert), verschwindet der Abschnitt wieder.
+            dropTarget = .awaitingFavorite(since: .now)
+            DispatchQueue.main.asyncAfter(deadline: .now() + SidebarSection.DropTarget.timeout + 0.1) { [weak self] in
+                guard let self, self.dropTarget.isExpired(now: .now), self.favoriteNodes.isEmpty else { return }
+                self.hideEmptyFavorites()
+            }
+        }
+
+        private func hideEmptyFavorites() {
+            dropTarget = .hidden
+            outline?.removeItems(at: IndexSet(integer: 0), inParent: nil, withAnimation: .slideUp)
         }
 
         func outlineView(
@@ -601,7 +614,7 @@ final class PageCellView: NSTableCellView {
         iconLabel.stringValue = icon
         iconLabel.isHidden = icon.isEmpty
         symbolView.isHidden = !icon.isEmpty
-        setAccessibilityLabel(node.title.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : node.title)
+        setAccessibilityLabel(PageLabel.title(node.title))
     }
 }
 #endif

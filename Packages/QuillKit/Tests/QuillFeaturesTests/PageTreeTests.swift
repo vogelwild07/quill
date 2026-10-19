@@ -114,9 +114,16 @@ import QuillModel
     }
 
     @Test func emptyFavoritesAppearAsDropTargetWhileDragging() {
-        #expect(SidebarSection.visible(hasFavorites: false, isDraggingPage: false) == [.pages])
-        #expect(SidebarSection.visible(hasFavorites: false, isDraggingPage: true) == [.favorites, .pages])
-        #expect(SidebarSection.visible(hasFavorites: true, isDraggingPage: false) == [.favorites, .pages])
+        let dropped = Date(timeIntervalSince1970: 1_000)
+        #expect(SidebarSection.visible(hasFavorites: false, dropTarget: .hidden) == [.pages])
+        #expect(SidebarSection.visible(hasFavorites: false, dropTarget: .dragging) == [.favorites, .pages])
+        #expect(SidebarSection.visible(hasFavorites: false, dropTarget: .awaitingFavorite(since: dropped)) == [.favorites, .pages])
+        #expect(SidebarSection.visible(hasFavorites: true, dropTarget: .hidden) == [.favorites, .pages])
+
+        // Kommt der Favorit nach dem Ablegen nicht an, verschwindet der leere Abschnitt.
+        #expect(!SidebarSection.DropTarget.dragging.isExpired(now: dropped.addingTimeInterval(60)))
+        #expect(!SidebarSection.DropTarget.awaitingFavorite(since: dropped).isExpired(now: dropped.addingTimeInterval(1.9)))
+        #expect(SidebarSection.DropTarget.awaitingFavorite(since: dropped).isExpired(now: dropped.addingTimeInterval(2)))
 
         // Leerer Abschnitt: auf die Gruppe oder hinein legt den ersten Favoriten an.
         let tree = PageTree.build([entry(a, "A", key: "V")])

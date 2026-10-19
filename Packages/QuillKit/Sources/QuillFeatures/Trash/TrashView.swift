@@ -27,6 +27,9 @@ struct TrashView: View {
         let entries = pages.map(TrashedPage.init)
         VStack(alignment: .leading, spacing: 0) {
             header(isEmpty: entries.isEmpty)
+            if let failure {
+                failureBanner(failure)
+            }
             Divider()
             if entries.isEmpty {
                 ContentUnavailableView {
@@ -46,8 +49,6 @@ struct TrashView: View {
                     Button(String(localized: "Endgültig löschen …", bundle: .module), role: .destructive) {
                         pendingDeletion = .pages(Array(ids))
                     }
-                } primaryAction: { ids in
-                    ids.forEach(restore)
                 }
                 .onDeleteCommand {
                     if !selection.isEmpty { pendingDeletion = .pages(Array(selection)) }
@@ -79,21 +80,37 @@ struct TrashView: View {
         } message: { _ in
             Text("Das lässt sich nicht rückgängig machen. Unterseiten werden mitgelöscht.", bundle: .module)
         }
-        .alert(
-            String(localized: "Löschen fehlgeschlagen", bundle: .module),
-            isPresented: Binding(get: { failure != nil }, set: { if !$0 { failure = nil } })
-        ) {
-            Button(String(localized: "OK", bundle: .module)) {}
-        } message: {
-            Text(failure ?? "")
+    }
+
+    /// Nicht modal (design.md: Dialoge nur für „Endgültig löschen“), wie der
+    /// Hinweis beim Speichern.
+    private func failureBanner(_ message: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Löschen fehlgeschlagen", bundle: .module).fontWeight(.medium)
+                Text(message)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button(String(localized: "Ausblenden", bundle: .module), systemImage: "xmark") { failure = nil }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
         }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 12)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("trash.failure")
     }
 
     private func header(isEmpty: Bool) -> some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Papierkorb", bundle: .module).font(.title2.weight(.semibold))
-                Text("Seiten werden nach 30 Tagen endgültig gelöscht.", bundle: .module)
+                Text("Seiten werden nach \(QuillPersistence.trashRetentionDays) Tagen endgültig gelöscht.", bundle: .module)
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -109,8 +126,7 @@ struct TrashView: View {
     private func confirmationTitle(_ entries: [TrashedPage]) -> String {
         switch pendingDeletion {
         case .pages(let ids) where ids.count == 1:
-            let title = entries.first { $0.id == ids[0] }?.title ?? ""
-            let name = title.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : title
+            let name = PageLabel.title(entries.first { $0.id == ids[0] }?.title ?? "")
             return String(localized: "„\(name)“ endgültig löschen?", bundle: .module)
         case .pages(let ids):
             return String(localized: "\(ids.count) Seiten endgültig löschen?", bundle: .module)
@@ -121,11 +137,12 @@ struct TrashView: View {
 
     private func delete(_ deletion: Deletion) {
         guard let persistence else { return }
+        failure = nil
         Task {
             do {
                 switch deletion {
                 case .pages(let ids):
-                    for id in ids { try await persistence.deletePermanently(id) }
+                    try await persistence.deletePermanently(ids)
                 case .all:
                     try await persistence.emptyTrash()
                 }
@@ -143,9 +160,10 @@ private struct TrashRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
-            Text(entry.icon ?? "📄")
+            PageIconView(icon: entry.icon)
+                .frame(width: 20)
             VStack(alignment: .leading, spacing: 2) {
-                Text(entry.title.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : entry.title)
+                Text(PageLabel.title(entry.title))
                     .fontWeight(.medium)
                 if !entry.preview.isEmpty {
                     Text(entry.preview)
@@ -164,7 +182,7 @@ private struct TrashRow: View {
 
     private var details: String {
         let date = entry.trashedAt.formatted(.relative(presentation: .named))
-        let path = entry.path.map { $0.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : $0 }.joined(separator: " › ")
+        let path = PageLabel.path(entry.path)
         return path.isEmpty ? date : "\(path) · \(date)"
     }
 }

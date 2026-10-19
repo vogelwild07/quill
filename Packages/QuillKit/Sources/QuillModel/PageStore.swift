@@ -190,7 +190,10 @@ public actor PageStore {
     /// Neuer Schlüssel für `position`. Sind die Schlüssel der Geschwister doppelt
     /// oder ungültig, werden sie einmal neu vergeben (seltene Reparatur).
     private func sortKey(at position: SiblingPosition, among siblings: [Page]) throws -> String {
-        try fractionalKey(at: position, among: siblings, key: \.sortKey) { $0.sortKey = $1 }
+        try fractionalKey(at: position, among: siblings, key: \.sortKey) { page, key in
+            page.sortKey = key
+            page.updatedAt = .now
+        }
     }
 
     /// Schlüssel für `position` in einer nach `key` sortierten Liste (ADR-009), für
@@ -228,7 +231,6 @@ public actor PageStore {
         let keys = FractionalIndex.keys(count: siblings.count + 1)
         for (sibling, newKey) in zip(siblings, keys.enumerated().filter { $0.offset != index }.map(\.element)) {
             repair(sibling, newKey)
-            sibling.updatedAt = .now
         }
         return keys[index]
     }

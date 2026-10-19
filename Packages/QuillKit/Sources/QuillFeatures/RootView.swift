@@ -135,7 +135,7 @@ public struct RootView: View {
     private var quickOpen: some View {
         if isQuickOpenShown, let store {
             ZStack(alignment: .top) {
-                Color.black.opacity(0.06)
+                Color(nsColor: .shadowColor).opacity(0.08)
                     .ignoresSafeArea()
                     .contentShape(.rect)
                     .onTapGesture { isQuickOpenShown = false }

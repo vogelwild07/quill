@@ -39,7 +39,7 @@ struct PageDetailView: View {
     var body: some View {
         if let page = pages.first, page.trashedAt == nil {
             editor
-                .navigationTitle(page.title.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : page.title)
+                .navigationTitle(PageLabel.title(page.title))
         } else {
             ContentUnavailableView(
                 String(localized: "Seite nicht gefunden", bundle: .module),

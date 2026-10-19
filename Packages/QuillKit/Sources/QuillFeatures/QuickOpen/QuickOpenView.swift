@@ -54,6 +54,11 @@ struct QuickOpenView: View {
         // Einen Durchlauf später: Beim Erscheinen hält noch der Editor oder das
         // Titelfeld den Fokus und würde ihn sofort zurückholen.
         .onAppear { DispatchQueue.main.async { isFieldFocused = true } }
+        // Der Fokus bleibt im Feld, solange das Panel offen ist (z. B. nach ⇥),
+        // damit ⎋, ↑↓ und ↩ immer wirken; Klick daneben schließt ohnehin.
+        .onChange(of: isFieldFocused) { _, focused in
+            if !focused { DispatchQueue.main.async { isFieldFocused = true } }
+        }
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
         .accessibilityIdentifier("quickOpen.panel")
@@ -110,18 +115,11 @@ struct QuickOpenView: View {
 
     private func row(_ hit: SearchHit, index: Int) -> some View {
         let isSelected = index == model.selection
-        let title = hit.title.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : hit.title
-        let path = hit.path.map { $0.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : $0 }.joined(separator: " › ")
+        let title = PageLabel.title(hit.title)
+        let path = PageLabel.path(hit.path)
         return HStack(alignment: .top, spacing: 10) {
-            Group {
-                if let icon = hit.icon, !icon.isEmpty {
-                    Text(icon)
-                } else {
-                    Image(systemName: "doc.text")
-                        .foregroundStyle(isSelected ? Self.selectedText : Color.secondary)
-                }
-            }
-            .frame(width: 22)
+            PageIconView(icon: hit.icon, symbolStyle: isSelected ? Self.selectedText : Color.secondary)
+                .frame(width: 22)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(title).lineLimit(1)
@@ -176,7 +174,7 @@ struct QuickOpenView: View {
     private func move(by delta: Int) -> KeyPress.Result {
         model.moveSelection(by: delta)
         if let hit = model.selectedHit {
-            AccessibilityNotification.Announcement(hit.title.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : hit.title).post()
+            AccessibilityNotification.Announcement(PageLabel.title(hit.title)).post()
         }
         return .handled
     }

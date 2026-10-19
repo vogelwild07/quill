@@ -50,6 +50,12 @@ public struct TrashedPage: Sendable, Hashable, Identifiable {
 }
 
 extension Page {
+    /// Sortierschlüssel der Favoriten: `favoriteSortKey`, bei Gleichstand oder
+    /// fehlendem Schlüssel Anlagedatum und `id`. Store und Sidebar sortieren gleich.
+    public static func favoriteOrder(sortKey: String?, createdAt: Date, id: UUID) -> (String, Date, String) {
+        (sortKey ?? "", createdAt, id.uuidString)
+    }
+
     /// Titel der Elternseiten von oben nach unten.
     public var ancestorTitles: [String] {
         var titles: [String] = []
@@ -65,6 +71,9 @@ extension Page {
 /// Favoriten, Papierkorb und Suche.
 extension PageStore {
     // MARK: Favoriten
+    //
+    // Favoriten ändern `updatedAt` nicht: Das ist keine Bearbeitung der Seite, und
+    // „Zuletzt bearbeitet“ in Schnell öffnen sortiert danach (ADR-017).
 
     /// Neue Favoriten kommen ans Ende oder an `position`. Die Reihenfolge
     /// (`favoriteSortKey`) bleibt beim Entfernen stehen; Undo setzt den alten Platz
@@ -76,7 +85,6 @@ extension PageStore {
             page.favoriteSortKey = try favoriteKey(at: position, excluding: page)
         }
         page.isFavorite = isFavorite
-        page.updatedAt = .now
         try save()
     }
 
@@ -85,7 +93,6 @@ extension PageStore {
         let page = try fetchPage(pageID)
         guard page.isFavorite else { return }
         page.favoriteSortKey = try favoriteKey(at: position, excluding: page)
-        page.updatedAt = .now
         try save()
     }
 
@@ -105,7 +112,7 @@ extension PageStore {
     }
 
     private func favoriteOrder(_ page: Page) -> (String, Date, String) {
-        (page.favoriteSortKey ?? "", page.createdAt, page.id.uuidString)
+        Page.favoriteOrder(sortKey: page.favoriteSortKey, createdAt: page.createdAt, id: page.id)
     }
 
     private func favoriteKey(at position: SiblingPosition, excluding page: Page) throws -> String {
@@ -121,12 +128,13 @@ extension PageStore {
             .map(TrashedPage.init)
     }
 
-    /// Löscht eine Seite aus dem Papierkorb samt Unterseiten, Blöcken und Bildern.
-    /// Nicht rückgängig zu machen; die UI fragt vorher.
-    public func deletePermanently(_ pageID: UUID) throws {
-        let page = try fetchPage(pageID)
-        guard isInTrash(page) else { throw PageStoreError.notInTrash(pageID) }
-        modelContext.delete(page)
+    /// Löscht Seiten aus dem Papierkorb samt Unterseiten, Blöcken und Bildern, in
+    /// einem Schritt: Liegt eine Seite unter einer anderen der Liste, ist sie beim
+    /// zweiten Löschen nicht schon weg. Nicht rückgängig zu machen; die UI fragt vorher.
+    public func deletePermanently(_ pageIDs: [UUID]) throws {
+        let pages = try pageIDs.map(fetchPage)
+        if let active = pages.first(where: { !isInTrash($0) }) { throw PageStoreError.notInTrash(active.id) }
+        pages.forEach(modelContext.delete)
         try save()
     }
 
@@ -153,14 +161,16 @@ extension PageStore {
             .filter { ($0.trashedAt ?? .distantFuture) <= cutoff }
         let dueIDs = Set(due.map(\.id))
         // Nur die obersten löschen; Unterseiten folgen per Cascade.
-        return due.filter { page in
-            var ancestor = page.parent
-            while let current = ancestor {
-                if dueIDs.contains(current.id) { return false }
-                ancestor = current.parent
-            }
-            return true
+        return due.filter { !hasAncestor($0, in: dueIDs) }
+    }
+
+    private func hasAncestor(_ page: Page, in ids: Set<UUID>) -> Bool {
+        var ancestor = page.parent
+        while let current = ancestor {
+            if ids.contains(current.id) { return true }
+            ancestor = current.parent
         }
+        return false
     }
 
     // MARK: Suche
