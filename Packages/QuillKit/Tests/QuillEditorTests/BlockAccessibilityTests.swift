@@ -1,0 +1,117 @@
+#if canImport(AppKit)
+import AppKit
+import QuillDesign
+import QuillModel
+import Testing
+@testable import QuillEditor
+
+/// VoiceOver im Editor: Checkboxen und Bilder als Elemente, Blockart im Text der
+/// Bedienungshilfen, Rotor „Überschriften“ (Befunde A1, A2 aus Phase 7.3).
+@MainActor
+@Suite("Editor: Bedienungshilfen", .serialized)
+struct BlockAccessibilityTests {
+    private let window: NSWindow
+    private let editor: BlockEditorController
+    private var textView: BlockTextView { editor.textView }
+
+    init() {
+        window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 900, height: 700), styleMask: [.titled], backing: .buffered, defer: false)
+        editor = BlockEditorController(document: EditorDocument(blocks: [
+            EditorBlock(kind: .heading1, text: "Ziele"),
+            EditorBlock(kind: .todo, text: "Milch", isChecked: true),
+            EditorBlock(kind: .todo, text: ""),
+            EditorBlock(kind: .numbered, text: "eins"),
+            EditorBlock(kind: .numbered, text: "zwei", indent: 1),
+            EditorBlock(kind: .image),
+            EditorBlock(kind: .heading2, text: "Später"),
+            EditorBlock(text: "Ende"),
+        ]))
+        window.contentView = editor.scrollView
+        editor.focus()
+        editor.textView.layoutSubtreeIfNeeded()
+    }
+
+    private var elements: [BlockAccessibilityElement] {
+        (textView.accessibilityChildren() ?? []).compactMap { $0 as? BlockAccessibilityElement }
+    }
+
+    @Test func todosAreCheckboxesAndImagesAreImages() {
+        let elements = elements
+        #expect(elements.map { $0.accessibilityRole() } == [.checkBox, .checkBox, .image])
+        #expect(elements.map { $0.accessibilityLabel() } == ["Milch", "To-do", "Bild"])
+        #expect(elements.map { $0.accessibilityValue() as? NSNumber } == [1, 0, nil])
+        #expect(elements.allSatisfy { $0.accessibilityParent() as AnyObject? === textView })
+        // Dieselben Objekte bei der nächsten Abfrage, damit VoiceOver den Fokus behält.
+        #expect(zip(elements, self.elements).allSatisfy { $0 === $1 })
+    }
+
+    @Test func pressingCheckboxTogglesWithUndo() throws {
+        let milk = try #require(elements.first)
+        #expect(milk.accessibilityPerformPress())
+        #expect(editor.document[1].isChecked == false)
+        #expect(milk.accessibilityValue() as? NSNumber == 0)
+        textView.breakUndoCoalescing()
+        textView.undoManager?.undo()
+        #expect(editor.document[1].isChecked == true)
+        #expect(elements.first!.accessibilityPerformPress())
+        #expect(!elements.last!.accessibilityPerformPress(), "Ein Bild lässt sich nicht drücken")
+    }
+
+    @Test func checkboxFrameIsTheDrawnCheckbox() throws {
+        let milk = try #require(elements.first)
+        let frame = milk.accessibilityFrame()
+        let size = QuillDesign.EditorLayout.checkboxSize
+        #expect(abs(frame.width - size) < 0.5 && abs(frame.height - size) < 0.5)
+        let textFrame = window.convertToScreen(textView.convert(textView.bounds, to: nil))
+        #expect(textFrame.contains(frame))
+        // Links vom Text „Milch“.
+        let milkStart = editor.paragraphRange(ofBlock: 1).location
+        let line = textView.firstRect(forCharacterRange: NSRange(location: milkStart, length: 1), actualRange: nil)
+        #expect(frame.maxX <= line.minX)
+        #expect(frame.midY > line.minY && frame.midY < line.maxY)
+    }
+
+    @Test func accessibilityTextDescribesBlockKinds() throws {
+        let full = NSRange(location: 0, length: textView.string.utf16.count)
+        let text = try #require(textView.accessibilityAttributedString(for: full))
+        func attribute(_ key: NSAttributedString.Key, block: Int) -> Any? {
+            text.attribute(key, at: editor.paragraphRange(ofBlock: block).location, effectiveRange: nil)
+        }
+        #expect(attribute(.accessibilityCustomText, block: 0) as? [String] == ["Überschrift 1"])
+        #expect(attribute(.accessibilityCustomText, block: 1) as? [String] == ["To-do, erledigt"])
+        #expect(attribute(.accessibilityCustomText, block: 2) as? [String] == ["To-do, offen"])
+        #expect((attribute(.accessibilityListItemPrefix, block: 1) as? NSAttributedString)?.string == "☑")
+        #expect((attribute(.accessibilityListItemPrefix, block: 3) as? NSAttributedString)?.string == "1.")
+        #expect((attribute(.accessibilityListItemPrefix, block: 4) as? NSAttributedString)?.string == "1.")
+        #expect(attribute(.accessibilityListItemLevel, block: 4) as? Int == 1)
+        #expect(attribute(.accessibilityListItemIndex, block: 4) as? Int == 3)
+        #expect(attribute(.accessibilityListItemPrefix, block: 7) == nil)
+        #expect(attribute(.accessibilityCustomText, block: 7) as? [String] == ["Text"])
+
+        // Ausschnitt: Attribute relativ zum Anfang des Bereichs.
+        let todo = editor.paragraphRange(ofBlock: 2)
+        let part = try #require(textView.accessibilityAttributedString(for: todo))
+        #expect(part.attribute(.accessibilityCustomText, at: 0, effectiveRange: nil) as? [String] == ["To-do, offen"])
+    }
+
+    @Test func headingRotorWalksHeadings() throws {
+        let rotor = try #require(textView.accessibilityCustomRotors().first)
+        #expect(rotor.type == .heading)
+        func search(_ direction: NSAccessibilityCustomRotor.SearchDirection, from item: NSAccessibilityCustomRotor.ItemResult?, filter: String = "") -> NSAccessibilityCustomRotor.ItemResult? {
+            let parameters = NSAccessibilityCustomRotor.SearchParameters()
+            parameters.searchDirection = direction
+            parameters.currentItem = item
+            parameters.filterString = filter
+            return rotor.itemSearchDelegate?.rotor(rotor, resultFor: parameters)
+        }
+        let first = try #require(search(.next, from: nil))
+        #expect(first.customLabel == "Ziele")
+        #expect(first.targetRange == NSRange(location: 0, length: 5))
+        let second = try #require(search(.next, from: first))
+        #expect(second.customLabel == "Später")
+        #expect(search(.next, from: second) == nil)
+        #expect(search(.previous, from: second)?.customLabel == "Ziele")
+        #expect(search(.next, from: nil, filter: "spä")?.customLabel == "Später")
+    }
+}
+#endif
