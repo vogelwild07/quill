@@ -52,8 +52,7 @@ struct BackupRestoreView: View {
             .frame(minHeight: 220)
             .overlay {
                 if entries.isEmpty {
-                    Text("Noch keine Backups", bundle: .module)
-                        .foregroundStyle(.secondary)
+                    EmptyStateView(.noBackups, id: "restore.emptyState")
                 }
             }
 

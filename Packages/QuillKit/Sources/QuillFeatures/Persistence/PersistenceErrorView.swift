@@ -11,8 +11,12 @@ public struct PersistenceErrorView: View {
 
     public var body: some View {
         ContentUnavailableView {
-            Label(String(localized: "Daten konnten nicht geöffnet werden", bundle: .module),
-                  systemImage: "exclamationmark.triangle")
+            // Titel in primary wie in `EmptyStateView`.
+            Label {
+                Text("Daten konnten nicht geöffnet werden", bundle: .module).foregroundStyle(.primary)
+            } icon: {
+                Image(systemName: "exclamationmark.triangle")
+            }
         } description: {
             VStack(spacing: 8) {
                 Text("Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“.",

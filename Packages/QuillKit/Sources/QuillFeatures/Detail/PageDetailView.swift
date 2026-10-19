@@ -45,10 +45,7 @@ struct PageDetailView: View {
             editor
                 .navigationTitle(PageLabel.title(page.title))
         } else {
-            ContentUnavailableView(
-                String(localized: "Seite nicht gefunden", bundle: .module),
-                systemImage: "doc.questionmark"
-            )
+            EmptyStateView(.pageNotFound, id: "detail.notFound")
         }
     }
 

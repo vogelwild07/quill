@@ -72,10 +72,8 @@ struct QuickOpenView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
                     if model.hasLoaded && model.hits.isEmpty {
-                        Text(model.query.isEmpty ? String(localized: "Noch keine Seiten", bundle: .module) : String(localized: "Keine Treffer", bundle: .module))
-                            .foregroundStyle(.secondary)
-                            .padding(8)
-                            .accessibilityIdentifier("quickOpen.empty")
+                        EmptyStateView(model.query.isEmpty ? .noPages : .noResults, id: "quickOpen.emptyState")
+                            .frame(maxWidth: .infinity)
                     }
                     let offsets = sectionOffsets
                     ForEach(model.sections) { section in

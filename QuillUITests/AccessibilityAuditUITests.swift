@@ -157,16 +157,16 @@ final class AccessibilityAuditUITests: XCTestCase {
             }
         case .contrast:
             if identifier == "sidebar.group" {
-                return "Gruppenköpfe im Systemstil der Source-List; „Kontrast erhöhen“ verstärkt ihn (A10, Entscheidung 1)."
+                return "Gruppenköpfe im Systemstil der Source-List (A10, Entscheidung 1)."
             }
             if type == .staticText, state.toolbarFrame?.contains(frame) == true {
                 return "Fenstertitel in der Symbolleiste im Systemstil (A11, Entscheidung 1)."
             }
-            if ["detail.emptyState", "trash.emptyState"].contains(identifier) {
-                return "Titel von ContentUnavailableView im Systemstil (A11, Entscheidung 1)."
+            if identifier.hasSuffix(".emptyState.title") || identifier == "detail.notFound.title" {
+                return "Label aus grauem Symbol und Titel, der Audit misst beides zusammen; der Titel selbst hat 12:1 (EmptyStateSnapshotTests)."
             }
-            if ["quickOpen.hint", "quickOpen.empty", "slash.hint"].contains(identifier) {
-                return "secondary auf Glas im Systemstil; „Kontrast erhöhen“ verstärkt ihn (A11, Entscheidung zu A11)."
+            if ["quickOpen.hint", "quickOpen.emptyState.message", "slash.hint"].contains(identifier) {
+                return "secondary auf Glas im Systemstil (A11, Entscheidung zu A11)."
             }
             if let sheet = state.sheetElementFrames, !sheet.contains(frame) {
                 return "Inhalt hinter einem Sheet zeichnet das System gedimmt."

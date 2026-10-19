@@ -145,6 +145,9 @@
     "Fett" : {
 
     },
+    "Gelöschte Seiten bleiben hier 30 Tage und lassen sich wiederherstellen." : {
+
+    },
     "Icon" : {
 
     },
@@ -169,6 +172,9 @@
     "Inhalt" : {
 
     },
+    "Kein Seitentitel und kein Text passt zur Suche." : {
+
+    },
     "Kein Symbol" : {
 
     },
@@ -185,6 +191,9 @@
 
     },
     "Löschen fehlgeschlagen" : {
+
+    },
+    "Mit ⌘N legst du die erste Seite an." : {
 
     },
     "Neue Seite" : {
@@ -235,6 +244,9 @@
     "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
 
     },
+    "Quill sichert die Daten beim Start und beim Beenden." : {
+
+    },
     "Quill wird danach beendet. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt als Backup „Vor dem Wiederherstellen“ erhalten." : {
 
     },
@@ -281,6 +293,9 @@
 
     },
     "Seitentitel" : {
+
+    },
+    "Sie wurde gelöscht oder liegt im Papierkorb." : {
 
     },
     "Sonstiges" : {
@@ -340,7 +355,7 @@
     "Wiederherstellen …" : {
 
     },
-    "Wähle links eine Seite oder lege mit ⌘N eine neue an." : {
+    "Wähle links eine Seite oder lege eine neue an." : {
 
     },
     "Zu Favoriten hinzufügen" : {

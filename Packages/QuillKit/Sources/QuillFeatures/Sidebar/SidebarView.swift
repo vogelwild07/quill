@@ -47,15 +47,20 @@ struct SidebarView: View, Equatable {
 
             #if canImport(AppKit)
             let _ = QuillSignposts.beginSidebarLoadIfNeeded()
-            let entries = pages.map(PageTree.Entry.init)
-            let tree = PageTree.build(entries)
-            PageOutlineView(
-                nodes: tree,
-                favorites: PageTree.favorites(entries, in: tree),
-                selection: selection,
-                renameRequest: $renameRequest,
-                actions: actions
-            )
+            if pages.isEmpty {
+                EmptyStateView(.noPages, id: "sidebar.emptyState")
+                    .frame(maxHeight: .infinity)
+            } else {
+                let entries = pages.map(PageTree.Entry.init)
+                let tree = PageTree.build(entries)
+                PageOutlineView(
+                    nodes: tree,
+                    favorites: PageTree.favorites(entries, in: tree),
+                    selection: selection,
+                    renameRequest: $renameRequest,
+                    actions: actions
+                )
+            }
             #endif
 
             Button {

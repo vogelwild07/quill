@@ -69,12 +69,12 @@ public struct RootView: View {
                     }
                 }
             } else {
-                ContentUnavailableView {
-                    Label(String(localized: "Keine Seite ausgewählt", bundle: .module), systemImage: "doc.text")
-                } description: {
-                    Text("Wähle links eine Seite oder lege mit ⌘N eine neue an.", bundle: .module)
-                }
-                .accessibilityIdentifier("detail.emptyState")
+                EmptyStateView(
+                    .noSelection,
+                    id: "detail.emptyState",
+                    actionTitle: String(localized: "Neue Seite", bundle: .module),
+                    action: { sidebarActions.create(nil) }
+                )
                 .navigationTitle("Quill")
             }
         }
