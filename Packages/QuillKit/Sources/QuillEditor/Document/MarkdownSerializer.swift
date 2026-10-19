@@ -7,14 +7,14 @@ public enum MarkdownSerializer {
     public static func markdown(
         for blocks: [EditorBlock],
         ordinal: (Int) -> Int,
-        image: (EditorBlock) -> String = { "![](" + linkDestination($0.text) + ")" }
+        image: (EditorBlock) -> String = imageLine
     ) -> String {
         var output = ""
         for (index, block) in blocks.enumerated() {
             if index > 0 {
                 output += separator(between: blocks[index - 1], and: block)
             }
-            output += block.kind == .image ? image(block) : line(for: block, ordinal: ordinal(index))
+            output += line(for: block, ordinal: ordinal(index), image: image)
         }
         return output
     }
@@ -76,7 +76,12 @@ public enum MarkdownSerializer {
         return tight ? "\n" : "\n\n"
     }
 
-    private static func line(for block: EditorBlock, ordinal: Int) -> String {
+    /// Bild-Block ohne Export: Ziel ist der Blocktext (beim Kopieren leer).
+    public static func imageLine(_ block: EditorBlock) -> String {
+        "![](" + linkDestination(block.text) + ")"
+    }
+
+    private static func line(for block: EditorBlock, ordinal: Int, image: (EditorBlock) -> String) -> String {
         let indent = String(repeating: "    ", count: block.indent)
         let text = inlineMarkdown(block.content)
         switch block.kind {
@@ -93,7 +98,7 @@ public enum MarkdownSerializer {
             let fence = block.text.contains("```") ? "````" : "```"
             return fence + (block.codeLanguage ?? "") + "\n" + block.text + "\n" + fence
         case .divider: return "---"
-        case .image: return "![](" + linkDestination(block.text) + ")"
+        case .image: return image(block)
         }
     }
 
