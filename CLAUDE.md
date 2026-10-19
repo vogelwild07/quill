@@ -73,6 +73,7 @@ Fall back to grep or file reads only for what the graph does not model: literal 
 - Vor jedem Push `git status` + `git diff --staged` prüfen: Arbeitskopie sauber, keine Team-ID (`DEVELOPMENT_TEAM`) im Diff. Im Zweifel fragen.
 - Gemergte Phasen-Branches direkt nach Merge lokal + auf GitHub löschen (`git branch -d`, `git push origin --delete`), ohne Rückfrage. Nur wenn Merge bestätigt.
 - Signier-Team (Personal Team des Nutzers) nur in `Config/Local.xcconfig` (git-ignoriert, nie committen), nie in `project.pbxproj`. Setzt Xcode dort `DEVELOPMENT_TEAM`, Zeile entfernen. `project.pbxproj` nur gezielt stagen; Xcode-Nebenänderungen (z. B. Scheme-`version`) nicht mitcommitten.
+- Release nur via `Scripts/make-release.sh` (ad hoc, ohne Team, nie mit `xattr`-Tipp). Tag, GitHub-Release und Repo-Sichtbarkeit nur nach OK des Nutzers. `dist/` nie committen.
 - Niemals committen: `.env`, Keys, Tokens, Zertifikate, Provisioning-Profile, Datenbanken, Backups, private Notizen.
 - Aktuell halten: `README.md`, `CLAUDE.md`, `docs/architecture.md`, `docs/decisions.md`.
 
@@ -89,4 +90,7 @@ swift test --package-path Packages/QuillKit --filter EditorSnapshotTests
 python3 Scripts/perf-package.py 3
 python3 Scripts/perf-ui.py
 Scripts/check-release-binary.sh
+
+# Release (ADR-022): ad hoc signierte .dmg + .sha256 nach dist/, nur aus sauberer Arbeitskopie
+Scripts/make-release.sh
 ```

@@ -249,3 +249,18 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Neue UI-Texte brauchen einen Katalogeintrag, sonst ist `LocalizationTests` rot; neue Meldungen der Bedienungshilfen machen den Audit rot.
 - Der Audit hängt teils vom Bildschirm ab (Glas, Hell/Dunkel); deshalb prüfen die Snapshot-Tests den Kontrast auf festem Hintergrund zusätzlich.
 - „Kontrast erhöhen“ ließ sich offscreen nicht prüfen; im dunklen Modus zeichnet macOS den Icon-Hintergrund selbst dunkel, die eigene Variante für Dunkel greift dort nicht.
+
+## ADR-022: Release ohne Developer ID und Notarisierung (2026-10-19)
+
+**Kontext:** v0.1.0 soll als .dmg auf GitHub erscheinen. Es gibt nur ein Personal Team (gratis), also weder Developer-ID-Zertifikat noch Notarisierung. Auf diesem Mac liegt keine Signier-Identität im Schlüsselbund.
+
+**Entscheidung:**
+- Die App wird nur ad hoc signiert (`CODE_SIGN_IDENTITY=-`, ohne Team und Profil), mit Hardened Runtime und App Sandbox. Nutzer bestätigen die Gatekeeper-Meldung selbst über Systemeinstellungen › Datenschutz & Sicherheit › „Dennoch öffnen“ (seit macOS 15 der einzige Weg). Die Anleitung empfiehlt kein `xattr`.
+- Nur Apple Silicon (`arm64`), ab macOS 26.0, wie im Projekt festgelegt (CLAUDE.md). Ein Intel-Build ließe sich nicht testen.
+- `Scripts/make-release.sh` baut alles aus einer sauberen Arbeitskopie: `xcodebuild archive` (nur das Archiv entfernt Debug-Symbole und damit Pfade wie `/Users/…`), prüft Version, Bundle-ID, Architektur, Mindestversion, Ad-hoc-Signatur ohne Team, Hardened Runtime, Sandbox, kein `get-task-allow`, keine persönlichen Pfade und per `check-release-binary.sh --app` keinen Profiling- oder Testcode. Danach .dmg mit `Quill.app` und Verknüpfung „Programme“ → `/Applications`, nur lesend eingehängt und geprüft (Inhalt, Signatur, gleicher CDHash wie der Build), dazu `Quill-<Version>.dmg.sha256`. Ausgabe in `dist/` (ignoriert).
+- Lizenz GPL-3.0 für den Quellcode; das App-Icon ist ausgenommen, alle Rechte vorbehalten (`LICENSE`).
+
+**Konsequenzen:**
+- Jede neue Version hat eine neue Ad-hoc-Signatur. Nutzer müssen „Dennoch öffnen“ eventuell erneut bestätigen, und macOS kann fragen, ob Quill auf die Daten im bisherigen Container zugreifen darf.
+- Die .dmg ist nicht bitgleich reproduzierbar (Zeitstempel im Image), aber jederzeit aus demselben Commit mit demselben Befehl baubar; die Prüfsumme gilt für die veröffentlichte Datei.
+- Developer ID, Notarisierung und Auto-Update stehen unter „Später“.
