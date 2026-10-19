@@ -45,7 +45,7 @@ Median über drei Skriptläufe (je Aufwärmlauf + fünf Läufe), in ms.
 | `applyEditsMove` | einen von 1000 Blöcken verschieben, p95 | 59,13 | 58,91 | 63,09 | 178 |
 | `applyEditsReverse` | 1000 Blöcke umkehren | 102,85 | 102,79 | 103,41 | 309 |
 | `bridgeLoad` | Seite mit 1000 Blöcken aus dem Store, p95 | 106,40 | 105,08 | 116,32 | 300 (Ziel Laden; × 3 wäre 320) |
-| `exportPlan` | 1000 Seiten lesen und Markdown planen | 4536,95 | 4471,93 | 4544,79 | 13 611 |
+| `exportPlan` | 1000 Seiten lesen und Markdown planen | 4536,95 | 4471,93 | 4544,79 | 13 611, seit den Optimierungen 2000 (Ziel) |
 | `pageTreeBuild` | Seitenbaum aus 5000 Seiten, p95 | 58,09 | 57,59 | 61,68 | 175 |
 
 Gegenprobe: Schwelle `search` auf 1 ms gesetzt → Test rot („44,47 ms, Schwelle 1,0 ms“).
@@ -117,6 +117,15 @@ Mit `log stream --signpost` und `-com.apple.CoreData.SQLDebug 1` getrennt geprü
   (17 SELECT, das Protokoll lief also).
 - Unter XCUITest ist `sidebarLoad` langsamer als per `open` gestartet (181 statt
   134 ms), vermutlich wegen der aktiven Bedienungshilfen.
+
+### Speichern beim Löschen
+
+Geprüft, ob „Papierkorb leeren“ und das Löschen eines Teilbaums einmal oder pro Seite
+speichern: jeweils ein `save()` pro Aktion, Unterseiten folgen über die Beziehung.
+`trash` markiert nur die Wurzel des Teilbaums (`PageStore.trash`),
+`deletePermanently` und `emptyTrash` löschen alle Wurzeln und speichern danach einmal
+(`PageStore+Navigation.swift`). Vor dem endgültigen Löschen entsteht ein Backup, sofern sich der Store seit dem letzten geändert hat
+(`StoreBackup`, Anlass „vor-papierkorb-leeren“). Kein Handlungsbedarf.
 
 ### Time Profile (xctrace, Time Profiler + os_signpost, Profiling-Build)
 

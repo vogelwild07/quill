@@ -33,6 +33,17 @@ Ideen aus Phase 7, nicht eingeplant:
   läuft `SidebarView.body` dreimal statt einmal (`docs/performance.md`). Danach Schwelle
   `sidebarReload` wieder auf 100 ms.
 
+Aufräumen aus dem Review von PR #8, nicht eingeplant (Urteile, kein Fehler):
+- `PageTree.Entry` hat eine zweite Kopie der Reihenfolge-Regel (`siblingOrder`,
+  `favoriteOrder`) neben `SiblingOrder` für `Page`; ADR-009 will eine einzige Stelle.
+- `StoreBackup.Reason`: drei Switches über fast dieselben Fälle (`kind`, `slug`,
+  `Kind.slug`). Prüfen, ob `Reason` auf `Kind` plus Versionsanhang schrumpfen kann.
+- `BackupName("")` steht für „unbekannt“ (`StoreBackup+Restore.swift`); besser ein
+  Optional. `RestoreOutcome.restored(previous:)` ist noch ein `String`.
+- `ExportStrings.fileBase(for:)` und `PageStore.fetchPage(_:)` reichen nur weiter.
+- `QuillSignposts.beginSidebarLoadIfNeeded()` läuft als Seiteneffekt in
+  `SidebarView.body`; einen Ort außerhalb von `body` suchen, der genauso früh misst.
+
 Infrastruktur, nicht eingeplant:
 - CI-Workflow auf GitHub (macOS-Runner): Build, Package- und App-Tests ohne Warnungen bei jedem PR. Bisher wird nur lokal getestet; PR #5 wurde auf Basis der lokalen Tests gemergt.
 
