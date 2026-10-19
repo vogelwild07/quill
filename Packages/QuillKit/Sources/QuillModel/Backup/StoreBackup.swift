@@ -28,7 +28,7 @@ public struct StoreBackup: Sendable {
         /// verwendet (ADR-019). Wird nie automatisch gelöscht.
         case setAside
 
-        public var kind: Kind {
+        var kind: Kind {
             switch self {
             case .launch: .launch
             case .quit: .quit
