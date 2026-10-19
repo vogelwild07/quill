@@ -91,6 +91,9 @@
     "Die Datenbank im Backup ist beschädigt." : {
 
     },
+    "Die Vormerkung ließ sich nicht löschen. Damit das Wiederherstellen nicht bei jedem Start erneut läuft, wurde nichts getauscht." : {
+
+    },
     "Durchgestrichen" : {
 
     },

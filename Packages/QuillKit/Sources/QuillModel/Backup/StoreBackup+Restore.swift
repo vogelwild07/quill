@@ -16,8 +16,11 @@ public enum RestoreError: Error, Equatable, Sendable {
     case damaged(String)
     /// Auf dem Volume ist zu wenig Platz (Bytes).
     case insufficientSpace(needed: Int64, available: Int64)
-    /// Ein Dateischritt ist gescheitert; der alte Stand ist zurück.
+    /// Ein Dateischritt ist gescheitert; `Store/` ist unverändert.
     case fileOperation(String)
+    /// Der Merker ließ sich nicht löschen. Getauscht wird dann nicht, sonst liefe
+    /// das Wiederherstellen bei jedem Start erneut.
+    case requestNotRemovable
 }
 
 /// Was beim Start mit einer angefragten Wiederherstellung geschah, zur Anzeige.
@@ -152,9 +155,14 @@ extension StoreBackup {
         if let resumed = resumeInterruptedRestore(stoppingAfter: stop) { return resumed }
         let fileManager = FileManager.default
         guard let data = try? Data(contentsOf: restoreRequestURL) else { return nil }
+        let request = try? JSONDecoder().decode(RestoreRequest.self, from: data)
         // Merker zuerst weg: Was auch passiert, der nächste Start versucht es nicht erneut.
-        try? fileManager.removeItem(at: restoreRequestURL)
-        guard let request = try? JSONDecoder().decode(RestoreRequest.self, from: data) else { return nil }
+        do {
+            try fileManager.removeItem(at: restoreRequestURL)
+        } catch {
+            return .failed(backup: request?.backup ?? "", .requestNotRemovable)
+        }
+        guard let request else { return nil }
 
         guard let entry = (try? entries())?.first(where: { $0.url.lastPathComponent == request.backup }) else {
             return .failed(backup: request.backup, .backupMissing)

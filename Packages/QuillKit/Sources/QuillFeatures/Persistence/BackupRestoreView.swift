@@ -148,6 +148,8 @@ enum BackupLabel {
             String(localized: "Zu wenig freier Speicher: \(needed.formatted(.byteCount(style: .file))) nötig, \(available.formatted(.byteCount(style: .file))) frei.", bundle: .module)
         case .fileOperation:
             String(localized: "Die Dateien konnten nicht getauscht werden.", bundle: .module)
+        case .requestNotRemovable:
+            String(localized: "Die Vormerkung ließ sich nicht löschen. Damit das Wiederherstellen nicht bei jedem Start erneut läuft, wurde nichts getauscht.", bundle: .module)
         }
     }
 

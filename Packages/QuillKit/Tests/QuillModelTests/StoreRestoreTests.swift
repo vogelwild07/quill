@@ -338,6 +338,25 @@ import Testing
         #expect(try titles() == ["Eins"])
     }
 
+    /// Lässt sich der Merker nicht löschen, wird nicht getauscht: Sonst liefe das
+    /// Wiederherstellen bei jedem Start erneut.
+    @Test func undeletableRequestPreventsRestore() throws {
+        try addPages(["Eins"])
+        let backup = backup()
+        let saved = try backup.createBackup(reason: .quit)
+        try addPages(["Zwei"])
+        try backup.requestRestore(try entry(saved, in: backup))
+        let path = backup.restoreRequestURL.path(percentEncoded: false)
+        try FileManager.default.setAttributes([.immutable: true], ofItemAtPath: path)
+        defer { try? FileManager.default.setAttributes([.immutable: false], ofItemAtPath: path) }
+
+        for _ in 0..<2 {
+            #expect(backup.applyPendingRestore() == .failed(backup: saved.lastPathComponent, .requestNotRemovable))
+            #expect(try titles() == ["Eins", "Zwei"])
+        }
+        #expect(try backup.entries().allSatisfy { $0.kind != .beforeRestore })
+    }
+
     /// Nach dem Vormerken beendet sich Quill und legt ein Backup an. Die Rotation
     /// (ein Backup pro Tag) darf das gewählte Backup vom selben Tag nicht löschen.
     @Test func quitBackupAfterRequestKeepsRequestedBackup() throws {
