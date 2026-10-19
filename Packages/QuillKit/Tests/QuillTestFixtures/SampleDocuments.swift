@@ -93,9 +93,9 @@ public enum SampleDocuments {
     /// ein fehlendes Bild, gleiche Titel bis auf Groß-/Kleinschreibung, ein leerer
     /// Titel, Sonderzeichen, Umlaute und Emoji sowie ein Link mit Leerzeichen.
     public static func exportProject() -> PageExportSnapshot {
-        func page(_ number: Int, _ title: String, icon: String? = nil, blocks: [EditorBlock] = [], images: [UUID: String] = [:], children: [PageExportSnapshot] = []) -> PageExportSnapshot {
+        func page(_ number: Int, _ title: String, blocks: [EditorBlock] = [], images: [UUID: String] = [:], children: [PageExportSnapshot] = []) -> PageExportSnapshot {
             PageExportSnapshot(
-                id: exportID(number), title: title, icon: icon,
+                id: exportID(number), title: title,
                 createdAt: exportDate.addingTimeInterval(-86_400), updatedAt: exportDate,
                 blocks: blocks.map(\.snapshot), imageTypes: images, children: children
             )
@@ -106,7 +106,7 @@ public enum SampleDocuments {
         let link = EditorBlock(id: exportID(104), text: "Siehe Notiz mit Leerzeichen.", spans: [
             InlineSpan(6..<27, marks: [], link: "file:///Users/Shared/Meine Notiz.md"),
         ])
-        return page(1, "Projekte", icon: "📁", blocks: welcome.blocks + [image, link], images: [exportImageID: "public.png"], children: [
+        return page(1, "Projekte", blocks: welcome.blocks + [image, link], images: [exportImageID: "public.png"], children: [
             page(2, "Quill", blocks: [EditorBlock(id: exportID(105), text: "Erste Unterseite"), nestedImage], images: [exportImage2ID: "public.png"], children: [
                 page(3, "Notizen", blocks: [EditorBlock(id: exportID(106), kind: .todo, text: "Export testen")]),
             ]),

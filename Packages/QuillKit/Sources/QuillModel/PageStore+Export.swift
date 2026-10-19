@@ -6,7 +6,6 @@ import SwiftData
 public struct PageExportSnapshot: Identifiable, Equatable, Sendable {
     public var id: UUID
     public var title: String
-    public var icon: String?
     public var createdAt: Date
     public var updatedAt: Date
     public var blocks: [BlockSnapshot]
@@ -19,7 +18,6 @@ public struct PageExportSnapshot: Identifiable, Equatable, Sendable {
     public init(
         id: UUID = UUID(),
         title: String = "",
-        icon: String? = nil,
         createdAt: Date = .now,
         updatedAt: Date = .now,
         blocks: [BlockSnapshot] = [],
@@ -28,7 +26,6 @@ public struct PageExportSnapshot: Identifiable, Equatable, Sendable {
     ) {
         self.id = id
         self.title = title
-        self.icon = icon
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.blocks = blocks
@@ -61,7 +58,6 @@ extension PageStore {
         return PageExportSnapshot(
             id: page.id,
             title: page.title,
-            icon: page.icon,
             createdAt: page.createdAt,
             updatedAt: page.updatedAt,
             blocks: blocks.map(\.snapshot),
