@@ -1,0 +1,30 @@
+{
+  "sourceLanguage" : "de",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Name der App in Finder und Dock",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill"
+          }
+        }
+      }
+    },
+    "CFBundleName" : {
+      "comment" : "Name der App im Menü",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

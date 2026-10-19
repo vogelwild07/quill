@@ -2,7 +2,26 @@
   "sourceLanguage" : "de",
   "strings" : {
     "%lld Seiten endgültig löschen?" : {
-
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Seite endgültig löschen?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Seiten endgültig löschen?"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Abbrechen" : {
 
@@ -110,6 +129,9 @@
 
     },
     "Durchgestrichen" : {
+
+    },
+    "Eine andere Quill-Instanz richtet gerade die Datenbank ein." : {
 
     },
     "Eingespielt: Backup vom %@." : {
@@ -238,9 +260,6 @@
     "Papierkorb leeren?" : {
 
     },
-    "Quill" : {
-
-    },
     "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
 
     },
@@ -281,7 +300,26 @@
 
     },
     "Seiten werden nach %lld Tagen endgültig gelöscht." : {
-
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Seiten werden nach %lld Tag endgültig gelöscht."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Seiten werden nach %lld Tagen endgültig gelöscht."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Seiten: %lld · Bilder: %lld" : {
 
@@ -301,6 +339,9 @@
     "Sonstiges" : {
 
     },
+    "Sperre nicht möglich: %@" : {
+
+    },
     "Suchen" : {
 
     },
@@ -313,6 +354,9 @@
     "Umbenennen" : {
 
     },
+    "Umzug angehalten, im Ziel liegt schon: %@" : {
+
+    },
     "Ungesicherte Änderungen werden vorher gespeichert." : {
 
     },
@@ -320,6 +364,9 @@
 
     },
     "Unterseiten einschließen" : {
+
+    },
+    "Unvollständiger Vorgang, Dateien liegen in: %@" : {
 
     },
     "Verschieben" : {

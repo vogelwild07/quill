@@ -368,6 +368,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
+				EXCLUDED_SOURCE_FILE_NAMES = InfoPlist.xcstrings;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Quill Profiling";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";

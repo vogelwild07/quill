@@ -75,7 +75,7 @@ public struct RootView: View {
                     actionTitle: String(localized: "Neue Seite", bundle: .module),
                     action: { sidebarActions.create(nil) }
                 )
-                .navigationTitle("Quill")
+                .navigationTitle(Text(verbatim: "Quill"))
             }
         }
         #if canImport(AppKit)
