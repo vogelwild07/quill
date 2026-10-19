@@ -136,11 +136,7 @@ extension BlockTextView: @MainActor NSAccessibilityCustomRotorItemSearchDelegate
         let filter = searchParameters.filterString.trimmingCharacters(in: .whitespaces)
         let headings = editor.document.blocks.indices.filter { index in
             let block = editor.document[index]
-            let isHeading = switch block.kind {
-            case .heading1, .heading2, .heading3: true
-            case .paragraph, .bulleted, .numbered, .todo, .quote, .code, .divider, .image: false
-            }
-            return isHeading && (filter.isEmpty || block.text.localizedCaseInsensitiveContains(filter))
+            return block.kind.isHeading && (filter.isEmpty || block.text.localizedCaseInsensitiveContains(filter))
         }
         let current = searchParameters.currentItem?.targetRange.location
         let index: Int? = switch searchParameters.searchDirection {

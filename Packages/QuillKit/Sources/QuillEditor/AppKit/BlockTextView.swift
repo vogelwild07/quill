@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import Carbon.HIToolbox
 import QuillDesign
 import QuillModel
 
@@ -109,7 +110,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     /// ⌃Tab verlässt den Editor zur Sidebar, ⇧⌃Tab zum Titel; Tab allein rückt ein.
     override func keyDown(with event: NSEvent) {
         let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
-        if event.keyCode == 48, !hasMarkedText(), let editor {
+        if event.keyCode == UInt16(kVK_Tab), !hasMarkedText(), let editor {
             switch modifiers {
             case .control:
                 if let exit = editor.onExitForward { exit(); return }

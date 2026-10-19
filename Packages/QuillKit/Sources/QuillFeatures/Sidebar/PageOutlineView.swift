@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import Carbon.HIToolbox
 import QuillDesign
 import QuillModel
 import SwiftUI
@@ -546,7 +547,7 @@ final class PageOutlineTableView: NSOutlineView {
     /// Tab verlässt die Sidebar zum Titel, ⇧Tab zum Editor (`WindowFocus`), statt in
     /// das Titelfeld einer Zeile zu springen. Mit ⌃ genauso.
     override func keyDown(with event: NSEvent) {
-        if event.keyCode == 48, let coordinator {
+        if event.keyCode == UInt16(kVK_Tab), let coordinator {
             coordinator.moveFocus(to: event.modifierFlags.contains(.shift) ? .editor : .title)
             return
         }
