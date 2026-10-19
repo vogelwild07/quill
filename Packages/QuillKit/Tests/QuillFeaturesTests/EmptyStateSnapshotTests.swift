@@ -21,7 +21,12 @@ struct EmptyStateSnapshotTests {
         let image = try Snapshot(view, size: CGSize(width: 420, height: 320), appearance: appearance)
         try image.writePNG(named: "empty-\(state)-\(appearance.rawValue)")
         try expectSystemColors(image, appearance: appearance)
-        #expect(image.strongestContrast >= 4.5, "Titel kaum lesbar: \(image.strongestContrast)")
+        // Jede Zeile außer dem Symbol (oben, absichtlich grau): Titel, Erklärung, Knopf (A15).
+        let lines = image.textBands
+        #expect(lines.count >= 3, "Symbol, Titel und Erklärung erwartet: \(lines)")
+        for rows in lines.dropFirst() {
+            #expect(image.strongestContrast(rows: rows) >= 4.5, "Zeile \(rows) kaum lesbar: \(image.strongestContrast(rows: rows))")
+        }
     }
 
     /// Befund A14: Hinweis „Nicht gespeichert“ auf der Kapsel (quaternary).
@@ -124,6 +129,33 @@ private struct Snapshot {
     }
 
     var strongestContrast: Double { strongestContrast(against: background) }
+
+    /// Größter Kontrast in einem Zeilenbereich gegen den Fensterhintergrund.
+    func strongestContrast(rows: Range<Int>) -> Double {
+        let reference = background
+        return rows.flatMap { y in (0..<width).map { x in luminance(atX: x, y: y) } }.map { l in
+            (max(l, reference) + 0.05) / (min(l, reference) + 0.05)
+        }.max() ?? 1
+    }
+
+    /// Zusammenhängende Pixelzeilen mit Inhalt (Symbol, Textzeilen, Knopf), von oben.
+    var textBands: [Range<Int>] {
+        let reference = background
+        let inked = (0..<height).map { y in
+            (0..<width).contains { x in
+                let l = luminance(atX: x, y: y)
+                return (max(l, reference) + 0.05) / (min(l, reference) + 0.05) > 1.3
+            }
+        }
+        var bands: [Range<Int>] = []
+        var start: Int?
+        for (y, isInked) in inked.enumerated() {
+            if isInked, start == nil { start = y }
+            if !isInked, let begin = start { bands.append(begin..<y); start = nil }
+        }
+        if let begin = start { bands.append(begin..<height) }
+        return bands
+    }
 
     func writePNG(named name: String) throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: "QuillEditorSnapshots")

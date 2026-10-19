@@ -51,9 +51,9 @@ enum EmptyState: CaseIterable {
 
 /// Ein Leerzustand als `ContentUnavailableView`, optional mit Knopf. Identifier
 /// `<id>.title`, `<id>.message`, `<id>.action`; ein Identifier außen ginge an alle
-/// Kinder. Der Titel steht
-/// in primary: Im Systemstil ist er hell nur 3,1:1 kontrastreich (WCAG verlangt
-/// 4,5:1); Symbol und Erklärung bleiben grau.
+/// Kinder. Titel und Erklärung stehen
+/// in primary: Im Systemstil ist der Titel hell nur 3,1:1 kontrastreich (WCAG
+/// verlangt 4,5:1), die Erklärung fällt im Audit durch (A15); das Symbol bleibt grau.
 struct EmptyStateView: View {
     let state: EmptyState
     let id: String
@@ -77,6 +77,7 @@ struct EmptyStateView: View {
             .accessibilityIdentifier("\(id).title")
         } description: {
             Text(state.message)
+                .foregroundStyle(.primary)
                 .accessibilityIdentifier("\(id).message")
         } actions: {
             if let actionTitle, let action {
