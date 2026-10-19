@@ -21,6 +21,9 @@ public struct StoreBackup: Sendable {
         /// Der Stand vor dem Einspielen eines Backups (ADR-019): die Dateien selbst,
         /// verschoben statt kopiert. 30 Tage geschützt.
         case beforeRestore
+        /// Vor dem einmaligen Umzug der Store-Dateien nach `Store/` (ADR-019). Wird
+        /// nie automatisch gelöscht.
+        case beforeMove
 
         var slug: String {
             switch self {
@@ -29,6 +32,7 @@ public struct StoreBackup: Sendable {
             case .beforeMigration(let from, let to): "\(Self.migrationPrefix)\(from)-\(to)"
             case .beforeEmptyingTrash: "vor-papierkorb-leeren"
             case .beforeRestore: "vor-wiederherstellen"
+            case .beforeMove: "vor-umzug"
             }
         }
 
@@ -42,7 +46,7 @@ public struct StoreBackup: Sendable {
 
     /// Anlass eines vorhandenen Backups, aus dem Ordnernamen gelesen.
     public enum Kind: Sendable, Equatable {
-        case launch, quit, beforeMigration, beforeEmptyingTrash, beforeRestore
+        case launch, quit, beforeMigration, beforeEmptyingTrash, beforeRestore, beforeMove
         /// Unbekannter Anlass (z. B. von einer späteren Version).
         case other
 
@@ -53,6 +57,8 @@ public struct StoreBackup: Sendable {
                 .beforeEmptyingTrash
             } else if slug.hasPrefix(Reason.beforeRestore.slug) {
                 .beforeRestore
+            } else if slug.hasPrefix(Reason.beforeMove.slug) {
+                .beforeMove
             } else if slug.hasPrefix(Reason.launch.slug) {
                 .launch
             } else if slug.hasPrefix(Reason.quit.slug) {
@@ -178,7 +184,13 @@ public struct StoreBackup: Sendable {
     /// Legt sofort ein Backup an und gibt seinen Ordner zurück.
     @discardableResult
     public func createBackup(reason: Reason) throws -> URL {
+        try createBackup(reason: reason, of: storeURL)
+    }
+
+    /// Backup eines Stores an `store` (beim Umzug der Store im alten Ort).
+    func createBackup(reason: Reason, of store: URL) throws -> URL {
         let fileManager = FileManager.default
+        let supportURL = Self.supportURL(for: store)
         try fileManager.createDirectory(at: backupsURL, withIntermediateDirectories: true)
 
         let date = now()
@@ -188,8 +200,8 @@ public struct StoreBackup: Sendable {
         try fileManager.createDirectory(at: partial, withIntermediateDirectories: true)
 
         do {
-            let target = partial.appending(path: storeURL.lastPathComponent)
-            try Self.vacuum(storeURL, into: target)
+            let target = partial.appending(path: store.lastPathComponent)
+            try Self.vacuum(store, into: target)
             try Self.quickCheck(target)
             if fileManager.fileExists(atPath: supportURL.path(percentEncoded: false)) {
                 try fileManager.copyItem(at: supportURL, to: partial.appending(path: supportURL.lastPathComponent))
@@ -229,7 +241,7 @@ public struct StoreBackup: Sendable {
 
     /// Behält je das neueste Backup der letzten 7 Tage mit Backup (Tages-Backups)
     /// und davor der 4 nächstälteren Wochen mit Backup (Wochen-Backups); Backups
-    /// vor einer Migration immer. Backups vor dem Leeren des Papierkorbs zählen
+    /// vor einer Migration und vor dem Umzug immer. Backups vor dem Leeren des Papierkorbs zählen
     /// 30 Tage lang nicht mit (höchstens 10), der Stand vor dem Wiederherstellen
     /// 30 Tage lang gar nicht. Ein zum Wiederherstellen vorgemerktes Backup bleibt
     /// immer: Das Backup beim Beenden direkt danach verdrängt sonst ein Backup vom
@@ -244,7 +256,7 @@ public struct StoreBackup: Sendable {
         var trashBackups = 0
         // Neueste zuerst: Das erste Backup eines Tages oder einer Woche ist das neueste.
         for entry in try entries() {
-            if entry.isBeforeMigration || entry.url.lastPathComponent == pending {
+            if entry.isBeforeMigration || entry.kind == .beforeMove || entry.url.lastPathComponent == pending {
                 keep.insert(entry.url)
                 continue
             }
@@ -283,8 +295,12 @@ public struct StoreBackup: Sendable {
 
     /// `.Quill_SUPPORT` neben `Quill.store` (so legt SwiftData externe Daten ab).
     var supportURL: URL {
-        storeURL.deletingLastPathComponent()
-            .appending(path: ".\(storeURL.deletingPathExtension().lastPathComponent)_SUPPORT", directoryHint: .isDirectory)
+        Self.supportURL(for: storeURL)
+    }
+
+    static func supportURL(for store: URL) -> URL {
+        store.deletingLastPathComponent()
+            .appending(path: ".\(store.deletingPathExtension().lastPathComponent)_SUPPORT", directoryHint: .isDirectory)
     }
 
     var versionFileURL: URL {

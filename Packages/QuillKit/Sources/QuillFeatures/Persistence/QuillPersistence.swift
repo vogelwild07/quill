@@ -74,8 +74,9 @@ public final class QuillPersistence {
         }
 
         let backup = makeBackup(testStore)
-        // Vor allem anderen: Ein vorgemerktes Backup einspielen (ADR-019).
-        let restoreOutcome = backup.applyPendingRestore()
+        // Vor allem anderen: unter Sperre umziehen und ein vorgemerktes Backup
+        // einspielen (ADR-019). Scheitert das, wird nicht geöffnet.
+        let restoreOutcome = try backup.prepareStore()
         if let restoreOutcome {
             logger.notice("Wiederherstellen: \(String(describing: restoreOutcome), privacy: .private)")
         }
@@ -105,7 +106,7 @@ public final class QuillPersistence {
         let directory = FileManager.default.temporaryDirectory.appending(path: name, directoryHint: .isDirectory)
         logger.notice("Store im temporären Ordner (\(storeDirectoryArgument, privacy: .public))")
         return StoreBackup(
-            storeURL: directory.appending(path: "Quill.store", directoryHint: .notDirectory),
+            storeURL: directory.appending(path: "Store/Quill.store", directoryHint: .notDirectory),
             backupsURL: directory.appending(path: "Backups", directoryHint: .isDirectory)
         )
     }

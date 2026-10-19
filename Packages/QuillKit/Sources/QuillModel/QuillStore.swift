@@ -11,9 +11,12 @@ public enum QuillStore {
         URL.applicationSupportDirectory.appending(path: "Quill", directoryHint: .isDirectory)
     }
 
-    /// `Application Support/Quill/Quill.store`.
+    /// `Application Support/Quill/Store/Quill.store`. Alle Dateien des Stores liegen
+    /// in `Store/`, damit das Wiederherstellen den Ordner in einem Schritt tauschen
+    /// kann (ADR-019). Bis Phase 7.1 lagen sie direkt in `Quill/`; `StoreBackup`
+    /// zieht sie beim Start einmal um.
     public static var defaultStoreURL: URL {
-        directoryURL.appending(path: "Quill.store", directoryHint: .notDirectory)
+        directoryURL.appending(path: "Store/Quill.store", directoryHint: .notDirectory)
     }
 
     public static var schema: Schema {

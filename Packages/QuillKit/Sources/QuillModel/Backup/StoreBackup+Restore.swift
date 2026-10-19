@@ -53,12 +53,13 @@ extension StoreBackup {
         var safety: String
     }
 
+    /// Merker in `Quill/`, nicht in `Store/`: Er wandert beim Tausch nicht mit.
     var restoreRequestURL: URL {
-        storeURL.deletingLastPathComponent().appending(path: "\(storeURL.lastPathComponent).restore")
+        rootURL.appending(path: "\(storeURL.lastPathComponent).restore")
     }
 
     var restoreJournalURL: URL {
-        storeURL.deletingLastPathComponent().appending(path: "\(storeURL.lastPathComponent).restore-journal")
+        rootURL.appending(path: "\(storeURL.lastPathComponent).restore-journal")
     }
 
     /// Store mit WAL und Shared Memory: Diese drei Dateien gehören immer zusammen.
