@@ -10,7 +10,7 @@
 | `QuillDesign` | Tokens: Typografie, Abstände, Farben | – |
 | `QuillModel` | SwiftData-Modelle, `SchemaV1`, Migrationen, `PageStore`, `FractionalIndex` | – |
 | `QuillEditor` | `EditorDocument`, TextKit-2-Editor (AppKit/UIKit hinter `#if`) | Model, Design |
-| `QuillExport` | Markdown-Exporter | Model |
+| `QuillExport` | Markdown-Export: Dateinamen, Aufbau (`ExportPlan`), Schreiben (ADR-018) | Model, Editor (nur `Document`-Schicht: `MarkdownSerializer`, `EditorBlock`) |
 | `QuillFeatures` | Sidebar, Suche, Papierkorb, Favoriten (SwiftUI) | alle oben |
 
 Swift 6 Language Mode, strikte Concurrency. UI auf `@MainActor`, Schreibzugriffe über `@ModelActor`.
@@ -27,7 +27,7 @@ quill/
 │  └─ Quill.entitlements        App Sandbox, user-selected files r/w
 ├─ Packages/QuillKit/
 │  ├─ Sources/{QuillModel,QuillEditor,QuillFeatures,QuillExport,QuillDesign}
-│  └─ Tests/                    Swift Testing
+│  └─ Tests/                    Swift Testing; `QuillTestFixtures` = gemeinsame `SampleDocuments`
 ├─ QuillUITests/                XCUITest
 └─ docs/                        architecture, decisions, data-model, design, roadmap, research/
 ```
@@ -168,8 +168,21 @@ Der Spike ist in Phase 3 nach `QuillEditor` überführt und gelöscht worden (AD
 | ⌘O | Schnell öffnen: Suche nach Titel und Volltext (ADR-017) |
 | ↑↓ / ↩ / ⌘↩ / ⎋ (Schnell öffnen) | Treffer wählen / öffnen / in neuem Tab öffnen / schließen |
 | ⌫ (Papierkorb) | Endgültig löschen (mit Rückfrage) |
+| ⇧⌘E | Seite exportieren (Markdown-Ordner, ADR-018) |
 
 ⌘K ist bewusst der Link wie in Pages, Mail und Notizen; die Suche liegt deshalb auf ⌘O. ⌘E bleibt frei für den Standard „Auswahl für Suche verwenden“ (HIG), Inline-Code liegt deshalb auf ⇧⌘M. Nicht verwenden: ⇧⌘C („Farben einblenden“), ⌥⌘8 (Zoom der Bedienungshilfen), ⌥⇧↑/↓ (Auswahl absatzweise erweitern).
+
+## Export (Phase 6, ADR-018)
+
+```
+PageStore.exportSnapshot  →  MarkdownExporter.plan  →  ExportWriter.write
+(Seite + Unterseiten,        (reiner Werttyp: Pfade,     (versteckter Zwischenordner,
+ ohne Papierkorb)             Markdown, Bild-IDs)         dann Umbenennen, nie überschreiben)
+```
+
+- `PageExport` (QuillFeatures) zeigt den Ordnerdialog mit „Unterseiten einschließen“ und meldet das Ergebnis; Seite › „Exportieren …“ (⇧⌘E) und Kontextmenü der Sidebar.
+- Golden Files: `Tests/QuillExportTests/Golden/ExportProject/` aus `SampleDocuments.exportProject()`; neu schreiben mit `QUILL_UPDATE_GOLDEN=1 swift test --filter MarkdownExporterTests`, dann den Diff prüfen.
+- UI-Test: `-QuillExportDirectory <Name>` schreibt ohne Dialog in den temporären Ordner der App (Sandbox).
 
 ## Tests
 
