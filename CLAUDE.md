@@ -71,9 +71,11 @@ Fall back to grep or file reads only for what the graph does not model: literal 
 - Auf `main` nur gebauter, getesteter Stand. Größere Änderungen: Branch + PR.
 - Gepusht und gemergt wird erst nach OK des Nutzers.
 - Vor jedem Push `git status` + `git diff --staged` prüfen: Arbeitskopie sauber, keine Team-ID (`DEVELOPMENT_TEAM`) im Diff. Im Zweifel fragen.
+- Merges nach `main` nur lokal: `git switch main && git pull --ff-only && git merge --no-ff <Branch> -m "Merge pull request #<Nr> from vogelwild07/<Branch>"`, dann `git push`; GitHub markiert den PR dadurch als gemergt. Identität immer `vogelwild07 <201217023+vogelwild07@users.noreply.github.com>` (vorher `git config user.name` und `user.email` prüfen). Nie über die GitHub-Weboberfläche oder `gh pr merge`: Beides trägt die private E-Mail des Nutzers ein.
 - Gemergte Phasen-Branches direkt nach Merge lokal + auf GitHub löschen (`git branch -d`, `git push origin --delete`), ohne Rückfrage. Nur wenn Merge bestätigt.
 - Signier-Team (Personal Team des Nutzers) nur in `Config/Local.xcconfig` (git-ignoriert, nie committen), nie in `project.pbxproj`. Setzt Xcode dort `DEVELOPMENT_TEAM`, Zeile entfernen. `project.pbxproj` nur gezielt stagen; Xcode-Nebenänderungen (z. B. Scheme-`version`) nicht mitcommitten.
 - Release nur via `Scripts/make-release.sh` (ad hoc, ohne Team, nie mit `xattr`-Tipp). Tag, GitHub-Release und Repo-Sichtbarkeit nur nach OK des Nutzers. `dist/` nie committen.
+- Persönliche Regeln (Ort des echten Stores, Sicherungen) stehen in `CLAUDE.local.md` (ignoriert, nie committen).
 - Niemals committen: `.env`, Keys, Tokens, Zertifikate, Provisioning-Profile, Datenbanken, Backups, private Notizen.
 - Aktuell halten: `README.md`, `CLAUDE.md`, `docs/architecture.md`, `docs/decisions.md`.
 

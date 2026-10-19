@@ -42,6 +42,7 @@ Config/Local.xcconfig
 # Private Notizen
 private/
 notes.local.md
+CLAUDE.local.md
 
 # Lokale Claude-Code-Einstellungen
 .claude/settings.local.json
