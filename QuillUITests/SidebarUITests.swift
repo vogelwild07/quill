@@ -80,27 +80,165 @@ final class SidebarUITests: XCTestCase {
         XCTAssertEqual(app.windows.firstMatch.title, "Reise")
     }
 
+    /// Papierkorb (ADR-017): Wiederherstellen, endgültig löschen mit Rückfrage, leeren.
+    func testTrashRestoreDeleteAndEmpty() throws {
+        createPage("Eins")
+        createPage("Zwei")
+        assertTitles(["Eins", "Zwei"])
+        for _ in 0..<2 {
+            row(0).click()
+            app.typeKey(.delete, modifierFlags: .command)
+        }
+        assertTitles([])
+
+        app.windows.firstMatch.buttons["sidebar.trash"].click()
+        waitForTrashRows(2)
+        // Symbol wie in der Sidebar statt Emoji; Doppelklick stellt nicht wieder her.
+        XCTAssertFalse(trashRowLabel(0).contains("📄"), trashRowLabel(0))
+        trashRows.element(boundBy: 0).doubleClick()
+        sleep(1)
+        waitForTrashRows(2)
+        assertTitles([])
+
+        // Wiederherstellen: Seite ist wieder in der Sidebar.
+        trashRows.element(boundBy: 0).click()
+        app.windows.firstMatch.buttons["trash.restore"].click()
+        waitForTrashRows(1)
+        assertTitles(["Zwei"])
+        // Undo legt sie zurück in den Papierkorb.
+        app.typeKey("z", modifierFlags: .command)
+        waitForTrashRows(2)
+        assertTitles([])
+        trashRows.element(boundBy: 0).click()
+        app.windows.firstMatch.buttons["trash.restore"].click()
+        waitForTrashRows(1)
+        assertTitles(["Zwei"])
+
+        // ⌫ fragt nach; Abbrechen lässt die Seite liegen, Bestätigen löscht sie.
+        trashRows.element(boundBy: 0).click()
+        app.typeKey(.delete, modifierFlags: [])
+        answerConfirmation(confirm: false)
+        waitForTrashRows(1)
+        app.typeKey(.delete, modifierFlags: [])
+        answerConfirmation(confirm: true)
+        waitForTrashRows(0)
+
+        // Leeren.
+        row(0).click()
+        app.typeKey(.delete, modifierFlags: .command)
+        app.windows.firstMatch.buttons["sidebar.trash"].click()
+        waitForTrashRows(1)
+        app.windows.firstMatch.buttons["trash.empty"].click()
+        answerConfirmation(confirm: true)
+        waitForTrashRows(0)
+        XCTAssertFalse(app.windows.firstMatch.buttons["trash.empty"].isEnabled)
+        assertTitles([])
+    }
+
+    /// Favoriten (ADR-017): Stern, Menü „Seite“, Kontextmenü, Undo und Papierkorb.
+    func testFavorites() throws {
+        createPage("Eins")
+        createPage("Zwei")
+        assertTitles(["Eins", "Zwei"])
+        assertFavorites([])
+        XCTAssertEqual(groupTitles(), ["Seiten"], "Ohne Favoriten kein Abschnitt")
+
+        // Stern in der Symbolleiste.
+        row(1).click()
+        app.windows.firstMatch.buttons["page.favorite"].click()
+        assertFavorites(["Zwei"])
+        XCTAssertEqual(groupTitles(), ["Favoriten", "Seiten"])
+
+        // Menü „Seite“.
+        row(0).click()
+        app.menuBars.menuBarItems["Seite"].click()
+        app.menuBars.menuItems["Zu Favoriten hinzufügen"].click()
+        assertFavorites(["Zwei", "Eins"])
+
+        // Kontextmenü am ersten Favoriten; ⌘Z holt ihn an seinen Platz zurück,
+        // ein weiteres ⌘Z nimmt das Hinzufügen von „Eins“ zurück.
+        outline.favoriteRows.element(boundBy: 0).rightClick()
+        outline.menuItems["Aus Favoriten entfernen"].click()
+        assertFavorites(["Eins"])
+        app.typeKey("z", modifierFlags: .command)
+        assertFavorites(["Zwei", "Eins"])
+        app.typeKey("z", modifierFlags: .command)
+        assertFavorites(["Zwei"])
+
+        // Klick auf den Favoriten öffnet die Seite.
+        outline.favoriteRows.element(boundBy: 0).click()
+        XCTAssertEqual(app.windows.firstMatch.title, "Zwei")
+
+        // Im Papierkorb verschwindet der Favorit, wiederhergestellt ist er zurück.
+        row(1).click()
+        app.typeKey(.delete, modifierFlags: .command)
+        assertTitles(["Eins"])
+        assertFavorites([])
+        app.typeKey("z", modifierFlags: .command)
+        assertTitles(["Eins", "Zwei"])
+        assertFavorites(["Zwei"])
+    }
+
     // MARK: - Hilfen
+
+    private func favoriteTitles() -> [String] {
+        outline.favoriteRows.allElementsBoundByIndex.map { $0.textFields.firstMatch.value as? String ?? "" }
+    }
+
+    private func groupTitles() -> [String] {
+        outline.staticTexts.matching(identifier: "sidebar.group").allElementsBoundByIndex.map { $0.value as? String ?? "" }
+    }
+
+    private func assertFavorites(_ expected: [String], file: StaticString = #filePath, line: UInt = #line) {
+        let matches = NSPredicate { _, _ in self.favoriteTitles() == expected }
+        let result = XCTWaiter.wait(for: [expectation(for: matches, evaluatedWith: nil)], timeout: 5)
+        XCTAssertEqual(result, .completed, "Favoriten: \(favoriteTitles()) statt \(expected)", file: file, line: line)
+    }
+
+    private var trashRows: XCUIElementQuery {
+        app.windows.firstMatch.descendants(matching: .any).matching(identifier: "trash.row")
+    }
+
+    private func trashRowLabel(_ index: Int) -> String {
+        let row = trashRows.element(boundBy: index)
+        return (row.value as? String) ?? row.label
+    }
+
+    private func waitForTrashRows(_ count: Int, file: StaticString = #filePath, line: UInt = #line) {
+        let matches = NSPredicate { _, _ in self.trashRows.count == count }
+        let result = XCTWaiter.wait(for: [expectation(for: matches, evaluatedWith: nil)], timeout: 5)
+        XCTAssertEqual(result, .completed, "Papierkorb: \(trashRows.count) statt \(count) Einträge", file: file, line: line)
+    }
+
+    /// Rückfrage beantworten. Das Fenster meldet sich in AX schon vorher als
+    /// gesperrt, deshalb auf das Sheet selbst warten und danach auf sein Verschwinden.
+    private func answerConfirmation(confirm: Bool, file: StaticString = #filePath, line: UInt = #line) {
+        let sheet = app.windows.firstMatch.sheets.firstMatch
+        XCTAssertTrue(sheet.waitForExistence(timeout: 5), "Keine Rückfrage", file: file, line: line)
+        sheet.buttons[confirm ? "action-button-1" : "action-button-2"].click()
+        let gone = NSPredicate { _, _ in !sheet.exists }
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation(for: gone, evaluatedWith: nil)], timeout: 5), .completed, "Rückfrage bleibt offen", file: file, line: line)
+    }
 
     private var outline: XCUIElement {
         app.windows.firstMatch.outlines["sidebar.pages"]
     }
 
     private func row(_ index: Int) -> XCUIElement {
-        outline.outlineRows.element(boundBy: index)
+        outline.pageRows.element(boundBy: index)
     }
 
     private func titles() -> [String] {
-        outline.outlineRows.allElementsBoundByIndex.map { row in
+        outline.pageRows.allElementsBoundByIndex.map { row in
             row.textFields.firstMatch.value as? String ?? ""
         }
     }
 
     /// ⌘N bzw. ⇧⌘N, dann Titel tippen (der Fokus liegt danach im Titelfeld).
     private func createPage(_ title: String, subpage: Bool = false) {
-        let count = outline.outlineRows.count
+        let count = outline.pageRows.count
         app.typeKey("n", modifierFlags: subpage ? [.command, .shift] : .command)
-        let added = NSPredicate { _, _ in self.outline.outlineRows.count == count + 1 }
+        let added = NSPredicate { _, _ in self.outline.pageRows.count == count + 1 }
         wait(for: [expectation(for: added, evaluatedWith: nil)], timeout: 5)
 
         let field = app.windows.firstMatch.descendants(matching: .any)["detail.title"]

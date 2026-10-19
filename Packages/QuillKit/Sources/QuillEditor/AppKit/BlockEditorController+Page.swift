@@ -45,6 +45,24 @@ extension BlockEditorController {
         return true
     }
 
+    /// Springt zu einem Block, wählt `range` darin aus (UTF-16 im Blocktext) und
+    /// fokussiert den Editor, z. B. für einen Inhaltstreffer aus „Schnell öffnen“.
+    /// Ein Bereich außerhalb des Blocks wird gekürzt. `false`, wenn es den Block nicht gibt.
+    @discardableResult
+    public func reveal(blockID: UUID, range: NSRange) -> Bool {
+        guard let index = document.blocks.firstIndex(where: { $0.id == blockID }) else { return false }
+        let length = BlockRenderer.displayLength(of: document[index])
+        let start = range.location == NSNotFound ? 0 : min(max(0, range.location), length)
+        let end = min(start + max(0, range.length), length)
+        let selection = NSRange(location: paragraphStarts[index] + start, length: end - start)
+        focus()
+        textView.setSelectedRange(selection)
+        updateTypingAttributes(forCaretAt: BlockPosition(block: index, offset: start))
+        textView.scrollRangeToVisible(selection)
+        if selection.length > 0 { textView.showFindIndicator(for: selection) }
+        return true
+    }
+
     /// `true`, wenn der Cursor in der ersten Zeile des Dokuments steht (↑ geht dann in den Titel).
     func isCaretOnFirstLine() -> Bool {
         let selection = textView.selectedRange()

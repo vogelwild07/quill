@@ -3,7 +3,7 @@ import QuillEditor
 import SwiftUI
 
 /// Menüleiste von Quill. Kürzel wie in Apple Notizen: ⌘N Neue Seite,
-/// ⇧⌘N Neue Unterseite, ⌥⌘N Neues Fenster, ⌘T Neuer Tab.
+/// ⇧⌘N Neue Unterseite, ⌥⌘N Neues Fenster, ⌘T Neuer Tab, ⌘O Schnell öffnen.
 public struct QuillCommands: Commands {
     let persistence: QuillPersistence?
 
@@ -43,6 +43,14 @@ public struct QuillCommands: Commands {
                 openWindow(id: WindowRouter.windowID)
             }
             .keyboardShortcut("n", modifiers: [.command, .option])
+
+            Divider()
+
+            Button(String(localized: "Schnell öffnen …", bundle: .module)) {
+                actions?.quickOpen()
+            }
+            .keyboardShortcut("o")
+            .disabled(actions == nil)
         }
 
         CommandGroup(after: .importExport) {
@@ -82,8 +90,11 @@ public struct QuillCommands: Commands {
                     }
                 }
             }
+            // Deaktiviert, solange „Schnell öffnen“ offen ist: Dann öffnet ⌘↩ dort in
+            // einem neuen Tab; ein aktiver Menüpunkt finge die Taste vorher ab.
             formatButton("Abhaken", #selector(EditorFormattingActions.quillToggleChecked(_:)))
                 .keyboardShortcut(.return)
+                .disabled(actions?.isQuickOpenShown == true)
             Divider()
             // ⌥⌘↑/↓ statt ⌥⇧↑/↓: Das erweitert in Textfeldern die Auswahl absatzweise.
             formatButton("Block nach oben", #selector(EditorFormattingActions.quillMoveBlockUp(_:)))
@@ -103,6 +114,17 @@ public struct QuillCommands: Commands {
             Button(String(localized: "In neuem Fenster öffnen", bundle: .module)) { actions?.openInWindow() }
                 .disabled(actions?.selection == nil)
             Divider()
+            // Ohne Kürzel: ⌃⌘D (Wörterbuch) und ⌃⌘F (Vollbild) sind belegt.
+            Button {
+                actions?.toggleFavorite()
+            } label: {
+                if actions?.isFavorite == true {
+                    Text("Aus Favoriten entfernen", bundle: .module)
+                } else {
+                    Text("Zu Favoriten hinzufügen", bundle: .module)
+                }
+            }
+            .disabled(actions?.selection == nil)
             // Ohne Kürzel: ⌘⌫ löscht in Textfeldern bis zum Zeilenanfang. In der
             // Sidebar legt ⌘⌫ die Seite in den Papierkorb (PageOutlineView).
             Button(String(localized: "In den Papierkorb legen", bundle: .module)) { actions?.trash() }

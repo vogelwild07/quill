@@ -1,10 +1,19 @@
 {
   "sourceLanguage" : "de",
   "strings" : {
+    "%lld Seiten endgültig löschen?" : {
+
+    },
     "Abbrechen" : {
 
     },
     "Abhaken" : {
+
+    },
+    "Aus Favoriten entfernen" : {
+
+    },
+    "Ausblenden" : {
 
     },
     "Backups im Finder zeigen" : {
@@ -25,13 +34,31 @@
     "Code" : {
 
     },
+    "Das lässt sich nicht rückgängig machen. Unterseiten werden mitgelöscht." : {
+
+    },
     "Daten konnten nicht geöffnet werden" : {
+
+    },
+    "Der Papierkorb ist leer" : {
 
     },
     "Durchgestrichen" : {
 
     },
     "Emoji eingeben oder mit ⌃⌘Leertaste auswählen" : {
+
+    },
+    "Endgültig löschen" : {
+
+    },
+    "Endgültig löschen …" : {
+
+    },
+    "Favorit verschieben" : {
+
+    },
+    "Favoriten" : {
 
     },
     "Fett" : {
@@ -49,13 +76,22 @@
     "In neuem Tab öffnen" : {
 
     },
+    "Inhalt" : {
+
+    },
     "Keine Seite ausgewählt" : {
+
+    },
+    "Keine Treffer" : {
 
     },
     "Kursiv" : {
 
     },
     "Link …" : {
+
+    },
+    "Löschen fehlgeschlagen" : {
 
     },
     "Neue Seite" : {
@@ -73,13 +109,31 @@
     "Nicht gespeichert" : {
 
     },
+    "Noch keine Seiten" : {
+
+    },
     "Ohne Titel" : {
+
+    },
+    "Papierkorb" : {
+
+    },
+    "Papierkorb leeren …" : {
+
+    },
+    "Papierkorb leeren?" : {
 
     },
     "Quill" : {
 
     },
     "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
+
+    },
+    "Schnell öffnen (⌘O)" : {
+
+    },
+    "Schnell öffnen …" : {
 
     },
     "Seite" : {
@@ -92,6 +146,15 @@
 
     },
     "Seiten" : {
+
+    },
+    "Seiten und Inhalte durchsuchen" : {
+
+    },
+    "Seiten werden nach %lld Tagen endgültig gelöscht." : {
+
+    },
+    "Suchen" : {
 
     },
     "Titel" : {
@@ -109,13 +172,28 @@
     "Wenn du Quill jetzt beendest, gehen diese Änderungen verloren. Solange Quill geöffnet bleibt, wird das Speichern weiter versucht.\n\n%@" : {
 
     },
+    "Wiederherstellen" : {
+
+    },
     "Wähle links eine Seite oder lege mit ⌘N eine neue an." : {
+
+    },
+    "Zu Favoriten hinzufügen" : {
+
+    },
+    "Zuletzt bearbeitet" : {
 
     },
     "Änderungen konnten nicht gespeichert werden" : {
 
     },
     "Änderungen konnten nicht gespeichert werden. Quill versucht es automatisch erneut.\n%@" : {
+
+    },
+    "„%@“ endgültig löschen?" : {
+
+    },
+    "↑↓ wählen   ↩ öffnen   ⌘↩ in neuem Tab   ⎋ schließen" : {
 
     }
   },

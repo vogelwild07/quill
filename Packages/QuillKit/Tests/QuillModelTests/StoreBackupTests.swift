@@ -157,4 +157,42 @@ import Testing
 
         #expect(!FileManager.default.fileExists(atPath: partial.path(percentEncoded: false)))
     }
+
+    // MARK: Vor dem Leeren des Papierkorbs (ADR-017)
+
+    /// Nur ohne Änderung seit dem letzten Backup entfällt es, auch wenn das letzte
+    /// erst Minuten alt ist: Eine eben angelegte, dann gelöschte Seite liegt im Backup.
+    @Test func backupBeforeEmptyingTrashOnlyAfterChanges() throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let container = try makeStore()
+        let future = Date.now.addingTimeInterval(3600)
+        let first = try #require(try backup(at: future).backupBeforeEmptyingTrash())
+        #expect(first.lastPathComponent.hasSuffix("_vor-papierkorb-leeren"))
+        #expect(try backup(at: future.addingTimeInterval(60)).backupBeforeEmptyingTrash() == nil)
+
+        // Start-Backup vor wenigen Minuten, danach eine neue Seite.
+        let recent = Date.now.addingTimeInterval(-5 * 60)
+        try FileManager.default.removeItem(at: directory.appending(path: "Backups"))
+        try backup(at: recent).createBackup(reason: .launch)
+        let context = ModelContext(container)
+        context.insert(Page(title: "Neu"))
+        try context.save()
+
+        #expect(try backup(at: .now).backupBeforeEmptyingTrash() != nil)
+    }
+
+    /// Ein späteres Backup am selben Tag verdrängt das vor dem Leeren nicht; nach
+    /// 30 Tagen zählt es wie ein normales.
+    @Test func trashBackupsSurvivePruningForThirtyDays() throws {
+        let container = try makeStore()
+        defer { _ = container }
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        let trash = try #require(try backup(at: start).backupBeforeEmptyingTrash())
+        try backup(at: start.addingTimeInterval(3600)).createBackup(reason: .quit)
+        try backup(at: start.addingTimeInterval(3600)).prune()
+        #expect(FileManager.default.fileExists(atPath: trash.path(percentEncoded: false)))
+
+        try backup(at: start.addingTimeInterval(31 * 24 * 3600)).prune()
+        #expect(!FileManager.default.fileExists(atPath: trash.path(percentEncoded: false)))
+    }
 }

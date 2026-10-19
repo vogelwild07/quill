@@ -7,7 +7,7 @@
 | 2 Datenmodell + Sidebar | `SchemaV1`, `PageStore`, automatische Backups, Migrationstest, Seitenbaum, Drag & Drop, Tabs, Menüleiste | Seiten anlegen und verschachteln |
 | 3 Editor (Text) ✅ | Textblöcke, Überschriften, Listen, To-do, Zitat, Inline-Formatierung (⌘B, ⌘I, ⇧⌘M, ⇧⌘X, ⌘K), Persistenz, Kopf mit Titel im Editor; aus dem Spike übernommen: Slash-Menü, Markdown-Kürzel, Block-Drag, Code, Trenner | Schreiben alltagstauglich |
 | 4 Editor (Interaktion) ✅ | Block-Felder in `BlockProperties` (ADR-014), `BlockKind` nur in `QuillModel`, Bild-Block (ADR-015), Einfügen-Knopf ＋ (Escape nimmt den Klick zurück), Slash-Menü mit Abschnitten, Maus und VoiceOver, Kürzel in allen Textblöcken, Format › Blockart (⌥⌘0–7), Abhaken (⌘↩), Blöcke verschieben (⌥⌘↑/↓) und duplizieren (⌘D), Kontextmenü am Griff, Mitscrollen beim Ziehen (ADR-016), Ladeanzeige beim Lesen großer Bilder; gemergt (PR #4) | Editor MVP-komplett |
-| 5 Navigation | Schnell öffnen (⌘O), Favoriten, Papierkorb inkl. Auto-Leeren | – |
+| 5 Navigation | Schnell öffnen (⌘O) mit Sprung zur Fundstelle, Favoriten als Abschnitt der Sidebar, Papierkorb mit Vorschau und Auto-Leeren nach 30 Tagen, Backup vor jedem endgültigen Löschen (ADR-017); Handtest und PR offen | Seiten schnell finden |
 | 6 Export | Markdown-Exporter (Seite/Baum, `assets/`), Golden-File-Tests | – |
 | 7 Feinschliff | Accessibility, Lokalisierung, Performance, Icon, Leerzustände, Aufräumen aus dem Review von Phase 3 (feste Layout-Zahlen im Editor als `QuillDesign`-Tokens, Namen wie `T`/`S` und `longestIncreasingRun`, doppelter Code beim Laden in `EditorPersistenceBridge`), **„Backup wiederherstellen…“** (Menüpunkt + Tests, Pflicht vor v0.1) | v0.1 |
 | 8 Release | GitHub-Release v0.1 | – |
@@ -20,6 +20,11 @@ Ideen aus Phase 4, nicht eingeplant:
 - Kürzel für Code-Blöcke (z. B. ⌥⌘9), falls gewünscht; ⌥⌘8 ist belegt (ADR-016).
 - Eigenes Menü „Block“ statt der Blockaktionen im Menü „Format“.
 - Blöcke per Ziehen in eine andere Seite der Sidebar verschieben.
+
+Ideen aus Phase 5, nicht eingeplant:
+- Seite im Papierkorb lesend öffnen, mit Hinweisbanner und „Wiederherstellen“.
+- ⌘↩ in Schnell öffnen: auch im neuen Tab zur Fundstelle springen.
+- Unterseiten in den Favoriten aufklappen.
 
 ## Bekannte Probleme
 

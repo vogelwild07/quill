@@ -61,4 +61,73 @@ import QuillModel
         #expect(PageTree.ancestors(of: d, in: tree) == [])
         #expect(PageTree.ancestors(of: e, in: tree) == nil)
     }
+
+    // MARK: Favoriten (ADR-017)
+
+    @Test func favoritesAreOrderedAndSkipTrashedSubtrees() {
+        let trashedParent = UUID()
+        let entries = [
+            PageTree.Entry(id: a, parentID: nil, title: "A", icon: nil, sortKey: "V", createdAt: .distantPast, isFavorite: true, favoriteSortKey: "W"),
+            PageTree.Entry(id: b, parentID: nil, title: "B", icon: nil, sortKey: "W", createdAt: .distantPast, isFavorite: true, favoriteSortKey: "V"),
+            PageTree.Entry(id: c, parentID: a, title: "C", icon: nil, sortKey: "V", createdAt: .distantPast),
+            PageTree.Entry(id: d, parentID: trashedParent, title: "D", icon: nil, sortKey: "V", createdAt: .distantPast, isFavorite: true, favoriteSortKey: "U"),
+        ]
+        let favorites = PageTree.favorites(entries, in: PageTree.build(entries))
+        #expect(favorites.map(\.title) == ["B", "A"])
+        #expect(favorites.flatMap(\.children).isEmpty)
+    }
+
+    @Test func dropsIntoFavorites() {
+        let tree = PageTree.build([entry(a, "A", key: "V"), entry(b, "B", key: "W"), entry(c, "C", key: "X")])
+        let favorites = [a, b]
+        func resolve(_ dragged: UUID, _ source: SidebarDrop.Source, _ target: SidebarDrop.Target, _ index: Int?) -> SidebarDrop? {
+            SidebarDrop.resolve(dragged, from: source, onto: target, childIndex: index, favorites: favorites, tree: tree)
+        }
+        // Aus dem Baum: auf die Gruppe ans Ende, zwischen Favoriten an die Stelle.
+        #expect(resolve(c, .page, .favorites, nil) == .addFavorite(.last))
+        #expect(resolve(c, .page, .favorites, 1) == .addFavorite(.after(a)))
+        #expect(resolve(c, .page, .favorite(a), nil) == .addFavorite(.first))
+        // Schon Favorit: auf die Gruppe nichts, zwischen Favoriten verschieben.
+        #expect(resolve(a, .page, .favorites, nil) == nil)
+        #expect(resolve(a, .page, .favorites, 2) == .moveFavorite(.after(b)))
+        // Innerhalb der Favoriten umsortieren; nicht auf sich selbst.
+        #expect(resolve(b, .favorite, .favorites, 0) == .moveFavorite(.first))
+        #expect(resolve(b, .favorite, .favorite(a), nil) == .moveFavorite(.first))
+        #expect(resolve(b, .favorite, .favorite(b), nil) == nil)
+        #expect(resolve(b, .favorite, .favorites, nil) == nil)
+    }
+
+    @Test func dropsIntoPageTree() {
+        let tree = PageTree.build([entry(a, "A", key: "V"), entry(b, "B", parent: a, key: "V"), entry(c, "C", key: "W")])
+        func resolve(_ dragged: UUID, _ source: SidebarDrop.Source, _ target: SidebarDrop.Target, _ index: Int?) -> SidebarDrop? {
+            SidebarDrop.resolve(dragged, from: source, onto: target, childIndex: index, favorites: [], tree: tree)
+        }
+        #expect(resolve(c, .page, .pages, 0) == .movePage(parentID: nil, position: .first))
+        #expect(resolve(c, .page, .pages, nil) == .movePage(parentID: nil, position: .last))
+        #expect(resolve(c, .page, .page(a), nil) == .movePage(parentID: a, position: .last))
+        #expect(resolve(c, .page, .page(a), 1) == .movePage(parentID: a, position: .after(b)))
+        // Zyklen und Favoriten in den Baum sind nicht erlaubt.
+        #expect(resolve(a, .page, .page(b), nil) == nil)
+        #expect(resolve(a, .page, .page(a), nil) == nil)
+        #expect(resolve(c, .favorite, .pages, 0) == nil)
+        #expect(resolve(c, .favorite, .page(a), nil) == nil)
+    }
+
+    @Test func emptyFavoritesAppearAsDropTargetWhileDragging() {
+        let dropped = Date(timeIntervalSince1970: 1_000)
+        #expect(SidebarSection.visible(hasFavorites: false, dropTarget: .hidden) == [.pages])
+        #expect(SidebarSection.visible(hasFavorites: false, dropTarget: .dragging) == [.favorites, .pages])
+        #expect(SidebarSection.visible(hasFavorites: false, dropTarget: .awaitingFavorite(since: dropped)) == [.favorites, .pages])
+        #expect(SidebarSection.visible(hasFavorites: true, dropTarget: .hidden) == [.favorites, .pages])
+
+        // Kommt der Favorit nach dem Ablegen nicht an, verschwindet der leere Abschnitt.
+        #expect(!SidebarSection.DropTarget.dragging.isExpired(now: dropped.addingTimeInterval(60)))
+        #expect(!SidebarSection.DropTarget.awaitingFavorite(since: dropped).isExpired(now: dropped.addingTimeInterval(1.9)))
+        #expect(SidebarSection.DropTarget.awaitingFavorite(since: dropped).isExpired(now: dropped.addingTimeInterval(2)))
+
+        // Leerer Abschnitt: auf die Gruppe oder hinein legt den ersten Favoriten an.
+        let tree = PageTree.build([entry(a, "A", key: "V")])
+        #expect(SidebarDrop.resolve(a, from: .page, onto: .favorites, childIndex: nil, favorites: [], tree: tree) == .addFavorite(.last))
+        #expect(SidebarDrop.resolve(a, from: .page, onto: .favorites, childIndex: 0, favorites: [], tree: tree) == .addFavorite(.first))
+    }
 }

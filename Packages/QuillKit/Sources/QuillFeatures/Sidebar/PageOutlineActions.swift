@@ -8,6 +8,8 @@ struct PageOutlineActions {
     var rename: @MainActor (_ id: UUID, _ title: String, _ oldTitle: String) -> Void
     var move: @MainActor (_ id: UUID, _ parentID: UUID?, _ position: SiblingPosition) -> Void
     var trash: @MainActor (_ id: UUID) -> Void
+    var setFavorite: @MainActor (_ id: UUID, _ isFavorite: Bool, _ position: SiblingPosition) -> Void
+    var moveFavorite: @MainActor (_ id: UUID, _ position: SiblingPosition) -> Void
     var openInTab: @MainActor (_ id: UUID) -> Void
     var openInWindow: @MainActor (_ id: UUID) -> Void
 }

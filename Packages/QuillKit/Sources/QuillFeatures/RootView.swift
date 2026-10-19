@@ -11,6 +11,9 @@ public struct RootView: View {
     @State private var selection: UUID?
     @State private var renameRequest: UUID?
     @State private var titleFocusRequest: UUID?
+    @State private var isShowingTrash = false
+    @State private var isQuickOpenShown = false
+    @State private var revealRequest: RevealRequest?
     #if canImport(AppKit)
     @State private var window: NSWindow?
     #endif
@@ -29,19 +32,29 @@ public struct RootView: View {
                 SidebarView(
                     selection: $selection,
                     renameRequest: $renameRequest,
-                    actions: outlineActions(operations)
+                    isShowingTrash: $isShowingTrash,
+                    actions: outlineActions(operations),
+                    search: { isQuickOpenShown = true }
                 )
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
             }
         } detail: {
-            if let selection, let store {
+            if isShowingTrash, let operations {
+                TrashView(restore: { operations.restore($0) })
+            } else if let selection, let store {
                 PageDetailView(
                     pageID: selection,
                     titleFocusRequest: $titleFocusRequest,
+                    revealRequest: $revealRequest,
                     rename: { id, title in Task { try? await store.rename(id, to: title) } },
                     setIcon: { id, icon in Task { try? await store.setIcon(id, to: icon) } }
                 )
                 .id(selection)
+                .toolbar {
+                    ToolbarItem {
+                        favoriteButton(selection, operations: operations)
+                    }
+                }
             } else {
                 ContentUnavailableView {
                     Label(String(localized: "Keine Seite ausgewählt", bundle: .module), systemImage: "doc.text")
@@ -52,6 +65,7 @@ public struct RootView: View {
             }
         }
         #if canImport(AppKit)
+        .overlay { quickOpen }
         .background(WindowAccessor { window in
             self.window = window
             if let pageID = WindowRouter.shared.claim(for: window) {
@@ -64,7 +78,10 @@ public struct RootView: View {
             if selection == nil { selection = UUID(uuidString: storedSelection) }
             Task { try? await store?.ensureWorkspace() }
         }
-        .onChange(of: selection) { storedSelection = selection?.uuidString ?? "" }
+        .onChange(of: selection) {
+            storedSelection = selection?.uuidString ?? ""
+            if selection != nil { isShowingTrash = false }
+        }
     }
 
     // MARK: - Aktionen
@@ -85,6 +102,8 @@ public struct RootView: View {
             rename: { operations.rename($0, to: $1, from: $2) },
             move: { operations.move($0, to: $1, at: $2) },
             trash: { operations.trash($0, selectionAfter: selectionAfterTrashing($0)) },
+            setFavorite: { operations.setFavorite($0, $1, at: $2) },
+            moveFavorite: { operations.moveFavorite($0, at: $1) },
             openInTab: { open($0, asTab: true) },
             openInWindow: { open($0, asTab: false) }
         )
@@ -93,17 +112,73 @@ public struct RootView: View {
     private func pageActions(_ operations: PageOperations) -> PageActions {
         PageActions(
             selection: selection,
+            isFavorite: isFavorite(selection),
+            isQuickOpenShown: isQuickOpenShown,
             newPage: { operations.create(in: nil) },
             newSubpage: { if let selection { operations.create(in: selection) } },
             rename: { renameRequest = selection },
+            quickOpen: { isQuickOpenShown = true },
             trash: {
                 if let selection {
                     operations.trash(selection, selectionAfter: selectionAfterTrashing(selection))
                 }
             },
+            toggleFavorite: { if let selection { operations.setFavorite(selection, !isFavorite(selection)) } },
             openInTab: { if let selection { open(selection, asTab: true) } },
             openInWindow: { if let selection { open(selection, asTab: false) } }
         )
+    }
+
+    #if canImport(AppKit)
+    /// „Schnell öffnen“ über dem ganzen Fenster; Klick daneben schließt.
+    @ViewBuilder
+    private var quickOpen: some View {
+        if isQuickOpenShown, let store {
+            ZStack(alignment: .top) {
+                Color(nsColor: .shadowColor).opacity(0.08)
+                    .ignoresSafeArea()
+                    .contentShape(.rect)
+                    .onTapGesture { isQuickOpenShown = false }
+                    .accessibilityHidden(true)
+                QuickOpenView(store: store, open: openHit, dismiss: { isQuickOpenShown = false })
+                    .padding(.top, 56)
+            }
+        }
+    }
+    #endif
+
+    /// Inhaltstreffer springen zur Fundstelle; in einem neuen Tab öffnet nur die Seite.
+    private func openHit(_ hit: SearchHit, inNewTab: Bool) {
+        isQuickOpenShown = false
+        if inNewTab {
+            open(hit.pageID, asTab: true)
+            return
+        }
+        if case .content(let blockID, let match) = hit.kind {
+            revealRequest = RevealRequest(pageID: hit.pageID, blockID: blockID, range: match)
+        }
+        selection = hit.pageID
+    }
+
+    private func isFavorite(_ pageID: UUID?) -> Bool {
+        activePages.first { $0.id == pageID }?.isFavorite ?? false
+    }
+
+    /// Stern in der Symbolleiste: Seite zu den Favoriten (ADR-017).
+    @ViewBuilder
+    private func favoriteButton(_ pageID: UUID, operations: PageOperations?) -> some View {
+        let favorite = isFavorite(pageID)
+        Button {
+            operations?.setFavorite(pageID, !favorite)
+        } label: {
+            if favorite {
+                Label(String(localized: "Aus Favoriten entfernen", bundle: .module), systemImage: "star.fill")
+            } else {
+                Label(String(localized: "Zu Favoriten hinzufügen", bundle: .module), systemImage: "star")
+            }
+        }
+        .accessibilityIdentifier("page.favorite")
+        .accessibilityAddTraits(favorite ? .isSelected : [])
     }
 
     private func open(_ pageID: UUID, asTab: Bool) {
