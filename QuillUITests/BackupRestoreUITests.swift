@@ -50,6 +50,7 @@ final class BackupRestoreUITests: XCTestCase {
             .flatMap { [$0.label, $0.value as? String ?? ""] }.joined(separator: "\n")
         XCTAssertTrue(message.contains("Backup wiederhergestellt"), message)
         XCTAssertTrue(message.contains("(Beim Beenden)"), message)
+        XCTAssertTrue(message.contains("Application Support/Quill/Backups/"), "Ort des vorherigen Stands fehlt: \(message)")
         alert.buttons["OK"].click()
         assertTitles(["Alt"])
 

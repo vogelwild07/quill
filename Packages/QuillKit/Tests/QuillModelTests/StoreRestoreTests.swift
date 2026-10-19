@@ -97,18 +97,20 @@ import Testing
         try backup.requestRestore(try entry(saved, in: backup))
         #expect(backup.isRestorePending)
 
-        guard case .restored(let name, let safetyName) = backup.applyPendingRestore() else {
+        guard case .restored(let name, let previous?) = backup.applyPendingRestore() else {
             Issue.record("Nicht wiederhergestellt")
             return
         }
         #expect(name == saved.lastPathComponent)
         #expect(!backup.isRestorePending)
-        #expect(!exists(backup.restoreJournalURL))
+        #expect(!exists(backup.stagingURL))
+        #expect(!exists(backup.storeDirectoryURL.appending(path: StoreBackup.restoreTagName)))
         #expect(try titles() == ["Eins"])
         #expect(try imageBytes() == [1], "Bilder aus .Quill_SUPPORT des Backups")
         #expect(backup.lastOpenedSchemaVersion == "1.0.0")
 
         // Der vorherige Stand erscheint in der Liste und lässt sich zurückholen.
+        let safetyName = URL(filePath: previous).lastPathComponent
         let safety = try #require(try backup.entries().first { $0.url.lastPathComponent == safetyName })
         #expect(safety.kind == .beforeRestore)
         try backup.requestRestore(safety)
@@ -134,7 +136,7 @@ import Testing
         #expect(exists(walBackup.appending(path: "Quill.store-shm")))
 
         try backup.requestRestore(try entry(walBackup, in: backup))
-        guard case .restored(_, let safetyName) = backup.applyPendingRestore() else {
+        guard case .restored(_, let safetyName?) = backup.applyPendingRestore() else {
             Issue.record("Nicht wiederhergestellt")
             return
         }
@@ -149,12 +151,12 @@ import Testing
             try FileManager.default.copyItem(at: walState.appending(path: name), to: current.appending(path: name))
         }
         try backup.requestRestore(try entry(saved, in: backup))
-        guard case .restored(_, let secondSafety) = backup.applyPendingRestore() else {
+        guard case .restored(_, let secondSafety?) = backup.applyPendingRestore() else {
             Issue.record("Nicht wiederhergestellt")
             return
         }
         #expect(secondSafety != safetyName)
-        let safety = backupsURL.appending(path: secondSafety)
+        let safety = directory.appending(path: secondSafety)
         for name in backup.databaseFileNames {
             #expect(exists(safety.appending(path: name)), "\(name) fehlt in der Sicherung")
         }
@@ -252,25 +254,88 @@ import Testing
         #expect(try titles() == ["Eins"])
     }
 
-    /// Bricht die App mitten im Austausch ab, rollt der nächste Start zurück.
-    @Test(arguments: [StoreBackup.RestoreStep.movedCurrentStore, .copiedBackupStore])
-    func interruptedRestoreIsRolledBack(_ step: StoreBackup.RestoreStep) throws {
+    /// Abbruch nach jedem einzelnen Schritt: `Store/` enthält immer einen
+    /// vollständigen Stand (vor dem Tausch den alten, danach den neuen), und der
+    /// nächste Start verwirft die halbe Kopie oder schließt ab.
+    @Test(arguments: ["Quill.store", "Quill.store-wal", "Quill.store-shm", ".Quill_SUPPORT"].map { StoreBackup.RestoreStep.copied($0) }
+        + [.staged, .swapped, .previousMoved])
+    func interruptionAfterEveryStepLeavesCompleteStore(_ step: StoreBackup.RestoreStep) throws {
         try addPages(["Eins"], imageBytes: 1)
         let backup = backup()
         let saved = try backup.createBackup(reason: .quit)
+        // Backup mit allen Teilen: Store, WAL (letzte Änderung nur dort), SHM, Bilder.
+        let full = backupsURL.appending(path: "2026-10-19T08-00-00Z_beenden")
+        try copyWithChangeOnlyInWAL(from: saved, to: full, rename: "Eins", to: "Aus dem Backup")
+        for name in backup.databaseFileNames + [".Quill_SUPPORT"] {
+            #expect(exists(full.appending(path: name)), "\(name) fehlt im Backup")
+        }
         try addPages(["Zwei"], imageBytes: 2)
 
-        try backup.requestRestore(try entry(saved, in: backup))
+        try backup.requestRestore(try entry(full, in: backup))
         #expect(backup.applyPendingRestore(stoppingAfter: step) == nil)
-        #expect(exists(backup.restoreJournalURL))
 
-        #expect(backup.applyPendingRestore() == .interruptedAndRolledBack)
-        #expect(!exists(backup.restoreJournalURL))
+        let swapped = step == .swapped || step == .previousMoved
+        if swapped {
+            #expect(try titles() == ["Aus dem Backup"], "Nach \(step)")
+            #expect(try imageBytes() == [1])
+        } else {
+            #expect(try titles() == ["Eins", "Zwei"], "Nach \(step)")
+            #expect(try imageBytes() == [1, 2])
+        }
+
+        let outcome = backup.applyPendingRestore()
+        #expect(!exists(backup.stagingURL))
+        #expect(!exists(backup.storeDirectoryURL.appending(path: StoreBackup.restoreTagName)))
         #expect(!backup.isRestorePending)
-        #expect(try titles() == ["Eins", "Zwei"])
-        #expect(try imageBytes() == [1, 2])
-        #expect(try backup.entries().allSatisfy { $0.kind != .beforeRestore }, "Leere Sicherung bleibt liegen")
         #expect(backup.applyPendingRestore() == nil)
+        if swapped {
+            guard case .restored(let name, let previous?) = outcome else {
+                Issue.record("Nicht abgeschlossen nach \(step): \(String(describing: outcome))")
+                return
+            }
+            #expect(name == full.lastPathComponent)
+            #expect(try titles() == ["Aus dem Backup"])
+            // Der alte Stand liegt vollständig als Backup bereit.
+            let safety = directory.appending(path: previous)
+            #expect(try backup.entries().first { $0.url.lastPathComponent == safety.lastPathComponent }?.kind == .beforeRestore)
+            #expect(exists(safety.appending(path: "Quill.store")))
+            #expect(exists(safety.appending(path: ".Quill_SUPPORT")))
+        } else {
+            #expect(outcome == .interrupted)
+            #expect(try titles() == ["Eins", "Zwei"])
+            #expect(try imageBytes() == [1, 2])
+            #expect(try backup.entries().allSatisfy { $0.kind != .beforeRestore })
+        }
+    }
+
+    /// Backups aus der Zeit vor `Store/` (flach, mit Versionsdatei und WAL wie die
+    /// alten „vor-wiederherstellen“-Ordner) lassen sich einspielen; die Version
+    /// kommt aus der Prüfung, nicht aus der Datei im Backup.
+    @Test func restoresBackupsInEarlierFlatFormat() throws {
+        try addPages(["Eins"], imageBytes: 1)
+        let backup = backup()
+        let saved = try backup.createBackup(reason: .quit)
+        let old = backupsURL.appending(path: "2026-10-18T08-00-00Z_vor-wiederherstellen")
+        try copyWithChangeOnlyInWAL(from: saved, to: old, rename: "Eins", to: "Altes Format")
+        try Data("veraltet".utf8).write(to: old.appending(path: "Quill.store.version"))
+        try addPages(["Zwei"], imageBytes: 2)
+
+        try backup.requestRestore(try entry(old, in: backup))
+        guard case .restored = backup.applyPendingRestore() else {
+            Issue.record("Altes Format nicht eingespielt")
+            return
+        }
+        #expect(try titles() == ["Altes Format"])
+        #expect(try imageBytes() == [1])
+        #expect(backup.lastOpenedSchemaVersion == "1.0.0")
+
+        // Auch ein reines Backup per VACUUM (nur Store und Bilder).
+        try backup.requestRestore(try entry(saved, in: backup))
+        guard case .restored = backup.applyPendingRestore() else {
+            Issue.record("VACUUM-Backup nicht eingespielt")
+            return
+        }
+        #expect(try titles() == ["Eins"])
     }
 
     /// Nach dem Vormerken beendet sich Quill und legt ein Backup an. Die Rotation

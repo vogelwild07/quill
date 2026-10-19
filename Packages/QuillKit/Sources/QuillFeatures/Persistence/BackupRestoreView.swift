@@ -127,7 +127,9 @@ enum BackupLabel {
 
     /// „19. Okt. 2026, 10:15 (Beim Beenden)“ aus dem Ordnernamen.
     static func backup(named name: String) -> String {
-        guard let entry = StoreBackup.entry(at: URL(filePath: name)) else { return name }
+        guard let entry = StoreBackup.entry(at: URL(filePath: name)) else {
+            return name.isEmpty ? String(localized: "unbekannt", bundle: .module) : name
+        }
         return "\(entry.date.formatted(date: .abbreviated, time: .shortened)) (\(kind(entry.kind)))"
     }
 
@@ -149,18 +151,27 @@ enum BackupLabel {
         }
     }
 
+    /// Nennt, wo der vorherige Stand liegt (relativ zu `Application Support/Quill`).
+    private static func restoredMessage(backup: String, previous: String?) -> String {
+        let restored = String(localized: "Eingespielt: Backup vom \(Self.backup(named: backup)).", bundle: .module)
+        guard let previous else { return restored }
+        if previous.hasPrefix("Backups/") {
+            return restored + " " + String(localized: "Der vorherige Stand liegt als Backup „Vor dem Wiederherstellen“ bereit (Ablage › Backup wiederherstellen …), Ordner „Application Support/Quill/\(previous)“.", bundle: .module)
+        }
+        return restored + " " + String(localized: "Der vorherige Stand liegt noch in „Application Support/Quill/\(previous)“; Quill legt ihn beim nächsten Start zu den Backups.", bundle: .module)
+    }
+
     /// Meldung nach dem Start: Titel und Text.
     static func outcome(_ outcome: RestoreOutcome) -> (title: String, message: String) {
         switch outcome {
-        case .restored(let backup, _):
-            (String(localized: "Backup wiederhergestellt", bundle: .module),
-             String(localized: "Eingespielt: Backup vom \(Self.backup(named: backup)). Der vorherige Stand liegt als Backup „Vor dem Wiederherstellen“ bereit (Ablage › Backup wiederherstellen …).", bundle: .module))
+        case .restored(let backup, let previous):
+            (String(localized: "Backup wiederhergestellt", bundle: .module), restoredMessage(backup: backup, previous: previous))
         case .failed(let backup, let error):
             (String(localized: "Backup nicht wiederhergestellt", bundle: .module),
-             String(localized: "Backup vom \(Self.backup(named: backup)): \(message(for: error)) Der bisherige Stand ist unverändert.", bundle: .module))
-        case .interruptedAndRolledBack:
+             String(localized: "Backup vom \(Self.backup(named: backup)): \(message(for: error)) Der bisherige Stand ist unverändert und liegt in „Application Support/Quill/Store“.", bundle: .module))
+        case .interrupted:
             (String(localized: "Wiederherstellen unterbrochen", bundle: .module),
-             String(localized: "Das letzte Wiederherstellen wurde nicht abgeschlossen. Der vorherige Stand ist zurück.", bundle: .module))
+             String(localized: "Das letzte Wiederherstellen brach vor dem Tausch ab. Der bisherige Stand ist unverändert und liegt in „Application Support/Quill/Store“.", bundle: .module))
         }
     }
 }

@@ -22,7 +22,7 @@
     "Backup vom %@ wiederherstellen?" : {
 
     },
-    "Backup vom %@: %@ Der bisherige Stand ist unverändert." : {
+    "Backup vom %@: %@ Der bisherige Stand ist unverändert und liegt in „Application Support/Quill/Store“." : {
 
     },
     "Backup wiederhergestellt" : {
@@ -67,7 +67,7 @@
     "Das Backup stammt von einer neueren Quill-Version und kann hier nicht eingespielt werden." : {
 
     },
-    "Das letzte Wiederherstellen wurde nicht abgeschlossen. Der vorherige Stand ist zurück." : {
+    "Das letzte Wiederherstellen brach vor dem Tausch ab. Der bisherige Stand ist unverändert und liegt in „Application Support/Quill/Store“." : {
 
     },
     "Das lässt sich nicht rückgängig machen. Unterseiten werden mitgelöscht." : {
@@ -79,6 +79,12 @@
     "Der Papierkorb ist leer" : {
 
     },
+    "Der vorherige Stand liegt als Backup „Vor dem Wiederherstellen“ bereit (Ablage › Backup wiederherstellen …), Ordner „Application Support/Quill/%@“." : {
+
+    },
+    "Der vorherige Stand liegt noch in „Application Support/Quill/%@“; Quill legt ihn beim nächsten Start zu den Backups." : {
+
+    },
     "Die Dateien konnten nicht getauscht werden." : {
 
     },
@@ -88,7 +94,7 @@
     "Durchgestrichen" : {
 
     },
-    "Eingespielt: Backup vom %@. Der vorherige Stand liegt als Backup „Vor dem Wiederherstellen“ bereit (Ablage › Backup wiederherstellen …)." : {
+    "Eingespielt: Backup vom %@." : {
 
     },
     "Emoji eingeben oder mit ⌃⌘Leertaste auswählen" : {
@@ -299,6 +305,9 @@
 
     },
     "Zuletzt bearbeitet" : {
+
+    },
+    "unbekannt" : {
 
     },
     "Änderungen konnten nicht gespeichert werden" : {
