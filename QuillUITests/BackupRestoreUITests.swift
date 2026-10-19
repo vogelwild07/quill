@@ -30,6 +30,7 @@ final class BackupRestoreUITests: XCTestCase {
         createPage("Neu")
         assertTitles(["Alt", "Neu"])
         let sheet = openRestoreSheet()
+        XCTAssertEqual(sheet.outlines.firstMatch.label, "Backups", "Liste ohne Beschriftung (A8)")
         let row = sheet.descendants(matching: .any).matching(identifier: "restore.row")
             .containing(NSPredicate(format: "label CONTAINS %@ OR value CONTAINS %@", "Beim Beenden", "Beim Beenden")).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 5), "Kein Backup „Beim Beenden“")

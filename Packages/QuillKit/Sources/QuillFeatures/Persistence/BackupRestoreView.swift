@@ -48,6 +48,7 @@ struct BackupRestoreView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("restore.row")
             }
+            .accessibilityLabel(String(localized: "Backups", bundle: .module))
             .frame(minHeight: 220)
             .overlay {
                 if entries.isEmpty {
