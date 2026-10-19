@@ -10,6 +10,10 @@ public enum ExportFileName {
     /// Markdown-Links und Obsidian (`#`, `^`, `[`, `]`, `%`) Ärger machen.
     static let replacedCharacters: Set<Character> = ["/", "\\", ":", "*", "?", "\"", "<", ">", "|", "#", "^", "[", "]", "%"]
     static let replacement: Character = "-"
+    /// Größer ist kein echtes Zeichen (längste Emoji-Folgen haben rund 30 Bytes),
+    /// sondern z. B. ein Buchstabe mit Hunderten Akzenten. So ein Zeichen wird „-“,
+    /// sonst könnte das Kürzen auf `maxBytes` einen leeren Namen ergeben.
+    static let maxCharacterBytes = 64
 
     /// Titel als Namensbasis ohne Endung: unerlaubte Zeichen und Steuerzeichen
     /// ersetzt, Leerraum zusammengefasst, kein führender Punkt (versteckte Datei).
@@ -24,7 +28,8 @@ public enum ExportFileName {
                 continue
             }
             lastWasSpace = false
-            result.append(replacedCharacters.contains(character) ? replacement : character)
+            let replaced = replacedCharacters.contains(character) || String(character).utf8.count > maxCharacterBytes
+            result.append(replaced ? replacement : character)
         }
         result = result.trimmingCharacters(in: .whitespaces)
         // Ein Punkt am Anfang macht die Datei unsichtbar, einer am Ende verschluckt Windows.

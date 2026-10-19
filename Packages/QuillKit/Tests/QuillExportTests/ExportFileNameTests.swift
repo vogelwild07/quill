@@ -52,6 +52,18 @@ import Testing
         }
     }
 
+    /// Ein Zeichen über 255 Bytes (Buchstabe mit Hunderten Akzenten) darf den Namen
+    /// nicht leer kürzen; sonst entstünde die versteckte Datei „.md“.
+    @Test func oversizedCharacterBecomesReplacement() {
+        let zalgo = "e" + String(repeating: "\u{0301}", count: 130)
+        #expect(zalgo.count == 1)
+        #expect(base(zalgo) == "-")
+        #expect(base("Notiz " + zalgo) == "Notiz -")
+        #expect(ExportFileName.name(base: base(zalgo), extension: "md") == "-.md")
+        // Lange, aber echte Emoji-Folgen bleiben.
+        #expect(base("👩‍👩‍👧‍👦 🏴󠁧󠁢󠁥󠁮󠁧󠁿") == "👩‍👩‍👧‍👦 🏴󠁧󠁢󠁥󠁮󠁧󠁿")
+    }
+
     @Test func collisionKeyIgnoresCaseAndNormalization() {
         #expect(ExportFileName.collisionKey("Quill.md") == ExportFileName.collisionKey("quill.MD"))
         // „Ä“ zusammengesetzt (U+00C4) und zerlegt (A + U+0308).
