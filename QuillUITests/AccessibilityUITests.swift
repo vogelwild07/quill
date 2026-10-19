@@ -66,13 +66,20 @@ final class AccessibilityUITests: XCTestCase {
         XCTAssertEqual(trash.label, "Seiten im Papierkorb")
     }
 
-    /// „Schnell öffnen“ (A6): beschriftetes Panel, Fokus im Suchfeld.
+    /// „Schnell öffnen“ (A6): beschriftetes, modales Panel, Fokus im Suchfeld.
     func testQuickOpenPanelIsLabeled() throws {
+        createPage("Modal")
+        let outline = window.outlines["sidebar.pages"]
+        XCTAssertTrue(outline.waitForExistence(timeout: 5))
         app.typeKey("o", modifierFlags: .command)
         let panel = window.groups["quickOpen.panel"]
         XCTAssertTrue(panel.waitForExistence(timeout: 5))
         XCTAssertEqual(panel.label, "Schnell öffnen")
         expectFocus(on: panel.textFields["quickOpen.field"], "Suchfeld fokussiert")
+        // Modal: VoiceOver bleibt im Panel, der Rest des Fensters ist ausgeblendet.
+        XCTAssertFalse(outline.exists, "Seitenbaum neben dem Panel erreichbar")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(outline.waitForExistence(timeout: 5), "Seitenbaum nach ⎋ nicht zurück")
     }
 
     /// Slash-Menü (A7): Panel und Hülle beschriftet.

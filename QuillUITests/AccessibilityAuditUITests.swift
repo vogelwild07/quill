@@ -86,6 +86,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         /// Elemente im Sheet; alle anderen liegen dahinter.
         var sheetElementFrames: [CGRect]?
         var isTextFieldFocused: Bool
+        var isQuickOpenShown: Bool
     }
 
     private func viewState() -> ViewState {
@@ -102,7 +103,8 @@ final class AccessibilityAuditUITests: XCTestCase {
             toolbarFrame: toolbar.exists ? toolbar.frame : nil,
             touchBarEmojiFrame: emoji.exists ? emoji.frame : nil,
             sheetElementFrames: sheet.exists ? [sheet.frame] + frames(sheet.descendants(matching: .any)) : nil,
-            isTextFieldFocused: app.textFields.matching(NSPredicate(format: "hasKeyboardFocus == true")).count > 0
+            isTextFieldFocused: app.textFields.matching(NSPredicate(format: "hasKeyboardFocus == true")).count > 0,
+            isQuickOpenShown: window.groups["quickOpen.panel"].exists
         )
     }
 
@@ -110,8 +112,19 @@ final class AccessibilityAuditUITests: XCTestCase {
         Thread.sleep(forTimeInterval: 0.5)
         let state = viewState()
         var unexpected: [String] = []
+        // Eltern-Kind-Fehler ohne Element lassen sich keiner Ursache zuordnen; deshalb
+        // gezählt, je Ursache einer:
+        // - Feld-Editor von AppKit eines fokussierten Textfelds, tritt bei jedem
+        //   SwiftUI-Textfeld auf (A6).
+        // - `.isModal` an „Schnell öffnen“, damit VoiceOver im Panel bleibt (A6,
+        //   Entscheidung Nutzer).
+        var orphans = (state.isTextFieldFocused ? 1 : 0) + (state.isQuickOpenShown ? 1 : 0)
         do {
             try app.performAccessibilityAudit(for: .all) { issue in
+                if issue.auditType == .parentChild, issue.element == nil, orphans > 0 {
+                    orphans -= 1
+                    return true
+                }
                 if self.exception(for: issue, in: state) == nil {
                     unexpected.append(Self.describe(issue))
                 }
@@ -150,10 +163,6 @@ final class AccessibilityAuditUITests: XCTestCase {
         case .action:
             if type == .popUpButton, frame == state.touchBarEmojiFrame {
                 return "Schaltfläche „Emojis & Symbole“ der Touch Bar, vom System (A12)."
-            }
-        case .parentChild:
-            if element == nil, state.isTextFieldFocused {
-                return "Feld-Editor von AppKit eines fokussierten Textfelds; tritt bei jedem SwiftUI-Textfeld auf (A6)."
             }
         case .contrast:
             if identifier == "sidebar.group" {

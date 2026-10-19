@@ -60,9 +60,10 @@ struct QuickOpenView: View {
         .onChange(of: isFieldFocused) { _, focused in
             if !focused { DispatchQueue.main.async { isFieldFocused = true } }
         }
-        // Ohne `.isModal`: Das Merkmal (wie auch ein ausgeblendeter Hintergrund)
-        // bricht die Eltern-Kind-Kette der Bedienungshilfen (Audit, Befund A6).
+        // `.isModal`: VoiceOver bleibt im Panel. Das Merkmal bricht die Eltern-Kind-
+        // Kette einmal; im Audit eine gezählte Ausnahme (Befund A6).
         .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isModal)
         .accessibilityLabel(String(localized: "Schnell öffnen", bundle: .module))
         .accessibilityIdentifier("quickOpen.panel")
     }
