@@ -32,7 +32,7 @@ struct SidebarView: View, Equatable {
                     Spacer()
                     Text(verbatim: "⌘O")
                         .font(.caption)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
                 }
                 .contentShape(Rectangle())

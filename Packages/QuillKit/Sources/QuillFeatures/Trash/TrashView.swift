@@ -173,7 +173,7 @@ private struct TrashRow: View {
                 }
                 Text(details)
                     .font(.caption)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 3)

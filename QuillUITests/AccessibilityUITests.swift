@@ -37,6 +37,22 @@ final class AccessibilityUITests: XCTestCase {
         XCTAssertEqual(row.images.count, 0, "Symbol als Bild sichtbar")
     }
 
+    /// Papierkorb-Zeile (A11): Datum mit genug Kontrast.
+    func testTrashRowHasContrast() throws {
+        createPage("Weg")
+        window.outlines["sidebar.pages"].pageRows.element(boundBy: 0).click()
+        app.typeKey(.delete, modifierFlags: .command)
+        window.descendants(matching: .any)["sidebar.trash"].click()
+        XCTAssertTrue(window.descendants(matching: .any)["trash.row"].waitForExistence(timeout: 5))
+        var issues: [String] = []
+        try app.performAccessibilityAudit(for: .contrast) { issue in
+            guard issue.element?.identifier == "trash.row" else { return true }
+            issues.append(issue.element?.value as? String ?? "?")
+            return true
+        }
+        XCTAssertEqual(issues, [], "Zu wenig Kontrast")
+    }
+
     /// Listen beschriftet (A5): Sidebar und Papierkorb.
     func testListsAreLabeled() throws {
         createPage("Weg")
