@@ -4,6 +4,7 @@ import ImageIO
 import QuillModel
 import Testing
 @testable import QuillEditor
+import QuillTestFixtures
 
 /// Rendert den Editor hell und dunkel aus der App selbst (keine Bildschirmfotos)
 /// und prüft, dass selbst gezeichnete Elemente Systemfarben nutzen.

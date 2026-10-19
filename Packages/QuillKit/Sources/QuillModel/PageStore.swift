@@ -315,7 +315,7 @@ extension PageStore {
 
     // MARK: - Hilfen
 
-    private func orderedBlocks(of page: Page) -> [Block] {
+    func orderedBlocks(of page: Page) -> [Block] {
         (page.blocks ?? []).sorted { ($0.sortKey, $0.createdAt, $0.id.uuidString) < ($1.sortKey, $1.createdAt, $1.id.uuidString) }
     }
 

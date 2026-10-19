@@ -238,7 +238,7 @@ extension EditorBlock {
 
     /// Unbekannte Blockarten werden als Absatz gelesen. Solange der Block nicht
     /// bearbeitet wird, überschreibt die Bridge ihn nicht.
-    init(snapshot: BlockSnapshot) {
+    public init(snapshot: BlockSnapshot) {
         let kind = BlockKind(rawValue: snapshot.kindRaw) ?? .paragraph
         let content = InlineText(text: snapshot.text, richText: snapshot.richText.flatMap(RichText.decode))
         var properties = snapshot.properties
@@ -246,7 +246,7 @@ extension EditorBlock {
         self.init(id: snapshot.id, kind: kind, text: content.text, spans: content.spans, properties: properties)
     }
 
-    var snapshot: BlockSnapshot {
+    public var snapshot: BlockSnapshot {
         BlockSnapshot(
             id: id,
             kindRaw: kind.rawValue,
