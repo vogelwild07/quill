@@ -85,7 +85,7 @@ DatabaseView         (später)  id, name, layoutRaw (table|board|calendar), conf
 
 ## Speicherort und Backups
 
-- Store: `~/Library/Containers/de.vogel.quill/Data/Library/Application Support/Quill/Quill.store` (plus `-wal`, `-shm`, `.Quill_SUPPORT/` für externe Daten, `Quill.store.version`).
+- Store: `~/Library/Containers/de.vogel.quill/Data/Library/Application Support/Quill/Store/Quill.store` (plus `-wal`, `-shm`, `.Quill_SUPPORT/` für externe Daten, `Quill.store.version`). Bis Phase 7.1 lagen diese Dateien direkt in `Quill/`; der erste Start einer neueren Version zieht sie nach einem Backup `vor-umzug` um (ADR-019).
 - Backups: daneben in `Backups/`, Regeln siehe ADR-010.
 
 ### Backup wiederherstellen
@@ -98,7 +98,7 @@ Nur falls Quill nicht mehr startet:
 
 1. Quill beenden.
 2. Im Finder den Ordner `…/Application Support/Quill/` öffnen (⇧⌘G, Pfad oben). Versteckte Dateien mit ⇧⌘. einblenden.
-3. Die aktuellen Dateien `Quill.store`, `Quill.store-wal`, `Quill.store-shm` und `.Quill_SUPPORT` in einen eigenen Ordner außerhalb verschieben, nicht löschen.
-4. Aus `Backups/<Zeitpunkt>_<Anlass>/` die Datei `Quill.store` und, falls vorhanden, `.Quill_SUPPORT` nach `…/Quill/` kopieren.
-5. `Quill.store.version` löschen. Beim nächsten Start entsteht dann vorsorglich ein Backup `vor-migration-unbekannt-…`, und eine nötige Migration läuft normal.
+3. Den Ordner `Store/` als Ganzes in einen eigenen Ordner außerhalb verschieben, nicht löschen.
+4. Einen neuen, leeren Ordner `Store/` anlegen und aus `Backups/<Zeitpunkt>_<Anlass>/` die Dateien `Quill.store`, falls vorhanden `Quill.store-wal` und `Quill.store-shm` (immer zusammen) sowie `.Quill_SUPPORT` hineinkopieren.
+5. Keine `Quill.store.version` mitkopieren. Beim nächsten Start entsteht dann vorsorglich ein Backup `vor-migration-unbekannt-…`, und eine nötige Migration läuft normal.
 6. Quill starten.
