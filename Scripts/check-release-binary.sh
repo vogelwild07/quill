@@ -9,19 +9,24 @@
 # Die Einstellungen dienen nur der Gegenprobe, z. B.
 #   Scripts/check-release-binary.sh 'SWIFT_ACTIVE_COMPILATION_CONDITIONS=QUILL_PROFILING'
 # muss scheitern.
+# Oder: Scripts/check-release-binary.sh --app <Quill.app> prüft ein fertiges Bundle
+# ohne eigenen Build (Scripts/make-release.sh).
 set -u
 root=${0:A:h:h}
 derived=$(mktemp -d "${TMPDIR:-/tmp}/QuillReleaseCheck.XXXXXX")
 log=$derived/build.log
 
-xcodebuild -project "$root/Quill.xcodeproj" -scheme Quill -configuration Release \
-  -destination 'platform=macOS' -derivedDataPath "$derived" "$@" build > "$log" 2>&1
-if [ $? -ne 0 ]; then
-  echo "Release-Build gescheitert (Log: $log)"
-  exit 2
+if [ "${1:-}" = "--app" ]; then
+  app=${2:?Pfad zur App fehlt}
+else
+  xcodebuild -project "$root/Quill.xcodeproj" -scheme Quill -configuration Release \
+    -destination 'platform=macOS' -derivedDataPath "$derived" "$@" build > "$log" 2>&1
+  if [ $? -ne 0 ]; then
+    echo "Release-Build gescheitert (Log: $log)"
+    exit 2
+  fi
+  app="$derived/Build/Products/Release/Quill.app"
 fi
-
-app="$derived/Build/Products/Release/Quill.app"
 # Mach-O-Dateien ohne Debug-Symbole prüfen, wie ausgeliefert: Die Debug-Verweise
 # nennen auch leer kompilierte Quelldateien (ProfilingSeed.swift) beim Namen.
 copies="$derived/stripped"
