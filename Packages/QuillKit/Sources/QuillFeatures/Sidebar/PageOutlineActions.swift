@@ -12,4 +12,5 @@ struct PageOutlineActions {
     var moveFavorite: @MainActor (_ id: UUID, _ position: SiblingPosition) -> Void
     var openInTab: @MainActor (_ id: UUID) -> Void
     var openInWindow: @MainActor (_ id: UUID) -> Void
+    var export: @MainActor (_ id: UUID) -> Void
 }

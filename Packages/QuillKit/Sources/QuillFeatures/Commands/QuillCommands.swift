@@ -114,6 +114,11 @@ public struct QuillCommands: Commands {
             Button(String(localized: "In neuem Fenster öffnen", bundle: .module)) { actions?.openInWindow() }
                 .disabled(actions?.selection == nil)
             Divider()
+            // ⇧⌘E wie „Exportieren“ in vielen Mac-Apps; ⌘E bleibt „Auswahl für Suche verwenden“.
+            Button(String(localized: "Exportieren …", bundle: .module)) { actions?.exportPage() }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
+                .disabled(actions?.selection == nil)
+            Divider()
             // Ohne Kürzel: ⌃⌘D (Wörterbuch) und ⌃⌘F (Vollbild) sind belegt.
             Button {
                 actions?.toggleFavorite()

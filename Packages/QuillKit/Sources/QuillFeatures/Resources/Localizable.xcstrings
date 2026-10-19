@@ -19,6 +19,9 @@
     "Backups im Finder zeigen" : {
 
     },
+    "Bild fehlt" : {
+
+    },
     "Block duplizieren" : {
 
     },
@@ -55,16 +58,31 @@
     "Endgültig löschen …" : {
 
     },
+    "Export fehlgeschlagen" : {
+
+    },
+    "Exportieren" : {
+
+    },
+    "Exportieren …" : {
+
+    },
     "Favorit verschieben" : {
 
     },
     "Favoriten" : {
 
     },
+    "Fehlende Bilder: %lld" : {
+
+    },
     "Fett" : {
 
     },
     "Icon" : {
+
+    },
+    "Im Finder zeigen" : {
 
     },
     "In den Papierkorb legen" : {
@@ -112,7 +130,16 @@
     "Noch keine Seiten" : {
 
     },
+    "OK" : {
+
+    },
     "Ohne Titel" : {
+
+    },
+    "Ordner für den Export von „%@“ wählen" : {
+
+    },
+    "Ordner: %@" : {
 
     },
     "Papierkorb" : {
@@ -154,6 +181,9 @@
     "Seiten werden nach %lld Tagen endgültig gelöscht." : {
 
     },
+    "Seiten: %lld · Bilder: %lld" : {
+
+    },
     "Suchen" : {
 
     },
@@ -164,6 +194,12 @@
 
     },
     "Umbenennen" : {
+
+    },
+    "Unterseiten" : {
+
+    },
+    "Unterseiten einschließen" : {
 
     },
     "Verschieben" : {
@@ -191,6 +227,9 @@
 
     },
     "„%@“ endgültig löschen?" : {
+
+    },
+    "„%@“ exportiert" : {
 
     },
     "↑↓ wählen   ↩ öffnen   ⌘↩ in neuem Tab   ⎋ schließen" : {

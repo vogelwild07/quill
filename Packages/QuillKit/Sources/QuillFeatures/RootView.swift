@@ -105,7 +105,8 @@ public struct RootView: View {
             setFavorite: { operations.setFavorite($0, $1, at: $2) },
             moveFavorite: { operations.moveFavorite($0, at: $1) },
             openInTab: { open($0, asTab: true) },
-            openInWindow: { open($0, asTab: false) }
+            openInWindow: { open($0, asTab: false) },
+            export: { exportPage($0) }
         )
     }
 
@@ -125,7 +126,8 @@ public struct RootView: View {
             },
             toggleFavorite: { if let selection { operations.setFavorite(selection, !isFavorite(selection)) } },
             openInTab: { if let selection { open(selection, asTab: true) } },
-            openInWindow: { if let selection { open(selection, asTab: false) } }
+            openInWindow: { if let selection { open(selection, asTab: false) } },
+            exportPage: { if let selection { exportPage(selection) } }
         )
     }
 
@@ -185,6 +187,15 @@ public struct RootView: View {
         #if canImport(AppKit)
         WindowRouter.shared.prepare(pageID: pageID, asTabOf: asTab ? window : nil)
         openWindow(id: WindowRouter.windowID)
+        #endif
+    }
+
+    /// Markdown-Export der Seite mit Ordnerdialog (ADR-018).
+    private func exportPage(_ pageID: UUID) {
+        #if canImport(AppKit)
+        guard let store else { return }
+        let title = activePages.first { $0.id == pageID }?.title ?? ""
+        PageExport.run(pageID: pageID, title: title, store: store, window: window)
         #endif
     }
 
