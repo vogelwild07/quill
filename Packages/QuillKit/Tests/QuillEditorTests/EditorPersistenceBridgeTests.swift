@@ -67,7 +67,12 @@ struct EditorPersistenceBridgeTests {
             bridge.documentDidChange(document)
         }
         #expect(try storedBlocks().isEmpty)
-        try await Task.sleep(for: .milliseconds(300))
+        // Mit Frist statt fester Pause: Unter Last braucht das Speichern länger
+        // (einmal rot bei 300 ms, Phase 7.2).
+        let deadline = ContinuousClock.now + .seconds(5)
+        while bridge.hasUnsavedChanges, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
         #expect(try storedBlocks().map(\.text) == ["abc"])
         #expect(!bridge.hasUnsavedChanges)
     }
