@@ -102,7 +102,7 @@ extension DiskStoreSuites {
                 Issue.record("Nicht wiederhergestellt")
                 return
             }
-            #expect(name == saved.lastPathComponent)
+            #expect(name == BackupName(saved.lastPathComponent))
             #expect(!backup.isRestorePending)
             #expect(!exists(backup.stagingURL))
             #expect(!exists(backup.storeDirectoryURL.appending(path: StoreBackup.restoreTagName)))
@@ -249,7 +249,7 @@ extension DiskStoreSuites {
             try backup.requestRestore(try entry(saved, in: backup))
             try FileManager.default.removeItem(at: saved)
 
-            #expect(backup.applyPendingRestore() == .failed(backup: saved.lastPathComponent, .backupMissing))
+            #expect(backup.applyPendingRestore() == .failed(backup: BackupName(saved.lastPathComponent), .backupMissing))
             #expect(!backup.isRestorePending)
             #expect(backup.applyPendingRestore() == nil)
             #expect(try titles() == ["Eins"])
@@ -294,7 +294,7 @@ extension DiskStoreSuites {
                     Issue.record("Nicht abgeschlossen nach \(step): \(String(describing: outcome))")
                     return
                 }
-                #expect(name == full.lastPathComponent)
+                #expect(name == BackupName(full.lastPathComponent))
                 #expect(try titles() == ["Aus dem Backup"])
                 // Der alte Stand liegt vollständig als Backup bereit.
                 let safety = directory.appending(path: previous)
@@ -352,7 +352,7 @@ extension DiskStoreSuites {
             defer { try? FileManager.default.setAttributes([.immutable: false], ofItemAtPath: path) }
 
             for _ in 0..<2 {
-                #expect(backup.applyPendingRestore() == .failed(backup: saved.lastPathComponent, .requestNotRemovable))
+                #expect(backup.applyPendingRestore() == .failed(backup: BackupName(saved.lastPathComponent), .requestNotRemovable))
                 #expect(try titles() == ["Eins", "Zwei"])
             }
             #expect(try backup.entries().allSatisfy { $0.kind != .beforeRestore })
@@ -376,7 +376,7 @@ extension DiskStoreSuites {
                 Issue.record("Nicht wiederhergestellt")
                 return
             }
-            #expect(name == saved.lastPathComponent)
+            #expect(name == BackupName(saved.lastPathComponent))
             #expect(try titles() == ["Eins"])
         }
 

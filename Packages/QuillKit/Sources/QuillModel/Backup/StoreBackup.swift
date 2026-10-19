@@ -90,6 +90,7 @@ public struct StoreBackup: Sendable {
         public let kind: Kind
 
         public var id: String { url.lastPathComponent }
+        public var name: BackupName { BackupName(url.lastPathComponent) }
         public var isBeforeMigration: Bool { kind == .beforeMigration }
         public var isBeforeEmptyingTrash: Bool { kind == .beforeEmptyingTrash }
     }
@@ -208,8 +209,8 @@ public struct StoreBackup: Sendable {
         try fileManager.createDirectory(at: backupsURL, withIntermediateDirectories: true)
 
         let date = now()
-        let name = "\(Self.formatter.string(from: date))_\(reason.slug)"
-        let partial = backupsURL.appending(path: ".\(name).partial", directoryHint: .isDirectory)
+        let name = backupName(reason, at: date)
+        let partial = backupsURL.appending(path: ".\(name.rawValue).partial", directoryHint: .isDirectory)
         try? fileManager.removeItem(at: partial)
         try fileManager.createDirectory(at: partial, withIntermediateDirectories: true)
 
@@ -220,7 +221,7 @@ public struct StoreBackup: Sendable {
             if fileManager.fileExists(atPath: supportURL.path(percentEncoded: false)) {
                 try fileManager.copyItem(at: supportURL, to: partial.appending(path: supportURL.lastPathComponent))
             }
-            let final = backupsURL.appending(path: uniqueBackupName(name), directoryHint: .isDirectory)
+            let final = backupsURL.appending(path: uniqueBackupName(name).rawValue, directoryHint: .isDirectory)
             try fileManager.moveItem(at: partial, to: final)
             return final
         } catch {
@@ -265,7 +266,7 @@ public struct StoreBackup: Sendable {
         var trashBackups = 0
         // Neueste zuerst: Das erste Backup eines Tages oder einer Woche ist das neueste.
         for entry in try entries() {
-            if entry.isBeforeMigration || entry.kind == .beforeMove || entry.kind == .setAside || entry.url.lastPathComponent == pending {
+            if entry.isBeforeMigration || entry.kind == .beforeMove || entry.kind == .setAside || entry.name == pending {
                 keep.insert(entry.url)
                 continue
             }
@@ -316,15 +317,20 @@ public struct StoreBackup: Sendable {
         storeDirectoryURL.appending(path: "\(storeURL.lastPathComponent).version")
     }
 
+    /// `<Zeitpunkt>_<Anlass>`.
+    func backupName(_ reason: Reason, at date: Date) -> BackupName {
+        BackupName("\(Self.formatter.string(from: date))_\(reason.slug)")
+    }
+
     /// `name`, oder bei einem schon vorhandenen Backup gleichen Namens `name-2`, `name-3` …
-    func uniqueBackupName(_ name: String) -> String {
-        var candidate = name
+    func uniqueBackupName(_ name: BackupName) -> BackupName {
+        var candidate = name.rawValue
         var counter = 2
         while FileManager.default.fileExists(atPath: backupsURL.appending(path: candidate).path(percentEncoded: false)) {
-            candidate = "\(name)-\(counter)"
+            candidate = "\(name.rawValue)-\(counter)"
             counter += 1
         }
-        return candidate
+        return BackupName(candidate)
     }
 
     var lastOpenedSchemaVersion: String? {

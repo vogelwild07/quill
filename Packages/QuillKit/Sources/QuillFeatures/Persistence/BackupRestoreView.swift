@@ -134,9 +134,9 @@ enum BackupLabel {
     }
 
     /// „19. Okt. 2026, 10:15 (Beim Beenden)“ aus dem Ordnernamen.
-    static func backup(named name: String) -> String {
-        guard let entry = StoreBackup.entry(at: URL(filePath: name)) else {
-            return name.isEmpty ? String(localized: "unbekannt", bundle: .module) : name
+    static func backup(named name: BackupName) -> String {
+        guard let entry = StoreBackup.entry(at: URL(filePath: name.rawValue)) else {
+            return name.rawValue.isEmpty ? String(localized: "unbekannt", bundle: .module) : name.rawValue
         }
         return "\(entry.date.formatted(date: .abbreviated, time: .shortened)) (\(kind(entry.kind)))"
     }
@@ -162,7 +162,7 @@ enum BackupLabel {
     }
 
     /// Nennt, wo der vorherige Stand liegt (relativ zu `Application Support/Quill`).
-    private static func restoredMessage(backup: String, previous: String?) -> String {
+    private static func restoredMessage(backup: BackupName, previous: String?) -> String {
         let restored = String(localized: "Eingespielt: Backup vom \(Self.backup(named: backup)).", bundle: .module)
         guard let previous else { return restored }
         if previous.hasPrefix("Backups/") {
