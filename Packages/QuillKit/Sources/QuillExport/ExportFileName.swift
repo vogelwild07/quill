@@ -32,7 +32,7 @@ public enum ExportFileName {
             result.append(replaced ? replacement : character)
         }
         result = result.trimmingCharacters(in: .whitespaces)
-        // Ein Punkt am Anfang macht die Datei unsichtbar, einer am Ende verschluckt Windows.
+        // Ein Punkt am Anfang macht die Datei unsichtbar; einer am Ende ist auf APFS harmlos.
         let dots = result.prefix { $0 == "." }.count
         result = String(repeating: replacement, count: dots) + result.dropFirst(dots)
         if result.isEmpty { return untitled }
