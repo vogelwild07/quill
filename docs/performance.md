@@ -220,6 +220,11 @@ der neu geladenen Sidebar. Zwei Läufe ohne Last: Median 140,3 und 140,1 ms, Ein
 `Scripts/perf-ui.py` „FEHLT“, Exit 1. Die Werte oben (104 ms) gelten für den alten
 Messpunkt.
 
+**Produktziel verfehlt:** `sidebarReload` liegt mit 140 ms über dem Ziel von 100 ms
+(Schlusslauf auf dem Endstand: Median 154,6 ms, Einzelwerte 133,6–161,8 ms).
+Für v0.1 akzeptiert. Lösung über Weg (a): Sidebar aus einer Momentaufnahme des
+`PageStore` bauen (`roadmap.md`, „Später“).
+
 ### Warum `SidebarView.body` lief
 
 Per `Self._logChanges()` (SwiftUI-Log „Changed Body Properties“) geprüft:
