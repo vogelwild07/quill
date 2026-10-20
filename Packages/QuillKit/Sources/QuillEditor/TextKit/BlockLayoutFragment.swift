@@ -20,7 +20,8 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     let assetID: UUID?
     /// Block-ID aus dem Absatz, für den Fokus-Modus.
     let blockID: UUID?
-    /// Im Fokus-Modus außerhalb der Auswahl: ganz in `EditorColor.dimmedAlpha` gezeichnet.
+    /// Im Fokus-Modus außerhalb der Auswahl: mit den abgedunkelten Farben gezeichnet
+    /// (`EditorColor.drawingDimmed`), Bilder mit `EditorColor.dimmedAlpha`.
     /// Beim Zeichnen gelesen, nicht beim Anlegen: TextKit verwendet Fragmente beim
     /// Neu-Layouten wieder.
     var isDimmed: Bool {
@@ -147,14 +148,9 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
 
     override func draw(at point: CGPoint, in context: CGContext) {
         guard isDimmed else { return drawBlock(at: point, in: context) }
-        // Eine Ebene für den ganzen Block: Überlagerungen (Code-Hintergrund unter Text)
-        // werden zusammen abgedunkelt, nicht einzeln.
-        context.saveGState()
-        context.setAlpha(EditorColor.dimmedAlpha)
-        context.beginTransparencyLayer(auxiliaryInfo: nil)
-        drawBlock(at: point, in: context)
-        context.endTransparencyLayer()
-        context.restoreGState()
+        // Farben je Rolle statt einer Deckkraft für den ganzen Block: Schwächere Rollen
+        // (Zitat, Marker, Erledigt) dürfen nicht unter ihren Mindestkontrast fallen.
+        EditorColor.drawingDimmed { drawBlock(at: point, in: context) }
     }
 
     private func drawBlock(at point: CGPoint, in context: CGContext) {
@@ -251,6 +247,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         context.translateBy(x: rect.minX, y: rect.maxY)
         context.scaleBy(x: 1, y: -1)
         context.interpolationQuality = .high
+        if isDimmed { context.setAlpha(EditorColor.dimmedAlpha) }
         context.draw(image, in: CGRect(origin: .zero, size: rect.size))
         context.restoreGState()
     }

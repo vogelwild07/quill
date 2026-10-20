@@ -21,7 +21,8 @@ struct EditorFocusModeTests {
     // MARK: Farben
 
     /// Jedes Theme in jeder Variante: abgedunkelter Fließtext über dem Mindestkontrast,
-    /// aber sichtbar zurückgenommen.
+    /// aber sichtbar zurückgenommen; Überschrift, Link, Zitat und Listenmarker sowie
+    /// erledigte To-dos fallen abgedunkelt ebenfalls nicht darunter.
     @Test(arguments: EditorTheme.ID.allCases)
     func dimmedTextKeepsMinimumContrast(_ id: EditorTheme.ID) {
         let theme = EditorTheme.with(id: id)
@@ -43,6 +44,12 @@ struct EditorFocusModeTests {
             #expect(dimmed >= minimum, "\(id.rawValue) \(variant): \(String(format: "%.2f", dimmed)) < \(minimum)")
             #expect(palette.dimmedAlpha <= 0.8, "\(id.rawValue) \(variant): kaum abgedunkelt (\(palette.dimmedAlpha))")
             #expect(dimmed < full, "\(id.rawValue) \(variant)")
+            for (name, role) in [("Text", EditorColorRole.text), ("Überschrift", .heading), ("Link", .link),
+                                 ("Zitat, Marker", .secondary), ("Erledigt", .done)] {
+                let color = EditorThemeContrastTests.resolve(palette.dimmed(role), in: appearance)
+                let ratio = color.over(background).contrast(to: background)
+                #expect(ratio >= minimum, "\(id.rawValue) \(variant), \(name): \(String(format: "%.2f", ratio)) < \(minimum)")
+            }
         }
     }
 
@@ -69,6 +76,35 @@ struct EditorFocusModeTests {
         #expect(dimmed >= 3, "\(label): \(String(format: "%.2f", dimmed))")
         #expect(dimmed < active / 1.4, "\(label): abgedunkelt \(String(format: "%.2f", dimmed)), aktiv \(String(format: "%.2f", active))")
         #expect(abs(active - before) < 0.5, "\(label): aktiver Block unverändert")
+        _ = window
+    }
+
+    /// Gezeichnet: Zitat, Listenmarker und erledigte To-dos bleiben abgedunkelt mindestens
+    /// 3 : 1. Gemessen nur im Text bzw. nur am Marker, ohne Zitatbalken und Checkbox.
+    @Test(arguments: EditorTheme.ID.allCases, systems)
+    func weakerRolesKeepMinimumContrastWhenDimmed(_ id: EditorTheme.ID, _ system: NSAppearance.Name) throws {
+        EditorThemeSettings.shared.select(id)
+        defer { EditorThemeSettings.shared.select(.standard) }
+        let editor = BlockEditorController(document: EditorDocument(blocks: [
+            EditorBlock(kind: .quote, text: "Ein Zitat mit etwas Text"),
+            EditorBlock(kind: .bulleted, text: "Punkt"),
+            EditorBlock(kind: .todo, text: "Erledigte Aufgabe", isChecked: true),
+            EditorBlock(text: "Hier steht der Cursor"),
+        ]))
+        let window = makeWindow(editor, system, height: 300)
+        let label = "\(id.rawValue), System \(system == .aqua ? "hell" : "dunkel")"
+        caret(editor, inBlock: 3)
+        EditorFocusSettings.shared.setEnabled(true)
+        defer { EditorFocusSettings.shared.setEnabled(false) }
+        let rendered = try Rendered(window, textView: editor.textView)
+        try rendered.bitmap.writePNG(named: "focus-roles-\(id.rawValue)-system-\(system == .aqua ? "hell" : "dunkel")")
+        let background = rendered.color(at: CGPoint(x: editor.textView.bounds.maxX - 30, y: try frame(editor, block: 3).midY))
+        #expect(try dimmedBlocks(editor) == [0, 1, 2])
+        for (name, rect) in [("Zitat", try textRect(editor, block: 0)), ("Erledigt", try textRect(editor, block: 2)),
+                             ("Listenmarker", try markerRect(editor, block: 1))] {
+            let ratio = rendered.strongestContrast(in: rect, against: background)
+            #expect(ratio >= 3, "\(label), \(name): \(String(format: "%.2f", ratio)) < 3")
+        }
         _ = window
     }
 
@@ -250,6 +286,23 @@ struct EditorFocusModeTests {
 
     private func frame(_ editor: BlockEditorController, block index: Int) throws -> CGRect {
         editor.textView.viewFrame(of: try fragment(editor, block: index))
+    }
+
+    /// Erste Zeile des Blocks ab dem ersten Zeichen, in Koordinaten der Text-View.
+    private func textRect(_ editor: BlockEditorController, block index: Int) throws -> CGRect {
+        let fragment = try fragment(editor, block: index)
+        let line = try #require(fragment.textLineFragments.first)
+        let frame = editor.textView.viewFrame(of: fragment)
+        let bounds = line.typographicBounds
+        let start = bounds.minX + line.locationForCharacter(at: 0).x
+        return CGRect(x: frame.minX + start, y: frame.minY + bounds.minY, width: bounds.maxX - start, height: bounds.height)
+    }
+
+    /// Bereich links vom Text der ersten Zeile, also nur der Listenmarker.
+    private func markerRect(_ editor: BlockEditorController, block index: Int) throws -> CGRect {
+        let text = try textRect(editor, block: index)
+        let left = editor.textView.textContainerOrigin.x
+        return CGRect(x: left, y: text.minY, width: text.minX - left - 1, height: text.height)
     }
 
     private func dimmedBlocks(_ editor: BlockEditorController) throws -> [Int] {

@@ -23,6 +23,9 @@ enum EditorThemeState {
     }
 
     private static let state = Mutex(State())
+    /// Gesetzt, solange ein abgedunkelter Block zeichnet (`drawingDimmed`); dann liefern
+    /// alle Rollen ihre abgedunkelte Farbe. Gezeichnet wird nur auf dem Main Thread.
+    private static let dimmed = Mutex(false)
 
     static var theme: EditorTheme { state.withLock { $0.theme } }
 
@@ -35,13 +38,21 @@ enum EditorThemeState {
     }
 
     static func color(_ role: EditorColorRole, for appearance: NSAppearance) -> NSColor {
-        state.withLock { state in
+        let isDimmed = dimmed.withLock { $0 }
+        return state.withLock { state in
             let variant = EditorThemeVariant(appearance, increaseContrast: state.increaseContrast)
-            if let palette = state.palettes[variant] { return palette[role] }
+            if let palette = state.palettes[variant] { return isDimmed ? palette.dimmed(role) : palette[role] }
             let palette = ResolvedPalette(state.theme.palette(for: variant), variant: variant)
             state.palettes[variant] = palette
-            return palette[role]
+            return isDimmed ? palette.dimmed(role) : palette[role]
         }
+    }
+
+    /// Zeichnet `body` mit den abgedunkelten Farben des Fokus-Modus.
+    static func drawingDimmed(_ body: () -> Void) {
+        dimmed.withLock { $0 = true }
+        defer { dimmed.withLock { $0 = false } }
+        body()
     }
 
     /// Deckkraft abgedunkelter Absätze im Fokus-Modus für die Darstellung.
@@ -59,11 +70,32 @@ enum EditorThemeState {
 /// Farben einer Palette als `NSColor`, mit „Kontrast erhöhen“ verstärkt.
 struct ResolvedPalette: Sendable {
     private let colors: [EditorColorRole: NSColor]
+    /// Abgedunkelte Farben im Fokus-Modus (`EditorThemeState.drawingDimmed`).
+    private let dimmedColors: [EditorColorRole: NSColor]
     /// Deckkraft abgedunkelter Absätze im Fokus-Modus: Fließtext darüber Richtung
-    /// Hintergrund, so weit wie möglich, aber über `minimumDimmedContrast`.
+    /// Hintergrund, so weit wie möglich, aber über `minimumDimmedContrast`. Gilt auch
+    /// für Kopf, Bilder und Flächen; Textrollen werden höchstens so weit abgedunkelt,
+    /// dass sie den Mindestkontrast behalten (`dimmed(_:)`).
     let dimmedAlpha: CGFloat
 
     subscript(role: EditorColorRole) -> NSColor { colors[role] ?? .labelColor }
+
+    func dimmed(_ role: EditorColorRole) -> NSColor { dimmedColors[role] ?? self[role] }
+
+    /// `color` mit Deckkraft `alpha`, weiter dynamisch: `withAlphaComponent` löst
+    /// Systemfarben wie `labelColor` sonst einmal in der gerade aktuellen Darstellung auf.
+    static func faded(_ color: NSColor, alpha: CGFloat) -> NSColor {
+        NSColor(name: nil) { appearance in
+            var result = color
+            appearance.performAsCurrentDrawingAppearance {
+                result = (color.usingColorSpace(.sRGB) ?? color).withAlphaComponent(alpha)
+            }
+            return result
+        }
+    }
+
+    /// Textrollen, die im Fokus-Modus den Mindestkontrast behalten.
+    static let textRoles: [EditorColorRole] = [.text, .heading, .link, .secondary, .done]
 
     /// Mindestkontrast von Text zum Hintergrund (WCAG AA bzw. AAA).
     static let minimumContrast = 4.5
@@ -92,8 +124,7 @@ struct ResolvedPalette: Sendable {
 
         var colors: [EditorColorRole: NSColor] = [:]
         var textValues: [SRGB] = []
-        for (role, color) in [(EditorColorRole.text, palette.text), (.heading, palette.heading), (.link, palette.link),
-                              (.secondary, palette.secondary), (.done, palette.done)] {
+        for (role, color) in zip(Self.textRoles, [palette.text, palette.heading, palette.link, palette.secondary, palette.done]) {
             let (resolved, value) = textColor(color)
             colors[role] = resolved
             textValues.append(value)
@@ -123,7 +154,23 @@ struct ResolvedPalette: Sendable {
         colors[.selection] = selection.nsColor
         self.colors = colors
         let dimmedTarget = variant.isHighContrast ? Self.minimumHighDimmedContrast : Self.minimumDimmedContrast
-        dimmedAlpha = ink.fadedAlpha(over: background, minimum: dimmedTarget)
+        let alpha = ink.fadedAlpha(over: background, minimum: dimmedTarget)
+        dimmedAlpha = alpha
+        // Jede Textrolle so weit wie der Fließtext, schwächere Rollen (Zitat, Marker,
+        // Erledigt) weniger, damit sie über dem Mindestkontrast bleiben. Deckkraft
+        // relativ zur eigenen, damit Systemfarben wie `labelColor` ihre behalten.
+        var dimmedColors: [EditorColorRole: NSColor] = [:]
+        for (role, value) in zip(Self.textRoles, textValues) {
+            let roleAlpha = max(alpha, value.over(background).fadedAlpha(over: background, minimum: dimmedTarget))
+            dimmedColors[role] = colors[role].map { Self.faded($0, alpha: value.alpha * roleAlpha) }
+        }
+        // Flächen und Häkchen wie der Fließtext.
+        for (role, color) in [(EditorColorRole.codeBackground, palette.codeBackground), (.quoteBar, palette.quoteBar),
+                              (.accent, palette.accent)] {
+            dimmedColors[role] = colors[role].map { Self.faded($0, alpha: color.approximation(variant).alpha * alpha) }
+        }
+        dimmedColors[.onAccent] = colors[.onAccent].map { Self.faded($0, alpha: alpha) }
+        self.dimmedColors = dimmedColors
     }
 }
 
