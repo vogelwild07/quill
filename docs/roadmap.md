@@ -3,7 +3,7 @@
 | Phase | Inhalt | Ergebnis |
 |---|---|---|
 | 0 Setup | Repo, Xcode-Projekt, `QuillKit`, `.gitignore`, Docs, CLAUDE.md | leere App baut, Tests grün, erster Push |
-| 1 Research + Spike | Notion-Verhalten beobachten, Editor-Spike gegen Kriterien | ADR „Editor-Architektur“ |
+| 1 Research + Spike | Verhalten beobachten (Kürzel, Slash-Menü, Zwischenablage), Editor-Spike gegen Kriterien | ADR „Editor-Architektur“ |
 | 2 Datenmodell + Sidebar | `SchemaV1`, `PageStore`, automatische Backups, Migrationstest, Seitenbaum, Drag & Drop, Tabs, Menüleiste | Seiten anlegen und verschachteln |
 | 3 Editor (Text) ✅ | Textblöcke, Überschriften, Listen, To-do, Zitat, Inline-Formatierung (⌘B, ⌘I, ⇧⌘M, ⇧⌘X, ⌘K), Persistenz, Kopf mit Titel im Editor; aus dem Spike übernommen: Slash-Menü, Markdown-Kürzel, Block-Drag, Code, Trenner | Schreiben alltagstauglich |
 | 4 Editor (Interaktion) ✅ | Block-Felder in `BlockProperties` (ADR-014), `BlockKind` nur in `QuillModel`, Bild-Block (ADR-015), Einfügen-Knopf ＋ (Escape nimmt den Klick zurück), Slash-Menü mit Abschnitten, Maus und VoiceOver, Kürzel in allen Textblöcken, Format › Blockart (⌥⌘0–7), Abhaken (⌘↩), Blöcke verschieben (⌥⌘↑/↓) und duplizieren (⌘D), Kontextmenü am Griff, Mitscrollen beim Ziehen (ADR-016), Ladeanzeige beim Lesen großer Bilder; gemergt (PR #4) | Editor MVP-komplett |
@@ -28,6 +28,7 @@ Ideen aus Phase 5, nicht eingeplant:
 
 Ideen aus Phase 7, nicht eingeplant:
 - Englische Lokalisierung (bisher nur Deutsch).
+- Eigenes URL-Schema `quill://` für Links auf Seiten (Deep Links).
 - „Kontrast erhöhen“ von Hand prüfen (offscreen nicht nachstellbar, ADR-021).
 - UI-Tests legen das Fenster immer auf den Hauptbildschirm, damit Messungen (Kontrast-Audit,
   README-Bilder) bei mehreren Monitoren vergleichbar sind. Mit zweitem Monitor meldete der

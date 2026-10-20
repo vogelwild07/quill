@@ -1,6 +1,6 @@
 # Quill
 
-Local-first, Notion-ähnliche Produktivitäts-App für macOS: Seiten, Notizen und Aufgaben in einem nativen Block-Editor.
+Local-first Notizen- und Seiten-App für macOS: verschachtelte Seiten, Notizen und Aufgaben in einem nativen Block-Editor. Alle Daten bleiben auf deinem Mac.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/quill-dunkel.png">

@@ -1,6 +1,6 @@
 # Design
 
-Grundlage: Apple Human Interface Guidelines. Quill ist kein Notion-Klon und übernimmt keine Notion-Designs oder -Assets.
+Grundlage: Apple Human Interface Guidelines. Eigene Gestaltung; keine Designs, Assets oder Texte anderer Apps.
 
 ## Ästhetik
 

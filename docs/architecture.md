@@ -29,7 +29,7 @@ quill/
 │  ├─ Sources/{QuillModel,QuillEditor,QuillFeatures,QuillExport,QuillDesign}
 │  └─ Tests/                    Swift Testing; `QuillTestFixtures` = gemeinsame `SampleDocuments`
 ├─ QuillUITests/                XCUITest
-└─ docs/                        architecture, decisions, data-model, design, roadmap, research/
+└─ docs/                        architecture, decisions, data-model, design, performance, roadmap, product-brief, releases/, images/
 ```
 
 Bundle-IDs: `io.github.vogelwild07.quill`, `io.github.vogelwild07.quill.UITests`.
@@ -70,6 +70,11 @@ Grund: Selektion, Cursorbewegung und Kopieren über Blöcke hinweg, IME, Rechtsc
 | Seite | `PageEditorSession`, `PageHeaderView` (Icon, Titel) in `QuillFeatures` | AppKit + SwiftUI |
 
 Der Controller ist auf Erweiterungen verteilt: `+Input` (Tastatur, Kürzel, Slash), `+Sync` (Text ↔ Modell, Undo), `+Clipboard`, `+Drag`, `+Formatting` (⌘B … ⌘K), `+Page` (Kopf, Fokus, Neuladen), `+Images` (Bilder laden, einfügen, Hinweis).
+
+### Zwischenablage und Kürzel
+
+- Kopieren schreibt immer vier Darstellungen, auch über den Griff: Klartext (`public.utf8-plain-text`), Markdown (`net.daringfireball.markdown`), RTF (`public.rtf`) und den eigenen Typ `io.github.vogelwild07.quill.blocks` (JSON mit Blockarten). Andere Apps bekommen so lesbares Markdown oder formatierten Text, Quill selbst die Blöcke verlustfrei (`BlockEditorController+Clipboard`).
+- Kürzel folgen macOS-Konventionen (⌘B/⌘I, ⌘K Link, ⌘Z/⇧⌘Z, Tab/⇧Tab) und gängigen Markdown-Kürzeln. Das Slash-Menü filtert über deutsche Namen und englische Aliasse („Überschrift“, „h1“, „todo“).
 
 ### Inline-Formatierung
 

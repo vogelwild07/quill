@@ -1,6 +1,6 @@
 # CLAUDE.md – Quill
 
-Local-first, Notion-ähnliche macOS-App. Rolle: Senior Product Designer, macOS-Architekt, Swift-Entwickler.
+Local-first Notizen- und Seiten-App für macOS. Rolle: Senior Product Designer, macOS-Architekt, Swift-Entwickler.
 
 **Stand:** Phase 6 (Export) fertig, gemergt (PR #6, ADR-018, Review-Fixes drin). Phase 7 (Feinschliff): 7.1 Backup wiederherstellen fertig, gemergt (PR #7, ADR-019, Store in `Store/`, Review-Fixes drin). 7.2 Aufräumen + Performance fertig, gemergt (PR #8, ADR-020, `docs/performance.md`, Review-Fixes drin; `sidebarReload` 140–155 ms statt Ziel 100 ms, für v0.1 akzeptiert). 7.3 A11y, Leerzustände, Lokalisierung, Icon fertig, gemergt (PR #9, ADR-021, Review-Fixes drin). Phase 7 abgeschlossen. Phase 8: v0.1.0 veröffentlicht (Tag `v0.1.0`, GitHub-Release mit ad hoc signierter .dmg, nur Apple Silicon, macOS 26.0; Lizenz GPL-3.0-or-later, Icon ausgenommen via `ICON-LICENSE`; ADR-022). Nächstes: offen, Ideen unter „Später“. Neue Ideen nur unter „Später“ in `docs/roadmap.md`. Bekannte Probleme + Plan: `docs/roadmap.md`.
 
@@ -38,9 +38,9 @@ Apple HIG, Liquid Glass nur Sidebar/Toolbars/Popover, nicht Inhalt. SF Pro / SF 
 - **XcodeBuildMCP** für Bauen/Testen/Starten (macOS-Workflow). Fallback: `xcodebuild`.
 - **Keine Bildschirmfotos oder -aufnahmen des Macs**, auch nicht zur Kontrolle (kein `screencapture`, keine Screenshot-Tools). App nur via Bedienungshilfen (AX), XCUITest oder App-eigene Snapshots (z. B. `-snapshot`) prüfen. Einzige Ausnahme: `Scripts/readme-screenshots.sh` (README-Bilder per XCUITest-Fensteraufnahme), nur nach ausdrücklichem OK des Nutzers für genau diesen Lauf, nachdem er Schreibtischbild, Fenster und „Nicht stören“ vorbereitet hat; Bilder danach auf fremde Inhalte prüfen.
 - **Context7 / Apple-Doku:** SwiftUI-/SwiftData-/TextKit-APIs immer gegen aktuelle Doku prüfen.
-- **REA:** nur lawful Research am lokalen Notion, nur Verhalten beobachten. Keinen Notion-Code übernehmen/nachbauen. Ergebnisse nach `docs/research/`.
-- **Notion-MCP:** nur lesend (`search`, `fetch`). Nie im Notion des Nutzers anlegen, ändern, löschen.
-- Kein Notion-Code, keine Notion-Assets, -Marken, -Texte, -Designs kopieren.
+- **REA:** nur rechtmäßige Recherche an lokal installierten Apps, nur Verhalten beobachten. Keinen fremden Code übernehmen oder nachbauen.
+- **Verbundene Konten (MCP):** nur lesend. Konkrete Regeln je Konto in `CLAUDE.local.md`.
+- Eigene Texte, Designs und Assets; keine Formulierungen, Designs, Assets, Marken oder Code anderer Apps.
 
 <!-- graphify-rules-start (managed by `graphify init`) -->
 ## Use Graphify before grep
@@ -57,7 +57,7 @@ Fall back to grep or file reads only for what the graph does not model: literal 
 <!-- graphify-rules-end -->
 
 - Graphify = externer Dienst, liest GitHub-Stand, nicht lokalen Mac. Ungepushte Änderungen fehlen dort → lokal lesen.
-- Nur Code + Doku aus diesem Repo. Nie Inhalte aus meinem echten Store, Backups, Notion, Secrets oder Dateien außerhalb Repo. Im Zweifel vorher fragen.
+- Nur Code + Doku aus diesem Repo. Nie Inhalte aus meinem echten Store, Backups, verbundenen Konten, Secrets oder Dateien außerhalb Repo. Im Zweifel vorher fragen.
 
 ## Tests und Gegenproben
 - Jeder UI-Testlauf mit `timeout 600`. Ein Timeout gilt als „greift nicht sauber“ und wird gemeldet, nie ignoriert.
