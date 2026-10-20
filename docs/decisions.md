@@ -297,3 +297,18 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Feste Themes zeigen Rollbalken im Editor mit „Kontrast erhöhen“ ohne deren Systemvariante; alle Theme-Farben samt Platzhalter und Bedienelementen sind abgeleitet.
 - Snapshots zeigen die Auswahl grau, weil das Testfenster nicht aktiv ist; im aktiven Fenster gilt die Theme-Farbe.
 - Eigene Themes, Import und Export von Themes und eine Schriftgröße stehen unter „Später“.
+
+## ADR-025: Fenster der .dmg mit Hintergrund und Volume-Icon (2026-10-20)
+
+**Kontext:** Die .dmg öffnete ein schlichtes Finder-Fenster mit grauem Laufwerk. Gewünscht war ein gestaltetes Fenster wie bei professionellen Mac-Apps, reproduzierbar per Skript, ohne die Prüfungen von ADR-022 zu ändern.
+
+**Entscheidung:**
+- Hintergrund „Tinte und Papier“ (`Scripts/dmg/background.swift`, eigene Gestaltung): Schiefer aus Tinte, angedeutetes Blatt, gepunkteter Pfeil von Quill zu „Programme“, unten ein Band in Petrol mit dem Satz zur Installation, Sonnengelb nur als Akzent. Eine TIFF-Datei mit 1× und 2× (`tiffutil -cathidpicheck`), committet als `Scripts/dmg/background.tiff`.
+- Der Hintergrund passt sich nicht an hell und dunkel an; der Finder schreibt die Namen im hellen Modus schwarz, im dunklen weiß. Die Fläche hinter den Namen hat deshalb mittlere Helligkeit (beide Farben mindestens 4,5 : 1); das Zeichenskript bricht sonst ab.
+- Layout mit `dmgbuild` (`Scripts/dmg/settings.py`): Fenster 640 × 400 ohne Leisten, Icons 128 pt, Quill links, „Programme“ rechts auf Höhe des Pfeils, Volume-Icon aus `AppIcon.icns`. `dmgbuild` schreibt die `.DS_Store` direkt, ohne Finder und AppleScript, also ohne Freigabe zur Finder-Steuerung und ohne sichtbares Fenster beim Bauen. Version und Prüfsummen fest (`Scripts/dmg/requirements.txt`, `pip --require-hashes`), installiert in `.build/dmgbuild-venv`.
+- Kein `hide_extensions`: Es setzt Finder-Informationen am Bundle, und `codesign --strict` lehnt die App dann ab.
+- `make-release.sh` prüft zusätzlich Hintergrund und Volume-Icon (byte-gleich), das Attribut für das eigene Volume-Icon und die `.DS_Store`; die bisherigen Prüfungen bleiben.
+
+**Konsequenzen:**
+- Release braucht beim ersten Lauf Netz für `pip` (danach aus `.build/`).
+- Hintergrund ändern: `swift Scripts/dmg/background.swift Scripts/dmg/background.tiff`, Positionen in `settings.py` mitziehen.
