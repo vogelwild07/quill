@@ -153,3 +153,29 @@ enum SyncJSON {
         return decoder
     }
 }
+
+/// Was im gewählten Ordner schon liegt, gelesen ohne etwas zu schreiben: vor dem
+/// Einschalten, um zu entscheiden, ob Quill zusammenführt oder neu beginnt (ADR-029).
+public struct SyncFolderInspection: Equatable, Sendable {
+    /// Der Ordner `Quill` fehlt oder ist leer.
+    public var isEmpty: Bool
+    /// ID aus `quill.json`; `nil`, wenn es die Datei nicht gibt oder sie (noch) nicht
+    /// lesbar ist.
+    public var folderID: UUID?
+
+    public init(isEmpty: Bool, folderID: UUID?) {
+        self.isEmpty = isEmpty
+        self.folderID = folderID
+    }
+
+    public static func inspect(
+        _ chosenFolder: URL, files: any SyncFileAccess = CoordinatedFileAccess()
+    ) throws -> SyncFolderInspection {
+        let layout = SyncFolderLayout(chosenFolder: chosenFolder)
+        // Vom Finder angelegt, keine Quill-Daten.
+        let entries = try files.contents(of: layout.root).filter { $0.name != ".DS_Store" }
+        let manifest = entries.first { $0.name == layout.manifest.lastPathComponent }
+        let folderID = manifest.flatMap { $0.isDownloaded ? try? FolderManifest.decode(files.read(layout.manifest)).folderID : nil }
+        return SyncFolderInspection(isEmpty: entries.isEmpty, folderID: folderID)
+    }
+}

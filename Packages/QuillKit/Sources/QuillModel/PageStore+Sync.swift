@@ -88,6 +88,20 @@ extension PageStore {
         try save()
     }
 
+    /// Vergisst alle Sync-Dokumente und gelesenen Dateien, nicht die Seiten. Vor
+    /// dem Verbinden mit einem neuen Ordner: Die Geschichte der Dokumente steht nur im
+    /// alten Ordner, ein anderes Gerät im neuen Ordner könnte darauf aufbauende
+    /// Änderungen nie übernehmen. Der erste Abgleich schreibt dann alles neu.
+    public func resetSyncDocuments() throws {
+        let workspace = try primaryWorkspace()
+        workspace.syncTree = nil
+        workspace.syncCursors = nil
+        for page in try modelContext.fetch(FetchDescriptor<Page>()) where page.syncDocument != nil {
+            page.syncDocument = nil
+        }
+        try save()
+    }
+
     /// Alle Seiten, auch im Papierkorb.
     public func pageSnapshots() throws -> [PageSnapshot] {
         try modelContext.fetch(FetchDescriptor<Page>()).map(\.snapshot).sorted { $0.id.uuidString < $1.id.uuidString }
