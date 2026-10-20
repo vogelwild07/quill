@@ -203,6 +203,10 @@ PageStore.exportSnapshot  →  MarkdownExporter.plan  →  ExportWriter.write
 - Golden Files: `Tests/QuillExportTests/Golden/ExportProject/` aus `SampleDocuments.exportProject()`; neu schreiben mit `QUILL_UPDATE_GOLDEN=1 swift test --filter MarkdownExporterTests`, dann den Diff prüfen.
 - UI-Test: `-QuillExportDirectory <Name>` schreibt ohne Dialog in den temporären Ordner der App (Sandbox).
 
+## Sync (ADR-026, ab Phase 11)
+
+Sync über einen gewählten Ordner mit Automerge, je Seite ein Dokument und eines für den Seitenbaum. Der SwiftData-Store bleibt Quelle der App: Seiten öffnen aus dem Store, Automerge braucht nur der Abgleich im Hintergrund. Automerge steht nur in der Sync-Schicht (ein Modul), damit ein Ausstieg auf dieses Modul beschränkt bleibt. Der Spike aus Phase 10.1 liegt unter `Spikes/AutomergeSpike` (Abbildung `[EditorBlock]` ↔ Automerge mit Umrechnung UTF-16 ↔ Unicode-Skalare, Messprogramm, Größenskript) und wird von App und QuillKit nie eingebunden (`SpikeIsolationTests`).
+
 ## Tests
 
 - Unit: Swift Testing pro Modul. `EditorDocument` und Exporter mit Golden Files, Editor-Controller mit Offscreen-Fenster (Tastatureingaben, Undo, Zwischenablage, Formatieren), `EditorPersistenceBridge` gegen In-Memory-Store, `PageStore` mit In-Memory-`ModelContainer`, Backups, Migrationen, Umzug und Wiederherstellen mit Stores im Temp-Ordner, nacheinander in `DiskStoreSuites` (ADR-010, ADR-011, ADR-019), `PageTree` ohne SwiftData.

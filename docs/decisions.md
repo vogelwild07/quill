@@ -315,14 +315,27 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 
 ## ADR-026: Sync über einen gewählten Ordner mit Automerge (2026-10-20)
 
-**Status:** Format und Regeln entschieden; Automerge vorbehaltlich des Spikes in Phase 10 (Kriterien unten, Messwerte werden hier nachgetragen).
+**Status:** entschieden (2026-10-20). Automerge nach dem Spike in Phase 10.1 (`Spikes/AutomergeSpike`); das Kriterium zum Laden wurde nach der Messung neu gefasst, siehe „Spike und Messwerte“.
 
 **Kontext:** Quill soll zwischen Macs und später dem iPhone synchronisieren, ohne CloudKit und ohne eigenen Server, über einen Ordner, den der Nutzer wählt (iCloud Drive, Dropbox, Nextcloud, Syncthing usw.). Bis Phase 13 gibt es kein Developer Program. „Letzte Speicherung pro Block gewinnt“ (ADR-012) reicht für verzögerte Änderungen von mehreren Geräten nicht. Daten dürfen nie still verloren gehen.
 
 **Entscheidung:**
 - **Schichten:** Der lokale SwiftData-Store bleibt Quelle der App. Die Sync-Schicht hängt an `PageStore` (einziger Schreiber): Jede lokale Änderung wird zusätzlich als Änderung am CRDT-Dokument der Seite festgehalten; eingehende Änderungen werden zusammengeführt und als Diff über `PageStore.applyEdits` in den Store geschrieben. Ohne eingeschalteten Sync bleibt alles wie bisher.
 - **CRDT:** Automerge (`automerge-swift`, MIT, GPL-verträglich), ein Dokument je Seite und eines für den Seitenbaum (Titel, Eltern, `sortKey`, Favorit, Papierkorb). Blöcke als Liste von Maps mit UUID, Art (`kindRaw`), `BlockProperties` und Text mit Marks. Gleichzeitiges Tippen im selben Block wird zusammengeführt.
-- **Kriterien für den Spike** (Apple Silicon, Release-Build): Laden einer Seite mit Geschichte unter 50 ms; 1.000 Seiten mit Geschichte zusammen unter 50 MB zusätzlich zum Store; die App wird höchstens wenige MB größer. Reißt der Spike eines davon, entscheidet der Nutzer anhand der Zahlen und der Alternativen (z. B. eigenes CRDT nur für Blöcke, Yrs/Yjs, Konflikte pro Block ohne Textzusammenführung).
+- **Kriterien** (Apple Silicon, Release-Build), gültig nach dem Spike:
+  - Öffnen einer Seite bleibt so schnell wie ohne Sync: Der Editor lädt aus dem SwiftData-Store, nicht aus dem Automerge-Dokument.
+  - Abgleich einer Seite im Hintergrund (Datei lesen, Dokument laden, Änderungen anwenden, Blöcke erzeugen, speichern) unter 250 ms, auch im Schwerfall.
+  - Der erste Abgleich aller Seiten blockiert die App nicht und zeigt Fortschritt.
+  - 1.000 Seiten mit Geschichte zusammen unter 50 MB zusätzlich zum Store.
+  - Die App wird höchstens 5 MiB größer (2^20 Bytes je MiB).
+- **Abhängigkeit:** `automerge-swift` 0.7.2 exakt (Revision `aa45d17ac92cef2b8ded63b47e65a28dc85e3418`). Der Rust-Kern kommt als vorgebautes `automergeFFI.xcframework`; SwiftPM prüft es gegen die Prüfsumme `10245378e74229b026f689b039d7df3cf17aeed353706d5f420dfd164f283a86` aus dem Paket von automerge-swift. Statisch gelinkt (`staticlib`), kein eingebettetes Framework. Neue Versionen nur bewusst, mit erneuter Messung und Lizenzprüfung.
+- **Lizenzen:** `automerge-swift` MIT; Rust-Kern `automerge` 0.7.2 MIT. Die `Cargo.lock` des Kerns nennt 109 Crates, alle unter freien Lizenzen: überwiegend MIT oder Apache-2.0 (wahlweise), dazu BSD-2-Clause, Zlib, 0BSD, Unlicense, BSL-1.0, Unicode-DFS-2016 jeweils als Option oder Zusatz; die 9 uniffi-Crates unter MPL-2.0 (mit GPL-3.0 verträglich, MPL-2.0 Abschnitt 3.3). Keine Crate nur unter einer Copyleft-Lizenz, die mit GPL-3.0-or-later kollidiert. Geprüft über die öffentliche API von crates.io; die Lizenztexte kommen mit dem ersten Release, das Automerge enthält, in die App (Phase 11).
+- **Ausstieg, falls Automerge nicht mehr gepflegt wird:**
+  - Automerge steht nur in der Sync-Schicht (ein Modul); andere Module sehen keine Automerge-Typen. Ein Wechsel bleibt damit auf dieses Modul beschränkt.
+  - Der lokale SwiftData-Store bleibt Quelle der App. Sync ausschalten lässt jeden Store vollständig; Markdown-Export und Backups hängen nicht an Automerge.
+  - Das Binärformat von Automerge ist offen beschrieben und hat freie Implementierungen (Rust, JavaScript). Mit der festen Version und dem Quellcode des Kerns bleibt der Ordner lesbar; zur Not bauen wir den Kern selbst (unter „Später“).
+  - Wechsel auf ein anderes Format: Alle Seiten mit der letzten funktionierenden Version lesen und neu schreiben. Geht dabei die Geschichte (Zeitreise) verloren, nur nach Rückfrage, und der alte Ordner bleibt unverändert liegen.
+  - Anlass zur Prüfung: kein Release seit 12 Monaten, eine offene Sicherheitslücke ohne Fix oder ein Bruch mit der aktuellen Swift- oder Xcode-Version. Dann Alternativen bewerten (eigenes CRDT nur für Blöcke, Yrs/Yjs, Konflikte pro Block ohne Textzusammenführung).
 - **Format im Ordner:** Jedes Gerät schreibt nur eigene Dateien, Änderungen nur anhängend; damit sieht kein Sync-Dienst zwei Geräte an derselben Datei, und es entstehen keine Konfliktkopien.
 
   ```
@@ -342,11 +355,31 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - **Verschlüsselung (Phase 14, optional):** jede Datei mit CryptoKit (ChaCha20-Poly1305), auch Seitenbaum und Bilder. Schlüssel aus einer Passphrase (Schlüsselableitung mit Salz aus `quill.json`), danach nur im Schlüsselbund des Geräts. Der iCloud-Schlüsselbund scheidet aus, weil Mac (ad hoc) und iPhone ohne gemeinsames Team keine Einträge teilen. Beim Einrichten erzeugt Quill einen Wiederherstellungsschlüssel zum Aufschreiben und erklärt klar: Ohne Passphrase und ohne Wiederherstellungsschlüssel ist der Ordner unlesbar; die lokalen Stores der Geräte bleiben erhalten. Größe und Zeitpunkt der Dateien sieht der Anbieter weiterhin.
 - **Zeitreise (Phase 12):** aus der Geschichte der Automerge-Dokumente, also mitsynchronisiert. Bilder werden nicht versioniert; ein Bild, auf das nur noch alte Fassungen verweisen, darf nach einer einstellbaren Frist gelöscht werden, die Zeitreise zeigt dann einen Platzhalter.
 
+**Spike und Messwerte (Phase 10.1, 2026-10-20):** Apple M4, 16 GB, macOS 27.0.1, Swift 6.4, Release-Build; Ablauf in `Spikes/AutomergeSpike/README.md`. Seiten erfunden und Zeichen für Zeichen getippt, etwa 8,5 % der Eingaben wieder gelöscht, dazu Formatierung, Einschübe, abgehakte To-dos und geänderte Blockarten. Der Editor speichert 300 ms nach der letzten Eingabe, beim normalen Tippen also etwa einmal pro Wort; „pro Tastendruck“ ist der ungünstigste Fall.
+
+- **Ursprüngliches Kriterium „Laden einer Seite mit Geschichte unter 50 ms“** (Datei lesen, Dokument laden, `[EditorBlock]` erzeugen; Median aus 50 Läufen, kalt = frischer Prozess):
+
+  | Fall | Änderungen | Datei | Median | kalt | nur Automerge |
+  |---|---|---|---|---|---|
+  | 5.000 Wörter, Commit pro Wort | 5.072 | 51 KB | 28 ms | 33 ms | 16 ms |
+  | 5.000 Wörter, Commit pro Tastendruck | 50.920 | 48 KB | 61 ms | 68 ms | 49 ms |
+  | 15.000 Wörter, Commit pro Wort | 15.150 | 146 KB | 85 ms | 93 ms | 50 ms |
+  | 15.000 Wörter, Commit pro Tastendruck | 153.026 | 135 KB | 194 ms | 213 ms | 159 ms |
+
+  Nur der übliche Fall hielt 50 ms ein. Die Zeit wächst mit der Zahl der Änderungen, kaum mit der Dateigröße.
+- **Neufassung:** Das Kriterium hatte angenommen, dass eine Seite zum Öffnen aus Automerge geladen wird. Nach dieser Entscheidung bleibt aber der SwiftData-Store die Quelle der App; Automerge wird nur zum Abgleichen gebraucht, und das läuft im Hintergrund. Für den Nutzer zählt deshalb, dass das Öffnen unverändert schnell bleibt und der Abgleich die App nicht blockiert. Ein eigenes CRDT oder Yrs hätte eigene Spikes gebraucht, ohne absehbaren Vorteil beim Öffnen. Neu gefasst am 2026-10-20 durch den Nutzer (siehe Kriterien oben).
+- **Abgleich einer Seite im Hintergrund** (ein anderes Gerät hat 50 Wörter getippt und einen Block angefügt, 51 Änderungen, 7,3 KB; Datei lesen, laden, anwenden, Blöcke erzeugen, speichern; Median aus 20 Läufen): 33 ms, 68 ms, 103 ms, 214 ms (p95 217 ms) für die vier Fälle oben. Hält 250 ms auch im Schwerfall, mit etwa 15 % Reserve. Alle Werte stammen von einem M4 (Mac). In Phase 13 wird der Abgleich auf einem echten iPhone nachgemessen; reißt er dort 250 ms, kommen zuerst seltenere Commits (z. B. höchstens alle 2 s) und eine schnellere eigene Zuordnung zu `[EditorBlock]` zum Einsatz (die Zuordnung braucht heute 12–35 ms der Ladezeit), erst danach andere Wege.
+- **1.000 Seiten mit Geschichte** (700 × 500, 250 × 2.000, 50 × 5.000 Wörter): 11,9 MB mit Commit pro Wort, 11,3 MB mit Commit pro Tastendruck; derselbe Inhalt als JSON ohne Geschichte 14,1 MB; größte Seite 53 KB. Eine einzelne Änderung (ein Wort) als Datei etwa 125 Bytes.
+- **App-Größe** (zwei Release-Builds wie `make-release.sh`, ohne und mit Automerge und einem Aufruf der APIs der Sync-Schicht beim Start; `measure-app-size.sh`): `.app` 3,77 → 8,63 MiB, also **4,86 MiB mehr** (5,09 MB dezimal); `.dmg` (UDZO) 2,86 → 4,88 MiB, also 2,02 MiB mehr. Zwei Builds byte-gleich. Die Grenze gilt in MiB (Entscheidung des Nutzers); in MB wäre sie um 0,09 MB gerissen.
+- **Verhalten** (Tests im Spike): Gleichzeitiges Tippen im selben Block wird zusammengeführt. Zwei Werte für dasselbe Feld meldet Automerge (`getAll`), die Sync-Schicht kann beide zeigen. Löschen gegen Bearbeiten: Automerge entfernt den Block, die Bearbeitung bleibt in der Geschichte lesbar (`textAt`); wiederherstellen muss die Sync-Schicht selbst. Automerge zählt Textpositionen in Unicode-Skalaren, auch nach dem Laden; der Editor zählt in UTF-16, die Sync-Schicht rechnet um. Automerge baut für iOS ohne Warnungen.
+
 **Konsequenzen:**
 - Das iPhone gleicht nur im Vordergrund und gelegentlich per Hintergrundaufgabe ab, nicht live. Syncthing auf dem iPhone geht nur über Drittanbieter-Apps und wird nicht versprochen.
 - Das Datenmodell bleibt nach den Regeln aus ADR-002 aufgebaut; CloudKit ist nicht mehr geplant. ADR-012 (letzte Speicherung pro Block) gilt weiter für zwei Fenster auf einem Mac.
 - Ein Sync-Ordner ist kein Backup: Löschen wird synchronisiert. Die lokalen Backups bleiben.
 - Direkter Sync im WLAN steht unter „Später“.
+- Der Spike bleibt unter `Spikes/AutomergeSpike`, damit sich die Messwerte nachprüfen lassen; App und QuillKit binden ihn nie ein (`SpikeIsolationTests`). Phase 11 erlaubt dort Automerge selbst, nicht den Spike.
+- Die Sync-Schicht muss den Abgleich in den Hintergrund legen und den ersten Abgleich aller Seiten mit Fortschritt zeigen; seltener zu committen (z. B. höchstens alle 2 s) hält die Geschichte kürzer, falls der Schwerfall knapp wird.
 
 ## ADR-027: Fokus-Modus mit Schreibmaschinen-Scrollen und abgedunkelter Umgebung (2026-10-20)
 

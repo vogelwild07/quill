@@ -1,0 +1,15 @@
+{
+  "originHash" : "a2131e1b5e8a95ab90cc3463eb0741ace6359f533e255dd7e8ccd7396f08107f",
+  "pins" : [
+    {
+      "identity" : "automerge-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/automerge/automerge-swift.git",
+      "state" : {
+        "revision" : "aa45d17ac92cef2b8ded63b47e65a28dc85e3418",
+        "version" : "0.7.2"
+      }
+    }
+  ],
+  "version" : 3
+}
