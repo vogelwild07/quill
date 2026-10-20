@@ -1,6 +1,6 @@
 import AutomergeSpike
 import Foundation
-import QuillEditor
+import QuillEditorCore
 
 // Nur auf dem Mac: misst mit frischen Prozessen (`Process`). Auf iOS baut nur die
 // Bibliothek des Spikes mit.

@@ -1,6 +1,6 @@
 import Automerge
 import Foundation
-import QuillEditor
+import QuillEditorCore
 import QuillModel
 
 /// Zufallszahlen mit fester Saat (SplitMix64), damit jeder Lauf dieselben Seiten
