@@ -44,6 +44,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
         updateLayerColors()
+        editor?.updateHeaderDimming()
     }
 
     /// Ebenen kennen keine dynamischen Farben; nach Theme- oder Darstellungswechsel neu setzen.
@@ -90,7 +91,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     override func setFrameSize(_ newSize: NSSize) {
         var size = newSize
         if isTypewriterScrolling, let clip = enclosingScrollView?.contentView {
-            let natural = typewriterHeights.map { $0.applied == newSize.height ? $0.natural : newSize.height } ?? newSize.height
+            let natural = typewriterHeights.map { abs($0.applied - newSize.height) < 0.5 ? $0.natural : newSize.height } ?? newSize.height
             size.height = natural + ceil(clip.bounds.height / 2)
             typewriterHeights = (natural, size.height)
         } else {

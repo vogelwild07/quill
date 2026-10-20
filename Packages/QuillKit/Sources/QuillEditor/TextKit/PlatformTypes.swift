@@ -31,6 +31,8 @@ public enum EditorColor {
     static let placeholder = themed(.placeholder)
     /// Ziehgriff und Plus-Knopf in Ruhe, Trennlinie; mindestens 3 : 1.
     static let control = themed(.control)
+    /// Rahmen der leeren Checkbox; Farbe wie `done`, im Fokus-Modus wie eine Fläche.
+    static let checkboxBorder = themed(.checkboxBorder)
     static let accent = themed(.accent)
     /// Vordergrund auf Akzentfläche (Häkchen in der Checkbox).
     static let onAccent = themed(.onAccent)
@@ -57,6 +59,7 @@ public enum EditorColor {
     static var selection: PlatformColor { .tintColor.withAlphaComponent(0.25) }
     static var placeholder: PlatformColor { .placeholderText }
     static var control: PlatformColor { .tertiaryLabel }
+    static var checkboxBorder: PlatformColor { .tertiaryLabel }
     static var accent: PlatformColor { .tintColor }
     static var onAccent: PlatformColor { .white }
     static var dimmedAlpha: CGFloat { 0.4 }

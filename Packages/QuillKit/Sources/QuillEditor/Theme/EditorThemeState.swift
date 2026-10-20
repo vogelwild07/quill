@@ -5,8 +5,9 @@ import Synchronization
 /// Rollen der Theme-Farben im Editor; `EditorColor` liefert je Rolle eine dynamische Farbe.
 enum EditorColorRole: CaseIterable, Sendable {
     case background, text, heading, link, secondary, quoteBar, codeBackground, accent, onAccent, done, selection
-    /// Abgeleitet: Platzhalter der leeren Seite; Ziehgriff, Plus-Knopf und Trennlinie.
-    case placeholder, control
+    /// Abgeleitet: Platzhalter der leeren Seite; Ziehgriff, Plus-Knopf und Trennlinie;
+    /// Rahmen der leeren Checkbox (wie `done`, im Fokus-Modus aber eine Fläche).
+    case placeholder, control, checkboxBorder
 }
 
 /// Aktuelles Theme für die dynamischen Farben des Editors.
@@ -23,9 +24,12 @@ enum EditorThemeState {
     }
 
     private static let state = Mutex(State())
-    /// Gesetzt, solange ein abgedunkelter Block zeichnet (`drawingDimmed`); dann liefern
-    /// alle Rollen ihre abgedunkelte Farbe. Gezeichnet wird nur auf dem Main Thread.
-    private static let dimmed = Mutex(false)
+    /// Zähler im Thread-Wörterbuch, solange ein abgedunkelter Block zeichnet
+    /// (`drawingDimmed`); dann liefern die Rollen ihre abgedunkelte Farbe. Je Thread,
+    /// damit Farben, die woanders gleichzeitig aufgelöst werden, normal bleiben.
+    private static let dimmedKey = "io.github.vogelwild07.quill.drawingDimmed"
+
+    private static var isDrawingDimmed: Bool { (Thread.current.threadDictionary[dimmedKey] as? Int ?? 0) > 0 }
 
     static var theme: EditorTheme { state.withLock { $0.theme } }
 
@@ -38,7 +42,7 @@ enum EditorThemeState {
     }
 
     static func color(_ role: EditorColorRole, for appearance: NSAppearance) -> NSColor {
-        let isDimmed = dimmed.withLock { $0 }
+        let isDimmed = isDrawingDimmed
         return state.withLock { state in
             let variant = EditorThemeVariant(appearance, increaseContrast: state.increaseContrast)
             if let palette = state.palettes[variant] { return isDimmed ? palette.dimmed(role) : palette[role] }
@@ -50,8 +54,10 @@ enum EditorThemeState {
 
     /// Zeichnet `body` mit den abgedunkelten Farben des Fokus-Modus.
     static func drawingDimmed(_ body: () -> Void) {
-        dimmed.withLock { $0 = true }
-        defer { dimmed.withLock { $0 = false } }
+        let dictionary = Thread.current.threadDictionary
+        let depth = dictionary[dimmedKey] as? Int ?? 0
+        dictionary[dimmedKey] = depth + 1
+        defer { dictionary[dimmedKey] = depth }
         body()
     }
 
@@ -132,6 +138,7 @@ struct ResolvedPalette: Sendable {
         colors[.background] = palette.background.nsColor
         colors[.codeBackground] = palette.codeBackground.nsColor
         colors[.quoteBar] = palette.quoteBar.nsColor
+        colors[.checkboxBorder] = colors[.done]
         colors[.accent] = palette.accent.nsColor
         // Platzhalter und Bedienelemente: Text Richtung Hintergrund, so zurückhaltend
         // wie möglich, aber über dem Mindestkontrast.
@@ -164,11 +171,12 @@ struct ResolvedPalette: Sendable {
             let roleAlpha = max(alpha, value.over(background).fadedAlpha(over: background, minimum: dimmedTarget))
             dimmedColors[role] = colors[role].map { Self.faded($0, alpha: value.alpha * roleAlpha) }
         }
-        // Flächen und Häkchen wie der Fließtext.
+        // Flächen, Linien und Häkchen wie der Fließtext (ADR-027).
         for (role, color) in [(EditorColorRole.codeBackground, palette.codeBackground), (.quoteBar, palette.quoteBar),
-                              (.accent, palette.accent)] {
+                              (.accent, palette.accent), (.checkboxBorder, palette.done)] {
             dimmedColors[role] = colors[role].map { Self.faded($0, alpha: color.approximation(variant).alpha * alpha) }
         }
+        dimmedColors[.control] = colors[.control].map { Self.faded($0, alpha: alpha) }
         dimmedColors[.onAccent] = colors[.onAccent].map { Self.faded($0, alpha: alpha) }
         self.dimmedColors = dimmedColors
     }

@@ -1,6 +1,7 @@
 #if canImport(AppKit)
 import AppKit
 import QuillTestFixtures
+import Synchronization
 import Testing
 @testable import QuillEditor
 
@@ -12,6 +13,8 @@ import Testing
 @Suite("Fokus-Modus", .serialized, .renderingLock)
 struct EditorFocusModeTests {
     nonisolated static let systems: [NSAppearance.Name] = [.aqua, .darkAqua]
+    /// System hell/dunkel, je ohne und mit „Kontrast erhöhen“.
+    nonisolated static let modes: [(NSAppearance.Name, Bool)] = [(.aqua, false), (.darkAqua, false), (.aqua, true), (.darkAqua, true)]
 
     init() {
         EditorThemeSettings.shared.configure(defaults: nil, initial: .standard)
@@ -50,6 +53,12 @@ struct EditorFocusModeTests {
                 let ratio = color.over(background).contrast(to: background)
                 #expect(ratio >= minimum, "\(id.rawValue) \(variant), \(name): \(String(format: "%.2f", ratio)) < \(minimum)")
             }
+            // Trennlinie und Rahmen der leeren Checkbox sind Flächen: wie der Fließtext abgedunkelt.
+            for (name, role) in [("Trennlinie", EditorColorRole.control), ("Checkbox-Rahmen", .checkboxBorder)] {
+                let normal = EditorThemeContrastTests.resolve(palette[role], in: appearance)
+                let faded = EditorThemeContrastTests.resolve(palette.dimmed(role), in: appearance)
+                #expect(abs(faded.alpha - normal.alpha * palette.dimmedAlpha) < 0.01, "\(id.rawValue) \(variant), \(name)")
+            }
         }
     }
 
@@ -79,31 +88,42 @@ struct EditorFocusModeTests {
         _ = window
     }
 
-    /// Gezeichnet: Zitat, Listenmarker und erledigte To-dos bleiben abgedunkelt mindestens
-    /// 3 : 1. Gemessen nur im Text bzw. nur am Marker, ohne Zitatbalken und Checkbox.
-    @Test(arguments: EditorTheme.ID.allCases, systems)
-    func weakerRolesKeepMinimumContrastWhenDimmed(_ id: EditorTheme.ID, _ system: NSAppearance.Name) throws {
+    /// Gezeichnet, auch mit „Kontrast erhöhen“: Fließtext, Überschrift, Link, Zitat,
+    /// Listenmarker und erledigte To-dos bleiben abgedunkelt mindestens 3 : 1 bzw. 4,5 : 1.
+    /// Gemessen nur im Text bzw. nur am Marker, ohne Zitatbalken und Checkbox.
+    @Test(arguments: EditorTheme.ID.allCases, modes)
+    func everyTextRoleKeepsMinimumContrastWhenDimmed(_ id: EditorTheme.ID, _ mode: (NSAppearance.Name, Bool)) throws {
+        let (system, increaseContrast) = mode
         EditorThemeSettings.shared.select(id)
-        defer { EditorThemeSettings.shared.select(.standard) }
+        EditorThemeSettings.shared.setIncreaseContrast(increaseContrast)
+        defer {
+            EditorThemeSettings.shared.setIncreaseContrast(false)
+            EditorThemeSettings.shared.select(.standard)
+        }
         let editor = BlockEditorController(document: EditorDocument(blocks: [
             EditorBlock(kind: .quote, text: "Ein Zitat mit etwas Text"),
             EditorBlock(kind: .bulleted, text: "Punkt"),
             EditorBlock(kind: .todo, text: "Erledigte Aufgabe", isChecked: true),
+            EditorBlock(kind: .heading2, text: "Überschrift"),
+            EditorBlock(text: "Verweis", spans: [InlineSpan(0..<7, marks: [], link: "https://example.com")]),
+            EditorBlock(text: "Fließtext ohne Cursor"),
             EditorBlock(text: "Hier steht der Cursor"),
         ]))
-        let window = makeWindow(editor, system, height: 300)
-        let label = "\(id.rawValue), System \(system == .aqua ? "hell" : "dunkel")"
-        caret(editor, inBlock: 3)
+        let window = makeWindow(editor, system, height: 400)
+        let minimum = increaseContrast ? 4.5 : 3.0
+        let label = "\(id.rawValue), System \(system == .aqua ? "hell" : "dunkel")\(increaseContrast ? ", Kontrast erhöhen" : "")"
+        caret(editor, inBlock: 6)
         EditorFocusSettings.shared.setEnabled(true)
         defer { EditorFocusSettings.shared.setEnabled(false) }
         let rendered = try Rendered(window, textView: editor.textView)
-        try rendered.bitmap.writePNG(named: "focus-roles-\(id.rawValue)-system-\(system == .aqua ? "hell" : "dunkel")")
-        let background = rendered.color(at: CGPoint(x: editor.textView.bounds.maxX - 30, y: try frame(editor, block: 3).midY))
-        #expect(try dimmedBlocks(editor) == [0, 1, 2])
+        try rendered.bitmap.writePNG(named: "focus-roles-\(id.rawValue)-system-\(system == .aqua ? "hell" : "dunkel")\(increaseContrast ? "-kontrast" : "")")
+        let background = rendered.color(at: CGPoint(x: editor.textView.bounds.maxX - 30, y: try frame(editor, block: 6).midY))
+        #expect(try dimmedBlocks(editor) == [0, 1, 2, 3, 4, 5])
         for (name, rect) in [("Zitat", try textRect(editor, block: 0)), ("Erledigt", try textRect(editor, block: 2)),
-                             ("Listenmarker", try markerRect(editor, block: 1))] {
+                             ("Listenmarker", try markerRect(editor, block: 1)), ("Überschrift", try textRect(editor, block: 3)),
+                             ("Link", try textRect(editor, block: 4)), ("Fließtext", try textRect(editor, block: 5))] {
             let ratio = rendered.strongestContrast(in: rect, against: background)
-            #expect(ratio >= 3, "\(label), \(name): \(String(format: "%.2f", ratio)) < 3")
+            #expect(ratio >= minimum, "\(label), \(name): \(String(format: "%.2f", ratio)) < \(minimum)")
         }
         _ = window
     }
@@ -150,7 +170,10 @@ struct EditorFocusModeTests {
         #expect(try dimmedBlocks(editor) == [1, 2])
 
         editor.textView.setSelectedRange(NSRange(location: editor.paragraphStarts[2] + 1, length: 0))
-        try await Task.sleep(for: .milliseconds(50))
+        // Auf den Abgleich warten statt einer festen Zeit (höchstens 2 s).
+        for _ in 0..<200 where try dimmedBlocks(editor) != [0, 1] {
+            try await Task.sleep(for: .milliseconds(10))
+        }
         #expect(try dimmedBlocks(editor) == [0, 1])
         _ = window
     }
@@ -169,8 +192,59 @@ struct EditorFocusModeTests {
         #expect(header.alphaValue == 1)
         window.makeFirstResponder(editor.textView)
         editor.updateFocusedBlocks()
+        #expect(header.alphaValue == EditorThemeState.dimmedAlpha(for: editor.textView.effectiveAppearance))
+
+        // Darstellung wechselt (Theme folgt dem System): Deckkraft der neuen Variante.
+        window.appearance = NSAppearance(named: .darkAqua)
+        editor.textView.layoutSubtreeIfNeeded()
+        let dark = EditorThemeState.dimmedAlpha(for: editor.textView.effectiveAppearance)
+        #expect(header.alphaValue == dark)
+
+        // Leerer Titel: Platzhalter in Systemfarbe, nicht abdunkeln.
+        editor.headerShowsPlaceholder = true
+        #expect(header.alphaValue == 1)
+        editor.headerShowsPlaceholder = false
+        #expect(header.alphaValue == dark)
+
         EditorFocusSettings.shared.setEnabled(false)
         #expect(header.alphaValue == 1)
+    }
+
+    /// Abgedunkelte Farben gelten nur auf dem Thread, der gerade zeichnet, auch verschachtelt.
+    @Test func dimmedColorsStayOnTheDrawingThread() {
+        let normal = Self.textAlpha()
+        var inside: CGFloat = 0, nested: CGFloat = 0
+        let elsewhere = ResultBox()
+        EditorThemeState.drawingDimmed {
+            EditorThemeState.drawingDimmed {}
+            nested = Self.textAlpha()
+            let done = DispatchSemaphore(value: 0)
+            let thread = Thread {
+                elsewhere.value.withLock { $0 = Self.textAlpha() }
+                done.signal()
+            }
+            thread.start()
+            done.wait()
+            inside = Self.textAlpha()
+        }
+        #expect(inside < normal, "abgedunkelt beim Zeichnen")
+        #expect(nested == inside, "nach verschachteltem Aufruf weiter abgedunkelt")
+        #expect(elsewhere.value.withLock { $0 } == normal, "anderer Thread normal")
+        #expect(Self.textAlpha() == normal, "danach normal")
+    }
+
+    /// Deckkraft der Textfarbe im hellen System, auf dem aufrufenden Thread aufgelöst.
+    nonisolated private static func textAlpha() -> CGFloat {
+        let appearance = NSAppearance(named: .aqua)!
+        var result: CGFloat = 0
+        appearance.performAsCurrentDrawingAppearance {
+            result = EditorThemeState.color(.text, for: appearance).usingColorSpace(.sRGB)!.alphaComponent
+        }
+        return result
+    }
+
+    private final class ResultBox: Sendable {
+        let value = Mutex<CGFloat>(0)
     }
 
     /// Ein- und Ausschalten ändert weder Text noch Undo und meldet keine Änderung.
@@ -230,6 +304,34 @@ struct EditorFocusModeTests {
         EditorFocusSettings.shared.setEnabled(false)
         #expect(editor.textView.frame.height == focusedHeight - ceil(clip.bounds.height / 2), "Platz wieder weg")
         _ = window
+    }
+
+    /// Fenster höher oder niedriger: Platz unter dem Text passt sich an, die Zeile bleibt mittig.
+    @Test func resizingKeepsCaretLineInTheMiddle() throws {
+        let blocks = (1...60).map { EditorBlock(text: "Absatz \($0)") }
+        let editor = BlockEditorController(document: EditorDocument(blocks: blocks))
+        let window = makeWindow(editor, .aqua, height: 300)
+        let clip = editor.scrollView.contentView
+        EditorFocusSettings.shared.setEnabled(true)
+        defer { EditorFocusSettings.shared.setEnabled(false) }
+        caret(editor, inBlock: 59)
+        editor.centerCaret(animated: false)
+
+        // Texthöhe ohne Platz; sie steht erst nach dem ersten vollständigen Layout fest.
+        var natural: CGFloat?
+        for height in [CGFloat(500), 240, 420] {
+            window.setContentSize(CGSize(width: 640, height: height))
+            window.contentView?.layoutSubtreeIfNeeded()
+            let text = editor.textView.frame.height - ceil(clip.bounds.height / 2)
+            if let natural { #expect(abs(text - natural) <= 1, "Platz bei \(height) pt: \(text - natural)") }
+            natural = natural ?? text
+            let caretRect = try #require(editor.caretRect(at: editor.caretLocation))
+            let insets = clip.contentInsets
+            let middle = clip.bounds.minY + insets.top + (clip.bounds.height - insets.top - insets.bottom) / 2
+            // Während der Größenänderung setzt AppKit die Insets des Clip-Views kurz anders
+            // (oben 0 oder 6 pt); die Mitte kann deshalb um ihre Hälfte abweichen.
+            #expect(abs(caretRect.midY - middle) <= 3.5, "Mitte bei \(height) pt: \(caretRect.midY - middle)")
+        }
     }
 
     // MARK: Einstellung

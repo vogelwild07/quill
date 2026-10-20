@@ -271,7 +271,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         } else {
             context.addPath(box)
             context.setLineWidth(1.2)
-            context.setStrokeColor(EditorColor.done.cgColor)
+            context.setStrokeColor(EditorColor.checkboxBorder.cgColor)
             context.strokePath()
         }
     }

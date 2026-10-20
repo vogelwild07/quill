@@ -13,12 +13,21 @@ extension BlockEditorController {
         let apply: @Sendable (Notification) -> Void = { [weak self] _ in
             MainActor.assumeIsolated { self?.applyFocusMode() }
         }
-        // Theme oder „Kontrast erhöhen“ ändern die Deckkraft des Kopfs.
-        focusObservations = [
-            NotificationObservation(EditorFocusSettings.didChange, object: nil, using: apply),
-            NotificationObservation(EditorThemeSettings.didChange, object: nil, using: apply),
-        ]
+        // Theme, „Kontrast erhöhen“ und Darstellung führen den Kopf über `applyTheme`
+        // bzw. `viewDidChangeEffectiveAppearance` nach (`updateHeaderDimming`).
+        focusObservations = [NotificationObservation(EditorFocusSettings.didChange, object: nil, using: apply)]
+        // Fenstergröße geändert: Cursor wieder in die Mitte. Den Platz unter dem Text
+        // rechnet `BlockTextView.setFrameSize` neu, das AppKit dabei aufruft (Autoresizing).
+        scrollView.contentView.postsFrameChangedNotifications = true
+        focusObservations.append(NotificationObservation(NSView.frameDidChangeNotification, object: scrollView.contentView) { [weak self] _ in
+            MainActor.assumeIsolated { self?.visibleSizeDidChange() }
+        })
         applyFocusMode()
+    }
+
+    func visibleSizeDidChange() {
+        guard isFocusModeEnabled else { return }
+        centerCaret(animated: false)
     }
 
     var isFocusModeEnabled: Bool { EditorFocusSettings.shared.isEnabled }
@@ -69,11 +78,7 @@ extension BlockEditorController {
     func updateFocusedBlocks() {
         let new = currentFocusedBlocks
         let old = layoutDelegate.focusedBlocks
-        if let header {
-            let alpha = new == nil ? 1 : EditorThemeState.dimmedAlpha(for: textView.effectiveAppearance)
-            if header.alphaValue != alpha { header.alphaValue = alpha }
-        }
-        guard new != old else { return }
+        guard new != old else { return updateHeaderDimming() }
         layoutDelegate.focusedBlocks = new
         guard let manager = textView.textLayoutManager else { return }
         if let old, let new {
@@ -86,6 +91,17 @@ extension BlockEditorController {
         }
         textView.needsLayout = true
         textView.needsDisplay = true
+        updateHeaderDimming()
+    }
+
+    /// Kopf mit der Deckkraft des Fließtexts, solange Blöcke abgedunkelt sind; nicht,
+    /// solange er nur den Platzhalter „Ohne Titel“ zeigt (Systemfarbe, abgedunkelt
+    /// unter 3 : 1). Nach Theme- oder Darstellungswechsel erneut aufrufen.
+    func updateHeaderDimming() {
+        guard let header else { return }
+        let dims = layoutDelegate.focusedBlocks != nil && !headerShowsPlaceholder
+        let alpha = dims ? EditorThemeState.dimmedAlpha(for: textView.effectiveAppearance) : 1
+        if header.alphaValue != alpha { header.alphaValue = alpha }
     }
 
     private func textRange(for range: NSRange) -> NSTextRange? {
@@ -105,12 +121,11 @@ extension BlockEditorController {
         let selection = textView.selectedRange()
         guard selection.length == 0 else { return }
         let clip = scrollView.contentView
-        textView.sizeToFit()
         // Absätze außerhalb des sichtbaren Bereichs hat TextKit nur geschätzt; nach dem
         // Sprung stehen sie fest, und die Zeile kann sich um einige Punkte verschieben.
-        // Ohne Animation deshalb einmal nachmessen.
+        // Ohne Animation deshalb bis zu zweimal nachmessen.
         var origin = clip.bounds.origin
-        for _ in 0..<(animated ? 1 : 2) {
+        for _ in 0..<(animated ? 1 : 3) {
             guard let caret = caretRect(at: selection.location) else { return }
             let insets = clip.contentInsets
             let visibleHeight = clip.bounds.height - insets.top - insets.bottom

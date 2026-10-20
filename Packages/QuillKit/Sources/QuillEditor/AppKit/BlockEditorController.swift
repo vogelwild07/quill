@@ -35,6 +35,11 @@ public final class BlockEditorController: NSObject {
     var focusObservations: [NotificationObservation] = []
     /// Abgleich des Fokus-Modus ist für das Ende des Run-Loop-Durchlaufs vorgemerkt.
     var isFocusUpdateScheduled = false
+    /// Der Kopf zeigt nur den Platzhalter (leerer Titel); im Fokus-Modus dann nicht
+    /// abdunkeln (`+Focus`).
+    public var headerShowsPlaceholder = false {
+        didSet { if oldValue != headerShowsPlaceholder { updateHeaderDimming() } }
+    }
 
     let layoutDelegate = BlockLayoutDelegate()
     /// Startposition jedes Absatzes im Textspeicher; letzter Eintrag = Gesamtlänge.
