@@ -500,24 +500,35 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 **Umsetzung 11.4 (Oberfläche und Zeitpunkte):**
 - **Einstellungen › Sync:** aus mit Erklärung und „Ordner wählen und einschalten …“; an mit Ordner, Status, Fortschritt, „Sync pausieren“ (Schalter, bleibt über Neustarts), „Jetzt abgleichen“, Rückfrage bei einem Ordner mit fremden Quill-Daten, Ergebnis des letzten Abgleichs (zwei Werte für ein Feld, nicht geladene und unlesbare Dateien) und „Sync ausschalten …“ mit Bestätigung. Die Sidebar zeigt den Fortschritt erst ab 5 Seiten, damit der Abgleich einer einzelnen Seite nicht aufflackert, und Probleme; ein Klick öffnet die Einstellungen.
 - **Zeitpunkte:** beim Start, wenn Quill aktiv wird, 2 s nach einer Änderung im Store, alle 60 s für die anderen Geräte. Änderungen während eines Abgleichs lösen keinen weiteren aus, sonst stieße jeder Abgleich mit seinen eigenen Schreibvorgängen den nächsten an; sie nimmt spätestens der regelmäßige Abgleich mit. Vor dem Beenden wird nicht abgeglichen, damit Beenden nie wartet.
-- **Ordner wechseln:** Wird der Ordner von vor dem Ausschalten wieder gewählt (gleiche Ordner-ID in `quill.json`), führt Quill zusammen und behält die Automerge-Dokumente. Mit jedem anderen Ordner vergisst es sie (`resetSyncDocuments`) und schreibt dort alles neu: Ihre Geschichte steht nur im bisherigen Ordner, ein anderes Gerät im neuen Ordner könnte darauf aufbauende Änderungen sonst nie übernehmen.
+- **Ordner wechseln, Geschichte bleibt:** Wird der Ordner von vor dem Ausschalten wieder gewählt (gleiche Ordner-ID in `quill.json`), führt Quill zusammen. Mit jedem anderen Ordner vergisst es nur die gelesenen Nummern (`resetSyncCursors`), denn die gehören zum bisherigen Ordner. Die Automerge-Dokumente im Store bleiben samt Geschichte, sie ist die Grundlage der Zeitreise (Entscheidung Nutzer).
+  - **Erste eigene Datei = ganzer Stand:** Steht ein Dokument noch nicht im Ordner (`SyncCursors.inFolder`), ist die erste eigene Datei dafür der ganze Stand samt Geschichte (`save()`), auch mit den Beiträgen anderer Geräte aus dem vorherigen Ordner. Danach folgen wie bisher nur neue Änderungen. Ein Gerät im neuen Ordner kann so auch ältere Stände abrufen.
+  - **Dateiname:** Die Datei heißt trotzdem `<Nr>.changes`, weil der Lesepfad (`applyEncodedChanges`) Änderungen und ganze Stände gleich annimmt (geprüft). Beim Verdichten vor v0.4.0 wird daraus sauber `snapshot` nach ADR-026.
+  - **Keine Kopien beim Empfangen:** Ein Dokument, das beim ersten Abgleich mit diesem Ordner nur die gemeinsame erste Änderung enthält, gilt sofort als im Ordner. Wer eine Seite nur empfängt, schreibt also keine Kopie fremder Inhalte.
+  - **Verworfen:** Zuerst hatte 11.4 die Dokumente beim Ordnerwechsel gelöscht und neu begonnen. Damit war die Geschichte auch im Store weg, und gemerkte Stände beim Papierkorb passten nicht mehr.
 - **Backup einspielen bei eingeschaltetem Sync:** Die Bestätigung sagt, dass der Sync ausgeschaltet wird. Nach dem Vormerken schaltet `turnOffForRestore()` ihn aus; wird das Beenden abgebrochen, läuft er mit demselben Gerät weiter wie vorher (`cancelTurnOffForRestore()`). Nach dem Neustart fragt das erste Fenster, nach der Meldung zum Backup:
   - „Zusammenführen“ mit dem bisherigen Ordner; neuere Stände aus dem Ordner kommen dabei zurück, das sagt der Text.
   - „Neu beginnen mit neuem Ordner“ nur mit einem leeren Ordner, nicht dem bisherigen (auch nicht unter anderem Pfad, erkannt an der Ordner-ID).
   - „Später“ (Escape): Der Sync bleibt aus.
   - Keine Wahl ist Standard für Return. Der bisherige Ordner wird in keinem Fall überschrieben; Quill hängt dort nur eigene Dateien an (Entscheidung Nutzer).
 - **Einstellungen des Sync außerhalb des echten Bereichs:** Ein Debug-Build hat dieselbe Bundle-ID wie die App. Test-Stores speichern Verbindung, Pause und Rückfrage deshalb im Arbeitsspeicher (`-QuillInMemoryStore`) oder als JSON im Testordner (`-QuillStoreDirectory`), nie in den Einstellungen des Macs (`SyncSettingsStorage`). UI-Tests wählen den Ordner mit `-QuillSyncTestFolder <Name>` statt der Dateiauswahl (nur Debug, nur mit Test-Store).
-- **Testvariante:** Schema „Quill Synctest“ (Konfiguration wie Release, Bundle-ID `io.github.vogelwild07.quill.synctest`, Name „Quill Synctest“, eigener Container) für den Handtest mit zwei Benutzerkonten (11.5); `BundleIdentifierTests` verlangt die Kennung.
-- **Lizenzen:** Einstellungen › Lizenzen zeigt `ThirdPartyLicenses.txt` unverändert (MIT-Lizenz von automerge-swift). Offen bis v0.4.0: die Lizenzen der Rust-Crates im vorgebauten Automerge-Kern (`Cargo.lock` nennt 109 Pakete, darunter Werkzeuge nur zum Bauen); welche davon im Binary stecken, lässt sich ohne `cargo` nicht verlässlich bestimmen.
+- **Testvariante:** Schema „Quill Synctest“ (Konfiguration wie Release, Bundle-ID `io.github.vogelwild07.quill.synctest`, Name „Quill Synctest“, eigener Container) für den Handtest mit zwei Benutzerkonten (11.5, Anleitung `docs/synctest.md`); `Scripts/make-synctest.sh` baut sie ad hoc signiert nach `dist/synctest/`. `BundleIdentifierTests` verlangt die Kennung.
+- **Lizenzen:** Einstellungen › Lizenzen zeigt `ThirdPartyLicenses.txt` unverändert: die MIT-Lizenz von automerge-swift, die Liste der Rust-Pakete im vorgebauten Automerge-Kern mit ihrer Lizenz und alle Lizenztexte, gleiche nur einmal.
+  - **Quelle:** automerge-swift liefert keine solche Liste mit; das Release 0.7.2 enthält nur das xcframework und zwei Bibliotheken. Die Datei erzeugt deshalb `Scripts/third-party-licenses.py` mit `cargo`: alle normalen Abhängigkeiten von `uniffi_automerge` für macOS und iOS (75 Pakete, für beide gleich). Pakete nur zum Übersetzen (Makros) sind dabei, lieber eine Lizenz zu viel.
+  - **Fehlende Lizenzdateien:** automerge, hexane und uniffi haben im veröffentlichten Paket keine Lizenzdatei; ihr Text kommt aus dem Repo des Projekts, gleiche Version.
+  - **MPL-2.0:** uniffi steht unter MPL-2.0 und ist unverändert; die Datei nennt den Ort des Quellcodes.
+  - **Test:** `ThirdPartyLicensesTests` prüft, dass die Datei zur festgelegten Version von automerge-swift passt; nach einem Versionswechsel das Skript neu laufen lassen.
+  - **Rust nur für diese Analyse**, installiert per rustup ohne Änderung an Shell-Profilen (`--no-modify-path`, Profil `minimal`). Es liegt in `~/.rustup` und `~/.cargo`, dazu die geladenen Quellen der Pakete in `~/.cargo/registry`. Entfernen mit `~/.cargo/bin/rustup self uninstall`; das löscht beide Ordner vollständig.
 - Gegenproben 11.4 (alle rot):
-  - anderer Ordner ohne Zurücksetzen (neues Gerät dort bekäme nichts);
-  - bisheriger Ordner mit Zurücksetzen;
-  - Zusammenführen nach dem Backup mit Zurücksetzen, Neubeginnen ohne;
+  - anderer Ordner: nur neue Änderungen statt des ganzen Stands (neues Gerät dort bekäme nichts, alte Stände fehlten);
+  - neuer Ordner ohne Zurücksetzen der gelesenen Nummern;
+  - Zurücksetzen löscht auch die Dokumente (alte Stände fehlen im neuen Ordner);
+  - ganzer Stand bei jedem Abgleich, ganzer Stand auch für leere Dokumente (Kopien beim Empfangen), `inFolder` geht beim Lesen verloren;
+  - bisheriger Ordner wie ein anderer behandelt;
   - „Neu beginnen“ ohne Prüfung auf leeren Ordner und ohne Prüfung auf den bisherigen Ordner;
   - eigene Schreibvorgänge lösen weitere Abgleiche aus;
   - abgebrochenes Beenden ohne Rückweg;
   - Test-Store speichert Sync-Einstellungen nicht im Testordner;
   - Testordner ohne Pfadprüfung;
-  - `resetSyncDocuments` vergisst die Seitendokumente nicht;
-  - Backup einspielen ohne Ausschalten des Sync (UI-Test: keine Rückfrage nach dem Neustart).
+  - Backup einspielen ohne Ausschalten des Sync (UI-Test: keine Rückfrage nach dem Neustart);
+  - Lizenzen für eine andere Version von automerge-swift, Paket fehlt in der Liste.
   - Eine Gegenprobe war zuerst grün (zweiter Aufruf von `syncNow()` wartet nicht auf den laufenden Abgleich); der Test wurde verschärft.

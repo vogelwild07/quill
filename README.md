@@ -50,7 +50,7 @@ Darstellung prüfen ohne Bildschirmfotos: `EditorSnapshotTests` und `EmptyStateS
 
 Die Datenbank liegt in `~/Library/Containers/io.github.vogelwild07.quill/Data/Library/Application Support/Quill/Store/`. Automatische Backups (beim Start höchstens einmal pro Tag, vor jeder Migration, beim Beenden nach Änderungen) liegen daneben in `Backups/` und sind über **Ablage → Backups im Finder zeigen** erreichbar. Wiederherstellen über **Ablage → Backup wiederherstellen …**: Quill beendet sich und spielt das Backup beim nächsten Start ein, der vorherige Stand bleibt als Backup erhalten. Falls Quill nicht mehr startet: [von Hand](docs/data-model.md#backup-von-hand-wiederherstellen).
 
-Sync zwischen Macs über einen Ordner (z. B. in iCloud Drive) ist in Arbeit (Phase 11, ADR-029) und noch in keinem Release. Er ist aus, bis man unter **Einstellungen › Sync** einen Ordner wählt; davor legt Quill ein Backup an. Jeder Mac schreibt dort nur eigene Dateien.
+Sync zwischen Macs über einen Ordner (z. B. in iCloud Drive) ist in Arbeit (Phase 11, ADR-029) und noch in keinem Release. Er ist aus, bis man unter **Einstellungen › Sync** einen Ordner wählt; davor legt Quill ein Backup an. Jeder Mac schreibt dort nur eigene Dateien. Für den Handtest mit zwei Benutzerkonten baut `Scripts/make-synctest.sh` die Testvariante „Quill Synctest“ mit eigenem Container; Anleitung in `docs/synctest.md`.
 
 Startargumente für UI-Tests:
 Alle wirken nur aus der Kommandozeile und nur in Debug-Builds (ADR-019, ADR-021).

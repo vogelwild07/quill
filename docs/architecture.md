@@ -245,7 +245,7 @@ QuillModel
 QuillFeatures
   Sync/             SyncSettings (Einstellungen, Lesezeichen), SyncController (ein/aus, Backup vorher,
                     Pause, Wiederverbinden, Zeitpunkte), SyncSettingsView, SyncReconnectView, SyncSidebarStatus
-  Settings/         Bereiche Darstellung, Sync, Lizenzen (Resources/ThirdPartyLicenses.txt)
+  Settings/         Bereiche Darstellung, Sync, Lizenzen (Resources/ThirdPartyLicenses.txt, Scripts/third-party-licenses.py)
 ```
 
 Ein Abgleich (`SyncEngine.sync`) je Dokument: aus dem Store laden, eigene Dateien nachlesen, die der Store noch nicht kennt, den Stand des Stores als nächste eigene Datei anhängen, dann neue Dateien der anderen Geräte übernehmen und das Ergebnis in den Store schreiben. Hat der Nutzer während des Abgleichs gespeichert, schreibt der Store nichts, und der nächste Abgleich nimmt die Eingabe mit.

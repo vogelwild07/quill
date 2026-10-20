@@ -13,7 +13,7 @@ Local-first Notizen- und Seiten-App für macOS. Rolle: Senior Product Designer, 
 - Swift 6 (strikte Concurrency), SwiftUI, AppKit nur wo nötig, SwiftData lokal. Sync über einen gewählten Ordner mit Automerge, kein CloudKit (ADR-026, ADR-029); Automerge nur in `QuillSync` (`AutomergeIsolationTests`), Sync aus bis der Nutzer einschaltet, Tests nur mit Wegwerf-Stores und -Ordnern.
 - Editor: eigener Block-Editor auf TextKit 2 / `NSTextView` (siehe `docs/architecture.md`). Kern ohne AppKit, UIKit und SwiftUI in `QuillEditorCore` (Dokument, Speichern, Theme-Rechnung; `EditorCoreImportTests`, ADR-028); Plattformfarben, TextKit-Schicht und Controller in `QuillEditor`.
 - Tests: Swift Testing (Unit), XCUITest (UI). Bundle-ID `io.github.vogelwild07.quill`; alle Kennungen mit diesem Präfix, die alte Kennung nur in der Umzugsdoku (`BundleIdentifierTests`, ADR-022).
-- UI-Tests starten App immer via `XCUIApplication.quill()` (ignoriert gespeicherten Fensterzustand, ADR-008; Store nur im RAM via `-QuillInMemoryStore YES`; Tests über Neustarts via `quill(storeDirectory:)` im temporären Ordner der App; beide wirken nur aus der Kommandozeile und nur im Debug-Build, ADR-019). Nie gegen echten Store testen. Ausnahme `PerformanceUITests`: nur im Schema „Quill Profiling“ (Bundle-ID `io.github.vogelwild07.quill.profiling`, eigener Container, Bestand per `-QuillSeedPages`, nur unter `QUILL_PROFILING`; `docs/performance.md`). Kopieren/Einsetzen-Tests nutzen eigene Zwischenablage (`-QuillPasteboardName`), nie allgemeine; Testbilder erzeugt die App selbst (`-QuillTestImage`, nur Debug), nie der Test-Runner. Sync-Tests wählen den Ordner per `-QuillSyncTestFolder` (nur Debug, nur Test-Store); Test-Stores speichern Sync-Einstellungen nie in denen des Macs. Handtest des Sync nur im Schema „Quill Synctest“ (`io.github.vogelwild07.quill.synctest`, eigener Container).
+- UI-Tests starten App immer via `XCUIApplication.quill()` (ignoriert gespeicherten Fensterzustand, ADR-008; Store nur im RAM via `-QuillInMemoryStore YES`; Tests über Neustarts via `quill(storeDirectory:)` im temporären Ordner der App; beide wirken nur aus der Kommandozeile und nur im Debug-Build, ADR-019). Nie gegen echten Store testen. Ausnahme `PerformanceUITests`: nur im Schema „Quill Profiling“ (Bundle-ID `io.github.vogelwild07.quill.profiling`, eigener Container, Bestand per `-QuillSeedPages`, nur unter `QUILL_PROFILING`; `docs/performance.md`). Kopieren/Einsetzen-Tests nutzen eigene Zwischenablage (`-QuillPasteboardName`), nie allgemeine; Testbilder erzeugt die App selbst (`-QuillTestImage`, nur Debug), nie der Test-Runner. Sync-Tests wählen den Ordner per `-QuillSyncTestFolder` (nur Debug, nur Test-Store); Test-Stores speichern Sync-Einstellungen nie in denen des Macs. Handtest des Sync nur im Schema „Quill Synctest“ (`io.github.vogelwild07.quill.synctest`, eigener Container; `Scripts/make-synctest.sh`, Anleitung `docs/synctest.md`).
 - Build + Tests (App, Package, alle Test-Targets) **ohne Compiler-Warnungen**; QuillKit baut auch für iOS ohne Warnungen (`Scripts/check-ios-build.sh`, Teil jedes vollen Laufs; Nur-Mac-Code steht hinter `#if canImport(AppKit)`, nicht `#if os(macOS)`, ADR-028); neue Warnungen sofort beheben, nicht stummschalten. UI-Testklassen `@MainActor`, `setUp()`/`tearDown()` als `async throws` (`…WithError`-Varianten nonisolated).
 - UI-Strings lokalisierbar (`Localizable.xcstrings`, Info.plist in `InfoPlist.xcstrings`), Ausgangssprache Deutsch, in Packages immer `bundle: .module`. `LocalizationTests` prüft Code gegen Kataloge und Pluralformen; Ausnahmen nur einzeln mit Begründung.
 
@@ -97,6 +97,12 @@ python3 Scripts/perf-package.py 3
 python3 Scripts/perf-ui.py
 Scripts/check-release-binary.sh
 
+# Lizenzen der Rust-Pakete im Automerge-Kern neu erzeugen (braucht cargo, ADR-029)
+python3 Scripts/third-party-licenses.py
+
 # Release (ADR-022): ad hoc signierte .dmg + .sha256 nach dist/, nur aus sauberer Arbeitskopie
 Scripts/make-release.sh
+
+# Testvariante für den Handtest des Sync (docs/synctest.md): ad hoc signiert nach dist/synctest/
+Scripts/make-synctest.sh
 ```
