@@ -69,7 +69,12 @@ struct EditorThemeContrastTests {
         let problems = Self.contrastProblems(theme)
         let normal = problems.filter { $0.hasPrefix("light:") }
         #expect(normal.count >= 6, "\(problems)")
-        #expect(problems.allSatisfy { !$0.hasPrefix("lightHighContrast:") || $0.contains("Checkbox") }, "\(problems)")
+        // Grafiken leitet „Kontrast erhöhen“ nicht ab; sie fallen weiter durch.
+        #expect(problems.contains("light: Zitatbalken 1.61 < 3.0"), "\(problems)")
+        let graphics = ["Checkbox", "Zitatbalken"]
+        #expect(problems.allSatisfy { problem in
+            !problem.hasPrefix("lightHighContrast:") || graphics.contains { problem.contains($0) }
+        }, "\(problems)")
     }
 
     static func contrastProblems(_ theme: EditorTheme) -> [String] {
@@ -101,6 +106,7 @@ struct EditorThemeContrastTests {
             let accent = value(.accent).over(background)
             check("Häkchen", value(.onAccent), on: accent, minimum: 3)
             check("Checkbox", value(.accent), on: background, minimum: 3)
+            check("Zitatbalken", value(.quoteBar), on: background, minimum: 3)
         }
         return problems
     }

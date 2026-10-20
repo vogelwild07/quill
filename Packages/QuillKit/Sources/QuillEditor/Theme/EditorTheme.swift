@@ -139,7 +139,7 @@ extension EditorTheme {
         id: .quill,
         light: EditorPalette(
             background: .rgb(0xF7FBFA), text: .rgb(0x1F2A33), heading: .rgb(0x0A5F5A),
-            link: .rgb(0x08736C), secondary: .rgb(0x4A5862), quoteBar: .rgb(0xFFC23A),
+            link: .rgb(0x08736C), secondary: .rgb(0x4A5862), quoteBar: .rgb(0x0B8F86),
             codeBackground: .rgb(0xE4F2F0), accent: .rgb(0x0B8F86), done: .rgb(0x5E6B74),
             selection: .rgb(0xFFC23A, alpha: 0.40)
         ),
@@ -171,7 +171,8 @@ extension EditorTheme {
         id: .sonne,
         light: EditorPalette(
             background: .rgb(0xFFF8E6), text: .rgb(0x2A2A1F), heading: .rgb(0x1F2A33),
-            link: .rgb(0x07706A), secondary: .rgb(0x5A5444), quoteBar: .rgb(0xFFC23A),
+            // Zitatbalken dunkles Bernstein: Sonnengelb erreicht auf Creme keine 3 : 1.
+            link: .rgb(0x07706A), secondary: .rgb(0x5A5444), quoteBar: .rgb(0xB07A00),
             codeBackground: .rgb(0xFDEBBE), accent: .rgb(0x0B8F86), done: .rgb(0x6A6452),
             selection: .rgb(0xFFC23A, alpha: 0.45)
         ),
