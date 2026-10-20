@@ -1,8 +1,9 @@
 import AutomergeSpike
 import Foundation
+import QuillEditor
 
 // Misst Automerge gegen die Kriterien aus ADR-026. Nur optimiert sinnvoll:
-//   swift run -c release automerge-spike-measure [laden|speicher|alles]
+//   swift run -c release automerge-spike-measure [laden|abgleich|speicher|alles]
 // Die App-Größe misst Scripts/spike-app-size.sh im Spike-Ordner.
 
 let clock = ContinuousClock()
@@ -63,16 +64,18 @@ func coldLoad(_ url: URL, runs: Int) throws -> [Double] {
     }
 }
 
+/// Eine Seite mit Geschichte, wie sie die Messungen zum Laden und Abgleichen nutzen.
+let cases: [(String, Int, CommitGranularity)] = [
+    ("5.000 Wörter", 5_000, .perWord),
+    ("5.000 Wörter", 5_000, .perKeystroke),
+    ("Schwerfall 15.000 Wörter", 15_000, .perWord),
+    ("Schwerfall 15.000 Wörter", 15_000, .perKeystroke),
+]
+
 if mode == "laden" || mode == "alles" {
     print("## Laden einer Seite mit Geschichte (Kriterium < 50 ms)\n")
     print("| Fall | Blöcke | Zeichen | Tastendrücke | Änderungen | Datei | Median | p95 | max | kalt (Median von 5) | ohne Zuordnung (Median) | 1 Wort als Änderung |")
     print("|---|---|---|---|---|---|---|---|---|---|---|---|")
-    let cases: [(String, Int, CommitGranularity)] = [
-        ("5.000 Wörter", 5_000, .perWord),
-        ("5.000 Wörter", 5_000, .perKeystroke),
-        ("Schwerfall 15.000 Wörter", 15_000, .perWord),
-        ("Schwerfall 15.000 Wörter", 15_000, .perKeystroke),
-    ]
     for (index, (name, words, granularity)) in cases.enumerated() {
         var simulator = try PageHistorySimulator(words: words, granularity: granularity, seed: UInt64(100 + index))
         let page = try simulator.run()
@@ -107,6 +110,43 @@ if mode == "laden" || mode == "alles" {
         print(
             "| \(name), Commit \(granularity.rawValue) | \(blocks.count) | \(characters) | \(simulator.keystrokes) (\(simulator.deletions) gelöscht) | \(changes) | \(format(Double(data.count) / 1024)) KB | \(format(percentile(warm, 0.5), 2)) ms | \(format(percentile(warm, 0.95), 2)) ms | \(format(warm.max()!, 2)) ms | \(format(percentile(cold, 0.5), 2)) ms | \(format(percentile(documentOnly, 0.5), 2)) ms | \(changeBytes) B |"
         )
+    }
+    print()
+}
+
+if mode == "abgleich" || mode == "alles" {
+    print("## Abgleich einer Seite im Hintergrund (Kriterium < 250 ms, auch im Schwerfall)\n")
+    print("Ein anderes Gerät hat 50 Wörter in einen Block getippt und einen Block angefügt (Commit pro Wort). Gemessen: Datei lesen, Dokument laden, Änderungen anwenden, Blöcke erzeugen, speichern.\n")
+    print("| Fall | eingehende Änderungen | Median | p95 | max |")
+    print("|---|---|---|---|---|")
+    for (index, (name, words, granularity)) in cases.enumerated() {
+        var simulator = try PageHistorySimulator(words: words, granularity: granularity, seed: UInt64(100 + index))
+        let page = try simulator.run()
+        let url = directory.appending(path: "sync-\(index).automerge")
+        try page.document.save().write(to: url)
+        let other = try page.fork()
+        let heads = other.document.heads()
+        let text = try other.textObject(at: other.blockCount / 2)
+        for number in 0..<50 {
+            try other.document.spliceText(obj: text, start: 0, delete: 0, value: "wort\(number) ")
+            other.document.commitWith()
+        }
+        try other.insertBlock(EditorBlock(text: "Vom anderen Gerät"), at: other.blockCount)
+        other.document.commitWith()
+        let incoming = try other.document.encodeChangesSince(heads: heads)
+        let output = directory.appending(path: "sync-\(index)-out.automerge")
+        var times: [Double] = []
+        for run in 0..<23 {
+            let start = clock.now
+            let local = try PageCRDT(bytes: Data(contentsOf: url))
+            _ = try local.document.applyEncodedChangesWithPatches(encoded: incoming)
+            let blocks = try local.blocks()
+            try local.document.save().write(to: output)
+            let time = milliseconds(clock.now - start)
+            precondition(blocks.count == page.blockCount + 1)
+            if run >= 3 { times.append(time) }
+        }
+        print("| \(name), Commit \(granularity.rawValue) | 51 (\(incoming.count) B) | \(format(percentile(times, 0.5), 2)) ms | \(format(percentile(times, 0.95), 2)) ms | \(format(times.max()!, 2)) ms |")
     }
     print()
 }
