@@ -143,14 +143,15 @@ struct PageDocumentTests {
         let conflicts = try a.conflicts()
         #expect(conflicts == [FieldConflict(objectID: id, field: "kind", values: ["heading1", "quote"])])
         #expect(try b.conflicts() == conflicts)
-        // Auflösen mit jedem der beiden Werte, auch mit dem, den Automerge gerade
-        // vorne zeigt (hängt von den zufälligen Akteurs-IDs ab).
-        for kind in ["heading1", "quote"] {
-            let choice = try Self.copy(a)
-            #expect(try choice.update(to: [BlockSnapshot(id: id, kindRaw: kind, text: "Titel")]))
-            #expect(try choice.conflicts().isEmpty, "\(kind)")
-            #expect(try choice.blocks()[0].kindRaw == kind)
-        }
+        // Den vorne gezeigten Wert zurückzuschreiben (wie jeder Abgleich mit dem Stand
+        // des Stores) löst nichts auf; erst ein anderer Wert ist eine Änderung.
+        let shown = try a.blocks()[0].kindRaw
+        let other = shown == "heading1" ? "quote" : "heading1"
+        #expect(try !a.update(to: [BlockSnapshot(id: id, kindRaw: shown, text: "Titel")]))
+        #expect(try a.conflicts() == conflicts)
+        #expect(try a.update(to: [BlockSnapshot(id: id, kindRaw: other, text: "Titel")]))
+        #expect(try a.conflicts().isEmpty)
+        #expect(try a.blocks()[0].kindRaw == other)
     }
 
     @Test func removedMarksAreNotReported() throws {
