@@ -70,7 +70,8 @@ scan() {
   for i in {1..${#values}}; do
     if grep -q -a -F -- "${values[$i]}" "$file"; then hits+=("$where: ${labels[$i]}"); fi
   done
-  if grep -q -a -E 'DEVELOPMENT_TEAM[[:space:]]*=[[:space:]]*"?[A-Za-z0-9]{10}' "$file"; then
+  # Genau zehn Zeichen als Wert; ein leeres `DEVELOPMENT_TEAM= NÄCHSTE_EINSTELLUNG=` zählt nicht.
+  if grep -q -a -E 'DEVELOPMENT_TEAM[[:space:]]*=[[:space:]]*"?[A-Za-z0-9]{10}([^A-Za-z0-9_]|$)' "$file"; then
     hits+=("$where: DEVELOPMENT_TEAM mit Wert")
   fi
 }
