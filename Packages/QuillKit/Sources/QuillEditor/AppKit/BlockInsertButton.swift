@@ -32,7 +32,7 @@ final class BlockInsertButton: NSView {
             EditorColor.codeBackground.setFill()
             NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 2), xRadius: QuillDesign.Radius.small, yRadius: QuillDesign.Radius.small).fill()
         }
-        (isHovered ? EditorColor.secondaryLabel : EditorColor.control).setStroke()
+        (isHovered ? EditorColor.secondary : EditorColor.control).setStroke()
         let center = CGPoint(x: bounds.midX.rounded(), y: bounds.midY.rounded())
         let arm: CGFloat = 5
         let plus = NSBezierPath()

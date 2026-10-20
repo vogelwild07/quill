@@ -21,9 +21,9 @@ public enum EditorColor {
     static let heading = themed(.heading)
     static let link = themed(.link)
     /// Zitat und Listenmarker.
-    static let secondaryLabel = themed(.secondary)
+    static let secondary = themed(.secondary)
     /// Erledigte Aufgabe und Rahmen der leeren Checkbox.
-    static let tertiaryLabel = themed(.done)
+    static let done = themed(.done)
     static let quoteBar = themed(.quoteBar)
     static let codeBackground = themed(.codeBackground)
     static let selection = themed(.selection)
@@ -43,8 +43,8 @@ public enum EditorColor {
     public static var label: UIColor { .label }
     static var heading: PlatformColor { .label }
     static var link: PlatformColor { .link }
-    static var secondaryLabel: PlatformColor { .secondaryLabel }
-    static var tertiaryLabel: PlatformColor { .tertiaryLabel }
+    static var secondary: PlatformColor { .secondaryLabel }
+    static var done: PlatformColor { .tertiaryLabel }
     static var quoteBar: PlatformColor { .tintColor }
     static var codeBackground: PlatformColor { .quaternarySystemFill }
     static var selection: PlatformColor { .tintColor.withAlphaComponent(0.25) }

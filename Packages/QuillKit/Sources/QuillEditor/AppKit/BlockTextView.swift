@@ -471,7 +471,7 @@ final class BlockHandleView: NSView, NSDraggingSource {
 
     /// ⋮⋮ als 2 × 3 Punkte; SF Symbols hat unter macOS 26 kein passendes Zeichen.
     override func draw(_ dirtyRect: NSRect) {
-        (isHovered ? EditorColor.secondaryLabel : EditorColor.control).setFill()
+        (isHovered ? EditorColor.secondary : EditorColor.control).setFill()
         let diameter: CGFloat = 3, spacing: CGFloat = 4.5
         let width = diameter + spacing, height = diameter + 2 * spacing
         let origin = CGPoint(x: ((bounds.width - width) / 2).rounded(), y: ((bounds.height - height) / 2).rounded())

@@ -195,7 +195,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         let step = QuillDesign.Spacing.indentStep
         let x = alignRight ? markerOriginX + step - 6 - width : markerOriginX + 6
 
-        context.setFillColor(EditorColor.secondaryLabel.cgColor)
+        context.setFillColor(EditorColor.secondary.cgColor)
         context.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
         context.textPosition = CGPoint(x: x, y: firstBaseline)
         CTLineDraw(line, context)
@@ -252,7 +252,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         } else {
             context.addPath(box)
             context.setLineWidth(1.2)
-            context.setStrokeColor(EditorColor.tertiaryLabel.cgColor)
+            context.setStrokeColor(EditorColor.done.cgColor)
             context.strokePath()
         }
     }

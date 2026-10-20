@@ -71,9 +71,9 @@ enum BlockStyle {
         if let ordinal { attributes[.quillOrdinal] = ordinal }
         switch block.kind {
         case .heading1, .heading2, .heading3: attributes[.foregroundColor] = EditorColor.heading
-        case .quote: attributes[.foregroundColor] = EditorColor.secondaryLabel
+        case .quote: attributes[.foregroundColor] = EditorColor.secondary
         case .todo where block.isChecked:
-            attributes[.foregroundColor] = EditorColor.tertiaryLabel
+            attributes[.foregroundColor] = EditorColor.done
             attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
         case .paragraph, .bulleted, .numbered, .todo, .code, .divider, .image: break
         }
