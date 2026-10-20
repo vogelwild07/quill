@@ -265,3 +265,16 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Jede neue Version hat eine neue Ad-hoc-Signatur. Nutzer müssen „Dennoch öffnen“ eventuell erneut bestätigen, und macOS kann fragen, ob Quill auf die Daten im bisherigen Container zugreifen darf.
 - Die .dmg ist nicht bitgleich reproduzierbar (Zeitstempel im Image), aber jederzeit aus demselben Commit mit demselben Befehl baubar; die Prüfsumme gilt für die veröffentlichte Datei.
 - Developer ID, Notarisierung und Auto-Update stehen unter „Später“.
+
+## ADR-023: Neues App-Icon mit Inhalt und Markenfarbe (2026-10-20)
+
+**Kontext:** Das Icon aus 7.3 (weißes Blatt mit einer Linie auf Grün) war minimalistisch, zeigte aber nicht, was Quill ist. Im dunklen Modus färbte macOS den Hintergrund schwarz und das Blatt grün, obwohl die Datei eine eigene dunkle Füllung enthielt. Drei abstrakte Entwürfe (Eselsohr-Kreis, Ring mit Schreibmarke, Seite mit Giebel) hat der Nutzer verworfen.
+
+**Entscheidung:**
+- Motiv aus der App: eine Seite mit Überschrift, Bild-Block und abgehaktem To-do, vier Ebenen mit Liquid Glass auf Seite und Sonne. Markenfarbe Petrol `#0B8F86`, dazu Tinte und Sonnengelb. Eine Fassung in Brombeere `#8C2F63` (weiter weg von Freeform) wurde gebaut und verworfen.
+- Dunkle Variante über Farben je Ebene. Eine Füllung für dunkel wirkt nicht: macOS setzt den Hintergrund im dunklen Modus immer selbst (`system-dark` in `Assets.car`).
+- Entwürfe und Vorschauen entstehen in `Design/IconDrafts/` (ignoriert), gerendert offline mit `ictool` aus Icon Composer, nie per Bildschirmfoto.
+
+**Konsequenzen:**
+- Als reine Silhouette bleibt nur die Seite (ein Rechteck); erkennbar wird das Icon über Farbe und Inhalt. Im einfarbigen Systemstil („klar“) bleiben Bild, Haken und Zeilen sichtbar.
+- Das Icon bleibt von der GPL ausgenommen (`ICON-LICENSE`).

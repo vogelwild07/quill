@@ -81,11 +81,17 @@ beim ersten Zeichen.
 
 ## App-Icon
 
-`App/Resources/AppIcon.icon` (Icon Composer): weißes Blatt, um 6° geneigt, eine Linie in
-Koralle (`#FF5A4E`) oben links, auf tiefem Grün. Eine Gruppe mit zwei Ebenen (Blatt mit
-Liquid Glass, Linie ohne), Hintergrund als Füllung der Datei. Minimalistisch, bei 16 pt
-erkennbar, im Dock klar anders als Notizen, Pages und Freeform. Anpassen nur in Icon
-Composer.
+`App/Resources/AppIcon.icon` (Icon Composer, ADR-023): eine Seite aus Quill mit Überschrift,
+Bild-Block (Sonne über Hügeln) und abgehaktem To-do auf Petrol (`#0B8F86`, Markenfarbe).
+Vier Ebenen in einer Gruppe, von unten: Seite (Weiß, Liquid Glass), Text (Tinte `#1F2A33`),
+Bild und Haken (Petrol), Sonne und Hügel (Sonnengelb `#FFC23A`, Liquid Glass). Hintergrund als
+Füllung der Datei. Bei 16 pt bleibt „Seite mit Inhalt“ erkennbar.
+
+Dunkel: Den Hintergrund setzt macOS im dunklen Modus selbst (Schwarz), eine eigene Füllung
+für dunkel wird ignoriert. Wirksam sind nur Farben je Ebene (`fill-specializations` der
+Ebenen): Seite dunkelgrau `#33373C`, Text `#E6EBEE`, Petrol heller `#3DCBBE`, Gelb `#FFC74D`.
+Prüfen offline mit `ictool` aus Icon Composer (`--rendition Default|Dark|ClearLight`) und im
+gebauten Bundle über `Assets.car`. Anpassen nur in Icon Composer.
 
 ## Wireframes
 
