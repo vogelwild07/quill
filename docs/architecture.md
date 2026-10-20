@@ -225,7 +225,18 @@ QuillEditor       AppKit oder UIKit
   AppKit/          BlockEditorController, BlockTextView, Slash-Menü (nur Mac)
 ```
 
-## Sync (ADR-026, ab Phase 11)
+## Sync (ADR-026, ADR-029, ab Phase 11)
+
+`QuillSync` ist das einzige Modul mit Automerge (`AutomergeIsolationTests`) und hängt nur an QuillModel:
+
+```text
+QuillSync
+  SyncDocument      gemeinsame erste Änderung, neue Akteurs-ID je Sitzung, Konflikte
+  PageDocument      [BlockSnapshot] ↔ Map blocks (order, kind, text mit Marks, Felder)
+  TreeDocument      [PageRecord] ↔ Map pages, Grabstein statt Entfernen
+  TextMarks         RichText ↔ Marks in Unicode-Skalaren
+  SyncFolderLayout  Pfade, quill.json (FolderManifest), devices/ (DeviceInfo), <Nr>.changes
+```
 
 Sync über einen gewählten Ordner mit Automerge, je Seite ein Dokument und eines für den Seitenbaum. Der SwiftData-Store bleibt Quelle der App: Seiten öffnen aus dem Store, Automerge braucht nur der Abgleich im Hintergrund. Automerge steht nur in der Sync-Schicht (ein Modul), damit ein Ausstieg auf dieses Modul beschränkt bleibt. Der Spike aus Phase 10.1 liegt unter `Spikes/AutomergeSpike` (Abbildung `[EditorBlock]` ↔ Automerge mit Umrechnung UTF-16 ↔ Unicode-Skalare, Messprogramm, Größenskript) und wird von App und QuillKit nie eingebunden (`SpikeIsolationTests`).
 

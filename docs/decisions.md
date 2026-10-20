@@ -421,3 +421,39 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 **Konsequenzen (10.3):**
 - Darstellung unverändert: Alle 128 PNGs der Snapshot- und Pixeltests sind vor und nach dem Umbau byte-gleich (zwei Ausgangsläufe untereinander ebenfalls). Gegenprobe: ein um 0,5 schwächerer Platzhalter-Kontrast im Kern ändert die Bilder.
 - Gegenproben `EditorCoreImportTests`: `import SwiftUI`, mit Tab eingerücktes `import SwiftUI`, `import struct CoreGraphics.CGFloat`, `@preconcurrency import AppKit` und eine Abhängigkeit auf QuillDesign (auch über mehrere Zeilen) fallen auf; ein über mehrere Zeilen umbrochenes Target mit nur QuillModel bleibt grün.
+
+## ADR-029: Sync-Schicht für den Ordner-Sync (2026-10-20)
+
+**Status:** entschieden (Plan von Phase 11, mit dem Nutzer abgestimmt am 2026-10-20); umgesetzt schrittweise in 11.1–11.5.
+
+**Kontext:** ADR-026 legt Automerge und das Ordnerformat fest. Offen waren, wo der Automerge-Stand liegt, wie Backups und Sync zusammenspielen, wie zwei Macs ohne echten Store getestet werden und wie Löschen über Geräte wirkt.
+
+**Entscheidung:**
+- **Aus, bis der Nutzer einschaltet.** Ohne Schalter in Einstellungen › Sync fasst die App keinen Ordner an. Kein Startargument schaltet den Sync im Release-Build ein. „Sync pausieren“ stoppt sofort jedes Schreiben in den Ordner (mit Test).
+- **Modul:** `QuillSync` ist das einzige Modul mit Automerge und hängt nur an QuillModel. Seine öffentliche Schnittstelle zeigt keine Automerge-Typen (`DocumentVersion` statt Heads, `FieldConflict` statt Werten). `AutomergeIsolationTests` und `SpikeIsolationTests` halten das ein.
+- **Automerge-Stand im Store** (neue Schemaversion in 11.2): Backups enthalten damit immer einen zum Inhalt passenden Sync-Stand.
+- **Backup einspielen bei eingeschaltetem Sync:** Quill schaltet den Sync vorher aus und fragt, wie es weitergeht (als neues Gerät wieder verbinden oder aus lassen). Sonst würde der Abgleich den alten Stand sofort wieder mit dem neueren aus dem Ordner zusammenführen.
+- **Vor dem ersten Einschalten** legt Quill ein Backup an; der Rückweg (Sync aus, Backup einspielen) ist getestet.
+- **Löschen über Geräte:** Eine auf einem Gerät gelöschte Seite landet auf den anderen zuerst im Papierkorb, nie direkt endgültig gelöscht. Endgültiges Löschen setzt im Seitenbaum nur einen Grabstein (`deleted`); Seiten werden nie aus dem Baum-Dokument entfernt. Endgültig weg ist eine Seite auf einem Gerät erst nach „Papierkorb leeren“ dort (mit Test in 11.3).
+- **Dokumente:**
+  - Seite: Map `blocks` von Block-ID auf eine Map mit `kind`, `order` (Schlüssel aus `FractionalIndex`), `text` (Text mit Marks aus `RichText`), `indent`, `checked`, `lang`, `asset`. Eine Map statt einer Liste, damit Verschieben nur `order` ändert und gleichzeitiges Tippen im verschobenen Block erhalten bleibt; verschoben bekommt nur der bewegte Block einen neuen Schlüssel.
+  - Seitenbaum: Map `pages` mit Titel, Icon, Eltern, `sortKey`, Favorit, Papierkorb, Grabstein, Art, Anlagedatum.
+  - Text wird als Diff geschrieben (`updateText`), Marks nur dort, wo sie abweichen. Unbekannte Blockarten und Marks späterer Versionen bleiben erhalten.
+- **Gleiche erste Änderung:** Jedes Dokument beginnt mit derselben Änderung (feste Akteurs-ID, Zeit 0). Legen zwei Geräte dasselbe Dokument unabhängig an, führt Automerge diese Änderung als eine zusammen; sonst gäbe es die Wurzel-Map zweimal und die Inhalte eines Geräts wären unsichtbar.
+- **Neue Akteurs-ID je Sitzung:** Jedes geladene Dokument schreibt mit einer neuen Akteurs-ID. Damit erzeugt keine Akteurs-ID zwei verschiedene Änderungen mit derselben Nummer, auch nicht nach einem eingespielten Backup oder einem Absturz zwischen Ordner und Store; Automerge lehnt das sonst ab („duplicate seq“). Kosten: 16 Bytes je Sitzung und Dokument. Die Geräte-ID für die Ordner ist davon getrennt.
+- **Konflikte:** Zwei Werte für dasselbe Feld meldet `conflicts()` (Seite: `kind`, `indent`, `checked`, `lang`, `asset`; Baum: `title`, `icon`, `parent`) und doppelte Objekte. Reihenfolge, Favorit und Papierkorb sind keine Konflikte für den Nutzer, weil dort kein Inhalt verloren geht. Die Wahl des Nutzers schreibt den Wert neu und löst den Konflikt auch dann, wenn der gewählte Wert der ist, den Automerge gerade vorne zeigt.
+- **Löschen gegen Bearbeiten:** Automerge entfernt einen gelöschten Block trotz gleichzeitiger Bearbeitung. Die Sync-Schicht stellt ihn in 11.3 wieder her und markiert ihn.
+- **Test zwischen zwei Macs:** ein Mac mit zwei Benutzerkonten und gemeinsamem Ordner, mit eigener Testvariante (Bundle-ID `io.github.vogelwild07.quill.synctest`, eigener Container in beiden Konten). Der echte Store wird nie berührt. Automatische Tests nutzen nur Wegwerf-Stores und Wegwerf-Ordner.
+- **Lizenztexte** von automerge-swift, dem Rust-Kern und den Crates kommen mit der Oberfläche in 11.4 in die App, vor dem ersten Release mit Automerge.
+
+**Konsequenzen:**
+- Gegenproben 11.1 (alle rot):
+  - zufällige statt fester erster Akteurs-ID (unabhängig angelegte Dokumente verlieren Inhalte);
+  - feste Akteurs-ID beim Laden („duplicate seq“);
+  - Konflikt beim gleichen Wert nicht neu geschrieben (der Test löst mit beiden Werten auf, weil der vorne gezeigte Wert von den zufälligen Akteurs-IDs abhängt);
+  - alle Reihenfolge-Schlüssel neu statt nur der verschobene;
+  - Marks mit `false` statt entfernt;
+  - Grabstein überschreibbar;
+  - neueres `quill.json` angenommen;
+  - `import Automerge` in der App, Automerge-Typ in der Schnittstelle, Automerge als Abhängigkeit von QuillModel, das Wort Automerge in einem Kommentar in QuillModel.
+- Toter Code, den eine Gegenprobe aufgedeckt hat (Behandlung entfernter Marks), ist entfernt; das Verhalten von Automerge dazu hält `removedMarksAreNotReported` fest.
