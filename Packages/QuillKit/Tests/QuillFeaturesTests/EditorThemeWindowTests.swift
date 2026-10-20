@@ -44,6 +44,38 @@ struct EditorThemeWindowTests {
         #expect(UserDefaults.standard.string(forKey: key) == "tinte")
     }
 
+    /// Fokus-Modus wie das Theme: Test-Store liest und schreibt nie, Startargument nur dort.
+    @Test func testStoreNeverTouchesTheUsersFocusMode() {
+        let key = EditorFocusSettings.defaultsKey
+        UserDefaults.standard.set(true, forKey: key)
+        defer {
+            UserDefaults.standard.removeObject(forKey: key)
+            EditorFocusSettings.shared.configure(defaults: nil, initial: false)
+            EditorThemeSettings.shared.configure(defaults: nil, initial: .standard)
+        }
+        let focus = EditorFocusSettings.shared
+
+        EditorThemeSetup.configure(arguments: ["Quill", "-QuillInMemoryStore", "YES"])
+        #expect(!focus.isEnabled, "Gespeicherte Wahl des Nutzers nicht gelesen")
+        focus.toggle()
+        focus.toggle()
+        #expect(UserDefaults.standard.bool(forKey: key), "Nichts geschrieben")
+
+        EditorThemeSetup.configure(arguments: ["Quill", "-QuillStoreDirectory", "t", "-QuillTestFocusMode", "YES"])
+        #expect(focus.isEnabled)
+
+        // Ohne Test-Store: die gespeicherte Wahl, Wechsel werden gespeichert.
+        EditorThemeSetup.configure(arguments: ["Quill"])
+        #expect(focus.isEnabled)
+        focus.setEnabled(false)
+        #expect(!UserDefaults.standard.bool(forKey: key))
+        // Startargument ohne Test-Store wirkt nicht, auch nicht über die Argument-Domain
+        // von `UserDefaults`: Es heißt anders als der Schlüssel.
+        #expect(EditorThemeSetup.focusArgument != key)
+        EditorThemeSetup.configure(arguments: ["Quill", "-QuillTestFocusMode", "YES"])
+        #expect(!focus.isEnabled)
+    }
+
     // MARK: Fenster mit Sidebar
 
     /// Echtes Fenster aus Sidebar im Systemstil und Editor mit Seitenkopf. Feste Themes

@@ -39,11 +39,13 @@ final class PageEditorSession {
             focus: headerFocus,
             rename: rename,
             setIcon: setIcon,
-            submitTitle: { [weak controller] in controller?.focusStart() }
+            submitTitle: { [weak controller] in controller?.focusStart() },
+            titleDidChange: { [weak controller] in controller?.headerShowsPlaceholder = $0.isEmpty }
         )
         let headerView = EditorHeaderView(rootView: header.modelContext(context))
         headerView.setAccessibilityLabel(String(localized: "Seitenkopf", bundle: .module))
         controller.header = headerView
+        controller.headerShowsPlaceholder = title.isEmpty
         controller.onExitTop = { [headerFocus] in headerFocus.requestTitle() }
         controller.onExitForward = { [weak controller] in WindowFocus.sidebar(in: controller?.scrollView.window) }
     }

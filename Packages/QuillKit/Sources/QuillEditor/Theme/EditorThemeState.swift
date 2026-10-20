@@ -5,8 +5,9 @@ import Synchronization
 /// Rollen der Theme-Farben im Editor; `EditorColor` liefert je Rolle eine dynamische Farbe.
 enum EditorColorRole: CaseIterable, Sendable {
     case background, text, heading, link, secondary, quoteBar, codeBackground, accent, onAccent, done, selection
-    /// Abgeleitet: Platzhalter der leeren Seite; Ziehgriff, Plus-Knopf und Trennlinie.
-    case placeholder, control
+    /// Abgeleitet: Platzhalter der leeren Seite; Ziehgriff, Plus-Knopf und Trennlinie;
+    /// Rahmen der leeren Checkbox (wie `done`, im Fokus-Modus aber eine Fläche).
+    case placeholder, control, checkboxBorder
 }
 
 /// Aktuelles Theme für die dynamischen Farben des Editors.
@@ -23,6 +24,12 @@ enum EditorThemeState {
     }
 
     private static let state = Mutex(State())
+    /// Zähler im Thread-Wörterbuch, solange ein abgedunkelter Block zeichnet
+    /// (`drawingDimmed`); dann liefern die Rollen ihre abgedunkelte Farbe. Je Thread,
+    /// damit Farben, die woanders gleichzeitig aufgelöst werden, normal bleiben.
+    private static let dimmedKey = "io.github.vogelwild07.quill.drawingDimmed"
+
+    private static var isDrawingDimmed: Bool { (Thread.current.threadDictionary[dimmedKey] as? Int ?? 0) > 0 }
 
     static var theme: EditorTheme { state.withLock { $0.theme } }
 
@@ -35,12 +42,33 @@ enum EditorThemeState {
     }
 
     static func color(_ role: EditorColorRole, for appearance: NSAppearance) -> NSColor {
-        state.withLock { state in
+        let isDimmed = isDrawingDimmed
+        return state.withLock { state in
             let variant = EditorThemeVariant(appearance, increaseContrast: state.increaseContrast)
-            if let palette = state.palettes[variant] { return palette[role] }
+            if let palette = state.palettes[variant] { return isDimmed ? palette.dimmed(role) : palette[role] }
             let palette = ResolvedPalette(state.theme.palette(for: variant), variant: variant)
             state.palettes[variant] = palette
-            return palette[role]
+            return isDimmed ? palette.dimmed(role) : palette[role]
+        }
+    }
+
+    /// Zeichnet `body` mit den abgedunkelten Farben des Fokus-Modus.
+    static func drawingDimmed(_ body: () -> Void) {
+        let dictionary = Thread.current.threadDictionary
+        let depth = dictionary[dimmedKey] as? Int ?? 0
+        dictionary[dimmedKey] = depth + 1
+        defer { dictionary[dimmedKey] = depth }
+        body()
+    }
+
+    /// Deckkraft abgedunkelter Absätze im Fokus-Modus für die Darstellung.
+    static func dimmedAlpha(for appearance: NSAppearance) -> CGFloat {
+        state.withLock { state in
+            let variant = EditorThemeVariant(appearance, increaseContrast: state.increaseContrast)
+            if let palette = state.palettes[variant] { return palette.dimmedAlpha }
+            let palette = ResolvedPalette(state.theme.palette(for: variant), variant: variant)
+            state.palettes[variant] = palette
+            return palette.dimmedAlpha
         }
     }
 }
@@ -48,8 +76,32 @@ enum EditorThemeState {
 /// Farben einer Palette als `NSColor`, mit „Kontrast erhöhen“ verstärkt.
 struct ResolvedPalette: Sendable {
     private let colors: [EditorColorRole: NSColor]
+    /// Abgedunkelte Farben im Fokus-Modus (`EditorThemeState.drawingDimmed`).
+    private let dimmedColors: [EditorColorRole: NSColor]
+    /// Deckkraft abgedunkelter Absätze im Fokus-Modus: Fließtext darüber Richtung
+    /// Hintergrund, so weit wie möglich, aber über `minimumDimmedContrast`. Gilt auch
+    /// für Kopf, Bilder und Flächen; Textrollen werden höchstens so weit abgedunkelt,
+    /// dass sie den Mindestkontrast behalten (`dimmed(_:)`).
+    let dimmedAlpha: CGFloat
 
     subscript(role: EditorColorRole) -> NSColor { colors[role] ?? .labelColor }
+
+    func dimmed(_ role: EditorColorRole) -> NSColor { dimmedColors[role] ?? self[role] }
+
+    /// `color` mit Deckkraft `alpha`, weiter dynamisch: `withAlphaComponent` löst
+    /// Systemfarben wie `labelColor` sonst einmal in der gerade aktuellen Darstellung auf.
+    static func faded(_ color: NSColor, alpha: CGFloat) -> NSColor {
+        NSColor(name: nil) { appearance in
+            var result = color
+            appearance.performAsCurrentDrawingAppearance {
+                result = (color.usingColorSpace(.sRGB) ?? color).withAlphaComponent(alpha)
+            }
+            return result
+        }
+    }
+
+    /// Textrollen, die im Fokus-Modus den Mindestkontrast behalten.
+    static let textRoles: [EditorColorRole] = [.text, .heading, .link, .secondary, .done]
 
     /// Mindestkontrast von Text zum Hintergrund (WCAG AA bzw. AAA).
     static let minimumContrast = 4.5
@@ -57,6 +109,9 @@ struct ResolvedPalette: Sendable {
     /// Bedienelemente und Linien (WCAG 1.4.11); mit „Kontrast erhöhen“ 4,5 : 1.
     static let minimumControlContrast = 3.0
     static let minimumHighControlContrast = 4.5
+    /// Abgedunkelter Fließtext im Fokus-Modus; mit „Kontrast erhöhen“ 4,5 : 1.
+    static let minimumDimmedContrast = 3.0
+    static let minimumHighDimmedContrast = 4.5
 
     init(_ palette: EditorPalette, variant: EditorThemeVariant) {
         let background = palette.background.approximation(variant)
@@ -75,8 +130,7 @@ struct ResolvedPalette: Sendable {
 
         var colors: [EditorColorRole: NSColor] = [:]
         var textValues: [SRGB] = []
-        for (role, color) in [(EditorColorRole.text, palette.text), (.heading, palette.heading), (.link, palette.link),
-                              (.secondary, palette.secondary), (.done, palette.done)] {
+        for (role, color) in zip(Self.textRoles, [palette.text, palette.heading, palette.link, palette.secondary, palette.done]) {
             let (resolved, value) = textColor(color)
             colors[role] = resolved
             textValues.append(value)
@@ -84,6 +138,7 @@ struct ResolvedPalette: Sendable {
         colors[.background] = palette.background.nsColor
         colors[.codeBackground] = palette.codeBackground.nsColor
         colors[.quoteBar] = palette.quoteBar.nsColor
+        colors[.checkboxBorder] = colors[.done]
         colors[.accent] = palette.accent.nsColor
         // Platzhalter und Bedienelemente: Text Richtung Hintergrund, so zurückhaltend
         // wie möglich, aber über dem Mindestkontrast.
@@ -105,6 +160,25 @@ struct ResolvedPalette: Sendable {
         }
         colors[.selection] = selection.nsColor
         self.colors = colors
+        let dimmedTarget = variant.isHighContrast ? Self.minimumHighDimmedContrast : Self.minimumDimmedContrast
+        let alpha = ink.fadedAlpha(over: background, minimum: dimmedTarget)
+        dimmedAlpha = alpha
+        // Jede Textrolle so weit wie der Fließtext, schwächere Rollen (Zitat, Marker,
+        // Erledigt) weniger, damit sie über dem Mindestkontrast bleiben. Deckkraft
+        // relativ zur eigenen, damit Systemfarben wie `labelColor` ihre behalten.
+        var dimmedColors: [EditorColorRole: NSColor] = [:]
+        for (role, value) in zip(Self.textRoles, textValues) {
+            let roleAlpha = max(alpha, value.over(background).fadedAlpha(over: background, minimum: dimmedTarget))
+            dimmedColors[role] = colors[role].map { Self.faded($0, alpha: value.alpha * roleAlpha) }
+        }
+        // Flächen, Linien und Häkchen wie der Fließtext (ADR-027).
+        for (role, color) in [(EditorColorRole.codeBackground, palette.codeBackground), (.quoteBar, palette.quoteBar),
+                              (.accent, palette.accent), (.checkboxBorder, palette.done)] {
+            dimmedColors[role] = colors[role].map { Self.faded($0, alpha: color.approximation(variant).alpha * alpha) }
+        }
+        dimmedColors[.control] = colors[.control].map { Self.faded($0, alpha: alpha) }
+        dimmedColors[.onAccent] = colors[.onAccent].map { Self.faded($0, alpha: alpha) }
+        self.dimmedColors = dimmedColors
     }
 }
 
@@ -177,6 +251,19 @@ struct SRGB: Sendable, Equatable {
             color = next
         }
         return color
+    }
+
+    /// Kleinste Deckkraft in Schritten von 0,05, bei der diese Farbe über `background`
+    /// mit etwas Reserve über `minimum` bleibt; 1, wenn sie das schon deckend nicht schafft.
+    func fadedAlpha(over background: SRGB, minimum: Double) -> CGFloat {
+        var result = 1.0
+        for alpha in stride(from: 0.95, through: 0.05, by: -0.05) {
+            var faded = self
+            faded.alpha = self.alpha * alpha
+            guard faded.over(background).contrast(to: background) >= minimum + 0.1 else { break }
+            result = alpha
+        }
+        return result
     }
 
     var nsColor: NSColor { NSColor(srgbRed: red, green: green, blue: blue, alpha: alpha) }

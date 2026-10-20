@@ -26,6 +26,7 @@ extension BlockEditorController {
             layoutManager.invalidateLayout(for: layoutManager.documentRange)
         }
         textView.updateLayerColors()
+        updateHeaderDimming()
         textView.needsLayout = true
         textView.needsDisplay = true
         for subview in textView.subviews { subview.needsDisplay = true }

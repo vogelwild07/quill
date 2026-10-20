@@ -14,6 +14,8 @@ struct PageHeaderView: View {
     let rename: @MainActor (_ id: UUID, _ title: String) -> Void
     let setIcon: @MainActor (_ id: UUID, _ icon: String?) -> Void
     let submitTitle: @MainActor () -> Void
+    /// Jeder Stand des Titels, auch der erste (z. B. leer → Platzhalter sichtbar).
+    let titleDidChange: @MainActor (_ title: String) -> Void
 
     @Query private var pages: [Page]
     @State private var title = ""
@@ -33,13 +35,15 @@ struct PageHeaderView: View {
         focus: HeaderFocus,
         rename: @escaping @MainActor (UUID, String) -> Void,
         setIcon: @escaping @MainActor (UUID, String?) -> Void,
-        submitTitle: @escaping @MainActor () -> Void
+        submitTitle: @escaping @MainActor () -> Void,
+        titleDidChange: @escaping @MainActor (String) -> Void = { _ in }
     ) {
         self.pageID = pageID
         self.focus = focus
         self.rename = rename
         self.setIcon = setIcon
         self.submitTitle = submitTitle
+        self.titleDidChange = titleDidChange
         _title = State(initialValue: title)
         _icon = State(initialValue: icon ?? "")
         _pages = Query(filter: #Predicate<Page> { $0.id == pageID })
@@ -96,6 +100,7 @@ struct PageHeaderView: View {
         .onChange(of: page?.title) { if focusedField != .title, let page { title = page.title } }
         .onChange(of: page?.icon) { if focusedField != .icon, let page { icon = page.icon ?? "" } }
         .onChange(of: title) { if let page, title != page.title { rename(pageID, title) } }
+        .onChange(of: title, initial: true) { titleDidChange(title) }
         .onChange(of: icon) { applyIcon() }
         .onChange(of: focus.titleRequest, initial: true) {
             guard focus.titleRequest > 0 else { return }

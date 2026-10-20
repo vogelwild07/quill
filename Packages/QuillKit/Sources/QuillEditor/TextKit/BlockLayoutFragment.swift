@@ -18,6 +18,16 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     let isChecked: Bool
     let ordinal: Int
     let assetID: UUID?
+    /// Block-ID aus dem Absatz, für den Fokus-Modus.
+    let blockID: UUID?
+    /// Im Fokus-Modus außerhalb der Auswahl: mit den abgedunkelten Farben gezeichnet
+    /// (`EditorColor.drawingDimmed`), Bilder mit `EditorColor.dimmedAlpha`.
+    /// Beim Zeichnen gelesen, nicht beim Anlegen: TextKit verwendet Fragmente beim
+    /// Neu-Layouten wieder.
+    var isDimmed: Bool {
+        guard let blockID, let focused = (textLayoutManager?.delegate as? BlockLayoutDelegate)?.focusedBlocks else { return false }
+        return !focused.contains(blockID)
+    }
 
     override init(textElement: NSTextElement, range rangeInElement: NSTextRange?) {
         let attributes: [NSAttributedString.Key: Any]
@@ -32,6 +42,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         isChecked = properties.isChecked
         ordinal = attributes[.quillOrdinal] as? Int ?? 1
         assetID = properties.assetID
+        blockID = (attributes[.quillBlockID] as? String).flatMap(UUID.init(uuidString:))
         super.init(textElement: textElement, range: rangeInElement)
     }
 
@@ -136,6 +147,13 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     // MARK: Zeichnen
 
     override func draw(at point: CGPoint, in context: CGContext) {
+        guard isDimmed else { return drawBlock(at: point, in: context) }
+        // Farben je Rolle statt einer Deckkraft für den ganzen Block: Schwächere Rollen
+        // (Zitat, Marker, Erledigt) dürfen nicht unter ihren Mindestkontrast fallen.
+        EditorColor.drawingDimmed { drawBlock(at: point, in: context) }
+    }
+
+    private func drawBlock(at point: CGPoint, in context: CGContext) {
         context.saveGState()
         context.translateBy(x: point.x, y: point.y)
         switch kind {
@@ -229,6 +247,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         context.translateBy(x: rect.minX, y: rect.maxY)
         context.scaleBy(x: 1, y: -1)
         context.interpolationQuality = .high
+        if isDimmed { context.setAlpha(EditorColor.dimmedAlpha) }
         context.draw(image, in: CGRect(origin: .zero, size: rect.size))
         context.restoreGState()
     }
@@ -252,7 +271,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         } else {
             context.addPath(box)
             context.setLineWidth(1.2)
-            context.setStrokeColor(EditorColor.done.cgColor)
+            context.setStrokeColor(EditorColor.checkboxBorder.cgColor)
             context.strokePath()
         }
     }
@@ -273,6 +292,11 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
 
 /// Liefert `BlockLayoutFragment` für jeden Absatz.
 final class BlockLayoutDelegate: NSObject, NSTextLayoutManagerDelegate {
+    /// Fokus-Modus: Blöcke mit Auswahl oder Cursor; alle anderen werden abgedunkelt
+    /// (`BlockLayoutFragment.isDimmed`). `nil` dunkelt nichts ab. Nach einer Änderung
+    /// die betroffenen Absätze neu zeichnen.
+    var focusedBlocks: Set<UUID>?
+
     func textLayoutManager(
         _ textLayoutManager: NSTextLayoutManager,
         textLayoutFragmentFor location: any NSTextLocation,

@@ -26,6 +26,10 @@ Der Editor zeichnet in einem Theme, gewählt unter Einstellungen (⌘,) › Dars
 
 Regeln: jede Textrolle mindestens 4,5 : 1 (zum Hintergrund, zur Codefläche, auf der Auswahl), Platzhalter der leeren Seite 4,5 : 1, Grafik (Zitatbalken, Checkbox, Ziehgriff, Plus-Knopf, Trennlinie) 3 : 1. Mit „Kontrast erhöhen“ Text und Platzhalter 7 : 1, Ziehgriff, Plus und Trennlinie 4,5 : 1 (abgeleitet). Platzhalter und Bedienelemente sind aus der Textfarbe abgeleitet: so zurückhaltend wie möglich, aber über dem Mindestkontrast. Sonnengelb `#FFC23A` nur für Flächen, nie für Text, und nur wo es 3 : 1 erreicht. Feste Themes erzwingen hell bzw. dunkel nur im Editor. Werte in `EditorTheme.swift`, geprüft von `EditorThemeContrastTests` (Rechnung) und `EditorThemeControlTests` (gezeichnet, jedes Theme bei hellem und dunklem System).
 
+## Fokus-Modus (ADR-027)
+
+Darstellung › Fokus-Modus (⇧⌘F) oder Einstellungen › Darstellung. Die Zeile mit dem Cursor bleibt in der Mitte des Fensters; alle anderen Blöcke und der Seitenkopf treten in Richtung Theme-Hintergrund zurück. Abgedunkelter Fließtext hat mindestens 3 : 1, mit „Kontrast erhöhen“ 4,5 : 1 (`ResolvedPalette.dimmedAlpha`, je Theme und Variante berechnet). Überschrift, Link, Zitat, Listenmarker und erledigte To-dos fallen ebenfalls nicht darunter; schwächere Rollen werden dafür weniger abgedunkelt. Mit einer Auswahl bleiben alle berührten Blöcke hell und es wird nicht gescrollt. Liegt der Fokus im Titel oder in der Sidebar, ist nichts abgedunkelt. Ein leerer Titel (Platzhalter „Ohne Titel“) bleibt hell. Sidebar und Symbolleiste bleiben unverändert; sie lassen sich wie gewohnt ausblenden (⌃⌘S). Gespeichert pro Mac, wie das Theme.
+
 ## Typografie
 
 | Token | Schrift | Größe/Gewicht | Zeilenhöhe |

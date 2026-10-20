@@ -20,7 +20,7 @@
 | 15 Apple-Ökosystem | App Intents und Siri („Neue Seite“, „Zur Einkaufsliste hinzufügen“), Spotlight, Schnellnotiz (Mac: Menüleiste mit globalem Kürzel; iPhone: Kontrollzentrum, Aktionstaste, Widget), Teilen-Erweiterung (braucht App Group, also Developer Program), To-dos mit Erinnerungen, Tagesseite mit heutigen Terminen | v0.6.0 |
 | 16 Lokale KI | Foundation Models nur auf dem Gerät: Seite zusammenfassen, in To-dos umwandeln, „Frag deine Notizen“ mit Quellen, Link-Vorschläge; ohne Apple Intelligence ausgeblendet mit Erklärung in den Einstellungen | v0.7.0 |
 | 17 Erfassen ohne Tippen | Sprachnotizen mit Abschrift auf dem Gerät (durchsuchbar), Text in Bildern per Vision durchsuchbar | v0.8.0 |
-| 18 Schreiben und Lesen | 18.1 Fokus-Modus (Schreibmaschinen-Scrollen, Umgebung abgedunkelt passend zum Theme) für v0.3.0, zusammen mit dem neuen Fenster der .dmg (ADR-025); 18.2 Präsentieren (Folien an Überschriften) für v0.8.0 | v0.3.0 / v0.8.0 |
+| 18 Schreiben und Lesen | 18.1 Fokus-Modus (Schreibmaschinen-Scrollen, Umgebung abgedunkelt passend zum Theme, ADR-027) für v0.3.0, zusammen mit dem neuen Fenster der .dmg (ADR-025), Branch `phase-18/fokus`; 18.2 Präsentieren (Folien an Überschriften) für v0.8.0 | v0.3.0 / v0.8.0 |
 
 Reihenfolge: 18.1 zuerst (v0.3.0 bekommt etwas Sichtbares), dann 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18.2. Das Sync-Format wird schon in Phase 10 festgelegt, weil es Datenmodell, Speicher und Zeitreise bestimmt; die Zeitreise folgt direkt auf den Sync, weil die Geschichte dann schon vorliegt. Bis Phase 13 alles ohne Developer Program (Grenzen in ADR-026). Danach v1.0: Feinschliff, App Store (iPhone, optional Mac; GPL-Ausnahme für den App Store vor dem ersten fremden Beitrag klären).
 
@@ -109,6 +109,14 @@ Ideen aus Phase 8, nicht eingeplant:
 Aus dem Review von PR #10, nicht eingeplant (Urteile, kein Fehler):
 - Bundle-ID-Präfix und Mindestversion stehen in `make-release.sh`, `check-release-binary.sh` und `BundleIdentifierTests` zusätzlich zum Projekt; aus dem Build lesen (`xcodebuild -showBuildSettings`).
 - `BundleIdentifierTests` und `LocalizationTests` teilen sich `LocalizationTests.root`; eine gemeinsame Hilfe `RepoRoot` statt der Kopplung an eine fremde Testklasse.
+
+Aufräumen aus dem Review von PR #10 (Fokus-Modus), nicht eingeplant (Urteile, kein Fehler):
+- `EditorThemeState`: Palette suchen oder anlegen steht in `color` und `dimmedAlpha` doppelt; ein `palette(for:)` im Lock.
+- `EditorThemeSetup`: Auslesen von `-QuillEditorTheme` und `-QuillTestFocusMode` mit derselben Kette; Hilfe `value(after:)`.
+- Toggle-Binding für den Fokus-Modus steht in `QuillCommands` und `SettingsView`.
+- `Rendered` in `EditorFocusModeTests` ist fast wörtlich aus `EditorThemeControlTests` kopiert; nach `QuillTestFixtures`. `"hell"`/`"dunkel"` steht mehrfach.
+- `BlockLayoutFragment.isDimmed` castet bei jedem Zeichnen den Delegate (bei Bildern zweimal).
+- `-QuillEditorTheme` heißt wie der Defaults-Schlüssel `QuillEditorTheme` und wirkt deshalb über die Argument-Domain auch ohne Test-Store (wie vorher `-QuillFocusMode`); umbenennen.
 
 Infrastruktur, nicht eingeplant:
 - CI-Workflow auf GitHub (macOS-Runner): Build, Package- und App-Tests ohne Warnungen bei jedem PR. Bisher wird nur lokal getestet; PR #5 wurde auf Basis der lokalen Tests gemergt.

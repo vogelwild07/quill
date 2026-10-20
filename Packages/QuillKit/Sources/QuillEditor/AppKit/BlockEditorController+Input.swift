@@ -138,6 +138,7 @@ extension BlockEditorController: NSTextViewDelegate {
     public func textDidChange(_ notification: Notification) {
         guard !isApplying else { return }
         if !syncSingleParagraph() { syncFromStorage() }
+        scheduleFocusUpdate()
 
         let inserted = lastInsertedString
         lastInsertedString = nil
@@ -161,6 +162,7 @@ extension BlockEditorController: NSTextViewDelegate {
     }
 
     public func textViewDidChangeSelection(_ notification: Notification) {
+        scheduleFocusUpdate()
         // Beim Tippen kommt die Auswahl vor `textDidChange`; die Absätze sind dann noch
         // nicht abgeglichen, und `textDidChange` aktualisiert das Menü ohnehin.
         if slashMenu.isVisible, editedRange == nil { slashMenu.update() }

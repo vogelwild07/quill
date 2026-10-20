@@ -31,8 +31,17 @@ public final class BlockEditorController: NSObject {
     var undoObservations: [NotificationObservation] = []
     /// Theme- und Kontrastwechsel (`+Theme`).
     var themeObservations: [NotificationObservation] = []
+    /// Fokus-Modus und Theme (`+Focus`).
+    var focusObservations: [NotificationObservation] = []
+    /// Abgleich des Fokus-Modus ist für das Ende des Run-Loop-Durchlaufs vorgemerkt.
+    var isFocusUpdateScheduled = false
+    /// Der Kopf zeigt nur den Platzhalter (leerer Titel); im Fokus-Modus dann nicht
+    /// abdunkeln (`+Focus`).
+    public var headerShowsPlaceholder = false {
+        didSet { if oldValue != headerShowsPlaceholder { updateHeaderDimming() } }
+    }
 
-    private let layoutDelegate = BlockLayoutDelegate()
+    let layoutDelegate = BlockLayoutDelegate()
     /// Startposition jedes Absatzes im Textspeicher; letzter Eintrag = Gesamtlänge.
     var paragraphStarts: [Int] = []
     /// Gesetzt, während der Controller selbst in den Textspeicher schreibt.
@@ -85,6 +94,7 @@ public final class BlockEditorController: NSObject {
         loadStorage()
         observeUndo()
         observeTheme()
+        observeFocusMode()
     }
 
     private func configureTextView() {
