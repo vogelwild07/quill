@@ -96,7 +96,7 @@ DatabaseView         (später)  id, name, layoutRaw (table|board|calendar), conf
 
 ### Migration auf ein neues Schema (seit Phase 11.2, ADR-029)
 
-Öffnet eine neuere Version einen Store mit älterem Schema (oder ohne `Quill.store.version`), fragt Quill zuerst, nach dem Start der App: „Datenbank umstellen?“ mit „Beenden“ (Standard, Return) und „Umstellen“ (nur per Klick).
+Öffnet eine neuere Version einen Store mit älterem Schema (oder ohne `Quill.store.version`), fragt Quill zuerst, nach dem Start der App: „Datenbank umstellen?“ mit „Beenden“ (Standard, Return und Escape) und „Umstellen“ (nur per Klick).
 
 - „Beenden“: Quill endet ohne Backup und ohne Änderung; der Store bleibt byte-gleich.
 - „Umstellen“: Backup `vor-migration-<alt>-<neu>` (wird nie automatisch gelöscht), dann die Migration. Scheitert das Backup, öffnet Quill nicht.
