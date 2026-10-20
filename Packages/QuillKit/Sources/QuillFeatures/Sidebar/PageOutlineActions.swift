@@ -24,3 +24,11 @@ final class PageOutlineActions {
     /// Tab aus der Sidebar: Fokus in Titel oder Editor der ausgewählten Seite.
     var focusPage: (_ target: PageFocusTarget) -> Void = { _ in }
 }
+
+/// Ziel, wenn der Fokus die Sidebar per Tab verlässt.
+enum PageFocusTarget {
+    /// Tab: Titel der ausgewählten Seite.
+    case title
+    /// ⇧Tab: Editor der ausgewählten Seite.
+    case editor
+}

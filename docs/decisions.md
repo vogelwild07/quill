@@ -395,3 +395,20 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - `EditorFocusModeTests` prüft alle Textrollen für alle Themes und Varianten und zeichnet in jedem Theme bei hellem und dunklem System, ohne und mit „Kontrast erhöhen“ (über `EditorThemeSettings.setIncreaseContrast`), Fließtext, Überschrift, Link, Zitat, Listenmarker und erledigte To-dos; dazu Abdunkeln, Flächen, Kopf (Darstellungswechsel, Platzhalter), Thread, Scrollen samt Fenstergröße und Einstellung. Gegenproben fallen durch: schwächerer Mindestkontrast (auch mit „Kontrast erhöhen“), alle Rollen mit der Deckkraft des Fließtexts, eine Deckkraft für den ganzen Block, kein Abdunkeln beim Zeichnen, Trennlinie oder Checkbox-Rahmen nicht als Fläche, Kopf ohne Darstellungswechsel oder mit Platzhalter abgedunkelt, Flag für alle Threads oder nicht verschachtelbar, kein Nachmessen, kein Platz unter dem Text, kein Neuzentrieren nach Größenänderung, Abdunkeln ohne Fokus, Startargument gleich dem Schlüssel.
 - Abgeleitete Farben aus Systemfarben müssen dynamisch bleiben: `withAlphaComponent` auf `labelColor` löst sie einmal in der gerade aktuellen Darstellung auf (`ResolvedPalette.faded`).
 - Der Kontrast-Audit der UI-Tests läuft ohne Fokus-Modus; abgedunkelter Text liegt bewusst unter 4,5 : 1.
+
+## ADR-028: QuillKit für Mac und iPhone (2026-10-20)
+
+**Kontext:** Phase 10 der Roadmap. Das iPhone (Phase 13) soll dieselbe Logik nutzen wie der Mac, das App-Target bleibt dünn. Bis vor Phase 13 gibt es keinen iOS-Simulator; das Developer Program kommt erst vor Phase 13.
+
+**Entscheidung (10.2, iOS-Build):**
+- QuillKit baut für iOS 26, geprüft mit `Scripts/check-ios-build.sh` (generisches iOS-Gerät, eigener temporärer Build-Ordner). Fehler und Compiler-Warnungen zählen wie auf dem Mac; das Skript gehört zu jedem vollen Lauf.
+- Nur-Mac-Teile bleiben hinter `#if canImport(AppKit)`, wie bisher im Code: Menübefehle, Fenster (`WindowRouter`, `WindowFocus`, `TestWindowSize`), `QuitGuard`, Einstellungsfenster, Backup wiederherstellen, Export-Dialog, „Schnell öffnen“, Seitenbaum der Sidebar (`NSOutlineView`), Editor-Sitzung. Auf iOS bleibt vorerst das Gerüst aus `NavigationSplitView`, Papierkorb und Leerzustand; Editor und Seitenbaum fürs iPhone kommen in Phase 13.
+- Was beide Plattformen brauchen, steht außerhalb dieser Blöcke: `PageFocusTarget` liegt jetzt neben `PageOutlineActions`. Der Seitentitel nimmt auf iOS die Systemfarbe, bis die Themes in 10.3 ohne AppKit auskommen.
+- iPad nicht verbauen: `RootView` bleibt ein `NavigationSplitView` für beide Plattformen. Mac-Eigenheiten (Fenster, Menüs, Tastaturfokus über `NSWindow`) stehen nur in Nur-Mac-Blöcken, nie als Annahme im gemeinsamen Code.
+- Tests laufen bis vor Phase 13 nur auf dem Mac; auf iOS wird nur gebaut. Der Simulator wird vor Phase 13 installiert.
+- Der Automerge-Spike baut auch für iOS (Bibliothek; das Messprogramm nutzt `Process` und läuft nur auf dem Mac).
+
+**Konsequenzen:**
+- Neuer Code in QuillKit muss auf beiden Plattformen bauen; ein Nur-Mac-Typ im gemeinsamen Code fällt beim nächsten vollen Lauf auf.
+- Gegenproben: Ein Nur-Mac-Typ im gemeinsamen Code (`LaunchNotice` in `RootView`) und eine Compiler-Warnung lassen `check-ios-build.sh` scheitern.
+
