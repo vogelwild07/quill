@@ -39,7 +39,7 @@ let package = Package(
         ),
         .target(
             name: "QuillFeatures",
-            dependencies: ["QuillModel", "QuillEditorCore", "QuillEditor", "QuillExport", "QuillDesign"],
+            dependencies: ["QuillModel", "QuillEditorCore", "QuillEditor", "QuillExport", "QuillSync", "QuillDesign"],
             resources: [.process("Resources")]
         ),
         // Beispieldokumente für Editor- und Export-Tests; nicht Teil des Produkts.
@@ -52,7 +52,10 @@ let package = Package(
             exclude: ["Golden"]
         ),
         .testTarget(name: "QuillSyncTests", dependencies: ["QuillSync", "QuillModel"]),
-        .testTarget(name: "QuillFeaturesTests", dependencies: ["QuillFeatures", "QuillModel", "QuillEditorCore", "QuillEditor", "QuillTestFixtures"]),
+        .testTarget(
+            name: "QuillFeaturesTests",
+            dependencies: ["QuillFeatures", "QuillModel", "QuillEditorCore", "QuillEditor", "QuillSync", "QuillTestFixtures"]
+        ),
         // Messungen gegen Schwellen, nur optimiert sinnvoll (docs/performance.md):
         // swift test -c release -Xswiftc -enable-testing --filter QuillPerformanceTests
         .testTarget(
