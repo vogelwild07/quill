@@ -53,13 +53,35 @@ struct BundleIdentifierTests {
                 guard let range = line.range(of: "PRODUCT_BUNDLE_IDENTIFIER = ") else { return nil }
                 return line[range.upperBound...].trimmingCharacters(in: CharacterSet(charactersIn: " ;\""))
             }
-        // App (Debug, Release), Profiling- und Synctest-App, UI-Tests (Debug, Release),
-        // Profiling- und Synctest-UI-Tests.
-        #expect(identifiers.count == 8)
-        // Testvariante für den Sync mit eigenem Container (ADR-029): nie der echte Store.
-        #expect(identifiers.contains(Self.prefix + ".synctest"))
+        // App (Debug, Release), Profiling-App, Synctest A und B, UI-Tests (Debug, Release),
+        // Profiling-UI-Tests, Synctest-UI-Tests A und B.
+        #expect(identifiers.count == 10)
         for identifier in identifiers {
             #expect(identifier == Self.prefix || identifier.hasPrefix(Self.prefix + "."), "\(identifier)")
         }
+    }
+
+    /// Die beiden Testvarianten für den Sync (`Scripts/make-synctest.sh`, ADR-029) haben
+    /// je eine eigene Kennung und damit einen eigenen Container. Hätte eine die Kennung
+    /// der echten App, schriebe der Handtest in den echten Store.
+    @Test func synctestVariantsNeverUseTheRealIdentifier() throws {
+        let project = try String(
+            contentsOf: Self.root.appending(path: "Quill.xcodeproj/project.pbxproj"), encoding: .utf8
+        )
+        let app = BuildSettings.configurations(in: project)
+            .filter { $0.settings["INFOPLIST_KEY_CFBundleDisplayName"] != nil }
+        let variants = app.filter { $0.name.hasPrefix("Synctest") }
+        #expect(variants.map(\.name).sorted() == ["SynctestA", "SynctestB"])
+        for variant in variants {
+            let identifier = try #require(variant.settings["PRODUCT_BUNDLE_IDENTIFIER"], "\(variant.name)")
+            let letter = variant.name.dropFirst("Synctest".count).lowercased()
+            #expect(identifier != Self.prefix, "\(variant.name) nutzt die Kennung der echten App")
+            #expect(identifier == "\(Self.prefix).synctest.\(letter)", "\(variant.name): \(identifier)")
+            #expect(variant.settings["PRODUCT_NAME"] == "Quill Synctest \(letter.uppercased())")
+        }
+        // Das Skript baut genau diese Konfigurationen und prüft die Kennung im Ergebnis.
+        let script = try String(contentsOf: Self.root.appending(path: "Scripts/make-synctest.sh"), encoding: .utf8)
+        #expect(script.contains("for variant in A B"))
+        #expect(script.contains(#"$real.synctest.$lower"#))
     }
 }
