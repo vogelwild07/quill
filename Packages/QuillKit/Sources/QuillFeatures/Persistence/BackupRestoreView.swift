@@ -105,10 +105,8 @@ struct BackupRestoreView: View {
         errorMessage = nil
         Task {
             do {
+                // Schaltet den Sync vorher aus (ADR-029); bricht das Beenden ab, läuft er weiter.
                 try await persistence.requestRestore(entry)
-                // Sonst führte der Abgleich den eingespielten Stand gleich wieder mit dem
-                // Ordner zusammen (ADR-029); bricht das Beenden ab, läuft er weiter.
-                persistence.sync.turnOffForRestore()
                 requested()
             } catch {
                 errorMessage = BackupLabel.message(for: error)

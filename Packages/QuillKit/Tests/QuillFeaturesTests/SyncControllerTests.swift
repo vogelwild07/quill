@@ -418,6 +418,157 @@ final class SyncControllerTests {
         }
     }
 
+    // MARK: Befunde aus dem Review von Phase 11
+
+    /// Ein fremder Ordner, dem der Nutzer nicht zustimmt, verdrängt den bisherigen
+    /// nicht: Wieder gewählt, führt Quill dort zusammen, ohne Rückfrage und ohne den
+    /// ganzen Stand erneut zu schreiben.
+    @Test func declinedForeignFolderKeepsThePreviousOne() async throws {
+        let persistence = try open()
+        try await createPage(persistence.store, title: "Seite", text: "Text")
+        try FileManager.default.createDirectory(at: syncFolder, withIntermediateDirectories: true)
+        let sync = controller(persistence)
+        try await sync.enable(folder: syncFolder)
+        await sync.syncNow()
+        let folderID = try #require(settings.connection?.folderID)
+        sync.disable()
+        let cursors = try await persistence.store.syncState().cursors
+        // Jedes Einschalten ist ein neues Gerät (eigene Datei unter `devices/`); sonst bleibt alles.
+        func withoutDevices() -> [String: Data] { folderContents().filter { !$0.key.contains("/devices/") } }
+        let filesBefore = withoutDevices()
+
+        // Ein Ordner mit Daten eines anderen Bestands: Rückfrage, dann „Sync ausschalten“.
+        let foreign = try makeFolder("Fremd")
+        let other = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
+        try await other.setSyncDeviceID(UUID())
+        try await other.createPage(title: "Fremd")
+        let foreignID = try await SyncEngine(store: other, folder: foreign, gate: SyncGate(), deviceName: "Anderer")
+            .sync(connectedFolderID: nil).folderID
+        try await sync.enable(folder: foreign)
+        await sync.syncNow()
+        #expect(sync.status == .needsConfirmation(foreignID))
+        sync.disable()
+        #expect(settings.previousConnection?.folderID == folderID)
+        #expect(try await persistence.store.syncState().cursors == cursors)
+
+        try await sync.enable(folder: syncFolder)
+        #expect(settings.connection?.folderID == folderID)
+        await sync.syncNow()
+        #expect(sync.status == .idle)
+        #expect(withoutDevices() == filesBefore)
+    }
+
+    /// Zustimmung zu einem Ordner mit fremden Daten, nachdem schon ein anderer verbunden
+    /// war: Die gelesenen Nummern des bisherigen gelten dort nicht; jedes Dokument kommt
+    /// als ganzer Stand in den Ordner, und ein neues Gerät dort bekommt alles.
+    @Test func confirmedForeignFolderGetsTheWholeState() async throws {
+        let persistence = try open()
+        let page = try await createPage(persistence.store, title: "Seite", text: "Vorher")
+        try FileManager.default.createDirectory(at: syncFolder, withIntermediateDirectories: true)
+        let sync = controller(persistence)
+        try await sync.enable(folder: syncFolder)
+        await sync.syncNow()
+        sync.disable()
+
+        let foreign = try makeFolder("Fremd")
+        let other = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
+        try await other.setSyncDeviceID(UUID())
+        try await other.createPage(title: "Fremd")
+        let foreignID = try await SyncEngine(store: other, folder: foreign, gate: SyncGate(), deviceName: "Anderer")
+            .sync(connectedFolderID: nil).folderID
+        try await sync.enable(folder: foreign)
+        await sync.syncNow()
+        await sync.confirmFolder(foreignID)
+        #expect(sync.status == .idle)
+
+        let fresh = try await freshDevice(in: foreign, folderID: foreignID)
+        #expect(try await fresh.blocks(of: page).map(\.text) == ["Vorher"])
+        #expect(Set(try await fresh.pageSnapshots().map(\.title)) == ["Seite", "Fremd"])
+    }
+
+    /// Umschalten auf einen anderen Ordner, während ein Abgleich läuft: Der alte Lauf
+    /// endet vorher; er schreibt nicht weiter in den alten Ordner und überschreibt die
+    /// zurückgesetzten gelesenen Dateien nicht, und der neue Ordner bekommt alles ganz.
+    @Test func switchingFoldersWaitsForTheRunningSync() async throws {
+        let persistence = try open()
+        var pages: [UUID] = []
+        for index in 1...4 { pages.append(try await createPage(persistence.store, title: "Seite \(index)", text: "Text \(index)")) }
+        try FileManager.default.createDirectory(at: syncFolder, withIntermediateDirectories: true)
+        let files = HookedFileAccess()
+        let sync = SyncController(store: persistence.store, settings: settings, backupBeforeSync: { nil }, deviceName: "Test", files: files)
+        try await sync.enable(folder: syncFolder)
+        // Jede Seiten-Datei im alten Ordner dauert, damit das Umschalten hineinfällt.
+        files.onCreate.withLock { hook in
+            hook = { url in
+                if url.path(percentEncoded: false).contains("/Sync/Quill/pages/") { Thread.sleep(forTimeInterval: 0.2) }
+            }
+        }
+        let first = Task { await sync.syncNow() }
+        try await waitUntil { self.folderFiles().contains { $0.contains("/pages/") } || sync.isSyncing }
+        try await Task.sleep(for: .milliseconds(50))
+        sync.disable()
+        let newFolder = try makeFolder("Neu")
+        try await sync.enable(folder: newFolder)
+        await first.value
+        // Höchstens die Datei, die beim Ausschalten schon geschrieben wurde.
+        #expect(folderFiles().filter { $0.contains("/pages/") }.count <= 1)
+
+        await sync.syncNow()
+        #expect(sync.status == .idle)
+        let folderID = try #require(settings.connection?.folderID)
+        let fresh = try await freshDevice(in: newFolder, folderID: folderID)
+        for (index, page) in pages.enumerated() {
+            #expect(try await fresh.blocks(of: page).map(\.text) == ["Text \(index + 1)"])
+        }
+    }
+
+    /// Ausgeschaltet, während ein Abgleich gerade noch fertig wird: danach „aus“, nicht „pausiert“.
+    @Test func turningOffDuringASyncEndsOff() async throws {
+        let persistence = try open()
+        try await createPage(persistence.store, title: "Seite", text: "Text")
+        try FileManager.default.createDirectory(at: syncFolder, withIntermediateDirectories: true)
+        let files = HookedFileAccess()
+        let sync = SyncController(store: persistence.store, settings: settings, backupBeforeSync: { nil }, deviceName: "Test", files: files)
+        try await sync.enable(folder: syncFolder)
+        // Die Datei des Seitenbaums ist die letzte, die der Abgleich schreibt.
+        files.onCreate.withLock { hook in
+            hook = { url in
+                guard url.path(percentEncoded: false).contains("/tree/") else { return }
+                DispatchQueue.main.sync { MainActor.assumeIsolated { sync.disable() } }
+            }
+        }
+        await sync.syncNow()
+        #expect(sync.status == .off)
+        #expect(!sync.isEnabled)
+    }
+
+    /// Backup einspielen: Der Sync ist schon aus, wenn das Backup vorgemerkt wird;
+    /// scheitert das Vormerken, läuft er weiter wie vorher.
+    @Test func restoreRequestTurnsSyncOffFirst() async throws {
+        let persistence = try open()
+        try FileManager.default.createDirectory(at: syncFolder, withIntermediateDirectories: true)
+        let sync = persistence.sync
+        try await sync.enable(folder: syncFolder)
+        await sync.syncNow()
+        let entry = try #require(try await persistence.backupEntries().first?.entry)
+
+        struct RequestFailed: Error {}
+        await #expect(throws: RequestFailed.self) {
+            try await persistence.requestRestore(entry) { _, _ in
+                #expect(!sync.isEnabled, "Sync beim Vormerken noch an")
+                throw RequestFailed()
+            }
+        }
+        #expect(sync.isEnabled && !sync.asksToReconnect && sync.status == .idle)
+
+        var requested = false
+        try await persistence.requestRestore(entry) { _, _ in
+            #expect(!sync.isEnabled, "Sync beim Vormerken noch an")
+            requested = true
+        }
+        #expect(requested && !sync.isEnabled && sync.asksToReconnect)
+    }
+
     // MARK: Anbindung an die App (11.4)
 
     @Test func cancelledQuitAfterRestoreRequestKeepsSyncAsBefore() async throws {
@@ -428,10 +579,10 @@ final class SyncControllerTests {
         await sync.syncNow()
         let device = try await persistence.store.syncState().deviceID
 
-        // Wie BackupRestoreView: vormerken, Sync aus; dann bricht das Beenden ab.
+        // Wie BackupRestoreView: vormerken (schaltet den Sync aus); dann bricht das Beenden ab.
         let entry = try #require(try await persistence.backupEntries().first?.entry)
         try await persistence.requestRestore(entry)
-        #expect(sync.turnOffForRestore())
+        #expect(!sync.isEnabled && sync.asksToReconnect)
         persistence.quitWasCancelled { _, _ in }
 
         #expect(sync.isEnabled && !sync.asksToReconnect && sync.status == .idle)

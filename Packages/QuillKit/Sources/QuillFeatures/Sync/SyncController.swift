@@ -80,6 +80,8 @@ public final class SyncController {
     private var running: Task<Void, Never>?
     private var needsAnotherRun = false
     private var pending: Task<Void, Never>?
+    /// Die Verbindung, die `turnOffForRestore()` ausgeschaltet hat; nur in dieser Sitzung.
+    private var turnedOffForRestore: SyncConnection?
     private var timer: Task<Void, Never>?
     private var observations: [NotificationObservation] = []
 
@@ -116,11 +118,11 @@ public final class SyncController {
     public var asksToReconnect: Bool { settings.askAfterRestore }
 
     /// Der verbundene Ordner, sonst `nil`.
-    public var folder: URL? { settings.connection.flatMap { try? SyncFolderBookmark.resolve($0.bookmark).folder } }
+    public var folder: URL? { settings.connection?.folder }
 
     /// Der Ordner vor dem letzten Ausschalten, sonst `nil`.
     public var previousFolder: URL? {
-        settings.previousConnection.flatMap { try? SyncFolderBookmark.resolve($0.bookmark).folder }
+        settings.previousConnection?.folder
     }
 
     // MARK: Ein und aus
@@ -145,7 +147,7 @@ public final class SyncController {
         let previous = settings.previousConnection
         switch choice {
         case .merge:
-            guard let previous, let folder = try? SyncFolderBookmark.resolve(previous.bookmark).folder else {
+            guard let previous, let folder = previous.folder else {
                 throw EnableError.noPreviousFolder
             }
             return try await connect(folder, folderID: previous.folderID, newFolder: false)
@@ -165,9 +167,16 @@ public final class SyncController {
     }
 
     private func connect(_ folder: URL, folderID: UUID?, newFolder: Bool) async throws -> URL? {
+        // Ein Abgleich von vorher (Sync gerade aus- oder umgeschaltet) endet zuerst: Er
+        // schriebe sonst nach `gate.resume()` weiter in den alten Ordner und speicherte
+        // dessen gelesene Dateien über die des neuen.
+        gate.pause()
+        await running?.value
         let backup = try await backupBeforeSync()
         let bookmark = try withAccess(to: folder) { try SyncFolderBookmark.make(for: folder) }
-        if newFolder { try await store.resetSyncCursors() }
+        // Die gelesenen Dateien gehören zum bisherigen Ordner. Ein leerer Ordner wird
+        // hier neu gebunden; einer mit fremden Daten erst nach Zustimmung (`confirmFolder`).
+        if newFolder, try inspect(folder).isEmpty { try await store.resetSyncCursors() }
         try await store.setSyncDeviceID(UUID())
         settings.connection = SyncConnection(bookmark: bookmark, folderID: folderID)
         settings.askAfterRestore = false
@@ -177,12 +186,21 @@ public final class SyncController {
         return backup
     }
 
+    /// Noch ohne Ordner-ID, aber im Ordner liegen schon Quill-Daten: Die Rückfrage
+    /// (`confirmFolder`) ist offen oder steht beim nächsten Abgleich an.
+    private func awaitsConsent(_ connection: SyncConnection) -> Bool {
+        guard connection.folderID == nil, let folder = connection.folder else {
+            return false
+        }
+        return (try? inspect(folder))?.folderID != nil
+    }
+
     private func inspect(_ folder: URL) throws -> SyncFolderInspection {
         try withAccess(to: folder) { try SyncFolderInspection.inspect(folder, files: files) }
     }
 
     private func isSameFolder(_ folder: URL, _ connection: SyncConnection) -> Bool {
-        guard let other = try? SyncFolderBookmark.resolve(connection.bookmark).folder else { return false }
+        guard let other = connection.folder else { return false }
         return folder.standardizedFileURL.resolvingSymlinksInPath() == other.standardizedFileURL.resolvingSymlinksInPath()
     }
 
@@ -194,11 +212,12 @@ public final class SyncController {
     }
 
     /// Schaltet den Sync aus. Store und Ordner bleiben, wie sie sind; wird derselbe
-    /// Ordner wieder gewählt, führt Quill zusammen.
+    /// Ordner wieder gewählt, führt Quill zusammen. Ein Ordner mit fremden Quill-Daten,
+    /// dem der Nutzer noch nicht zugestimmt hat, verdrängt den bisherigen dabei nicht.
     public func disable() {
         gate.pause()
         pending?.cancel()
-        if let connection = settings.connection {
+        if let connection = settings.connection, !awaitsConsent(connection) {
             settings.previousConnection = connection
         }
         settings.connection = nil
@@ -211,7 +230,8 @@ public final class SyncController {
     /// zusammen. `true`, wenn er an war.
     @discardableResult
     public func turnOffForRestore() -> Bool {
-        guard isEnabled else { return false }
+        guard let connection = settings.connection else { return false }
+        turnedOffForRestore = connection
         disable()
         settings.askAfterRestore = true
         return true
@@ -220,7 +240,8 @@ public final class SyncController {
     /// Das Beenden nach `turnOffForRestore()` wurde abgebrochen, das Backup ist nicht
     /// mehr vorgemerkt: weiter wie vorher, mit demselben Gerät und Ordner.
     public func cancelTurnOffForRestore() {
-        guard settings.askAfterRestore, !isEnabled, let previous = settings.previousConnection else { return }
+        guard settings.askAfterRestore, !isEnabled, let previous = turnedOffForRestore else { return }
+        turnedOffForRestore = nil
         settings.connection = previous
         settings.askAfterRestore = false
         if previous.isPaused {
@@ -252,6 +273,14 @@ public final class SyncController {
     /// Nach Rückfrage: Den Ordner mit dieser ID zusammenführen.
     public func confirmFolder(_ folderID: UUID) async {
         guard var connection = settings.connection else { return }
+        // Erst jetzt gilt der Ordner als verbunden; die gelesenen Dateien des bisherigen
+        // passen nicht zu ihm. Scheitert das, bleibt die Rückfrage stehen.
+        do {
+            try await store.resetSyncCursors()
+        } catch {
+            fail(error)
+            return
+        }
         connection.folderID = folderID
         settings.connection = connection
         await syncNow()
@@ -356,7 +385,7 @@ public final class SyncController {
             lastReport = report
             lastSyncDate = .now
             completedRuns += 1
-            status = gate.isPaused ? .paused : .idle
+            status = !isEnabled ? .off : gate.isPaused ? .paused : .idle
             if !report.changedPages.isEmpty { onPagesChanged(report.changedPages) }
         } catch SyncFailure.paused {
             status = isEnabled ? .paused : .off

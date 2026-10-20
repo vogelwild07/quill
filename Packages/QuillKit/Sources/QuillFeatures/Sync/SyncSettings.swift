@@ -15,6 +15,10 @@ public struct SyncConnection: Codable, Equatable, Sendable {
         self.folderID = folderID
         self.isPaused = isPaused
     }
+
+    /// Der Ordner aus dem Lesezeichen; `nil`, wenn es ihn nicht mehr gibt oder Quill
+    /// ihn nicht öffnen darf.
+    var folder: URL? { try? SyncFolderBookmark.resolve(bookmark).folder }
 }
 
 /// Wo die Einstellungen des Sync liegen: beim echten Store in den Einstellungen des
