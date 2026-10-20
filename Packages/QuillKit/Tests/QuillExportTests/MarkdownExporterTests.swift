@@ -14,7 +14,7 @@ import Testing
 
     /// Das Theme gilt nur für die Darstellung (ADR-024): Der Export ist in jedem gleich.
     @MainActor
-    @Test func exportIsTheSameInEveryTheme() {
+    @Test(.renderingLock) func exportIsTheSameInEveryTheme() {
         func files() -> [String] {
             MarkdownExporter.plan(for: SampleDocuments.exportProject(), strings: Self.strings).files.map { file in
                 switch file.content {

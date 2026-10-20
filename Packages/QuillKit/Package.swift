@@ -37,7 +37,7 @@ let package = Package(
             dependencies: ["QuillExport", "QuillEditor", "QuillModel", "QuillTestFixtures"],
             exclude: ["Golden"]
         ),
-        .testTarget(name: "QuillFeaturesTests", dependencies: ["QuillFeatures", "QuillModel", "QuillEditor"]),
+        .testTarget(name: "QuillFeaturesTests", dependencies: ["QuillFeatures", "QuillModel", "QuillEditor", "QuillTestFixtures"]),
         // Messungen gegen Schwellen, nur optimiert sinnvoll (docs/performance.md):
         // swift test -c release -Xswiftc -enable-testing --filter QuillPerformanceTests
         .testTarget(

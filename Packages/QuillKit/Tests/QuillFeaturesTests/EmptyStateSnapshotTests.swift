@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillTestFixtures
 import SwiftUI
 import Testing
 @testable import QuillFeatures
@@ -11,7 +12,7 @@ import Testing
 /// wie Schwarz fiele auf).
 /// PNGs zur Sichtkontrolle in `$TMPDIR/QuillEditorSnapshots`.
 @MainActor
-@Suite("Leerzustände: Darstellung hell und dunkel", .serialized)
+@Suite("Leerzustände: Darstellung hell und dunkel", .serialized, .renderingLock)
 struct EmptyStateSnapshotTests {
     nonisolated static let appearances: [NSAppearance.Name] = [.aqua, .darkAqua]
 

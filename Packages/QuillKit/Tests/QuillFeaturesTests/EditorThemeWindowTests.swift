@@ -1,6 +1,7 @@
 #if canImport(AppKit)
 import AppKit
 import QuillModel
+import QuillTestFixtures
 import SwiftData
 import SwiftUI
 import Testing
@@ -10,7 +11,7 @@ import Testing
 /// Theme beim Start und im ganzen Fenster (ADR-024). Das Theme gilt prozessweit,
 /// deshalb alles in einer Suite nacheinander.
 @MainActor
-@Suite("Theme: Start und Fenster", .serialized)
+@Suite("Theme: Start und Fenster", .serialized, .renderingLock)
 struct EditorThemeWindowTests {
     init() { EditorThemeSettings.shared.configure(defaults: nil, initial: .standard) }
 
