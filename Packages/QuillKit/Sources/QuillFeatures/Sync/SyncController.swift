@@ -84,6 +84,10 @@ public final class SyncController {
     private var turnedOffForRestore: SyncConnection?
     private var timer: Task<Void, Never>?
     private var observations: [NotificationObservation] = []
+    #if DEBUG || QUILL_SYNCTEST
+    /// Nur für Tests: `SyncEngine.setHaltBeforeStoringPage` (`-QuillSyncHaltBeforePage`).
+    public var testHaltBeforeStoringPage: Int?
+    #endif
 
     private nonisolated static let logger = Logger(subsystem: "io.github.vogelwild07.quill", category: "sync")
 
@@ -368,6 +372,9 @@ public final class SyncController {
             return
         }
         let engine = engine(for: folder)
+        #if DEBUG || QUILL_SYNCTEST
+        await engine.setHaltBeforeStoringPage(testHaltBeforeStoringPage)
+        #endif
         let accessing = folder.startAccessingSecurityScopedResource()
         defer { if accessing { folder.stopAccessingSecurityScopedResource() } }
         status = .syncing(SyncProgress(done: 0, total: 0))

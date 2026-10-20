@@ -1,4 +1,4 @@
-#if canImport(AppKit) && DEBUG
+#if canImport(AppKit) && (DEBUG || QUILL_SYNCTEST)
 import AppKit
 import OSLog
 import QuillEditorCore
@@ -7,8 +7,8 @@ import QuillEditorCore
 /// Die App erzeugt das Testbild selbst und legt es in ihre eigene Zwischenablage
 /// (`-QuillPasteboardName`). So setzen UI-Tests Bilder ein, ohne dass ein anderer
 /// Prozess die Zwischenablage füllt; das sperrt der Datenschutz („Einsetzen aus
-/// anderen Apps“). Nur im Debug-Build, nur aus der Kommandozeile, nie in die
-/// allgemeine Zwischenablage.
+/// anderen Apps“). Nur im Debug-Build und in den Testvarianten Synctest A und B,
+/// nur aus der Kommandozeile, nie in die allgemeine Zwischenablage.
 enum TestImage {
     static let argument = "QuillTestImage"
 

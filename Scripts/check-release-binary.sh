@@ -7,12 +7,17 @@
 # nur Debug) und die Fenstergröße für die README-Bilder (`TestWindowSize`, nur
 # Debug, Name „QuillWindowSize“ zu kurz), erkannt an ihren Lognachrichten, die
 # Namen der drei Startargumente für den Store und die Zwischenablage (nur Debug)
-# und Test-Bundles (`.xctest`, `PlugIns/`).
+# und Test-Bundles (`.xctest`, `PlugIns/`). Ebenso fehlt alles aus den
+# Testvarianten Synctest A und B (QUILL_SYNCTEST, Scripts/make-synctest.sh): die
+# Startargumente für den gemeinsamen Ordner, den Testordner, den Haltepunkt und die
+# Wartezeit vor dem Speichern, der
+# Ordnername im Test-Runner, ihre Bundle-ID und jede Ausnahme in den Entitlements.
 #
 # Aufruf: Scripts/check-release-binary.sh [zusätzliche xcodebuild-Einstellungen]
 # Die Einstellungen dienen nur der Gegenprobe, z. B.
 #   Scripts/check-release-binary.sh 'SWIFT_ACTIVE_COMPILATION_CONDITIONS=QUILL_PROFILING'
-# muss scheitern.
+#   Scripts/check-release-binary.sh 'SWIFT_ACTIVE_COMPILATION_CONDITIONS=QUILL_SYNCTEST $(inherited)'
+# müssen scheitern.
 # Oder: Scripts/check-release-binary.sh --app <Quill.app> prüft ein fertiges Bundle
 # ohne eigenen Build (Scripts/make-release.sh).
 set -u
@@ -60,7 +65,8 @@ fi
 
 found=0
 for marker in QuillSeedPages ProfilingSeed io.github.vogelwild07.quill.profiling \
-  "Testbild in eigener Zwischenablage" "Fenstergröße für UI-Tests" QuillInMemoryStore QuillStoreDirectory QuillPasteboardName; do
+  "Testbild in eigener Zwischenablage" "Fenstergröße für UI-Tests" QuillInMemoryStore QuillStoreDirectory QuillPasteboardName \
+  QuillSyncSharedFolder QuillSyncTestFolder QuillSyncHaltBeforePage QuillSaveDelay QuillSyncUITests io.github.vogelwild07.quill.synctest; do
   # LC_ALL=C: byteweise; mit UTF-8-Locale findet grep in Binärdaten keine Umlaute.
   hits=$(LC_ALL=C grep -r -l -a -F "$marker" "$copies" 2>/dev/null)
   if [ -n "$hits" ]; then
@@ -69,6 +75,11 @@ for marker in QuillSeedPages ProfilingSeed io.github.vogelwild07.quill.profiling
     found=1
   fi
 done
+# Entitlements wie ausgeliefert: keine Ausnahme aus den Testvarianten.
+if codesign -d --entitlements - "$app" 2>/dev/null | LC_ALL=C grep -q -a -F temporary-exception; then
+  echo "GEFUNDEN: Ausnahme (temporary-exception) in den Entitlements"
+  found=1
+fi
 bundles=$(find "$app" \( -name '*.xctest' -o -path '*/Contents/PlugIns/*' \) -print)
 if [ -n "$bundles" ]; then
   echo "GEFUNDEN: Test-Bundles oder PlugIns:"
