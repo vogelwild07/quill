@@ -90,7 +90,7 @@ struct EditorThemeContrastTests {
             let appearance = NSAppearance(named: variant.appearanceName)!
             func value(_ role: EditorColorRole) -> SRGB { Self.resolve(palette[role], in: appearance) }
             let background = value(.background)
-            let target = variant.isHighContrast ? ResolvedPalette.minimumHighContrast : ResolvedPalette.minimumContrast
+            let target = variant.isHighContrast ? PaletteSpec.minimumHighContrast : PaletteSpec.minimumContrast
             func check(_ name: String, _ color: SRGB, on surface: SRGB, minimum: Double) {
                 let ratio = color.over(surface).contrast(to: surface)
                 if ratio < minimum { problems.append("\(variant): \(name) \(String(format: "%.2f", ratio)) < \(minimum)") }
@@ -109,7 +109,7 @@ struct EditorThemeContrastTests {
             check("Checkbox", value(.accent), on: background, minimum: 3)
             check("Zitatbalken", value(.quoteBar), on: background, minimum: 3)
             // Abgeleitete Rollen, auch mit „Kontrast erhöhen“ (gezeichnet: `EditorThemeControlTests`).
-            let controlTarget = variant.isHighContrast ? ResolvedPalette.minimumHighControlContrast : ResolvedPalette.minimumControlContrast
+            let controlTarget = variant.isHighContrast ? PaletteSpec.minimumHighControlContrast : PaletteSpec.minimumControlContrast
             check("Platzhalter", value(.placeholder), on: background, minimum: target)
             check("Griff, Plus, Trennlinie", value(.control), on: background, minimum: controlTarget)
             check("Plus bei Hover", value(.secondary), on: value(.codeBackground).over(background), minimum: controlTarget)

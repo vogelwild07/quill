@@ -1,9 +1,12 @@
 #if canImport(AppKit)
 import AppKit
+#elseif canImport(UIKit)
+import UIKit
+#endif
 import Observation
 import QuillEditorCore
 
-/// Gewähltes Theme, pro Mac in den Einstellungen (`UserDefaults`), nicht im Store,
+/// Gewähltes Theme, pro Gerät in den Einstellungen (`UserDefaults`), nicht im Store,
 /// in Backups oder im Export (ADR-024).
 ///
 /// Ein Wechsel wirkt sofort in allen Fenstern: Die Editoren beobachten `didChange`
@@ -27,16 +30,29 @@ public final class EditorThemeSettings {
     public var theme: EditorTheme { EditorTheme.with(id: selection) }
 
     init() {
-        increaseContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        increaseContrast = Self.systemIncreasesContrast
         EditorThemeState.setIncreaseContrast(increaseContrast)
-        contrastObservation = NotificationObservation(
-            NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil,
-            center: NSWorkspace.shared.notificationCenter
-        ) { _ in
+        #if canImport(AppKit)
+        let name = NSWorkspace.accessibilityDisplayOptionsDidChangeNotification
+        let center = NSWorkspace.shared.notificationCenter
+        #else
+        let name = UIAccessibility.darkerSystemColorsStatusDidChangeNotification
+        let center = NotificationCenter.default
+        #endif
+        contrastObservation = NotificationObservation(name, object: nil, center: center) { _ in
             MainActor.assumeIsolated {
-                EditorThemeSettings.shared.setIncreaseContrast(NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast)
+                EditorThemeSettings.shared.setIncreaseContrast(Self.systemIncreasesContrast)
             }
         }
+    }
+
+    /// „Kontrast erhöhen“ in den Bedienungshilfen (auf iOS „Dunklere Systemfarben“ in der API).
+    private static var systemIncreasesContrast: Bool {
+        #if canImport(AppKit)
+        NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        #else
+        UIAccessibility.isDarkerSystemColorsEnabled
+        #endif
     }
 
     /// „Kontrast erhöhen“ geändert: Farben neu ableiten und alle Editoren neu zeichnen.
@@ -66,4 +82,3 @@ public final class EditorThemeSettings {
         NotificationCenter.default.post(name: Self.didChange, object: nil)
     }
 }
-#endif

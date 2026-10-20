@@ -2,22 +2,26 @@
 import AppKit
 
 typealias PlatformFont = NSFont
-typealias PlatformColor = NSColor
+public typealias PlatformColor = NSColor
 typealias PlatformImage = NSImage
+/// Darstellung, nach der sich die Theme-Farben richten.
+typealias PlatformAppearance = NSAppearance
 #elseif canImport(UIKit)
 import UIKit
 
 typealias PlatformFont = UIFont
-typealias PlatformColor = UIColor
+public typealias PlatformColor = UIColor
 typealias PlatformImage = UIImage
+/// Darstellung, nach der sich die Theme-Farben richten.
+typealias PlatformAppearance = UITraitCollection
 #endif
+import QuillEditorCore
 
-/// Farben des Editors, gleich benannt auf macOS und iOS. Auf macOS folgen die
-/// Theme-Farben dem gewählten `EditorTheme` und der Darstellung (ADR-024).
+/// Farben des Editors, gleich benannt auf macOS und iOS. Sie folgen dem gewählten
+/// `EditorTheme` und der Darstellung (ADR-024, ADR-028).
 public enum EditorColor {
-    #if canImport(AppKit)
-    public static let background: NSColor = themed(.background)
-    public static let label: NSColor = themed(.text)
+    public static let background: PlatformColor = themed(.background)
+    public static let label: PlatformColor = themed(.text)
     static let heading = themed(.heading)
     static let link = themed(.link)
     /// Zitat und Listenmarker.
@@ -38,31 +42,24 @@ public enum EditorColor {
     static let onAccent = themed(.onAccent)
 
     /// Deckkraft abgedunkelter Absätze im Fokus-Modus, für die aktuelle Darstellung.
-    static var dimmedAlpha: CGFloat { EditorThemeState.dimmedAlpha(for: NSAppearance.currentDrawing()) }
+    static var dimmedAlpha: CGFloat {
+        #if canImport(AppKit)
+        EditorThemeState.dimmedAlpha(for: NSAppearance.currentDrawing())
+        #else
+        EditorThemeState.dimmedAlpha(for: UITraitCollection.current)
+        #endif
+    }
 
     /// Zeichnet `body` mit den abgedunkelten Farben des Fokus-Modus: Textrollen behalten
     /// ihren Mindestkontrast, Flächen nehmen `dimmedAlpha`.
     static func drawingDimmed(_ body: () -> Void) { EditorThemeState.drawingDimmed(body) }
 
     private static func themed(_ role: EditorColorRole) -> PlatformColor {
+        #if canImport(AppKit)
         NSColor(name: NSColor.Name("QuillEditor.\(role)")) { EditorThemeState.color(role, for: $0) }
+        #else
+        UIColor { EditorThemeState.color(role, for: $0) }
+        #endif
     }
-    #elseif canImport(UIKit)
-    public static var background: UIColor { .systemBackground }
-    public static var label: UIColor { .label }
-    static var heading: PlatformColor { .label }
-    static var link: PlatformColor { .link }
-    static var secondary: PlatformColor { .secondaryLabel }
-    static var done: PlatformColor { .tertiaryLabel }
-    static var quoteBar: PlatformColor { .tintColor }
-    static var codeBackground: PlatformColor { .quaternarySystemFill }
-    static var selection: PlatformColor { .tintColor.withAlphaComponent(0.25) }
-    static var placeholder: PlatformColor { .placeholderText }
-    static var control: PlatformColor { .tertiaryLabel }
-    static var checkboxBorder: PlatformColor { .tertiaryLabel }
-    static var accent: PlatformColor { .tintColor }
-    static var onAccent: PlatformColor { .white }
-    static var dimmedAlpha: CGFloat { 0.4 }
-    static func drawingDimmed(_ body: () -> Void) { body() }
-    #endif
 }
+
