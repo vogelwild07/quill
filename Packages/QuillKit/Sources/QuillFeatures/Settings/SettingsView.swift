@@ -17,12 +17,26 @@ public struct SettingsView: View {
     }
 }
 
-/// Theme des Editors: Liste mit kleinen Vorschauen, daneben eine große (ADR-024).
-/// Ein Klick wirkt sofort in allen Fenstern.
+/// Theme des Editors: Liste mit kleinen Vorschauen, daneben eine große (ADR-024);
+/// darunter der Fokus-Modus. Ein Klick wirkt sofort in allen Fenstern.
 struct AppearanceSettingsView: View {
     private var settings = EditorThemeSettings.shared
+    private var focus = EditorFocusSettings.shared
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            themes
+            Divider()
+            Toggle(isOn: Binding(get: { focus.isEnabled }, set: { focus.setEnabled($0) })) {
+                Text("Fokus-Modus", bundle: .module)
+                Text("Die Zeile mit dem Cursor bleibt in der Mitte, die übrigen Absätze treten zurück. Auch über Darstellung › Fokus-Modus (⇧⌘F).", bundle: .module)
+            }
+            .accessibilityIdentifier("settings.focusMode")
+        }
+        .padding(20)
+    }
+
+    private var themes: some View {
         HStack(alignment: .top, spacing: 20) {
             List(selection: selection) {
                 ForEach(EditorTheme.all) { theme in
@@ -39,8 +53,7 @@ struct AppearanceSettingsView: View {
             ThemePreview(theme: settings.theme)
                 .frame(maxWidth: .infinity)
         }
-        .padding(20)
-        .frame(height: 400)
+        .frame(height: 360)
     }
 
     private var selection: Binding<EditorTheme.ID?> {

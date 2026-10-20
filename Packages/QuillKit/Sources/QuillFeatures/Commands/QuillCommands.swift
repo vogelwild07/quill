@@ -54,6 +54,16 @@ public struct QuillCommands: Commands {
             .disabled(actions == nil)
         }
 
+        // Menü „Darstellung“, unter den Einträgen zur Seitenleiste. ⇧⌘F ist in
+        // Textfeldern frei (⌘F Suchen, ⌥⌘F Ersetzen, ⌃⌘F Vollbild).
+        CommandGroup(after: .sidebar) {
+            Toggle(String(localized: "Fokus-Modus", bundle: .module), isOn: Binding(
+                get: { EditorFocusSettings.shared.isEnabled },
+                set: { EditorFocusSettings.shared.setEnabled($0) }
+            ))
+            .keyboardShortcut("f", modifiers: [.command, .shift])
+        }
+
         CommandGroup(after: .importExport) {
             Divider()
             Button(String(localized: "Backups im Finder zeigen", bundle: .module)) {

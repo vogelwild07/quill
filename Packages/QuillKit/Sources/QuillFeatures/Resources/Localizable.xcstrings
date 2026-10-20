@@ -131,6 +131,9 @@
     "Die Vormerkung ließ sich nicht zurücknehmen. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt dann als Backup „Vor dem Wiederherstellen“." : {
 
     },
+    "Die Zeile mit dem Cursor bleibt in der Mitte, die übrigen Absätze treten zurück. Auch über Darstellung › Fokus-Modus (⇧⌘F)." : {
+
+    },
     "Durchgestrichen" : {
 
     },
@@ -174,6 +177,9 @@
 
     },
     "Fett" : {
+
+    },
+    "Fokus-Modus" : {
 
     },
     "Gelöschte Seiten bleiben hier 30 Tage und lassen sich wiederherstellen." : {
