@@ -49,9 +49,11 @@ struct TrashView: View {
                         pendingDeletion = .pages(Array(ids))
                     }
                 }
+                #if canImport(AppKit)
                 .onDeleteCommand {
                     if !selection.isEmpty { pendingDeletion = .pages(Array(selection)) }
                 }
+                #endif
             }
         }
         .navigationTitle(String(localized: "Papierkorb", bundle: .module))

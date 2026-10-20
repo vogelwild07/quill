@@ -17,7 +17,6 @@ public struct RootView: View {
     @State private var revealRequest: RevealRequest?
     @State private var isRestoreShown = false
     @State private var quitsAfterRestoreSheet = false
-    @State private var launchNotice: LaunchNotice?
     @State private var sidebarActions = PageOutlineActions()
     private var selection: UUID? {
         get { pageSelection.pageID }
@@ -25,6 +24,7 @@ public struct RootView: View {
     }
     #if canImport(AppKit)
     @State private var window: NSWindow?
+    @State private var launchNotice: LaunchNotice?
     #endif
 
     @Environment(\.pageStore) private var store

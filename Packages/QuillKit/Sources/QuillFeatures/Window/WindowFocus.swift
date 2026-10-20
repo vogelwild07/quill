@@ -23,12 +23,4 @@ enum WindowFocus {
         return nil
     }
 }
-
-/// Ziel, wenn der Fokus die Sidebar per Tab verlässt.
-enum PageFocusTarget {
-    /// Tab: Titel der ausgewählten Seite.
-    case title
-    /// ⇧Tab: Editor der ausgewählten Seite.
-    case editor
-}
 #endif
