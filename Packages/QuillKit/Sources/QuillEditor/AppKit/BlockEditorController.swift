@@ -29,6 +29,8 @@ public final class BlockEditorController: NSObject {
     let undoManager = UndoManager()
     /// Undo/Redo-Beobachter (`+Sync`); enden mit dem Controller.
     var undoObservations: [NotificationObservation] = []
+    /// Theme- und Kontrastwechsel (`+Theme`).
+    var themeObservations: [NotificationObservation] = []
 
     private let layoutDelegate = BlockLayoutDelegate()
     /// Startposition jedes Absatzes im Textspeicher; letzter Eintrag = Gesamtlänge.
@@ -82,6 +84,7 @@ public final class BlockEditorController: NSObject {
         configureTextView()
         loadStorage()
         observeUndo()
+        observeTheme()
     }
 
     private func configureTextView() {
@@ -96,7 +99,12 @@ public final class BlockEditorController: NSObject {
         textView.isAutomaticTextReplacementEnabled = false
         textView.drawsBackground = true
         textView.setAccessibilityIdentifier("editor.text")
-        textView.backgroundColor = .textBackgroundColor
+        textView.backgroundColor = EditorColor.background
+        textView.insertionPointColor = EditorColor.link
+        textView.selectedTextAttributes = [.backgroundColor: EditorColor.selection]
+        var linkAttributes = textView.linkTextAttributes ?? [:]
+        linkAttributes[.foregroundColor] = EditorColor.link
+        textView.linkTextAttributes = linkAttributes
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false
         textView.autoresizingMask = [.width]

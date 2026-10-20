@@ -12,23 +12,40 @@ typealias PlatformColor = UIColor
 typealias PlatformImage = UIImage
 #endif
 
-/// Semantische Systemfarben des Editors, gleich benannt auf macOS und iOS.
-enum EditorColor {
+/// Farben des Editors, gleich benannt auf macOS und iOS. Auf macOS folgen die
+/// Theme-Farben dem gewählten `EditorTheme` und der Darstellung (ADR-024).
+public enum EditorColor {
     #if canImport(AppKit)
-    static var label: PlatformColor { .labelColor }
-    static var secondaryLabel: PlatformColor { .secondaryLabelColor }
-    static var tertiaryLabel: PlatformColor { .tertiaryLabelColor }
-    static var separator: PlatformColor { .separatorColor }
-    static var quaternaryFill: PlatformColor { .quaternarySystemFill }
-    static var accent: PlatformColor { .controlAccentColor }
+    public static let background: NSColor = themed(.background)
+    public static let label: NSColor = themed(.text)
+    static let heading = themed(.heading)
+    static let link = themed(.link)
+    /// Zitat und Listenmarker.
+    static let secondaryLabel = themed(.secondary)
+    /// Erledigte Aufgabe und Rahmen der leeren Checkbox.
+    static let tertiaryLabel = themed(.done)
+    static let quoteBar = themed(.quoteBar)
+    static let codeBackground = themed(.codeBackground)
+    static let selection = themed(.selection)
+    static let separator: PlatformColor = .separatorColor
+    static let accent = themed(.accent)
     /// Vordergrund auf Akzentfläche (Häkchen in der Checkbox).
-    static var onAccent: PlatformColor { .alternateSelectedControlTextColor }
+    static let onAccent = themed(.onAccent)
+
+    private static func themed(_ role: EditorColorRole) -> PlatformColor {
+        NSColor(name: NSColor.Name("QuillEditor.\(role)")) { EditorThemeState.color(role, for: $0) }
+    }
     #elseif canImport(UIKit)
-    static var label: PlatformColor { .label }
+    public static var background: UIColor { .systemBackground }
+    public static var label: UIColor { .label }
+    static var heading: PlatformColor { .label }
+    static var link: PlatformColor { .link }
     static var secondaryLabel: PlatformColor { .secondaryLabel }
     static var tertiaryLabel: PlatformColor { .tertiaryLabel }
+    static var quoteBar: PlatformColor { .tintColor }
+    static var codeBackground: PlatformColor { .quaternarySystemFill }
+    static var selection: PlatformColor { .tintColor.withAlphaComponent(0.25) }
     static var separator: PlatformColor { .separator }
-    static var quaternaryFill: PlatformColor { .quaternarySystemFill }
     static var accent: PlatformColor { .tintColor }
     static var onAccent: PlatformColor { .white }
     #endif

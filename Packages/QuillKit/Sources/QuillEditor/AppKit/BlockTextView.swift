@@ -33,13 +33,25 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         insertButton.textView = self
         addSubview(insertButton)
         dropIndicator.wantsLayer = true
-        dropIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+        updateLayerColors()
         dropIndicator.layer?.cornerRadius = 1
         dropIndicator.isHidden = true
         addSubview(dropIndicator)
     }
 
     required init?(coder: NSCoder) { fatalError("nicht unterstützt") }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        updateLayerColors()
+    }
+
+    /// Ebenen kennen keine dynamischen Farben; nach Theme- oder Darstellungswechsel neu setzen.
+    func updateLayerColors() {
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            dropIndicator.layer?.backgroundColor = EditorColor.accent.cgColor
+        }
+    }
 
     // MARK: Layout: zentrierte Textspalte
 

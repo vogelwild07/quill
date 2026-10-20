@@ -69,10 +69,13 @@ enum BlockStyle {
         ]
         attributes.merge(block.properties.textAttributes) { _, new in new }
         if let ordinal { attributes[.quillOrdinal] = ordinal }
-        if block.kind == .quote { attributes[.foregroundColor] = EditorColor.secondaryLabel }
-        if block.kind == .todo && block.isChecked {
+        switch block.kind {
+        case .heading1, .heading2, .heading3: attributes[.foregroundColor] = EditorColor.heading
+        case .quote: attributes[.foregroundColor] = EditorColor.secondaryLabel
+        case .todo where block.isChecked:
             attributes[.foregroundColor] = EditorColor.tertiaryLabel
             attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
+        case .paragraph, .bulleted, .numbered, .todo, .code, .divider, .image: break
         }
         return attributes
     }
