@@ -69,12 +69,13 @@ struct ResolvedPalette: Sendable {
         }
 
         var colors: [EditorColorRole: NSColor] = [:]
-        let (text, textValue) = textColor(palette.text)
-        colors[.text] = text
-        colors[.heading] = textColor(palette.heading).0
-        colors[.link] = textColor(palette.link).0
-        colors[.secondary] = textColor(palette.secondary).0
-        colors[.done] = textColor(palette.done).0
+        var textValues: [SRGB] = []
+        for (role, color) in [(EditorColorRole.text, palette.text), (.heading, palette.heading), (.link, palette.link),
+                              (.secondary, palette.secondary), (.done, palette.done)] {
+            let (resolved, value) = textColor(color)
+            colors[role] = resolved
+            textValues.append(value)
+        }
         colors[.background] = palette.background.nsColor
         colors[.codeBackground] = palette.codeBackground.nsColor
         colors[.quoteBar] = palette.quoteBar.nsColor
@@ -83,9 +84,11 @@ struct ResolvedPalette: Sendable {
         let accent = palette.accent.approximation(variant)
         colors[.onAccent] = (SRGB.white.contrast(to: accent) >= SRGB.ink.contrast(to: accent) ? SRGB.white : SRGB.ink).nsColor
 
-        // Auswahl: weniger deckend, bis der Text darauf das Ziel erreicht.
+        // Auswahl: weniger deckend, bis jede Textrolle darauf das Ziel erreicht.
         var selection = palette.selection.approximation(variant)
-        func textContrast(on surface: SRGB) -> Double { textValue.over(surface).contrast(to: surface) }
+        func textContrast(on surface: SRGB) -> Double {
+            textValues.map { $0.over(surface).contrast(to: surface) }.min() ?? 21
+        }
         while selection.alpha > 0.1, textContrast(on: selection.over(background)) < target {
             selection.alpha -= 0.05
         }

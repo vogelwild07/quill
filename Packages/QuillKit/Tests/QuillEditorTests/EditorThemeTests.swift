@@ -89,12 +89,15 @@ struct EditorThemeContrastTests {
                 let ratio = color.over(surface).contrast(to: surface)
                 if ratio < minimum { problems.append("\(variant): \(name) \(String(format: "%.2f", ratio)) < \(minimum)") }
             }
+            // Jede Textrolle auf Hintergrund, Codefläche (Inline-Code) und Auswahl.
+            let surfaces = [("", background), (" auf Code", value(.codeBackground).over(background)),
+                            (" in Auswahl", value(.selection).over(background))]
             for (name, role) in [("Text", EditorColorRole.text), ("Überschrift", .heading), ("Link", .link),
                                  ("Zitat", .secondary), ("Erledigt", .done)] {
-                check(name, value(role), on: background, minimum: target)
+                for (place, surface) in surfaces {
+                    check(name + place, value(role), on: surface, minimum: target)
+                }
             }
-            check("Code", value(.text), on: value(.codeBackground).over(background), minimum: target)
-            check("Auswahl", value(.text), on: value(.selection).over(background), minimum: target)
             let accent = value(.accent).over(background)
             check("Häkchen", value(.onAccent), on: accent, minimum: 3)
             check("Checkbox", value(.accent), on: background, minimum: 3)

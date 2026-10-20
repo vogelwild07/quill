@@ -156,7 +156,7 @@ extension EditorTheme {
         light: EditorPalette(
             background: .rgb(0xF3F5F7), text: .rgb(0x1F2A33), heading: .rgb(0x1F2A33),
             link: .rgb(0x2B6A7E), secondary: .rgb(0x4F5D68), quoteBar: .rgb(0x6E8494),
-            codeBackground: .rgb(0xE5E9ED), accent: .rgb(0x2B6A7E), done: .rgb(0x5E6B74),
+            codeBackground: .rgb(0xE5E9ED), accent: .rgb(0x2B6A7E), done: .rgb(0x5A6770),
             selection: .rgb(0x6E8494, alpha: 0.30)
         ),
         dark: EditorPalette(
