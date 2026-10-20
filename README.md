@@ -7,7 +7,7 @@ Local-first Notizen- und Seiten-App für macOS: verschachtelte Seiten, Notizen u
   <img src="docs/images/quill-hell.png" alt="Quill-Fenster: links der Seitenbaum mit Unterseiten, rechts eine Seite mit Überschrift, To-dos, Bild und Zitat" width="800">
 </picture>
 
-> Status: [v0.1.0 veröffentlicht](../../releases/tag/v0.1.0) (Phase 8, nur Apple Silicon, macOS 26). Phase 7 (Feinschliff) abgeschlossen: Backup wiederherstellen, Aufräumen und Performance (Messung siehe `docs/performance.md`), Bedienungshilfen mit Audit, Leerzustände, vollständige deutsche Lokalisierung und App-Icon. Export einer Seite oder eines Seitenbaums als Markdown-Ordner mit Bildern (⇧⌘E), Schnell öffnen (⌘O), Favoriten, Papierkorb mit Auto-Leeren nach 30 Tagen. Seiten mit Block-Editor: Überschriften, Listen, To-dos, Zitat, Code, Trenner, Bilder, Inline-Formatierung und Links; Slash-Menü, Markdown-Kürzel, Blockart per ⌥⌘0–7, Blöcke ziehen, verschieben und duplizieren; Speichern automatisch.
+> Status: [v0.1.0 veröffentlicht](../../releases/tag/v0.1.0) (Phase 8, nur Apple Silicon, macOS 26). Neu seit v0.1.0: sieben Themes für den Editor unter **Einstellungen (⌘,) › Darstellung**, gespeichert pro Mac. Phase 7 (Feinschliff) abgeschlossen: Backup wiederherstellen, Aufräumen und Performance (Messung siehe `docs/performance.md`), Bedienungshilfen mit Audit, Leerzustände, vollständige deutsche Lokalisierung und App-Icon. Export einer Seite oder eines Seitenbaums als Markdown-Ordner mit Bildern (⇧⌘E), Schnell öffnen (⌘O), Favoriten, Papierkorb mit Auto-Leeren nach 30 Tagen. Seiten mit Block-Editor: Überschriften, Listen, To-dos, Zitat, Code, Trenner, Bilder, Inline-Formatierung und Links; Slash-Menü, Markdown-Kürzel, Blockart per ⌥⌘0–7, Blöcke ziehen, verschieben und duplizieren; Speichern automatisch.
 
 ## Installation
 
@@ -56,6 +56,7 @@ Alle wirken nur aus der Kommandozeile und nur in Debug-Builds (ADR-019, ADR-021)
 - `-QuillPasteboardName <Name>`: Kopieren und Einsetzen im Editor über eine eigene Zwischenablage statt der allgemeinen.
 - `-QuillTestImage <Breite>x<Höhe>|heavy|demo`: Die App legt ein selbst erzeugtes Testbild in diese eigene Zwischenablage (nur Debug).
 - `-QuillWindowSize <Breite>x<Höhe>`: Das erste Fenster bekommt diese Größe in Punkten (für die Bilder oben).
+- `-QuillEditorTheme <id>`: Theme des Editors (`standard`, `quill`, `tinte`, `sonne`, `lagune`, `abend`, `kontrast`), nur zusammen mit einem der Test-Stores; dann liest und speichert Quill die eigene Wahl nicht.
 
 ## Struktur
 

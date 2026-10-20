@@ -90,6 +90,12 @@ Der Controller ist auf Erweiterungen verteilt: `+Input` (Tastatur, Kürzel, Slas
 - Jeder Editor hat einen eigenen `UndoManager`, damit Laden oder Neuladen nicht das Undo der Sidebar (Fenster) leert.
 - Speichern: entprellt beim Tippen, sofort beim Seitenwechsel und Schließen (`close()` → `flush()`; eine neu geöffnete Bridge derselben Seite wartet darauf), beim Beenden `applicationShouldTerminate` → `.terminateLater` → `QuitGuard.shouldTerminate()` (alle Editoren speichern, bei Fehler Rückfrage), danach Backup. Fehlschläge: automatischer erneuter Versuch mit Backoff, Hinweis `SaveProblemBadge` über `lastError` (die Bridge ist `@Observable`). Regeln in ADR-013.
 
+### Themes (ADR-024)
+
+- `QuillEditor/Theme/`: `EditorTheme` (Katalog, Paletten aus `ThemeColor`), `EditorThemeState` (aktuelles Theme hinter `Mutex`, aufgelöste Paletten je Variante, Ableitung für „Kontrast erhöhen“), `EditorThemeSettings` (`@Observable`, `UserDefaults`, Notification `didChange`).
+- `EditorColor` gibt je Rolle eine dynamische `NSColor` zurück; Textspeicher und Fragmente nutzen nur diese. Ein Wechsel: `BlockEditorController+Theme` setzt bei festen Themes `scrollView.appearance`, verwirft die Layout-Fragmente und zeichnet neu. Kein Eingriff in den Text.
+- `QuillFeatures/Settings/`: `EditorThemeSetup` (Start, Test-Store ohne `UserDefaults`), `SettingsView` (Szene `Settings` in `QuillApp`). Seitentitel und Platzhalter in `PageDetailView` nehmen die Theme-Farben.
+
 ### Erkenntnisse aus dem Spike
 
 - **Fragment-Koordinaten:** Der lokale Ursprung eines `NSTextLayoutFragment` liegt am Textanfang (Padding + Einrückung), nicht am Containerrand. Dekorationen werden in Container-x gerechnet und mit `layoutFragmentFrame.minX` umgerechnet.

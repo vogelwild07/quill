@@ -238,6 +238,33 @@ Per `Self._logChanges()` (SwiftUI-Log „Changed Body Properties“) geprüft:
   (`_SwiftData_SwiftUI` → `SwiftData` → `Registrar.willSet`); ein Prefetch von
   `parent` ändert nichts. Deshalb die Ausnahme für `sidebarReload`.
 
+## Themes vorher und nachher (20.10.2026, ADR-024)
+
+Gleiche Messung vor dem Umbau (Stand `ccd7827`) und danach (Branch `phase-9/themes`).
+Die Farben im Editor sind jetzt dynamisch und lesen das Theme beim Zeichnen; die
+aufgelösten Paletten sind je Variante zwischengespeichert.
+
+| Messung (Median, ms) | vorher | nachher |
+|---|---|---|
+| editorLoad | 11,94 | 12,13 |
+| editorTyping | 1,09 | 1,10 |
+| editorEnter | 0,95 | 0,97 |
+| bridgeLoad | 16,08 | 16,11 |
+| applyEditsMove | 14,97 | 14,88 |
+| applyEditsReverse | 63,71 | 63,81 |
+| pageTreeBuild | 53,05 | 54,97 |
+| search | 43,60 | 44,47 |
+| exportPlan | 924,95 | 928,41 |
+| App: ApplicationLaunch | 589,8 | 587,8 |
+| App: launch | 369,3 | 337,2 |
+| App: sidebarLoad | 182,5 | 158,0 |
+| App: sidebarReload | 159,9 | 134,2 |
+| App: pageSwitch | 87,0 | 81,2 |
+
+Alle Unterschiede im Rauschen (Package bis 3,6 %, App eher schneller), alle Schwellen
+eingehalten. Ein Theme-Wechsel verwirft die Layout-Fragmente des Editors einmal; das
+ist kein Pfad beim Tippen und wird nicht gemessen.
+
 ## Messbedingungen
 
 | | |

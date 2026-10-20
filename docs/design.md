@@ -8,9 +8,23 @@ Grundlage: Apple Human Interface Guidelines. Eigene Gestaltung; keine Designs, A
 
 ## Farben
 
-Nur semantische Systemfarben: `labelColor`, `secondaryLabelColor`, `tertiaryLabelColor`, `separatorColor`, `textBackgroundColor`, `quaternarySystemFill` (Code, Hover).
+Außerhalb des Editors nur semantische Systemfarben. Akzent „Petrol“ im `AccentColor`-Asset: Light `#08736C`, Dark `#0A7A72` (Weiß darauf 5,7 bzw. 5,2 : 1). Die vom Nutzer gewählte Systemakzentfarbe wird respektiert. Dark Mode und erhöhter Kontrast automatisch.
 
-Akzent „Tinte“ im `AccentColor`-Asset: Light `#3346D3`, Dark `#8A97FF`. Die vom Nutzer gewählte Systemakzentfarbe wird respektiert. Dark Mode und erhöhter Kontrast automatisch.
+## Themes (ADR-024)
+
+Der Editor zeichnet in einem Theme, gewählt unter Einstellungen (⌘,) › Darstellung. Selbst gezeichnete Elemente nehmen ihre Farbe aus `EditorColor` (Rollen statt fester Werte); Sidebar, Symbolleiste und Schriften bleiben im Systemstil.
+
+| Theme | Hell | Dunkel | Charakter |
+|---|---|---|---|
+| Standard | ✓ | ✓ | Systemfarben; Akzent, Links, Auswahl Petrol `#08736C` / `#3DCBBE` |
+| Quill | ✓ | ✓ | Signatur: Hintergrund `#F7FBFA` / `#151D23`, Text Tinte, Überschriften Petrol, Zitatbalken und Auswahl Sonnengelb |
+| Tinte | ✓ | ✓ | Blaugrau, zurückhaltend |
+| Sonne | ✓ | – | warmes Papier `#FFF8E6` |
+| Lagune | – | ✓ | tiefes Petrol `#062E2B` |
+| Abend | – | ✓ | warmes Dunkel `#1C1A16`, Checkbox Sonnengelb |
+| Kontrast | ✓ | ✓ | Schwarz auf Weiß bzw. Weiß auf Schwarz |
+
+Regeln: Text mindestens 4,5 : 1 (zum Hintergrund, zur Codefläche, auf der Auswahl), Grafik 3 : 1, mit „Kontrast erhöhen“ Text 7 : 1 (abgeleitet). Sonnengelb `#FFC23A` nur für Flächen, nie für Text. Feste Themes erzwingen hell bzw. dunkel nur im Editor. Werte in `EditorTheme.swift`, geprüft von `EditorThemeContrastTests`.
 
 ## Typografie
 
