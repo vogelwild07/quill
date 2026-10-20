@@ -211,13 +211,16 @@ Editor in zwei Schichten (10.3):
 
 ```text
 QuillEditorCore   Foundation, Observation, Synchronization, QuillModel
-  Document/        EditorDocument, EditorBlock, InlineText, Markdown, Zwischenablage
+  Document/        EditorDocument, EditorBlock, InlineText, Markdown, BlockClipboard
   Text/            Block-Attribute im Textspeicher
   Persistence/     EditorPersistenceBridge
   Theme/           Katalog, Paletten, PaletteSpec (Kontrast, Fokus-Modus), EditorFocusSettings
+  NotificationObservation
 QuillEditor       AppKit oder UIKit
-  TextKit/         BlockStyle, BlockLayoutFragment, BlockRenderer, Anhänge (beide Plattformen)
-  Theme/           ResolvedPalette (NSColor/UIColor), EditorThemeState, EditorThemeSettings
+  TextKit/         PlatformTypes (EditorColor, Weichen AppKit/UIKit), BlockStyle,
+                   BlockLayoutFragment, BlockRenderer, Anhänge (beide Plattformen)
+  Theme/           ResolvedPalette (NSColor/UIColor), EditorThemeState, EditorThemeSettings,
+                   EditorTheme+Platform (Name, erzwungene Darstellung auf dem Mac)
   Document/        SlashCommand, BlockConversion (lokalisierte Menütitel)
   AppKit/          BlockEditorController, BlockTextView, Slash-Menü (nur Mac)
 ```
