@@ -19,7 +19,31 @@ public final class QuillPersistence {
     /// Unterordner des temporären Ordners der App. Für UI-Tests, die Backups und
     /// Wiederherstellen über Neustarts brauchen (ADR-019); nie der echte Store.
     public static let storeDirectoryArgument = "QuillStoreDirectory"
+    /// Startargument `-QuillSeedSchemaV1 YES`, nur mit `-QuillStoreDirectory`: legt dort
+    /// vor dem Öffnen einen Store im alten Format V1 an, falls noch keiner liegt (Phase 11.2).
+    public static let seedSchemaV1Argument = "QuillSeedSchemaV1"
+    /// Startargument `-QuillAskBeforeMigration YES`, nur mit `-QuillStoreDirectory`: fragt
+    /// auch beim Test-Store vor einer Migration, wie beim echten Store.
+    public static let askBeforeMigrationArgument = "QuillAskBeforeMigration"
     #endif
+
+    public enum OpenError: Error, Equatable {
+        /// Der Nutzer hat die Umstellung auf ein neues Schema abgelehnt; nichts wurde
+        /// verändert, auch kein Backup angelegt. Die App beendet sich.
+        case migrationDeclined
+        /// Eine Umstellung steht an, gefragt wird später (`MigrationAnswer.later`);
+        /// nichts wurde verändert.
+        case migrationDeferred
+    }
+
+    /// Antwort auf die Rückfrage vor einer Migration.
+    public enum MigrationAnswer: Sendable {
+        case migrate
+        case quit
+        /// Jetzt nicht fragen, z. B. weil die App noch startet und kein Dialog
+        /// bedienbar wäre; `open` wirft `OpenError.migrationDeferred`.
+        case later
+    }
 
     /// Speicher für UI-Tests statt des echten Stores.
     enum TestStore: Equatable {
@@ -46,6 +70,23 @@ public final class QuillPersistence {
         return nil
     }
 
+    /// Ob vor einer Migration gefragt wird: beim echten Store immer, bei Test-Stores
+    /// nur mit `-QuillAskBeforeMigration YES` (sonst liefen UI-Tests in den Dialog).
+    static func asksBeforeMigration(_ testStore: TestStore?, arguments: [String]) -> Bool {
+        guard let testStore else { return true }
+        #if DEBUG
+        if case .directory = testStore, flag(askBeforeMigrationArgument, in: arguments) { return true }
+        #endif
+        return false
+    }
+
+    #if DEBUG
+    private static func flag(_ name: String, in arguments: [String]) -> Bool {
+        guard let index = arguments.firstIndex(of: "-\(name)"), arguments.indices.contains(index + 1) else { return false }
+        return ["YES", "1", "true"].contains(arguments[index + 1])
+    }
+    #endif
+
     public let container: ModelContainer
     public let store: PageStore
     public let isInMemory: Bool
@@ -68,9 +109,15 @@ public final class QuillPersistence {
         self.preparation = preparation
     }
 
-    /// Öffnet den Store. Vor einer Migration muss das Backup gelingen, sonst wird
-    /// nicht geöffnet; andere Backup-Fehler werden nur protokolliert.
-    public static func open(arguments: [String] = ProcessInfo.processInfo.arguments) throws -> QuillPersistence {
+    /// Öffnet den Store. Steht eine Migration an, fragt zuerst `confirmMigration`
+    /// (bisherige Version oder `nil`, neue Version); lehnt der Nutzer ab oder kommt die
+    /// Antwort später, wirft `OpenError`, ohne etwas zu verändern. Vor einer Migration muss
+    /// das Backup gelingen, sonst wird nicht geöffnet; andere Backup-Fehler werden nur
+    /// protokolliert.
+    public static func open(
+        arguments: [String] = ProcessInfo.processInfo.arguments,
+        confirmMigration: @MainActor (_ from: String?, _ to: String) -> MigrationAnswer
+    ) throws -> QuillPersistence {
         let testStore = testStore(arguments: arguments)
         #if DEBUG
         if testStore == .inMemory {
@@ -80,11 +127,29 @@ public final class QuillPersistence {
         #endif
 
         let backup = makeBackup(testStore)
+        #if DEBUG
+        if case .directory = testStore, flag(seedSchemaV1Argument, in: arguments) {
+            try SchemaV1Seed.write(storeURL: backup.storeURL, backupsURL: backup.backupsURL)
+        }
+        #endif
         // Vor allem anderen: unter Sperre umziehen und ein vorgemerktes Backup
         // einspielen (ADR-019). Scheitert das, wird nicht geöffnet.
         let preparation = try backup.prepareStore()
         if preparation != StorePreparation() {
             logger.notice("Vorbereitet: \(String(describing: preparation), privacy: .private)")
+        }
+        // Erst nach dem Einspielen fragen: Ein eingespieltes V1-Backup ist wieder V1,
+        // und „Beenden“ lässt es so, damit eine ältere Version es öffnen kann (ADR-029).
+        if backup.isMigrationPending, asksBeforeMigration(testStore, arguments: arguments) {
+            switch confirmMigration(backup.lastOpenedSchemaVersion, QuillStore.schemaVersion) {
+            case .migrate:
+                break
+            case .quit:
+                logger.notice("Migration abgelehnt, nichts verändert")
+                throw OpenError.migrationDeclined
+            case .later:
+                throw OpenError.migrationDeferred
+            }
         }
         do {
             if let folder = try backup.backupBeforeOpening() {

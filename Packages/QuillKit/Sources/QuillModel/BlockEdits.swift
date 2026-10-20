@@ -46,11 +46,16 @@ public struct BlockEdits: Equatable, Sendable {
 extension Block {
     /// Die einzige Abbildung von `BlockProperties` auf Spalten und Beziehungen des Modells.
     public var properties: BlockProperties {
-        get { BlockProperties(indent: indent, isChecked: isChecked, codeLanguage: codeLanguage, assetID: asset?.id) }
+        get {
+            BlockProperties(
+                indent: indent, isChecked: isChecked, codeLanguage: codeLanguage, assetID: asset?.id, isRestored: isRestored
+            )
+        }
         set {
             indent = newValue.indent
             isChecked = newValue.isChecked
             codeLanguage = newValue.codeLanguage
+            isRestored = newValue.isRestored
             if asset?.id != newValue.assetID {
                 linkAsset(newValue.assetID)
             }

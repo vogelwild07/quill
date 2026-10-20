@@ -23,7 +23,7 @@ extension DiskStoreSuites {
             at date: Date = .now
         ) -> StoreBackup {
             StoreBackup(
-                storeURL: storeURL, backupsURL: backupsURL, schemaVersion: "1.0.0",
+                storeURL: storeURL, backupsURL: backupsURL, schemaVersion: QuillStore.schemaVersion,
                 now: { date }, knownSchemas: knownSchemas, availableCapacity: { _ in capacity }
             )
         }
@@ -108,7 +108,7 @@ extension DiskStoreSuites {
             #expect(!exists(backup.storeDirectoryURL.appending(path: StoreBackup.restoreTagName)))
             #expect(try titles() == ["Eins"])
             DiskStoreSuites.expectImageBytes(try imageBytes(), [1], store: storeURL, "Bilder aus .Quill_SUPPORT des Backups")
-            #expect(backup.lastOpenedSchemaVersion == "1.0.0")
+            #expect(backup.lastOpenedSchemaVersion == QuillStore.schemaVersion)
 
             // Der vorherige Stand erscheint in der Liste und lässt sich zurückholen.
             let safetyName = URL(filePath: previous).lastPathComponent
@@ -328,7 +328,7 @@ extension DiskStoreSuites {
             }
             #expect(try titles() == ["Altes Format"])
             DiskStoreSuites.expectImageBytes(try imageBytes(), [1], store: storeURL)
-            #expect(backup.lastOpenedSchemaVersion == "1.0.0")
+            #expect(backup.lastOpenedSchemaVersion == QuillStore.schemaVersion)
 
             // Auch ein reines Backup per VACUUM (nur Store und Bilder).
             try backup.requestRestore(try entry(saved, in: backup))

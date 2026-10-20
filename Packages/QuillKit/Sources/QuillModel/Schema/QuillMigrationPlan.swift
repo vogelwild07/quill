@@ -1,7 +1,7 @@
 import SwiftData
 
 /// Aktuelles Schema der App. Bei einer neuen Version hier umstellen.
-public typealias CurrentSchema = SchemaV1
+public typealias CurrentSchema = SchemaV2
 
 public typealias Workspace = CurrentSchema.Workspace
 public typealias Page = CurrentSchema.Page
@@ -14,10 +14,11 @@ public typealias Asset = CurrentSchema.Asset
 /// `MigrationTests` (ADR-010).
 public enum QuillMigrationPlan: SchemaMigrationPlan {
     public static var schemas: [any VersionedSchema.Type] {
-        [SchemaV1.self]
+        [SchemaV1.self, SchemaV2.self]
     }
 
     public static var stages: [MigrationStage] {
-        []
+        // V2 fügt nur Felder mit Default hinzu (ADR-029).
+        [.lightweight(fromVersion: SchemaV1.self, toVersion: SchemaV2.self)]
     }
 }

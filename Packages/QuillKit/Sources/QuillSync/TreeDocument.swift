@@ -19,11 +19,13 @@ public struct PageRecord: Identifiable, Equatable, Sendable {
     /// Rohwert von `PageKind`; unbekannte bleiben erhalten.
     public var kindRaw: String
     public var createdAt: Date
+    /// Vom Sync wiederhergestellt (im Papierkorb auf einem Gerät, bearbeitet auf einem anderen).
+    public var isRestored: Bool
 
     public init(
         id: UUID, title: String = "", icon: String? = nil, parentID: UUID? = nil, sortKey: String = "",
         isFavorite: Bool = false, favoriteSortKey: String? = nil, trashedAt: Date? = nil, deletedAt: Date? = nil,
-        kindRaw: String = PageKind.page.rawValue, createdAt: Date = .now
+        kindRaw: String = PageKind.page.rawValue, createdAt: Date = .now, isRestored: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -36,12 +38,13 @@ public struct PageRecord: Identifiable, Equatable, Sendable {
         self.deletedAt = deletedAt
         self.kindRaw = kindRaw
         self.createdAt = createdAt
+        self.isRestored = isRestored
     }
 }
 
 /// Seitenbaum als Automerge-Dokument (ADR-026, ADR-029): `pages` ist eine Map von
 /// Seiten-ID auf eine Map mit Titel, Icon, Eltern, `sortKey`, Favorit, Papierkorb,
-/// Grabstein (`deleted`), Art und Anlagedatum. Seiten werden nie aus dem Dokument
+/// Grabstein (`deleted`), Art, Anlagedatum und Marke „wiederhergestellt“. Seiten werden nie aus dem Dokument
 /// entfernt; endgültig Gelöschtes bleibt als Grabstein, damit kein anderes Gerät
 /// eine Seite ohne „Papierkorb leeren“ verliert.
 public final class TreeDocument: SyncDocument {
@@ -67,6 +70,7 @@ public final class TreeDocument: SyncDocument {
             record.deletedAt = Self.date(fields["deleted"])
             if case .Scalar(.String(let kind))? = fields["kind"] { record.kindRaw = kind }
             record.createdAt = Self.date(fields["created"]) ?? .distantPast
+            if case .Scalar(.Boolean(let restored))? = fields["restored"] { record.isRestored = restored }
             result.append(record)
         }
         return result.sorted { $0.id.uuidString < $1.id.uuidString }
@@ -100,6 +104,7 @@ public final class TreeDocument: SyncDocument {
             }
             changed = try set(map, "kind", .String(record.kindRaw), current: fields["kind"]) || changed
             changed = try set(map, "created", Self.value(record.createdAt), current: fields["created"]) || changed
+            changed = try set(map, "restored", record.isRestored ? .Boolean(true) : nil, current: fields["restored"]) || changed
         }
         if changed { document.commitWith() }
         return changed

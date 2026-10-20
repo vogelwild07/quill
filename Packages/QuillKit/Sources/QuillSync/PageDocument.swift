@@ -7,7 +7,7 @@ import QuillModel
 /// `blocks` ist eine Map von Block-ID auf eine Map mit `kind` (Rohwert von `BlockKind`,
 /// unbekannte bleiben erhalten), `order` (Schlüssel aus `FractionalIndex`), `text`
 /// (Text mit Marks) und den Feldern aus `BlockProperties` (`indent`, `checked`, `lang`,
-/// `asset`). Eine Map statt einer Liste, damit Verschieben nur `order` ändert und
+/// `asset`, `restored`). Eine Map statt einer Liste, damit Verschieben nur `order` ändert und
 /// gleichzeitiges Tippen im verschobenen Block erhalten bleibt.
 public final class PageDocument: SyncDocument {
     override class var itemsKey: String { "blocks" }
@@ -31,6 +31,7 @@ public final class PageDocument: SyncDocument {
             if case .Scalar(.Boolean(let checked))? = fields["checked"] { properties.isChecked = checked }
             if case .Scalar(.String(let language))? = fields["lang"] { properties.codeLanguage = language }
             if case .Scalar(.String(let asset))? = fields["asset"] { properties.assetID = UUID(uuidString: asset) }
+            if case .Scalar(.Boolean(let restored))? = fields["restored"] { properties.isRestored = restored }
             let text = try document.text(obj: textID)
             let marks = TextMarks.assignments(of: try document.marks(obj: textID), count: text.unicodeScalars.count)
             var order = ""
@@ -120,6 +121,8 @@ public final class PageDocument: SyncDocument {
         changed = try set(map, "checked", .Boolean(properties.isChecked), current: fields["checked"]) || changed
         changed = try set(map, "lang", properties.codeLanguage.map { .String($0) }, current: fields["lang"]) || changed
         changed = try set(map, "asset", properties.assetID.map { .String($0.uuidString) }, current: fields["asset"]) || changed
+        // Nur gesetzt, solange die Marke steht; fehlt sonst, wie in älteren Dokumenten.
+        changed = try set(map, "restored", properties.isRestored ? .Boolean(true) : nil, current: fields["restored"]) || changed
         return changed
     }
 

@@ -65,6 +65,9 @@
     "Backups im Finder zeigen" : {
 
     },
+    "Beenden" : {
+
+    },
     "Beim Beenden" : {
 
     },
@@ -110,6 +113,9 @@
     "Daten konnten nicht geöffnet werden" : {
 
     },
+    "Datenbank umstellen?" : {
+
+    },
     "Der Papierkorb ist leer" : {
 
     },
@@ -132,6 +138,9 @@
 
     },
     "Die Zeile mit dem Cursor bleibt in der Mitte, die übrigen Absätze treten zurück. Auch über Darstellung › Fokus-Modus (⇧⌘F)." : {
+
+    },
+    "Diese Version von Quill braucht ein neues Format für deine Daten. Vorher legt Quill ein Backup an. Ältere Versionen von Quill können die Daten danach nicht mehr öffnen." : {
 
     },
     "Durchgestrichen" : {
@@ -394,6 +403,9 @@
 
     },
     "Umbenennen" : {
+
+    },
+    "Umstellen" : {
 
     },
     "Umzug angehalten, im Ziel liegt schon: %@" : {

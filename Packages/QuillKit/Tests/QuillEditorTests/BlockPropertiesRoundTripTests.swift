@@ -11,7 +11,7 @@ import Testing
 @MainActor
 @Suite("BlockProperties: Vollständigkeit", .serialized)
 struct BlockPropertiesRoundTripTests {
-    static let full = BlockProperties(indent: 2, isChecked: true, codeLanguage: "swift", assetID: UUID())
+    static let full = BlockProperties(indent: 2, isChecked: true, codeLanguage: "swift", assetID: UUID(), isRestored: true)
 
     @Test func fixtureSetsEveryField() throws {
         let defaults = Dictionary(uniqueKeysWithValues: Mirror(reflecting: BlockProperties()).children.map {
@@ -69,12 +69,13 @@ struct BlockPropertiesRoundTripTests {
     }
 
     @Test func normalizedKeepsOnlyFieldsThatFitTheKind() {
-        #expect(Self.full.normalized(for: .todo) == BlockProperties(indent: 2, isChecked: true))
-        #expect(Self.full.normalized(for: .code) == BlockProperties(codeLanguage: "swift"))
-        #expect(Self.full.normalized(for: .bulleted) == BlockProperties(indent: 2))
-        #expect(Self.full.normalized(for: .heading2) == BlockProperties())
-        #expect(Self.full.normalized(for: .divider) == BlockProperties())
-        #expect(Self.full.normalized(for: .image) == BlockProperties(assetID: Self.full.assetID))
+        // Die Marke „wiederhergestellt“ passt zu jeder Art und bleibt.
+        #expect(Self.full.normalized(for: .todo) == BlockProperties(indent: 2, isChecked: true, isRestored: true))
+        #expect(Self.full.normalized(for: .code) == BlockProperties(codeLanguage: "swift", isRestored: true))
+        #expect(Self.full.normalized(for: .bulleted) == BlockProperties(indent: 2, isRestored: true))
+        #expect(Self.full.normalized(for: .heading2) == BlockProperties(isRestored: true))
+        #expect(Self.full.normalized(for: .divider) == BlockProperties(isRestored: true))
+        #expect(Self.full.normalized(for: .image) == BlockProperties(assetID: Self.full.assetID, isRestored: true))
         #expect(BlockProperties(indent: 99).normalized(for: .paragraph).indent == EditorDocument.maxIndent)
     }
 }
