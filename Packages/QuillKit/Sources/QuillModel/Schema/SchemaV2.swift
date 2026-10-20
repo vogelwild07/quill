@@ -22,7 +22,7 @@ extension SchemaV2 {
         public var name: String = "Mein Workspace"
         public var createdAt: Date = Date.now
         public var updatedAt: Date = Date.now
-        /// Seitenbaum als Automerge-Dokument (`QuillSync.TreeDocument`); `nil` ohne Sync.
+        /// Seitenbaum als Sync-Dokument (`QuillSync.TreeDocument`); `nil` ohne Sync.
         @Attribute(.externalStorage)
         public var syncTree: Data?
         /// Geräte-ID im Sync-Ordner; `nil`, bis der Sync zum ersten Mal eingeschaltet wird.
@@ -54,7 +54,7 @@ extension SchemaV2 {
         public var kindRaw: String = PageKind.page.rawValue
         public var createdAt: Date = Date.now
         public var updatedAt: Date = Date.now
-        /// Blöcke als Automerge-Dokument (`QuillSync.PageDocument`); `nil` ohne Sync.
+        /// Blöcke als Sync-Dokument (`QuillSync.PageDocument`); `nil` ohne Sync.
         @Attribute(.externalStorage)
         public var syncDocument: Data?
         /// Vom Sync wiederhergestellt (gelöscht auf einem Gerät, bearbeitet auf einem anderen).
