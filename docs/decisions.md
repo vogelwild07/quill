@@ -312,3 +312,38 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 **Konsequenzen:**
 - Release braucht beim ersten Lauf Netz für `pip` (danach aus `.build/`).
 - Hintergrund ändern: `swift Scripts/dmg/background.swift Scripts/dmg/background.tiff`, Positionen in `settings.py` mitziehen.
+
+## ADR-026: Sync über einen gewählten Ordner mit Automerge (2026-10-20)
+
+**Status:** Format und Regeln entschieden; Automerge vorbehaltlich des Spikes in Phase 10 (Kriterien unten, Messwerte werden hier nachgetragen).
+
+**Kontext:** Quill soll zwischen Macs und später dem iPhone synchronisieren, ohne CloudKit und ohne eigenen Server, über einen Ordner, den der Nutzer wählt (iCloud Drive, Dropbox, Nextcloud, Syncthing usw.). Bis Phase 13 gibt es kein Developer Program. „Letzte Speicherung pro Block gewinnt“ (ADR-012) reicht für verzögerte Änderungen von mehreren Geräten nicht. Daten dürfen nie still verloren gehen.
+
+**Entscheidung:**
+- **Schichten:** Der lokale SwiftData-Store bleibt Quelle der App. Die Sync-Schicht hängt an `PageStore` (einziger Schreiber): Jede lokale Änderung wird zusätzlich als Änderung am CRDT-Dokument der Seite festgehalten; eingehende Änderungen werden zusammengeführt und als Diff über `PageStore.applyEdits` in den Store geschrieben. Ohne eingeschalteten Sync bleibt alles wie bisher.
+- **CRDT:** Automerge (`automerge-swift`, MIT, GPL-verträglich), ein Dokument je Seite und eines für den Seitenbaum (Titel, Eltern, `sortKey`, Favorit, Papierkorb). Blöcke als Liste von Maps mit UUID, Art (`kindRaw`), `BlockProperties` und Text mit Marks. Gleichzeitiges Tippen im selben Block wird zusammengeführt.
+- **Kriterien für den Spike** (Apple Silicon, Release-Build): Laden einer Seite mit Geschichte unter 50 ms; 1.000 Seiten mit Geschichte zusammen unter 50 MB zusätzlich zum Store; die App wird höchstens wenige MB größer. Reißt der Spike eines davon, entscheidet der Nutzer anhand der Zahlen und der Alternativen (z. B. eigenes CRDT nur für Blöcke, Yrs/Yjs, Konflikte pro Block ohne Textzusammenführung).
+- **Format im Ordner:** Jedes Gerät schreibt nur eigene Dateien, Änderungen nur anhängend; damit sieht kein Sync-Dienst zwei Geräte an derselben Datei, und es entstehen keine Konfliktkopien.
+
+  ```
+  Quill/
+    quill.json                                   Formatversion, Ordner-ID, verschlüsselt ja/nein
+    devices/<Geräte-ID>.json                     Name, zuletzt gesehen
+    tree/<Geräte-ID>/<Nr>.changes                Seitenbaum
+    pages/<Seiten-ID>/<Geräte-ID>/<Nr>.changes   Änderungen je Seite
+    pages/<Seiten-ID>/<Geräte-ID>/snapshot       verdichtet, ersetzt ältere eigene Änderungen
+    assets/<SHA-256>.<Endung>                    Bilder, unveränderlich, nach Inhalt benannt
+  ```
+
+  Dateinamen enthalten nur UUIDs und Prüfsummen, keine Titel.
+- **Nie still verwerfen:** Löschen gegen Bearbeiten → der Block bleibt und ist als wiederhergestellt markiert. Zwei Werte für dasselbe Feld (Automerge meldet den Konflikt) → die Seite zeigt beide Fassungen, der Nutzer wählt; bis dahin bleiben beide gespeichert. Unlesbare Dateien (kaputt, neueres Format, falscher Schlüssel) → Quarantäne mit Hinweis, nichts wird gelöscht oder überschrieben. Ein Ordner mit fremden Quill-Daten wird nur nach Rückfrage zusammengeführt.
+- **Zugriff:** Mac per Ordnerauswahl und Lesezeichen mit Sandbox-Zugriff (`com.apple.security.files.bookmarks.app-scope`), iPhone über die Dateien-App mit Security-Scoped Bookmark. Lesen und Schreiben über `NSFileCoordinator`, nicht geladene Dateien (iCloud Drive, Datei-Anbieter) werden vorher angefordert. Kein iCloud-Entitlement, deshalb ohne Developer Program möglich.
+- **Migration:** neue Schemaversion für Sync-Daten (Geräte-ID, Stand je Seite) mit Test „V1 → V2“ (ADR-011); vorher ein Backup; der Ordner wird erst beschrieben, wenn der Nutzer den Sync einschaltet. Rückweg getestet: Sync ausschalten lässt den lokalen Store unverändert, das Backup aus V1 lässt sich wieder einspielen.
+- **Verschlüsselung (Phase 14, optional):** jede Datei mit CryptoKit (ChaCha20-Poly1305), auch Seitenbaum und Bilder. Schlüssel aus einer Passphrase (Schlüsselableitung mit Salz aus `quill.json`), danach nur im Schlüsselbund des Geräts. Der iCloud-Schlüsselbund scheidet aus, weil Mac (ad hoc) und iPhone ohne gemeinsames Team keine Einträge teilen. Beim Einrichten erzeugt Quill einen Wiederherstellungsschlüssel zum Aufschreiben und erklärt klar: Ohne Passphrase und ohne Wiederherstellungsschlüssel ist der Ordner unlesbar; die lokalen Stores der Geräte bleiben erhalten. Größe und Zeitpunkt der Dateien sieht der Anbieter weiterhin.
+- **Zeitreise (Phase 12):** aus der Geschichte der Automerge-Dokumente, also mitsynchronisiert. Bilder werden nicht versioniert; ein Bild, auf das nur noch alte Fassungen verweisen, darf nach einer einstellbaren Frist gelöscht werden, die Zeitreise zeigt dann einen Platzhalter.
+
+**Konsequenzen:**
+- Das iPhone gleicht nur im Vordergrund und gelegentlich per Hintergrundaufgabe ab, nicht live. Syncthing auf dem iPhone geht nur über Drittanbieter-Apps und wird nicht versprochen.
+- Das Datenmodell bleibt nach den Regeln aus ADR-002 aufgebaut; CloudKit ist nicht mehr geplant. ADR-012 (letzte Speicherung pro Block) gilt weiter für zwei Fenster auf einem Mac.
+- Ein Sync-Ordner ist kein Backup: Löschen wird synchronisiert. Die lokalen Backups bleiben.
+- Direkter Sync im WLAN steht unter „Später“.
