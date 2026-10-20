@@ -35,6 +35,9 @@ public enum EditorColor {
     /// Vordergrund auf Akzentfläche (Häkchen in der Checkbox).
     static let onAccent = themed(.onAccent)
 
+    /// Deckkraft abgedunkelter Absätze im Fokus-Modus, für die aktuelle Darstellung.
+    static var dimmedAlpha: CGFloat { EditorThemeState.dimmedAlpha(for: NSAppearance.currentDrawing()) }
+
     private static func themed(_ role: EditorColorRole) -> PlatformColor {
         NSColor(name: NSColor.Name("QuillEditor.\(role)")) { EditorThemeState.color(role, for: $0) }
     }
@@ -52,5 +55,6 @@ public enum EditorColor {
     static var control: PlatformColor { .tertiaryLabel }
     static var accent: PlatformColor { .tintColor }
     static var onAccent: PlatformColor { .white }
+    static var dimmedAlpha: CGFloat { 0.4 }
     #endif
 }

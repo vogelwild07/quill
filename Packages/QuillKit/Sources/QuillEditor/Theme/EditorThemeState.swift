@@ -43,11 +43,25 @@ enum EditorThemeState {
             return palette[role]
         }
     }
+
+    /// Deckkraft abgedunkelter Absätze im Fokus-Modus für die Darstellung.
+    static func dimmedAlpha(for appearance: NSAppearance) -> CGFloat {
+        state.withLock { state in
+            let variant = EditorThemeVariant(appearance, increaseContrast: state.increaseContrast)
+            if let palette = state.palettes[variant] { return palette.dimmedAlpha }
+            let palette = ResolvedPalette(state.theme.palette(for: variant), variant: variant)
+            state.palettes[variant] = palette
+            return palette.dimmedAlpha
+        }
+    }
 }
 
 /// Farben einer Palette als `NSColor`, mit „Kontrast erhöhen“ verstärkt.
 struct ResolvedPalette: Sendable {
     private let colors: [EditorColorRole: NSColor]
+    /// Deckkraft abgedunkelter Absätze im Fokus-Modus: Fließtext darüber Richtung
+    /// Hintergrund, so weit wie möglich, aber über `minimumDimmedContrast`.
+    let dimmedAlpha: CGFloat
 
     subscript(role: EditorColorRole) -> NSColor { colors[role] ?? .labelColor }
 
@@ -57,6 +71,9 @@ struct ResolvedPalette: Sendable {
     /// Bedienelemente und Linien (WCAG 1.4.11); mit „Kontrast erhöhen“ 4,5 : 1.
     static let minimumControlContrast = 3.0
     static let minimumHighControlContrast = 4.5
+    /// Abgedunkelter Fließtext im Fokus-Modus; mit „Kontrast erhöhen“ 4,5 : 1.
+    static let minimumDimmedContrast = 3.0
+    static let minimumHighDimmedContrast = 4.5
 
     init(_ palette: EditorPalette, variant: EditorThemeVariant) {
         let background = palette.background.approximation(variant)
@@ -105,6 +122,8 @@ struct ResolvedPalette: Sendable {
         }
         colors[.selection] = selection.nsColor
         self.colors = colors
+        let dimmedTarget = variant.isHighContrast ? Self.minimumHighDimmedContrast : Self.minimumDimmedContrast
+        dimmedAlpha = ink.fadedAlpha(over: background, minimum: dimmedTarget)
     }
 }
 
@@ -177,6 +196,19 @@ struct SRGB: Sendable, Equatable {
             color = next
         }
         return color
+    }
+
+    /// Kleinste Deckkraft in Schritten von 0,05, bei der diese Farbe über `background`
+    /// mit etwas Reserve über `minimum` bleibt; 1, wenn sie das schon deckend nicht schafft.
+    func fadedAlpha(over background: SRGB, minimum: Double) -> CGFloat {
+        var result = 1.0
+        for alpha in stride(from: 0.95, through: 0.05, by: -0.05) {
+            var faded = self
+            faded.alpha = self.alpha * alpha
+            guard faded.over(background).contrast(to: background) >= minimum + 0.1 else { break }
+            result = alpha
+        }
+        return result
     }
 
     var nsColor: NSColor { NSColor(srgbRed: red, green: green, blue: blue, alpha: alpha) }
