@@ -61,7 +61,7 @@ struct EditorThemeWindowTests {
         focus.toggle()
         #expect(UserDefaults.standard.bool(forKey: key), "Nichts geschrieben")
 
-        EditorThemeSetup.configure(arguments: ["Quill", "-QuillStoreDirectory", "t", "-QuillFocusMode", "YES"])
+        EditorThemeSetup.configure(arguments: ["Quill", "-QuillStoreDirectory", "t", "-QuillTestFocusMode", "YES"])
         #expect(focus.isEnabled)
 
         // Ohne Test-Store: die gespeicherte Wahl, Wechsel werden gespeichert.
@@ -69,6 +69,11 @@ struct EditorThemeWindowTests {
         #expect(focus.isEnabled)
         focus.setEnabled(false)
         #expect(!UserDefaults.standard.bool(forKey: key))
+        // Startargument ohne Test-Store wirkt nicht, auch nicht über die Argument-Domain
+        // von `UserDefaults`: Es heißt anders als der Schlüssel.
+        #expect(EditorThemeSetup.focusArgument != key)
+        EditorThemeSetup.configure(arguments: ["Quill", "-QuillTestFocusMode", "YES"])
+        #expect(!focus.isEnabled)
     }
 
     // MARK: Fenster mit Sidebar

@@ -58,7 +58,7 @@ Alle wirken nur aus der Kommandozeile und nur in Debug-Builds (ADR-019, ADR-021)
 - `-QuillTestImage <Breite>x<Höhe>|heavy|demo`: Die App legt ein selbst erzeugtes Testbild in diese eigene Zwischenablage (nur Debug).
 - `-QuillWindowSize <Breite>x<Höhe>`: Das erste Fenster bekommt diese Größe in Punkten (für die Bilder oben).
 - `-QuillEditorTheme <id>`: Theme des Editors (`standard`, `quill`, `tinte`, `sonne`, `lagune`, `abend`, `kontrast`), nur zusammen mit einem der Test-Stores; dann liest und speichert Quill die eigene Wahl nicht.
-- `-QuillFocusMode YES`: Fokus-Modus beim Start, ebenso nur mit einem Test-Store.
+- `-QuillTestFocusMode YES`: Fokus-Modus beim Start, ebenso nur mit einem Test-Store.
 
 ## Struktur
 

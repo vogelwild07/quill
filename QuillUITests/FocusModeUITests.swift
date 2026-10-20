@@ -18,7 +18,7 @@ final class FocusModeUITests: XCTestCase {
     }
 
     private func launch(focusMode: Bool = false) {
-        if focusMode { app.launchArguments += ["-QuillFocusMode", "YES"] }
+        if focusMode { app.launchArguments += ["-QuillTestFocusMode", "YES"] }
         app.launch()
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
     }
