@@ -6,50 +6,36 @@ import QuillModel
 ///
 /// `blocks` ist eine Map von Block-ID auf eine Map mit `kind` (Rohwert von `BlockKind`,
 /// unbekannte bleiben erhalten), `order` (Schlüssel aus `FractionalIndex`), `text`
-/// (Text mit Marks) und den Feldern aus `BlockProperties` (`indent`, `checked`, `lang`,
-/// `asset`, `restored`). Eine Map statt einer Liste, damit Verschieben nur `order` ändert und
-/// gleichzeitiges Tippen im verschobenen Block erhalten bleibt.
+/// (Text mit Marks), den Feldern aus `BlockProperties` (`indent`, `checked`, `lang`,
+/// `asset`, `restored`) und `assetFile` (Name des Bildes im Ordner). Eine Map statt
+/// einer Liste, damit Verschieben nur `order` ändert und gleichzeitiges Tippen im
+/// verschobenen Block erhalten bleibt.
 public final class PageDocument: SyncDocument {
     override class var itemsKey: String { "blocks" }
     /// Felder, deren gleichzeitige Änderung der Nutzer entscheidet. `order` nicht:
     /// Zwei Reihenfolgen verlieren keinen Inhalt, Automerge wählt fest eine.
     static let conflictFields = ["kind", "indent", "checked", "lang", "asset"]
 
-    /// Blöcke in Dokument-Reihenfolge.
-    public func blocks() throws -> [BlockSnapshot] {
-        var result: [(order: String, block: BlockSnapshot)] = []
-        for (id, key) in itemKeys() {
-            guard let map = try map(key) else { continue }
-            let fields = try fields(of: map)
-            guard case .Scalar(.String(let kindRaw))? = fields["kind"],
-                  case .Object(let textID, .Text)? = fields["text"]
-            else {
-                throw SyncError.malformed(key)
-            }
-            var properties = BlockProperties()
-            if case .Scalar(.Int(let indent))? = fields["indent"] { properties.indent = Int(indent) }
-            if case .Scalar(.Boolean(let checked))? = fields["checked"] { properties.isChecked = checked }
-            if case .Scalar(.String(let language))? = fields["lang"] { properties.codeLanguage = language }
-            if case .Scalar(.String(let asset))? = fields["asset"] { properties.assetID = UUID(uuidString: asset) }
-            if case .Scalar(.Boolean(let restored))? = fields["restored"] { properties.isRestored = restored }
-            let text = try document.text(obj: textID)
-            let marks = TextMarks.assignments(of: try document.marks(obj: textID), count: text.unicodeScalars.count)
-            var order = ""
-            if case .Scalar(.String(let value))? = fields["order"] { order = value }
-            let block = BlockSnapshot(
-                id: id, kindRaw: kindRaw, text: text,
-                richText: TextMarks.richText(text: text, assignments: marks), properties: properties
-            )
-            result.append((order, block))
+    /// Blöcke in Dokument-Reihenfolge; mit `version` der Stand von damals.
+    public func blocks(at version: DocumentVersion? = nil) throws -> [BlockSnapshot] {
+        try entries(at: version?.heads).map(\.block)
+    }
+
+    /// Dateinamen der Bilder im Ordner (`assets/<SHA-256>.<Endung>`) je Asset-ID.
+    public func assetFiles() throws -> [UUID: String] {
+        var result: [UUID: String] = [:]
+        for entry in try entries(at: nil) {
+            if let asset = entry.block.properties.assetID, let file = entry.assetFile { result[asset] = file }
         }
-        return result.sorted { ($0.order, $0.block.id.uuidString) < ($1.order, $1.block.id.uuidString) }.map(\.block)
+        return result
     }
 
     /// Bringt das Dokument auf den Stand `blocks` (Reihenfolge wie im Array) und hält
     /// die Änderung als Commit fest. Text wird als Diff geschrieben, damit gleichzeitiges
-    /// Tippen auf anderen Geräten erhalten bleibt. `true`, wenn sich etwas geändert hat.
+    /// Tippen auf anderen Geräten erhalten bleibt. `assetFiles` nennt die Datei im Ordner
+    /// je Asset-ID. `true`, wenn sich etwas geändert hat.
     @discardableResult
-    public func update(to blocks: [BlockSnapshot]) throws -> Bool {
+    public func update(to blocks: [BlockSnapshot], assetFiles: [UUID: String] = [:]) throws -> Bool {
         var changed = false
         let wanted = Set(blocks.map(\.id))
         var existing: [UUID: ObjId] = [:]
@@ -63,15 +49,86 @@ public final class PageDocument: SyncDocument {
         }
         let orders = try orderKeys(for: blocks, existing: existing)
         for (block, order) in zip(blocks, orders) {
+            let assetFile = block.properties.assetID.flatMap { assetFiles[$0] }
             if let map = existing[block.id] {
-                changed = try update(map, to: block, order: order) || changed
+                changed = try update(map, to: block, order: order, assetFile: assetFile) || changed
             } else {
-                try insert(block, order: order)
+                try insert(block, order: order, assetFile: assetFile)
                 changed = true
             }
         }
         if changed { document.commitWith() }
         return changed
+    }
+
+    /// Löschen gegen Bearbeiten (ADR-026): Hat ein anderes Gerät einen Block gelöscht,
+    /// den dieses Gerät bearbeitet hatte, ohne dass das löschende Gerät die Bearbeitung
+    /// kannte, kommt der Block mit dem Stand dieses Geräts zurück und ist als
+    /// wiederhergestellt markiert. `version` ist der Stand vor `apply(changes:)`.
+    /// Gibt die IDs der wiederhergestellten Blöcke zurück.
+    @discardableResult
+    public func restoreDeletedWhileEdited(since version: DocumentVersion) throws -> [UUID] {
+        let current = Set(itemKeys().map(\.0))
+        let vanished = try entries(at: version.heads).filter { !current.contains($0.block.id) }
+        guard !vanished.isEmpty else { return [] }
+        let incoming = try changes(after: version)
+        var restored: [UUID] = []
+        for mine in vanished {
+            let key = mine.block.id.uuidString
+            // Die Änderung, die den Block entfernt: vorher da, danach nicht mehr.
+            let deletion = try incoming.first { change in
+                try map(key, at: Set(change.deps)) != nil && map(key, at: [change.hash]) == nil
+            }
+            guard let deletion else { continue }
+            let seen = try entries(at: Set(deletion.deps)).first { $0.block.id == mine.block.id }
+            guard seen?.block != mine.block || seen?.assetFile != mine.assetFile else { continue }
+            var block = mine.block
+            block.properties.isRestored = true
+            try insert(block, order: mine.order, assetFile: mine.assetFile)
+            restored.append(block.id)
+        }
+        if !restored.isEmpty { document.commitWith() }
+        return restored
+    }
+
+    // MARK: Lesen
+
+    private struct Entry {
+        var order: String
+        var block: BlockSnapshot
+        var assetFile: String?
+    }
+
+    private func entries(at heads: Set<ChangeHash>?) throws -> [Entry] {
+        var result: [Entry] = []
+        for (id, key) in itemKeys(at: heads) {
+            guard let map = try map(key, at: heads) else { continue }
+            let fields = try fields(of: map, at: heads)
+            guard case .Scalar(.String(let kindRaw))? = fields["kind"],
+                  case .Object(let textID, .Text)? = fields["text"]
+            else {
+                throw SyncError.malformed(key)
+            }
+            var properties = BlockProperties()
+            if case .Scalar(.Int(let indent))? = fields["indent"] { properties.indent = Int(indent) }
+            if case .Scalar(.Boolean(let checked))? = fields["checked"] { properties.isChecked = checked }
+            if case .Scalar(.String(let language))? = fields["lang"] { properties.codeLanguage = language }
+            if case .Scalar(.String(let asset))? = fields["asset"] { properties.assetID = UUID(uuidString: asset) }
+            if case .Scalar(.Boolean(let restored))? = fields["restored"] { properties.isRestored = restored }
+            let text = try heads.map { try document.textAt(obj: textID, heads: $0) } ?? document.text(obj: textID)
+            let rawMarks = try heads.map { try document.marksAt(obj: textID, heads: $0) } ?? document.marks(obj: textID)
+            let marks = TextMarks.assignments(of: rawMarks, count: text.unicodeScalars.count)
+            var order = ""
+            if case .Scalar(.String(let value))? = fields["order"] { order = value }
+            var assetFile: String?
+            if case .Scalar(.String(let value))? = fields["assetFile"] { assetFile = value }
+            let block = BlockSnapshot(
+                id: id, kindRaw: kindRaw, text: text,
+                richText: TextMarks.richText(text: text, assignments: marks), properties: properties
+            )
+            result.append(Entry(order: order, block: block, assetFile: assetFile))
+        }
+        return result.sorted { ($0.order, $0.block.id.uuidString) < ($1.order, $1.block.id.uuidString) }
     }
 
     /// Gleichzeitige Änderungen derselben Felder, die der Nutzer entscheidet.
@@ -81,21 +138,23 @@ public final class PageDocument: SyncDocument {
 
     // MARK: Schreiben
 
-    private func insert(_ block: BlockSnapshot, order: String) throws {
+    private func insert(_ block: BlockSnapshot, order: String, assetFile: String?) throws {
         let map = try document.putObject(obj: itemsID, key: block.id.uuidString, ty: .Map)
         try document.put(obj: map, key: "kind", value: .String(block.kindRaw))
         try document.put(obj: map, key: "order", value: .String(order))
         try writeProperties(map, block.properties, fields: [:])
+        if let assetFile { try document.put(obj: map, key: "assetFile", value: .String(assetFile)) }
         let text = try document.putObject(obj: map, key: "text", ty: .Text)
         try document.updateText(obj: text, value: block.text)
         try TextMarks.update(document, obj: text, to: TextMarks.assignments(text: block.text, richText: block.richText))
     }
 
-    private func update(_ map: ObjId, to block: BlockSnapshot, order: String) throws -> Bool {
+    private func update(_ map: ObjId, to block: BlockSnapshot, order: String, assetFile: String?) throws -> Bool {
         let fields = try fields(of: map)
         var changed = try set(map, "kind", .String(block.kindRaw), current: fields["kind"])
         changed = try set(map, "order", .String(order), current: fields["order"]) || changed
         changed = try writeProperties(map, block.properties, fields: fields) || changed
+        changed = try set(map, "assetFile", assetFile.map { .String($0) }, current: fields["assetFile"]) || changed
         let textID: ObjId
         if case .Object(let id, .Text)? = fields["text"] {
             textID = id

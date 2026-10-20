@@ -5,6 +5,19 @@ import Foundation
 /// Module sehen keine Automerge-Typen).
 public struct DocumentVersion: Hashable, Sendable {
     let heads: Set<ChangeHash>
+
+    init(heads: Set<ChangeHash>) {
+        self.heads = heads
+    }
+
+    /// Zum Speichern, z. B. im Seitenbaum.
+    public var data: Data { heads.raw() }
+
+    /// `nil`, wenn `data` keine gültige Folge von Prüfsummen ist.
+    public init?(data: Data) {
+        guard let heads = data.heads() else { return nil }
+        self.heads = heads
+    }
 }
 
 /// Zwei oder mehr Werte für dasselbe Feld, von verschiedenen Geräten gleichzeitig
@@ -52,6 +65,7 @@ public class SyncDocument {
 
     /// Lädt ein gespeichertes Dokument (`save()`).
     public required init(bytes: Data) throws {
+        try ChunkCheck.validate(bytes)
         let document: Document
         do {
             document = try Document(bytes)
@@ -83,6 +97,7 @@ public class SyncDocument {
     /// Übernimmt Änderungen oder einen vollständigen Stand eines anderen Geräts.
     /// Schon bekannte Änderungen werden übersprungen.
     public func apply(changes: Data) throws {
+        try ChunkCheck.validate(changes)
         do {
             try document.applyEncodedChanges(encoded: changes)
         } catch {
@@ -92,20 +107,35 @@ public class SyncDocument {
 
     // MARK: Hilfen für Unterklassen
 
-    /// Alle Objekte, Schlüssel als UUID; Schlüssel ohne gültige UUID werden übergangen.
-    func itemKeys() -> [(UUID, String)] {
-        document.keys(obj: itemsID).compactMap { key in UUID(uuidString: key).map { ($0, key) } }
+    /// `true`, wenn das Dokument alle Änderungen bis `version` kennt.
+    public func contains(_ version: DocumentVersion) -> Bool {
+        version.heads.allSatisfy { document.change(hash: $0) != nil }
     }
 
-    func map(_ key: String) throws -> ObjId? {
-        guard case .Object(let id, .Map)? = try document.get(obj: itemsID, key: key) else { return nil }
+    /// Alle Objekte, Schlüssel als UUID; Schlüssel ohne gültige UUID werden übergangen.
+    /// Mit `heads` der Stand von damals.
+    func itemKeys(at heads: Set<ChangeHash>? = nil) -> [(UUID, String)] {
+        let keys = heads.map { document.keysAt(obj: itemsID, heads: $0) } ?? document.keys(obj: itemsID)
+        return keys.compactMap { key in UUID(uuidString: key).map { ($0, key) } }
+    }
+
+    func map(_ key: String, at heads: Set<ChangeHash>? = nil) throws -> ObjId? {
+        let value = try heads.map { try document.getAt(obj: itemsID, key: key, heads: $0) } ?? document.get(obj: itemsID, key: key)
+        guard case .Object(let id, .Map)? = value else { return nil }
         return id
     }
 
-    func fields(of map: ObjId) throws -> [String: Value] {
+    func fields(of map: ObjId, at heads: Set<ChangeHash>? = nil) throws -> [String: Value] {
         var fields: [String: Value] = [:]
-        for (key, value) in try document.mapEntries(obj: map) { fields[key] = value }
+        let entries = try heads.map { try document.mapEntriesAt(obj: map, heads: $0) } ?? document.mapEntries(obj: map)
+        for (key, value) in entries { fields[key] = value }
         return fields
+    }
+
+    /// Änderungen, die seit `version` dazugekommen sind (z. B. durch `apply(changes:)`).
+    func changes(after version: DocumentVersion) throws -> [Change] {
+        let known = Set(try document.forkAt(heads: version.heads).getHistory())
+        return document.getHistory().filter { !known.contains($0) }.compactMap { document.change(hash: $0) }
     }
 
     /// Setzt ein Feld, nur wenn es sich ändert; `nil` entfernt es. `true`, wenn geändert.
@@ -135,12 +165,15 @@ public class SyncDocument {
         for (id, key) in itemKeys() {
             let versions = try document.getAll(obj: itemsID, key: key)
             if versions.count > 1 {
+                // Zwei Objekte unter derselben ID sind immer ein Konflikt, auch wenn sie
+                // gleich aussehen: Ihr Inhalt kann sich unterscheiden.
                 result.append(FieldConflict(objectID: id, field: nil, values: versions.map(Self.describe).sorted()))
             }
             guard let map = try map(key) else { continue }
             for field in fields {
                 let values = try document.getAll(obj: map, key: field)
-                if values.count > 1 {
+                // Zwei Geräte haben denselben Wert gesetzt: kein Konflikt für den Nutzer.
+                if Set(values.map(Self.describe)).count > 1 {
                     result.append(FieldConflict(objectID: id, field: field, values: values.map(Self.describe).sorted()))
                 }
             }
