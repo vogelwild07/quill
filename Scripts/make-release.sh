@@ -77,17 +77,33 @@ case $found in
 esac
 "$root/Scripts/check-release-binary.sh" --app "$app" || fail "Profiling- oder Testcode im Bundle"
 
-# 3. .dmg: App und Verknüpfung zu /Applications, Name „Programme“ wie im Finder.
+# 3. .dmg: App und Verknüpfung zu /Applications, Name „Programme“ wie im Finder
+#    (Verknüpfung aus Scripts/dmg/settings.py).
 echo "3/4 .dmg bauen …"
 name=Quill-$version$suffix
 dmg=$dist/$name.dmg
 stage=$work/stage
 mkdir -p "$stage" "$dist" || fail "Ordner nicht anlegbar"
 ditto "$app" "$stage/Quill.app" || fail "App nicht kopiert"
-ln -s /Applications "$stage/Programme" || fail "Verknüpfung nicht angelegt"
 rm -f "$dmg" "$dmg.sha256" || fail "alte .dmg nicht entfernt"
-hdiutil create -volname "Quill $version" -srcfolder "$stage" -fs HFS+ -format UDZO "$dmg" \
-  > "$work/hdiutil.log" 2>&1 || fail "hdiutil create gescheitert (Log: $work/hdiutil.log)"
+# Fenster mit Hintergrund, Icon-Positionen und Volume-Icon (Scripts/dmg/): dmgbuild
+# schreibt das Layout direkt, ohne Finder und AppleScript. Feste Version mit
+# Prüfsummen in einer eigenen Umgebung unter .build/, neu bei geänderten Anforderungen.
+venv=$root/.build/dmgbuild-venv
+requirements=$root/Scripts/dmg/requirements.txt
+wanted=$(shasum -a 256 "$requirements" | cut -d' ' -f1) || fail "requirements.txt nicht lesbar"
+if [ "$(cat "$venv/requirements.sha256" 2>/dev/null)" != "$wanted" ]; then
+  rm -rf "$venv"
+  { python3 -m venv "$venv" && "$venv/bin/pip" install --disable-pip-version-check --require-hashes \
+      --only-binary :all: -r "$requirements"; } > "$work/pip.log" 2>&1 \
+    || fail "dmgbuild nicht installiert (Log: $work/pip.log)"
+  print -r -- "$wanted" > "$venv/requirements.sha256"
+fi
+volume_icon=$app/Contents/Resources/AppIcon.icns
+[ -f "$volume_icon" ] || fail "kein AppIcon.icns in der App"
+"$venv/bin/dmgbuild" -s "$root/Scripts/dmg/settings.py" -D app="$stage/Quill.app" \
+  -D background="$root/Scripts/dmg/background.tiff" -D icon="$volume_icon" "Quill $version" "$dmg" \
+  > "$work/dmgbuild.log" 2>&1 || fail "dmgbuild gescheitert (Log: $work/dmgbuild.log)"
 hdiutil verify "$dmg" > "$work/verify.log" 2>&1 || fail "hdiutil verify gescheitert (Log: $work/verify.log)"
 
 # 4. Wie ein Nutzer: Image nur lesend einhängen und Inhalt prüfen.
@@ -97,6 +113,11 @@ diskutil image attach --readOnly --nobrowse --mountPoint "$mnt" "$dmg" > "$work/
   || fail "Einhängen gescheitert (Log: $work/attach.log)"
 [ "$(ls "$mnt" | tr '\n' ' ')" = "Programme Quill.app " ] || fail "Inhalt der .dmg: $(ls "$mnt")"
 [ "$(readlink "$mnt/Programme")" = /Applications ] || fail "Verknüpfung zeigt nicht auf /Applications"
+# Fenster: Hintergrund und Volume-Icon wie gebaut, Layout vorhanden (Scripts/dmg/).
+cmp -s "$mnt/.background.tiff" "$root/Scripts/dmg/background.tiff" || fail "Hintergrund fehlt oder weicht ab"
+cmp -s "$mnt/.VolumeIcon.icns" "$volume_icon" || fail "Volume-Icon fehlt oder weicht ab"
+[[ $(GetFileInfo -a "$mnt") == *C* ]] || fail "Volume ohne eigenes Icon (Attribut C)"
+[ -s "$mnt/.DS_Store" ] || fail "kein Fensterlayout (.DS_Store)"
 codesign --verify --deep --strict "$mnt/Quill.app" || fail "Signatur in der .dmg ungültig"
 # CDHash steht erst ab -dvvv in der Ausgabe. Zuweisung statt Vergleich in [ ]:
 # Scheitert das Lesen, bricht set -e hier ab, statt zwei leere Werte zu vergleichen.
