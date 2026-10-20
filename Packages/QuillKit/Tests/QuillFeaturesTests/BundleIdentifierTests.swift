@@ -53,8 +53,11 @@ struct BundleIdentifierTests {
                 guard let range = line.range(of: "PRODUCT_BUNDLE_IDENTIFIER = ") else { return nil }
                 return line[range.upperBound...].trimmingCharacters(in: CharacterSet(charactersIn: " ;\""))
             }
-        // App (Debug, Release), Profiling-App, UI-Tests (Debug, Release), Profiling-UI-Tests.
-        #expect(identifiers.count == 6)
+        // App (Debug, Release), Profiling- und Synctest-App, UI-Tests (Debug, Release),
+        // Profiling- und Synctest-UI-Tests.
+        #expect(identifiers.count == 8)
+        // Testvariante für den Sync mit eigenem Container (ADR-029): nie der echte Store.
+        #expect(identifiers.contains(Self.prefix + ".synctest"))
         for identifier in identifiers {
             #expect(identifier == Self.prefix || identifier.hasPrefix(Self.prefix + "."), "\(identifier)")
         }
