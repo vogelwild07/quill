@@ -72,6 +72,9 @@ Erwartet: Fortschritt unten in der Sidebar (ab 5 Seiten), App bleibt bedienbar; 
 **13 · Noch nicht geladene Datei (optional, nur mit iCloud Drive).** Gleicher Test mit einem Ordner in iCloud Drive in beiden Konten ist nicht möglich (zwei Apple-Accounts); stattdessen in A in iCloud Drive einen Ordner wählen, eine Datei per Finder › „Download entfernen“ auslagern und abgleichen.
 Erwartet: „Noch nicht geladen“ im letzten Abgleich, danach lädt macOS sie, und der nächste Abgleich nimmt sie.
 
+**14 · Tippen im selben Block ohne Pause.** In A und B dieselbe Seite öffnen, beide **nicht** pausiert. In B einen Absatz „Mitte“ anlegen und warten, bis er in A ankommt. Dann in A ans Ende des Absatzes klicken und langsam weitertippen („ eins zwei drei vier …“, etwa eine Minute lang, mit kurzen Pausen). Währenddessen in B an den Anfang desselben Absatzes „BBB “ schreiben und B einmal mit „Jetzt abgleichen“ abgleichen lassen.
+Erwartet: In A erscheint „BBB “ vorne, während du tippst; der Cursor bleibt hinter deinem Text, und nichts von dem, was du getippt hast, fehlt. Nach dem nächsten Abgleich beider steht in A und B „BBB Mitte eins zwei drei …“. Kein Absatz doppelt; erscheint doch eine Kopie mit Marke „wiederhergestellt“ (erst ab 11.6 sichtbar), bitte notieren, wann.
+
 ## Aufräumen
 
 - In beiden Konten Quill Synctest beenden. Löschen nur in den Containern der Testvariante (je Konto): `~/Library/Containers/io.github.vogelwild07.quill.synctest`. **Nie** `~/Library/Containers/io.github.vogelwild07.quill` (echter Store).

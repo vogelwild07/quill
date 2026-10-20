@@ -66,7 +66,7 @@ Grund: Selektion, Cursorbewegung und Kopieren über Blöcke hinweg, IME, Rechtsc
 | Eingabe | `BlockEditorController` (`NSTextViewDelegate`, `NSTextStorageDelegate`) | AppKit, iOS-Gegenstück später |
 | Oberfläche | `BlockTextView` (Griff ⋮⋮ mit Kontextmenü und Einfügen-Knopf ＋ bei Hover, Drop mit Mitscrollen, Checkbox-Klick, Zwischenablage), `SlashMenuController` (Glass-Panel), `BlockEditorView` (`NSViewRepresentable`) | AppKit |
 | Modell (Inline) | `InlineText`, `InlineSpan`, `InlineMark`, `EditorDocument+Inline` | neutral |
-| Persistenz | `EditorPersistenceBridge`: entprellt (≈ 300 ms), Diffs pro Block über `PageStore.applyEdits` | neutral |
+| Persistenz | `EditorPersistenceBridge`: entprellt (≈ 300 ms), Diffs pro Block über `PageStore.applyEdits` nur vom erwarteten Stand aus, sonst Dreiwege-Abgleich je Block (`BlockMerge`) | neutral |
 | Seite | `PageEditorSession`, `PageHeaderView` (Icon, Titel) in `QuillFeatures` | AppKit + SwiftUI |
 
 Der Controller ist auf Erweiterungen verteilt: `+Input` (Tastatur, Kürzel, Slash), `+Sync` (Text ↔ Modell, Undo), `+Clipboard`, `+Drag`, `+Formatting` (⌘B … ⌘K), `+Page` (Kopf, Fokus, Neuladen), `+Images` (Bilder laden, einfügen, Hinweis).
@@ -211,7 +211,7 @@ Editor in zwei Schichten (10.3):
 
 ```text
 QuillEditorCore   Foundation, Observation, Synchronization, QuillModel
-  Document/        EditorDocument, EditorBlock, InlineText, Markdown, BlockClipboard
+  Document/        EditorDocument, EditorBlock, InlineText, Markdown, BlockClipboard, BlockMerge
   Text/            Block-Attribute im Textspeicher
   Persistence/     EditorPersistenceBridge
   Theme/           Katalog, Paletten, PaletteSpec (Kontrast, Fokus-Modus), EditorFocusSettings
