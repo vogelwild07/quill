@@ -18,6 +18,15 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     let isChecked: Bool
     let ordinal: Int
     let assetID: UUID?
+    /// Block-ID aus dem Absatz, für den Fokus-Modus.
+    let blockID: UUID?
+    /// Im Fokus-Modus außerhalb der Auswahl: ganz in `EditorColor.dimmedAlpha` gezeichnet.
+    /// Beim Zeichnen gelesen, nicht beim Anlegen: TextKit verwendet Fragmente beim
+    /// Neu-Layouten wieder.
+    var isDimmed: Bool {
+        guard let blockID, let focused = (textLayoutManager?.delegate as? BlockLayoutDelegate)?.focusedBlocks else { return false }
+        return !focused.contains(blockID)
+    }
 
     override init(textElement: NSTextElement, range rangeInElement: NSTextRange?) {
         let attributes: [NSAttributedString.Key: Any]
@@ -32,6 +41,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         isChecked = properties.isChecked
         ordinal = attributes[.quillOrdinal] as? Int ?? 1
         assetID = properties.assetID
+        blockID = (attributes[.quillBlockID] as? String).flatMap(UUID.init(uuidString:))
         super.init(textElement: textElement, range: rangeInElement)
     }
 
@@ -136,6 +146,18 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     // MARK: Zeichnen
 
     override func draw(at point: CGPoint, in context: CGContext) {
+        guard isDimmed else { return drawBlock(at: point, in: context) }
+        // Eine Ebene für den ganzen Block: Überlagerungen (Code-Hintergrund unter Text)
+        // werden zusammen abgedunkelt, nicht einzeln.
+        context.saveGState()
+        context.setAlpha(EditorColor.dimmedAlpha)
+        context.beginTransparencyLayer(auxiliaryInfo: nil)
+        drawBlock(at: point, in: context)
+        context.endTransparencyLayer()
+        context.restoreGState()
+    }
+
+    private func drawBlock(at point: CGPoint, in context: CGContext) {
         context.saveGState()
         context.translateBy(x: point.x, y: point.y)
         switch kind {
@@ -273,6 +295,11 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
 
 /// Liefert `BlockLayoutFragment` für jeden Absatz.
 final class BlockLayoutDelegate: NSObject, NSTextLayoutManagerDelegate {
+    /// Fokus-Modus: Blöcke mit Auswahl oder Cursor; alle anderen werden abgedunkelt
+    /// (`BlockLayoutFragment.isDimmed`). `nil` dunkelt nichts ab. Nach einer Änderung
+    /// die betroffenen Absätze neu zeichnen.
+    var focusedBlocks: Set<UUID>?
+
     func textLayoutManager(
         _ textLayoutManager: NSTextLayoutManager,
         textLayoutFragmentFor location: any NSTextLocation,

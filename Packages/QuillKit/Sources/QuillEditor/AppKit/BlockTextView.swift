@@ -70,8 +70,33 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         }
     }
 
+    /// Fokus-Modus: Unter dem Text eine halbe Fensterhöhe Platz, damit auch die letzte
+    /// Zeile in die Mitte scrollen kann (`BlockEditorController+Focus`).
+    var isTypewriterScrolling = false {
+        didSet {
+            guard oldValue != isTypewriterScrolling else { return }
+            // `sizeToFit` setzt die Größe nur, wenn sie sich ändert; beim Einschalten
+            // braucht `setFrameSize` den Platz aber auch bei gleicher Texthöhe.
+            sizeToFit()
+            setFrameSize(frame.size)
+        }
+    }
+
+    /// Höhe, die die Text-View selbst zuletzt verlangt hat, und die daraus gesetzte.
+    /// Eine verlangte Höhe gleich der gesetzten ist die aktuelle Größe (z. B. bei
+    /// Breitenänderung) und bekommt den Platz kein zweites Mal.
+    private var typewriterHeights: (natural: CGFloat, applied: CGFloat)?
+
     override func setFrameSize(_ newSize: NSSize) {
-        super.setFrameSize(newSize)
+        var size = newSize
+        if isTypewriterScrolling, let clip = enclosingScrollView?.contentView {
+            let natural = typewriterHeights.map { $0.applied == newSize.height ? $0.natural : newSize.height } ?? newSize.height
+            size.height = natural + ceil(clip.bounds.height / 2)
+            typewriterHeights = (natural, size.height)
+        } else {
+            typewriterHeights = nil
+        }
+        super.setFrameSize(size)
         updateInsets()
     }
 
@@ -135,11 +160,21 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         super.keyDown(with: event)
     }
 
-    /// Fokus woanders (Sidebar, anderer Tab): Slash-Menü schließen.
+    /// Fokus woanders (Sidebar, anderer Tab): Slash-Menü schließen, im Fokus-Modus
+    /// nichts mehr abdunkeln.
     override func resignFirstResponder() -> Bool {
         let resigned = super.resignFirstResponder()
-        if resigned { editor?.slashMenu.close() }
+        if resigned {
+            editor?.slashMenu.close()
+            editor?.scheduleFocusUpdate()
+        }
         return resigned
+    }
+
+    override func becomeFirstResponder() -> Bool {
+        let became = super.becomeFirstResponder()
+        if became { editor?.scheduleFocusUpdate() }
+        return became
     }
 
     // MARK: Auswahl nie hinter das abschließende `\n` des letzten Blocks
@@ -188,7 +223,9 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
                 return
             }
         }
+        // Kehrt erst nach dem Loslassen zurück (Auswahl per Ziehen ist dann fertig).
         super.mouseDown(with: event)
+        editor?.focusMouseSelectionDidEnd()
     }
 
     // MARK: Griff und ＋ bei Hover

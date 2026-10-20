@@ -79,6 +79,10 @@ public enum QuillDesign {
         public static func fadeOutDuration(reduceMotion: Bool = isReduced) -> TimeInterval {
             reduceMotion ? 0 : 0.3
         }
+
+        /// Sanftes Scrollen zum Cursor nach einem Klick im Fokus-Modus; bei „Bewegung
+        /// reduzieren“ springt der Editor ohne Animation (`BlockEditorController+Focus`).
+        public static let typewriterScrollDuration: TimeInterval = 0.25
     }
     #endif
 }
