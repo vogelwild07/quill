@@ -1,4 +1,5 @@
 import Foundation
+import QuillEditorCore
 import QuillModel
 
 /// „Umwandeln in …“: gemeinsame Liste für Format › Blockart und das Kontextmenü am Griff.

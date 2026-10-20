@@ -1,6 +1,7 @@
 #if canImport(AppKit)
 import AppKit
 import QuillDesign
+import QuillEditorCore
 import QuillModel
 import UniformTypeIdentifiers
 

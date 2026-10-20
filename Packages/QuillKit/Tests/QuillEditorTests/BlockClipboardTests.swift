@@ -1,7 +1,8 @@
 import Foundation
-import Testing
-import QuillModel
 @testable import QuillEditor
+@testable import QuillEditorCore
+import QuillModel
+import Testing
 
 @Suite("Zwischenablage: Format der Quill-Blöcke")
 struct BlockClipboardTests {

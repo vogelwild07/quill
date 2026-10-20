@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillEditorCore
 import Synchronization
 
 /// Rollen der Theme-Farben im Editor; `EditorColor` liefert je Rolle eine dynamische Farbe.

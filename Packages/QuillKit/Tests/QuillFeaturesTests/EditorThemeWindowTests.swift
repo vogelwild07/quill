@@ -1,12 +1,13 @@
 #if canImport(AppKit)
 import AppKit
+@testable import QuillEditor
+@testable import QuillEditorCore
+@testable import QuillFeatures
 import QuillModel
 import QuillTestFixtures
 import SwiftData
 import SwiftUI
 import Testing
-@testable import QuillEditor
-@testable import QuillFeatures
 
 /// Theme beim Start und im ganzen Fenster (ADR-024). Das Theme gilt prozessweit,
 /// deshalb alles in einer Suite nacheinander.

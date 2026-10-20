@@ -5,6 +5,7 @@ import UIKit
 #endif
 import CoreText
 import QuillDesign
+import QuillEditorCore
 import QuillModel
 
 /// Zeichnet die Dekoration eines Blocks: Bullet, Nummer, Checkbox, Zitatbalken,

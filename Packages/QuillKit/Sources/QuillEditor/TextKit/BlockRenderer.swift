@@ -3,6 +3,7 @@ import AppKit
 #elseif canImport(UIKit)
 import UIKit
 #endif
+import QuillEditorCore
 import QuillModel
 
 /// Übersetzt zwischen `EditorDocument` und dem attributierten Text im Textspeicher.

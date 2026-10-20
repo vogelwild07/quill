@@ -1,4 +1,5 @@
 import QuillEditor
+import QuillEditorCore
 import QuillFeatures
 import SwiftUI
 

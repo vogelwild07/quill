@@ -1,5 +1,6 @@
 import Foundation
 import QuillEditor
+import QuillEditorCore
 import QuillModel
 
 /// Gemeinsame Beispieldokumente der Editor- und Export-Tests (Nachfolger von

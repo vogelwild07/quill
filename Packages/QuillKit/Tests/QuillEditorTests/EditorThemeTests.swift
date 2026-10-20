@@ -1,8 +1,9 @@
 #if canImport(AppKit)
 import AppKit
-import Testing
 @testable import QuillEditor
+@testable import QuillEditorCore
 import QuillTestFixtures
+import Testing
 
 @Suite("Theme: Katalog")
 struct EditorThemeCatalogTests {

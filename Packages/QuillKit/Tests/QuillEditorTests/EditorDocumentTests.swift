@@ -1,7 +1,8 @@
 import Foundation
+@testable import QuillEditor
+@testable import QuillEditorCore
 import QuillModel
 import Testing
-@testable import QuillEditor
 
 private func doc(_ blocks: EditorBlock...) -> EditorDocument { EditorDocument(blocks: blocks) }
 private func pos(_ block: Int, _ offset: Int) -> BlockPosition { BlockPosition(block: block, offset: offset) }

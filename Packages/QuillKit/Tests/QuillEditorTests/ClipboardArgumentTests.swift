@@ -1,7 +1,7 @@
 #if canImport(AppKit) && DEBUG
 import AppKit
-import Testing
 @testable import QuillEditor
+import Testing
 
 /// Eigene Zwischenablage für UI-Tests (`-QuillPasteboardName`): nur aus der
 /// Kommandozeile, nie aus gespeicherten Einstellungen (wie ADR-019).

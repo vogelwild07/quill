@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillEditorCore
 
 /// Theme des Editors (ADR-024). Die Farben im Textspeicher sind dynamisch und lösen
 /// sich beim Zeichnen auf; ein Wechsel zeichnet nur neu und ändert keinen Text, ist

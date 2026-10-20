@@ -1,7 +1,7 @@
 #if canImport(AppKit) && DEBUG
 import AppKit
-import Testing
 @testable import QuillEditor
+import Testing
 
 /// Testbild für UI-Tests (`-QuillTestImage`): nur in eine eigene Zwischenablage,
 /// nur mit gültiger Angabe.

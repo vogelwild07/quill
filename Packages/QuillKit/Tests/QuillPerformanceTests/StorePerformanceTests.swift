@@ -1,9 +1,10 @@
 import Foundation
 import QuillEditor
+import QuillEditorCore
 import QuillExport
+@testable import QuillModel
 import SwiftData
 import Testing
-@testable import QuillModel
 
 /// Bestand für die Messungen am Store: 1000 Seiten mit je 50 Blöcken als Baum unter
 /// einer Wurzel (zehn Kinder pro Seite), dazu eine Seite mit 1000 Blöcken.

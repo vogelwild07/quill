@@ -79,6 +79,8 @@ struct LocalizationTests {
         Module(name: "App", sources: "App", catalog: "App/Resources/Localizable.xcstrings", isPackage: false),
         Module(name: "QuillFeatures", sources: "Packages/QuillKit/Sources/QuillFeatures", catalog: "Packages/QuillKit/Sources/QuillFeatures/Resources/Localizable.xcstrings", isPackage: true),
         Module(name: "QuillEditor", sources: "Packages/QuillKit/Sources/QuillEditor", catalog: "Packages/QuillKit/Sources/QuillEditor/Resources/Localizable.xcstrings", isPackage: true),
+        // Ohne Oberfläche, also ohne Texte; ein Text dort fiele als fehlender Katalog auf.
+        Module(name: "QuillEditorCore", sources: "Packages/QuillKit/Sources/QuillEditorCore", catalog: nil, isPackage: true),
         Module(name: "QuillModel", sources: "Packages/QuillKit/Sources/QuillModel", catalog: nil, isPackage: true),
         Module(name: "QuillExport", sources: "Packages/QuillKit/Sources/QuillExport", catalog: nil, isPackage: true),
         Module(name: "QuillDesign", sources: "Packages/QuillKit/Sources/QuillDesign", catalog: nil, isPackage: true),

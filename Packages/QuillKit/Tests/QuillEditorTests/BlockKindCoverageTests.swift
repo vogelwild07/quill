@@ -1,7 +1,8 @@
 import Foundation
+@testable import QuillEditor
+@testable import QuillEditorCore
 import QuillModel
 import Testing
-@testable import QuillEditor
 
 /// Jede Blockart muss überall behandelt werden, wo Blöcke ankommen. Eine neue Art in
 /// `BlockKind` lässt diese Tests scheitern, bis sie in Renderer, Slash-Menü und

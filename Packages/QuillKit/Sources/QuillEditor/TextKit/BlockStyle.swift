@@ -4,6 +4,7 @@ import AppKit
 import UIKit
 #endif
 import QuillDesign
+import QuillEditorCore
 import QuillModel
 
 /// Typografie und Absatzformate pro Blockart.

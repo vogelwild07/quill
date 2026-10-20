@@ -1,11 +1,12 @@
 #if canImport(AppKit)
 import AppKit
 import Foundation
+@testable import QuillEditor
+@testable import QuillEditorCore
+@testable import QuillExport
 import QuillModel
 import SwiftData
 import Testing
-@testable import QuillEditor
-@testable import QuillExport
 
 /// Der Hinweis auf einer leeren Seite landet nie im Export (Phase 7.3): Editor
 /// zeigt ihn, Bridge speichert, Store liefert den Stand, Exporter schreibt ihn.

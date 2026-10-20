@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillEditorCore
 
 /// Abgleich Textspeicher → Modell nach nativen Edits der Text-View und nach Undo/Redo.
 extension BlockEditorController: @MainActor NSTextStorageDelegate {

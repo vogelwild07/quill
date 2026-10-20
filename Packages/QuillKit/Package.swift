@@ -11,38 +11,41 @@ let package = Package(
     products: [
         .library(
             name: "QuillKit",
-            targets: ["QuillFeatures", "QuillModel", "QuillEditor", "QuillExport", "QuillDesign"]
+            targets: ["QuillFeatures", "QuillModel", "QuillEditorCore", "QuillEditor", "QuillExport", "QuillDesign"]
         ),
     ],
     targets: [
         .target(name: "QuillDesign"),
         .target(name: "QuillModel"),
+        // Kern des Editors ohne AppKit, UIKit und SwiftUI (ADR-028): Dokument, Blöcke,
+        // Inline-Text, Speichern, Theme-Rechnung. `EditorCoreImportTests` hält das ein.
+        .target(name: "QuillEditorCore", dependencies: ["QuillModel"]),
         .target(
             name: "QuillEditor",
-            dependencies: ["QuillModel", "QuillDesign"],
+            dependencies: ["QuillModel", "QuillEditorCore", "QuillDesign"],
             resources: [.process("Resources")]
         ),
-        .target(name: "QuillExport", dependencies: ["QuillModel", "QuillEditor"]),
+        .target(name: "QuillExport", dependencies: ["QuillModel", "QuillEditorCore"]),
         .target(
             name: "QuillFeatures",
-            dependencies: ["QuillModel", "QuillEditor", "QuillExport", "QuillDesign"],
+            dependencies: ["QuillModel", "QuillEditorCore", "QuillEditor", "QuillExport", "QuillDesign"],
             resources: [.process("Resources")]
         ),
         // Beispieldokumente für Editor- und Export-Tests; nicht Teil des Produkts.
-        .target(name: "QuillTestFixtures", dependencies: ["QuillEditor", "QuillModel"], path: "Tests/QuillTestFixtures"),
+        .target(name: "QuillTestFixtures", dependencies: ["QuillEditorCore", "QuillEditor", "QuillModel"], path: "Tests/QuillTestFixtures"),
         .testTarget(name: "QuillModelTests", dependencies: ["QuillModel"]),
-        .testTarget(name: "QuillEditorTests", dependencies: ["QuillEditor", "QuillModel", "QuillTestFixtures"]),
+        .testTarget(name: "QuillEditorTests", dependencies: ["QuillEditorCore", "QuillEditor", "QuillModel", "QuillTestFixtures"]),
         .testTarget(
             name: "QuillExportTests",
-            dependencies: ["QuillExport", "QuillEditor", "QuillModel", "QuillTestFixtures"],
+            dependencies: ["QuillExport", "QuillEditorCore", "QuillEditor", "QuillModel", "QuillTestFixtures"],
             exclude: ["Golden"]
         ),
-        .testTarget(name: "QuillFeaturesTests", dependencies: ["QuillFeatures", "QuillModel", "QuillEditor", "QuillTestFixtures"]),
+        .testTarget(name: "QuillFeaturesTests", dependencies: ["QuillFeatures", "QuillModel", "QuillEditorCore", "QuillEditor", "QuillTestFixtures"]),
         // Messungen gegen Schwellen, nur optimiert sinnvoll (docs/performance.md):
         // swift test -c release -Xswiftc -enable-testing --filter QuillPerformanceTests
         .testTarget(
             name: "QuillPerformanceTests",
-            dependencies: ["QuillModel", "QuillEditor", "QuillExport", "QuillFeatures", "QuillTestFixtures"]
+            dependencies: ["QuillModel", "QuillEditorCore", "QuillEditor", "QuillExport", "QuillFeatures", "QuillTestFixtures"]
         ),
     ],
     swiftLanguageModes: [.v6]

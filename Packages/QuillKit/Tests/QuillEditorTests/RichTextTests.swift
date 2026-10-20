@@ -1,7 +1,8 @@
 import Foundation
+@testable import QuillEditor
+@testable import QuillEditorCore
 import QuillModel
 import Testing
-@testable import QuillEditor
 
 /// Eigene Datei: `QuillModel` und `QuillEditor` haben beide einen Typ `BlockKind`.
 @Suite("Inline-Formatierung: RichText")

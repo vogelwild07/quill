@@ -1,10 +1,11 @@
 #if canImport(AppKit)
 import AppKit
+@testable import QuillEditor
+@testable import QuillEditorCore
+@testable import QuillFeatures
 import QuillModel
 import SwiftData
 import Testing
-@testable import QuillEditor
-@testable import QuillFeatures
 
 /// Editor einer Seite mit echtem Store im Arbeitsspeicher: Tippen, Schließen, wieder Öffnen.
 @MainActor

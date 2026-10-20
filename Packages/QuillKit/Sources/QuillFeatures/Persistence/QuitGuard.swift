@@ -1,6 +1,7 @@
 #if canImport(AppKit)
 import AppKit
 import QuillEditor
+import QuillEditorCore
 
 /// Beenden mit offenen Änderungen im Editor (ADR-013): erst alles speichern; scheitert
 /// das, fragen, ob trotzdem beendet werden soll. „Abbrechen“ ist die Vorgabe.

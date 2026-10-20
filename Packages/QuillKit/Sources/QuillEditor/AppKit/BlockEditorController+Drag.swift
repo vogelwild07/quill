@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillEditorCore
 
 /// Ziehen von Blöcken am Griff.
 extension BlockEditorController {

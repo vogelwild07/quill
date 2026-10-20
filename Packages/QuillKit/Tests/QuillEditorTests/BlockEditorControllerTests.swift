@@ -1,10 +1,11 @@
 #if canImport(AppKit)
 import AppKit
 import QuillDesign
-import QuillModel
-import Testing
 @testable import QuillEditor
+@testable import QuillEditorCore
+import QuillModel
 import QuillTestFixtures
+import Testing
 
 /// Steuert Controller und Text-View wie Tastatureingaben, in einem Offscreen-Fenster.
 @MainActor

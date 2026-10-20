@@ -1,8 +1,9 @@
 #if canImport(AppKit)
 import AppKit
+@testable import QuillEditor
+@testable import QuillEditorCore
 import QuillTestFixtures
 import Testing
-@testable import QuillEditor
 
 /// Hinweis auf einer leeren Seite (Phase 7.3): nur gezeichnet, nie im Text oder
 /// Modell, weg beim ersten Zeichen, für VoiceOver ein Platzhalter. Dass er nicht

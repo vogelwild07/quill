@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillEditorCore
 import QuillModel
 
 /// VoiceOver im Editor: Die Text-View liefert den Fließtext und Bilder

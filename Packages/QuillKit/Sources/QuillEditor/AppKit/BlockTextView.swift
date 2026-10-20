@@ -2,6 +2,7 @@
 import AppKit
 import Carbon.HIToolbox
 import QuillDesign
+import QuillEditorCore
 import QuillModel
 
 /// Kopf mit eigener Höhenberechnung (z. B. ein `NSHostingView` mit mehrzeiligem Titel).

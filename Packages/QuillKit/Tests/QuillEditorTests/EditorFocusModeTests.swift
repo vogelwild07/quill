@@ -1,9 +1,10 @@
 #if canImport(AppKit)
 import AppKit
+@testable import QuillEditor
+@testable import QuillEditorCore
 import QuillTestFixtures
 import Synchronization
 import Testing
-@testable import QuillEditor
 
 /// Fokus-Modus (Phase 18.1): abgedunkelte Umgebung in Richtung Theme-Hintergrund,
 /// Fließtext darin mindestens 3 : 1 (mit „Kontrast erhöhen“ 4,5 : 1), und

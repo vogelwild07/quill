@@ -7,7 +7,7 @@ import QuillModel
 /// leben hier, ohne AppKit, damit sie mit Unit-Tests abgesichert sind.
 /// Ein Dokument enthält immer mindestens einen Block.
 public struct EditorDocument: Equatable, Sendable {
-    public internal(set) var blocks: [EditorBlock]
+    public package(set) var blocks: [EditorBlock]
 
     public static let maxIndent = 6
 

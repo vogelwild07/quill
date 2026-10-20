@@ -1,6 +1,7 @@
 #if canImport(AppKit)
 import AppKit
 @testable import QuillEditor
+@testable import QuillEditorCore
 import QuillTestFixtures
 
 /// Messung Laden, Tippen und Enter bei vielen Blöcken (Spike-Kriterium 1, ADR-007).

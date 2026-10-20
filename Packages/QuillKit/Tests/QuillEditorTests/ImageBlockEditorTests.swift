@@ -1,11 +1,12 @@
 #if canImport(AppKit)
 import AppKit
 import ImageIO
+@testable import QuillEditor
+@testable import QuillEditorCore
 import QuillModel
 import SwiftData
 import Testing
 import UniformTypeIdentifiers
-@testable import QuillEditor
 
 /// Bild-Blöcke im Editor mit echtem `PageStore` (im Arbeitsspeicher). Testbilder
 /// werden im Test erzeugt; Zwischenablagen sind eigene, nie die allgemeine.

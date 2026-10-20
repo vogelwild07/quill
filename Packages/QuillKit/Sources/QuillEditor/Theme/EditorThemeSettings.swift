@@ -1,6 +1,7 @@
 #if canImport(AppKit)
 import AppKit
 import Observation
+import QuillEditorCore
 
 /// Gewähltes Theme, pro Mac in den Einstellungen (`UserDefaults`), nicht im Store,
 /// in Backups oder im Export (ADR-024).

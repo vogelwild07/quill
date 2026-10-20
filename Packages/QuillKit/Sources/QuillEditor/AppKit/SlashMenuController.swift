@@ -1,6 +1,7 @@
 #if canImport(AppKit)
 import AppKit
 import Observation
+import QuillEditorCore
 import SwiftUI
 
 @MainActor

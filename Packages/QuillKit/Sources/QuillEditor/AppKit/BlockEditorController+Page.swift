@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillEditorCore
 import SwiftUI
 
 /// Einbettung des Editors in eine Seite: Kopf, Fokus, Neuladen.

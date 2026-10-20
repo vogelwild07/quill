@@ -1,6 +1,7 @@
 #if canImport(AppKit)
 import QuillDesign
 import QuillEditor
+import QuillEditorCore
 import SwiftUI
 
 /// Einstellungen (⌘,). Bisher nur „Darstellung“.

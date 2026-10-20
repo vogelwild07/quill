@@ -1,6 +1,7 @@
 #if canImport(AppKit)
 import AppKit
 import QuillDesign
+import QuillEditorCore
 
 /// Fokus-Modus (Phase 18.1, `EditorFocusSettings`): Die Zeile mit dem Cursor bleibt in
 /// der Mitte des Fensters (Schreibmaschinen-Scrollen), alle Blöcke außer denen mit

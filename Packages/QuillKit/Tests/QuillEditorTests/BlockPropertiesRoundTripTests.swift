@@ -1,8 +1,9 @@
 import Foundation
+@testable import QuillEditor
+@testable import QuillEditorCore
 import QuillModel
 import SwiftData
 import Testing
-@testable import QuillEditor
 
 /// Jedes Feld von `BlockProperties` muss jeden Weg überstehen: Store, Snapshot,
 /// Editor, Textspeicher und Zwischenablage. Ein neues Feld braucht in `full` einen
