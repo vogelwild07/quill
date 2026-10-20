@@ -8,7 +8,7 @@
 - Kein `@Attribute(.unique)`
 - Alle Beziehungen optional, mit Inverse
 - Enums als `String`-Rohwert (`kindRaw`), damit unbekannte Werte späterer Versionen nicht crashen
-- Von Anfang an `VersionedSchema` (`SchemaV1`) + `SchemaMigrationPlan`
+- Von Anfang an `VersionedSchema` (`SchemaV1`, seit Phase 11.2 `SchemaV2`) + `SchemaMigrationPlan`
 - Veröffentlichte Versionen sind eingefroren (Fingerabdruck-Test). Neue Version: `SchemaV(n)` + Stufe, `CurrentSchema` umstellen, Test „V(n-1) → V(n)“ in `MigrationTests` (ADR-011)
 
 **Reihenfolge:** CloudKit kennt keine geordneten Beziehungen. Jedes sortierbare Objekt hat einen `sortKey: String` (Fractional Indexing). Verschieben ändert genau ein Objekt → wenige Sync-Konflikte.
@@ -18,6 +18,9 @@
 ```
 Workspace
   id, name = "Mein Workspace", createdAt, updatedAt
+  syncTree: Data? @Attribute(.externalStorage)   (V2: Seitenbaum als Automerge-Dokument)
+  syncDeviceID: UUID?                     (V2: Geräte-ID im Sync-Ordner)
+  syncCursors: Data?                      (V2: gelesene Dateien im Ordner, je Gerät)
   pages: [Page]?                         (cascade)
 
 Page
@@ -26,6 +29,8 @@ Page
   trashedAt: Date?                       (nil = aktiv; Kinder erben Papierkorb logisch)
   kindRaw = "page"                       ("page" | später "database")
   createdAt, updatedAt
+  syncDocument: Data? @Attribute(.externalStorage)   (V2: Blöcke als Automerge-Dokument)
+  isRestored = false                     (V2: vom Sync wiederhergestellt)
   workspace: Workspace?
   parent: Page?          ⇄ children: [Page]?        (cascade)
   blocks: [Block]?                                   (cascade)
@@ -40,6 +45,7 @@ Block
   text = ""                   (Klartext → Suche, Export)
   richText: Data?             (RichText-JSON, nil ohne Formatierung; siehe unten)
   isChecked = false, codeLanguage: String?
+  isRestored = false          (V2, Teil von BlockProperties: vom Sync wiederhergestellt)
   createdAt, updatedAt
   page: Page?
   asset: Asset?                                     (cascade)
@@ -87,6 +93,15 @@ DatabaseView         (später)  id, name, layoutRaw (table|board|calendar), conf
 
 - Store: `~/Library/Containers/io.github.vogelwild07.quill/Data/Library/Application Support/Quill/Store/Quill.store` (plus `-wal`, `-shm`, `.Quill_SUPPORT/` für externe Daten, `Quill.store.version`). Bis Phase 7.1 lagen diese Dateien direkt in `Quill/`; der erste Start einer neueren Version zieht sie nach einem Backup `vor-umzug` um. Gibt es `Store/` schon, kommen Reste im alten Ort in ein Backup `beiseitegelegt` (ADR-019).
 - Backups: daneben in `Backups/`, Regeln siehe ADR-010.
+
+### Migration auf ein neues Schema (seit Phase 11.2, ADR-029)
+
+Öffnet eine neuere Version einen Store mit älterem Schema (oder ohne `Quill.store.version`), fragt Quill zuerst, nach dem Start der App: „Datenbank umstellen?“ mit „Beenden“ (Standard, Return) und „Umstellen“ (nur per Klick).
+
+- „Beenden“: Quill endet ohne Backup und ohne Änderung; der Store bleibt byte-gleich.
+- „Umstellen“: Backup `vor-migration-<alt>-<neu>` (wird nie automatisch gelöscht), dann die Migration. Scheitert das Backup, öffnet Quill nicht.
+- Rückweg: In der neuen Version das Backup „vor Migration“ einspielen; beim Neustart fragt Quill wieder, dort „Beenden“; danach öffnet die ältere Version den Stand aus dem Backup.
+- Test-Stores (`-QuillInMemoryStore`, `-QuillStoreDirectory`) fragen nur mit `-QuillAskBeforeMigration YES`; `-QuillSeedSchemaV1 YES` legt im Test-Ordner einen Store im alten Format an (beides nur Debug).
 
 ### Backup wiederherstellen
 
