@@ -11,7 +11,22 @@ struct Bitmap {
     let cgImage: CGImage
 
     init(_ view: NSView) throws {
-        let rep = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+        try self.init(view, rep: try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds)))
+    }
+
+    /// Mit fester Auflösung in sRGB, unabhängig vom Bildschirm des Testfensters.
+    init(_ view: NSView, scale: Int) throws {
+        let base = try #require(NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: Int(view.bounds.width) * scale, pixelsHigh: Int(view.bounds.height) * scale,
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+            bytesPerRow: 0, bitsPerPixel: 0
+        ))
+        let rep = try #require(base.retagging(with: .sRGB))
+        rep.size = view.bounds.size
+        try self.init(view, rep: rep)
+    }
+
+    private init(_ view: NSView, rep: NSBitmapImageRep) throws {
         view.cacheDisplay(in: view.bounds, to: rep)
         let source = try #require(rep.cgImage)
         let width = source.width, height = source.height

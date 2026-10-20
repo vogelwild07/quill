@@ -40,7 +40,7 @@ struct EditorSnapshotTests {
     }
 
     @Test(arguments: [NSAppearance.Name.aqua, .darkAqua])
-    func handleUsesTertiaryAndOnHoverSecondaryLabel(_ appearance: NSAppearance.Name) throws {
+    func handleIsStrongerOnHover(_ appearance: NSAppearance.Name) throws {
         let handle = BlockHandleView(frame: CGRect(x: 0, y: 0, width: 20, height: 22))
         handle.appearance = NSAppearance(named: appearance)
 
@@ -50,10 +50,12 @@ struct EditorSnapshotTests {
         try hovered.writePNG(named: "handle-hover-\(appearance.rawValue)")
 
         let dark = appearance == .darkAqua
-        // Punkte erscheinen hell auf dunkel bzw. dunkel auf hell …
-        #expect(dark ? normal.strongestDot.brightness > 0.8 : normal.strongestDot.brightness < 0.2)
-        // … und bei Hover deckender.
-        #expect(hovered.strongestDot.alpha > normal.strongestDot.alpha + 0.1)
+        // Punkte erscheinen hell auf dunkel bzw. dunkel auf hell, in Ruhe nur mit 3 : 1
+        // (Kontrast misst `EditorThemeControlTests`) …
+        #expect(dark ? normal.strongestDot.brightness > 0.3 : normal.strongestDot.brightness < 0.7, "\(normal.strongestDot)")
+        // … und bei Hover kräftiger (Rollen `control` und `secondary`).
+        let shift = abs(hovered.strongestDot.brightness - normal.strongestDot.brightness)
+        #expect(shift > 0.1, "Hover \(hovered.strongestDot) gegen \(normal.strongestDot)")
         // Sechs Punkte (⋮⋮), nicht drei Striche (≡).
         #expect(normal.dotCount == 6)
     }

@@ -439,7 +439,7 @@ final class BlockHandleView: NSView, NSDraggingSource {
     weak var textView: BlockTextView?
     var characterOffset = 0
 
-    /// Unter dem Mauszeiger kräftiger (Systemfarben, hell und dunkel).
+    /// Unter dem Mauszeiger kräftiger, in den Farben des Themes.
     var isHovered = false {
         didSet { if isHovered != oldValue { needsDisplay = true } }
     }
@@ -471,7 +471,7 @@ final class BlockHandleView: NSView, NSDraggingSource {
 
     /// ⋮⋮ als 2 × 3 Punkte; SF Symbols hat unter macOS 26 kein passendes Zeichen.
     override func draw(_ dirtyRect: NSRect) {
-        (isHovered ? NSColor.secondaryLabelColor : NSColor.tertiaryLabelColor).setFill()
+        (isHovered ? EditorColor.secondaryLabel : EditorColor.control).setFill()
         let diameter: CGFloat = 3, spacing: CGFloat = 4.5
         let width = diameter + spacing, height = diameter + 2 * spacing
         let origin = CGPoint(x: ((bounds.width - width) / 2).rounded(), y: ((bounds.height - height) / 2).rounded())

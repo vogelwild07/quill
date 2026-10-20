@@ -5,6 +5,8 @@ import Synchronization
 /// Rollen der Theme-Farben im Editor; `EditorColor` liefert je Rolle eine dynamische Farbe.
 enum EditorColorRole: CaseIterable, Sendable {
     case background, text, heading, link, secondary, quoteBar, codeBackground, accent, onAccent, done, selection
+    /// Abgeleitet: Platzhalter der leeren Seite; Ziehgriff, Plus-Knopf und Trennlinie.
+    case placeholder, control
 }
 
 /// Aktuelles Theme für die dynamischen Farben des Editors.
@@ -52,6 +54,9 @@ struct ResolvedPalette: Sendable {
     /// Mindestkontrast von Text zum Hintergrund (WCAG AA bzw. AAA).
     static let minimumContrast = 4.5
     static let minimumHighContrast = 7.0
+    /// Bedienelemente und Linien (WCAG 1.4.11); mit „Kontrast erhöhen“ 4,5 : 1.
+    static let minimumControlContrast = 3.0
+    static let minimumHighControlContrast = 4.5
 
     init(_ palette: EditorPalette, variant: EditorThemeVariant) {
         let background = palette.background.approximation(variant)
@@ -80,6 +85,12 @@ struct ResolvedPalette: Sendable {
         colors[.codeBackground] = palette.codeBackground.nsColor
         colors[.quoteBar] = palette.quoteBar.nsColor
         colors[.accent] = palette.accent.nsColor
+        // Platzhalter und Bedienelemente: Text Richtung Hintergrund, so zurückhaltend
+        // wie möglich, aber über dem Mindestkontrast.
+        let ink = textValues[0].over(background)
+        let controlTarget = variant.isHighContrast ? Self.minimumHighControlContrast : Self.minimumControlContrast
+        colors[.placeholder] = ink.softened(toward: background, minimum: target).nsColor
+        colors[.control] = ink.softened(toward: background, minimum: controlTarget).nsColor
         // Häkchen auf der Akzentfläche: Weiß oder Tinte, je nachdem was stärker absetzt.
         let accent = palette.accent.approximation(variant)
         colors[.onAccent] = (SRGB.white.contrast(to: accent) >= SRGB.ink.contrast(to: accent) ? SRGB.white : SRGB.ink).nsColor
@@ -151,6 +162,19 @@ struct SRGB: Sendable, Equatable {
             step += 0.05
             color = SRGB(red: red + (extreme.red - red) * step, green: green + (extreme.green - green) * step,
                          blue: blue + (extreme.blue - blue) * step, alpha: alpha)
+        }
+        return color
+    }
+
+    /// In Schritten Richtung `background`, solange der Kontrast mit etwas Reserve über
+    /// `minimum` bleibt.
+    func softened(toward background: SRGB, minimum: Double) -> SRGB {
+        var color = self
+        for step in stride(from: 0.05, through: 1, by: 0.05) {
+            let next = SRGB(red: red + (background.red - red) * step, green: green + (background.green - green) * step,
+                            blue: blue + (background.blue - blue) * step, alpha: alpha)
+            guard next.contrast(to: background) >= minimum + 0.1 else { break }
+            color = next
         }
         return color
     }

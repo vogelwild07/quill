@@ -107,6 +107,11 @@ struct EditorThemeContrastTests {
             check("Häkchen", value(.onAccent), on: accent, minimum: 3)
             check("Checkbox", value(.accent), on: background, minimum: 3)
             check("Zitatbalken", value(.quoteBar), on: background, minimum: 3)
+            // Abgeleitete Rollen, auch mit „Kontrast erhöhen“ (gezeichnet: `EditorThemeControlTests`).
+            let controlTarget = variant.isHighContrast ? ResolvedPalette.minimumHighControlContrast : ResolvedPalette.minimumControlContrast
+            check("Platzhalter", value(.placeholder), on: background, minimum: target)
+            check("Griff, Plus, Trennlinie", value(.control), on: background, minimum: controlTarget)
+            check("Plus bei Hover", value(.secondary), on: value(.codeBackground).over(background), minimum: controlTarget)
         }
         return problems
     }

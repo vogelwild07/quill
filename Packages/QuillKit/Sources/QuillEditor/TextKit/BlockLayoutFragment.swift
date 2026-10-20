@@ -204,7 +204,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     /// Das Attachment reserviert nur Platz; TextKit 2 zeichnet sein Bild nicht zuverlässig.
     private func drawDivider(in context: CGContext) {
         let line = textLineFragments.first?.typographicBounds ?? CGRect(x: 0, y: 0, width: 0, height: 20)
-        context.setFillColor(EditorColor.separator.cgColor)
+        context.setFillColor(EditorColor.control.cgColor)
         context.fill(CGRect(x: markerOriginX, y: line.midY.rounded(.down), width: contentMaxX - markerOriginX, height: 1))
     }
 

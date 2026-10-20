@@ -27,7 +27,10 @@ public enum EditorColor {
     static let quoteBar = themed(.quoteBar)
     static let codeBackground = themed(.codeBackground)
     static let selection = themed(.selection)
-    static let separator: PlatformColor = .separatorColor
+    /// Platzhalter der leeren Seite, mindestens 4,5 : 1.
+    static let placeholder = themed(.placeholder)
+    /// Ziehgriff und Plus-Knopf in Ruhe, Trennlinie; mindestens 3 : 1.
+    static let control = themed(.control)
     static let accent = themed(.accent)
     /// Vordergrund auf Akzentfläche (Häkchen in der Checkbox).
     static let onAccent = themed(.onAccent)
@@ -45,7 +48,8 @@ public enum EditorColor {
     static var quoteBar: PlatformColor { .tintColor }
     static var codeBackground: PlatformColor { .quaternarySystemFill }
     static var selection: PlatformColor { .tintColor.withAlphaComponent(0.25) }
-    static var separator: PlatformColor { .separator }
+    static var placeholder: PlatformColor { .placeholderText }
+    static var control: PlatformColor { .tertiaryLabel }
     static var accent: PlatformColor { .tintColor }
     static var onAccent: PlatformColor { .white }
     #endif
