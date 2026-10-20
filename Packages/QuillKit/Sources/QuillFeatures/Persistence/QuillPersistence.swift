@@ -25,6 +25,9 @@ public final class QuillPersistence {
     /// Startargument `-QuillAskBeforeMigration YES`, nur mit `-QuillStoreDirectory`: fragt
     /// auch beim Test-Store vor einer Migration, wie beim echten Store.
     public static let askBeforeMigrationArgument = "QuillAskBeforeMigration"
+    /// Startargument `-QuillSyncTestFolder <Name>`, nur mit einem Test-Store: „Ordner
+    /// wählen“ nimmt ohne Dateiauswahl diesen Unterordner des temporären Ordners der App.
+    public static let syncTestFolderArgument = "QuillSyncTestFolder"
     #endif
 
     public enum OpenError: Error, Equatable {
@@ -90,6 +93,15 @@ public final class QuillPersistence {
     public let container: ModelContainer
     public let store: PageStore
     public let isInMemory: Bool
+    /// Ordner-Sync (ADR-029); aus, bis der Nutzer ihn einschaltet.
+    public private(set) lazy var sync = SyncController(
+        store: store, settings: SyncSettings(storage: syncStorage),
+        backupBeforeSync: { [unowned self] in try await self.backupBeforeSync() }
+    )
+    /// Nur für UI-Tests: Ordner statt der Dateiauswahl (`syncTestFolderArgument`).
+    public let syncTestFolder: URL?
+    private let syncStorage: any SyncSettingsStorage
+    private var syncReconnectPromptClaimed = false
     private let backup: StoreBackup?
     /// Was beim Start vorbereitet wurde (Wiederherstellen, Beiseitelegen), bis es
     /// angezeigt wurde.
@@ -101,9 +113,14 @@ public final class QuillPersistence {
     public nonisolated static let trashRetentionDays = 30
     public nonisolated static let trashRetention = TimeInterval(trashRetentionDays * 24 * 60 * 60)
 
-    init(container: ModelContainer, backup: StoreBackup?, preparation: StorePreparation? = nil) {
+    init(
+        container: ModelContainer, backup: StoreBackup?, preparation: StorePreparation? = nil,
+        syncStorage: any SyncSettingsStorage = MemorySyncSettingsStorage(), syncTestFolder: URL? = nil
+    ) {
         self.container = container
         self.store = PageStore(modelContainer: container)
+        self.syncStorage = syncStorage
+        self.syncTestFolder = syncTestFolder
         self.backup = backup
         self.isInMemory = backup == nil
         self.preparation = preparation
@@ -122,7 +139,10 @@ public final class QuillPersistence {
         #if DEBUG
         if testStore == .inMemory {
             logger.notice("Store nur im Arbeitsspeicher (\(inMemoryArgument, privacy: .public))")
-            return QuillPersistence(container: try QuillStore.makeInMemoryContainer(), backup: nil)
+            return QuillPersistence(
+                container: try QuillStore.makeInMemoryContainer(), backup: nil,
+                syncTestFolder: syncTestFolder(arguments: arguments)
+            )
         }
         #endif
 
@@ -165,10 +185,44 @@ public final class QuillPersistence {
         } catch {
             logger.error("Schema-Version nicht gespeichert: \(error, privacy: .public)")
         }
-        let persistence = QuillPersistence(container: container, backup: backup, preparation: preparation)
+        let persistence = QuillPersistence(
+            container: container, backup: backup, preparation: preparation,
+            syncStorage: syncStorage(testStore), syncTestFolder: testStore == nil ? nil : syncTestFolder(arguments: arguments)
+        )
         persistence.removeOrphanedAssets()
         persistence.scheduleTrashAutoEmpty()
         return persistence
+    }
+
+    /// Nur ein Fenster fragt nach einem eingespielten Backup, wie der Sync weitergeht.
+    func claimSyncReconnectPrompt() -> Bool {
+        guard !syncReconnectPromptClaimed else { return false }
+        syncReconnectPromptClaimed = true
+        return true
+    }
+
+    /// Einstellungen des Sync: beim echten Store in den Einstellungen des Macs, bei
+    /// einem Test-Store in dessen Ordner.
+    private static func syncStorage(_ testStore: TestStore?) -> any SyncSettingsStorage {
+        #if DEBUG
+        if case .directory(let name) = testStore {
+            return FileSyncSettingsStorage(url: FileManager.default.temporaryDirectory.appending(path: "\(name)/sync-settings.json"))
+        }
+        #endif
+        return UserDefaults.standard
+    }
+
+    private static func syncTestFolder(arguments: [String]) -> URL? {
+        #if DEBUG
+        guard let index = arguments.firstIndex(of: "-\(syncTestFolderArgument)"), arguments.indices.contains(index + 1) else { return nil }
+        let name = arguments[index + 1]
+        guard !name.isEmpty, !name.contains("/"), !name.hasPrefix(".") else { return nil }
+        let folder = FileManager.default.temporaryDirectory.appending(path: name, directoryHint: .isDirectory)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        return folder
+        #else
+        return nil
+        #endif
     }
 
     /// Echter Store, oder für UI-Tests einer im temporären Ordner der App.
@@ -213,6 +267,7 @@ public final class QuillPersistence {
         guard let backup else { return }
         do {
             guard try backup.withdrawRestoreRequest() else { return }
+            sync.cancelTurnOffForRestore()
             notify(
                 String(localized: "Wiederherstellen abgebrochen", bundle: .module),
                 String(localized: "Quill wurde nicht beendet. Das Backup ist nicht mehr vorgemerkt, der aktuelle Stand bleibt. Wähle es bei Bedarf erneut über Ablage › Backup wiederherstellen …", bundle: .module)

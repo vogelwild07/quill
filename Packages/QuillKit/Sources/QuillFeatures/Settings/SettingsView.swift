@@ -4,17 +4,58 @@ import QuillEditor
 import QuillEditorCore
 import SwiftUI
 
-/// Einstellungen (⌘,). Bisher nur „Darstellung“.
+/// Einstellungen (⌘,): Darstellung, Sync, Lizenzen.
 public struct SettingsView: View {
-    public init() {}
+    private enum Pane: Hashable { case appearance, sync, licenses }
+
+    private let persistence: QuillPersistence?
+    /// Eigene Auswahl: Die Einstellungen öffnen nach jedem Start mit „Darstellung“.
+    @State private var pane = Pane.appearance
+
+    public init(persistence: QuillPersistence?) {
+        self.persistence = persistence
+    }
 
     public var body: some View {
-        TabView {
-            Tab(String(localized: "Darstellung", bundle: .module), systemImage: "paintpalette") {
+        TabView(selection: $pane) {
+            Tab(String(localized: "Darstellung", bundle: .module), systemImage: "paintpalette", value: .appearance) {
                 AppearanceSettingsView()
+            }
+            if let persistence {
+                Tab(String(localized: "Sync", bundle: .module), systemImage: "arrow.triangle.2.circlepath", value: .sync) {
+                    SyncSettingsView(sync: persistence.sync, testFolder: persistence.syncTestFolder)
+                        .frame(minHeight: 420)
+                }
+            }
+            Tab(String(localized: "Lizenzen", bundle: .module), systemImage: "doc.text", value: .licenses) {
+                LicensesView()
             }
         }
         .frame(width: 640)
+    }
+}
+
+/// Lizenztexte der Bausteine anderer, unverändert und daher nicht übersetzt.
+struct LicensesView: View {
+    private static let text: String = Bundle.module.url(forResource: "ThirdPartyLicenses", withExtension: "txt")
+        .flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Quill steht unter der GPL-3.0-or-later. Es enthält diese Bausteine anderer:", bundle: .module)
+                .fixedSize(horizontal: false, vertical: true)
+            ScrollView {
+                Text(verbatim: Self.text)
+                    .font(.system(size: 11, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(10)
+            }
+            .background(.background.secondary, in: .rect(cornerRadius: QuillDesign.Radius.large))
+            .accessibilityIdentifier("settings.licenses")
+        }
+        .padding(20)
+        .frame(height: 420)
     }
 }
 

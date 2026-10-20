@@ -26,16 +26,28 @@
     "Abbrechen" : {
 
     },
+    "Abgeglichen %@" : {
+
+    },
+    "Abgleich gescheitert: %@" : {
+
+    },
     "Abhaken" : {
 
     },
     "Alte Dateien beiseitegelegt" : {
 
     },
+    "Aus" : {
+
+    },
     "Aus Favoriten entfernen" : {
 
     },
     "Ausblenden" : {
+
+    },
+    "Ausschalten" : {
 
     },
     "Backup bleibt vorgemerkt" : {
@@ -77,6 +89,9 @@
     "Beiseitegelegt (alter Speicherort)" : {
 
     },
+    "Bereit" : {
+
+    },
     "Bild fehlt" : {
 
     },
@@ -104,6 +119,9 @@
     "Das Backup stammt von einer neueren Quill-Version und kann hier nicht eingespielt werden." : {
 
     },
+    "Das ist der bisherige Ordner. Zum Neubeginnen wähle einen anderen, leeren Ordner; mit dem bisherigen führt Quill zusammen." : {
+
+    },
     "Das letzte Wiederherstellen brach vor dem Tausch ab. Der bisherige Stand ist unverändert und liegt in „Application Support/Quill/Store“." : {
 
     },
@@ -116,7 +134,19 @@
     "Datenbank umstellen?" : {
 
     },
+    "Den bisherigen Ordner gibt es nicht mehr oder Quill darf ihn nicht öffnen." : {
+
+    },
+    "Der Ordner stammt von einer neueren Quill-Version. Bitte Quill aktualisieren." : {
+
+    },
     "Der Papierkorb ist leer" : {
+
+    },
+    "Der Sync bleibt aus. Einschalten kannst du ihn jederzeit in den Einstellungen." : {
+
+    },
+    "Der Sync wurde nicht eingeschaltet: %@" : {
 
     },
     "Der vorherige Stand liegt als Backup „Vor dem Wiederherstellen“ bereit (Ablage › Backup wiederherstellen …), Ordner „Application Support/Quill/%@“." : {
@@ -141,6 +171,9 @@
 
     },
     "Diese Version von Quill braucht ein neues Format für deine Daten. Vorher legt Quill ein Backup an. Ältere Versionen von Quill können die Daten danach nicht mehr öffnen." : {
+
+    },
+    "Du wählst einen leeren Ordner; der Stand aus dem Backup kommt dorthin. Der bisherige Ordner bleibt unverändert, andere Macs müssen den neuen Ordner wählen." : {
 
     },
     "Durchgestrichen" : {
@@ -191,7 +224,16 @@
     "Fokus-Modus" : {
 
     },
+    "Fortschritt des Abgleichs" : {
+
+    },
+    "Für das Backup hat Quill den Sync ausgeschaltet. Wie soll es weitergehen?" : {
+
+    },
     "Gelöschte Seiten bleiben hier 30 Tage und lassen sich wiederherstellen." : {
+
+    },
+    "Gleicht ab …" : {
 
     },
     "Gute Werkzeuge treten zurück." : {
@@ -209,7 +251,16 @@
     "Im Finder zeigen" : {
 
     },
+    "Im Ordner fehlt „Quill/quill.json“. Wurde der Ordner verschoben oder gelöscht?" : {
+
+    },
+    "Im Ordner liegen schon Quill-Daten, etwa von einem anderen Mac. Quill führt sie erst zusammen, wenn du zustimmst; geschrieben wurde noch nichts." : {
+
+    },
     "Im alten Speicherort lagen noch Datenbankdateien, obwohl es „Store“ schon gab. Quill hat sie weder verwendet noch überschrieben, sondern nach „Application Support/Quill/%@“ gelegt. Sie erscheinen unter Ablage › Backup wiederherstellen … als „Beiseitegelegt“." : {
+
+    },
+    "Im gewählten Ordner liegen schon Quill-Daten. Zum Neubeginnen braucht Quill einen leeren Ordner." : {
 
     },
     "In den Papierkorb legen" : {
@@ -222,6 +273,9 @@
 
     },
     "Inhalt" : {
+
+    },
+    "Jetzt abgleichen" : {
 
     },
     "Kein Seitentitel und kein Text passt zur Suche." : {
@@ -239,10 +293,16 @@
     "Kursiv" : {
 
     },
+    "Letzter Abgleich" : {
+
+    },
     "Link" : {
 
     },
     "Link …" : {
+
+    },
+    "Lizenzen" : {
 
     },
     "Löschen fehlgeschlagen" : {
@@ -251,7 +311,16 @@
     "Markierter Text" : {
 
     },
+    "Mit dem bisherigen Ordner „%@“. Neuere Stände aus dem Ordner kommen dabei zurück, auch solche, die das Backup zurückgesetzt hat." : {
+
+    },
     "Mit ⌘N legst du die erste Seite an." : {
+
+    },
+    "Neu beginnen mit neuem Ordner" : {
+
+    },
+    "Neu beginnen …" : {
 
     },
     "Neue Seite" : {
@@ -275,6 +344,9 @@
     "Noch keine Seiten" : {
 
     },
+    "Noch nicht geladen" : {
+
+    },
     "Notizen, die bleiben, und ein %@" : {
 
     },
@@ -290,7 +362,13 @@
     "Ohne Titel" : {
 
     },
+    "Ordner" : {
+
+    },
     "Ordner für den Export von „%@“ wählen" : {
+
+    },
+    "Ordner wählen und einschalten …" : {
 
     },
     "Ordner: %@" : {
@@ -305,10 +383,22 @@
     "Papierkorb leeren?" : {
 
     },
+    "Pausiert" : {
+
+    },
+    "Quill gleicht deine Seiten über einen Ordner ab, zum Beispiel in iCloud Drive. Jeder Mac schreibt dort nur eigene Dateien, nichts wird überschrieben." : {
+
+    },
     "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
 
     },
+    "Quill schreibt nichts in den Ordner, bis du fortsetzt, auch nicht nach einem Neustart." : {
+
+    },
     "Quill sichert die Daten beim Start und beim Beenden." : {
+
+    },
+    "Quill steht unter der GPL-3.0-or-later. Es enthält diese Bausteine anderer:" : {
 
     },
     "Quill wird danach beendet. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt als Backup „Vor dem Wiederherstellen“ erhalten." : {
@@ -342,6 +432,12 @@
 
     },
     "Seiten und Inhalte durchsuchen" : {
+
+    },
+    "Seiten und Ordner bleiben dabei unverändert." : {
+
+    },
+    "Seiten und Ordner bleiben, wie sie sind. Wählst du denselben Ordner später wieder, führt Quill zusammen." : {
 
     },
     "Seiten werden nach %lld Tagen endgültig gelöscht." : {
@@ -387,7 +483,37 @@
     "Sperre nicht möglich: %@" : {
 
     },
+    "Später" : {
+
+    },
+    "Status" : {
+
+    },
     "Suchen" : {
+
+    },
+    "Sync" : {
+
+    },
+    "Sync ausschalten" : {
+
+    },
+    "Sync ausschalten …" : {
+
+    },
+    "Sync ausschalten?" : {
+
+    },
+    "Sync ist an" : {
+
+    },
+    "Sync ist aus" : {
+
+    },
+    "Sync nach dem Backup" : {
+
+    },
+    "Sync pausieren" : {
 
     },
     "Theme" : {
@@ -414,6 +540,15 @@
     "Ungesicherte Änderungen werden vorher gespeichert." : {
 
     },
+    "Ungesicherte Änderungen werden vorher gespeichert. Der Sync wird dafür ausgeschaltet; nach dem Neustart fragt Quill, wie es weitergeht." : {
+
+    },
+    "Unlesbare Dateien" : {
+
+    },
+    "Unlesbare und noch nicht geladene Dateien bleiben unverändert liegen; Quill versucht es bei jedem Abgleich wieder." : {
+
+    },
     "Unterseiten" : {
 
     },
@@ -429,6 +564,9 @@
     "Vor dem Einschalten des Sync" : {
 
     },
+    "Vor dem Einschalten legt Quill ein Backup an. Der Sync ist neu und noch eine Beta." : {
+
+    },
     "Vor dem Umzug des Speicherorts" : {
 
     },
@@ -442,6 +580,12 @@
 
     },
     "Vorschau: %@" : {
+
+    },
+    "Wartet auf deine Zustimmung" : {
+
+    },
+    "Wartet, bis der Ordner geladen ist." : {
 
     },
     "Wenn du Quill jetzt beendest, gehen diese Änderungen verloren. Solange Quill geöffnet bleibt, wird das Speichern weiter versucht.\n\n%@" : {
@@ -465,6 +609,9 @@
     "Wähle links eine Seite oder lege eine neue an." : {
 
     },
+    "Wählst du den bisherigen Ordner „%@“ wieder, führt Quill zusammen. Mit einem anderen Ordner beginnt es dort neu." : {
+
+    },
     "Zu Favoriten hinzufügen" : {
 
     },
@@ -472,6 +619,15 @@
 
     },
     "Zuletzt bearbeitet" : {
+
+    },
+    "Zusammenführen" : {
+
+    },
+    "Zwei Werte für ein Feld" : {
+
+    },
+    "nicht erreichbar" : {
 
     },
     "unbekannt" : {
@@ -487,6 +643,9 @@
 
     },
     "„%@“ exportiert" : {
+
+    },
+    "„Quill/quill.json“ ist unlesbar." : {
 
     },
     "↑↓ wählen   ↩ öffnen   ⌘↩ in neuem Tab   ⎋ schließen" : {
