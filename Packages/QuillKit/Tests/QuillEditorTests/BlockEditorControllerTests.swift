@@ -184,6 +184,21 @@ struct TypingTests {
         #expect(h.texts == ["fremd"])
         h.expectConsistent()
     }
+
+    /// Neuladen nach dem Zusammenführen (Sync): Kommt vor dem Cursor Text hinzu, bleibt
+    /// er hinter dem, was der Nutzer getippt hat, auch in späteren Blöcken.
+    @Test func reloadKeepsTheCaretBehindTheTypedText() {
+        let first = EditorBlock(text: "oben"), second = EditorBlock(text: "Mitte BBB")
+        let h = Harness([first, second])
+        let end = "oben\nMitte BBB".utf16.count
+        h.textView.setSelectedRange(NSRange(location: end, length: 0))
+        var top = first, merged = second
+        top.text = "ganz oben"
+        merged.text = "AAA Mitte BBB"
+        #expect(h.editor.reload(EditorDocument(blocks: [top, merged])))
+        #expect(h.textView.selectedRange() == NSRange(location: "ganz oben\nAAA Mitte BBB".utf16.count, length: 0))
+        h.expectConsistent()
+    }
 }
 
 @MainActor

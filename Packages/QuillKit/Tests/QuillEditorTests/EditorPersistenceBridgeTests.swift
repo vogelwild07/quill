@@ -258,6 +258,120 @@ struct EditorPersistenceBridgeTests {
         #expect(try storedBlocks().map(\.text) == ["eins aus A", "zwei aus B"])
         #expect(received?.blocks.map(\.text) == ["eins aus A", "zwei aus B"])
     }
+
+    // MARK: Review Phase 11: Tippen während eines Abgleichs
+
+    /// Schreibt den Block wie der Sync: direkt in den Store, ohne diese Bridge.
+    private func writeFromSync(_ block: EditorBlock) async throws {
+        try await store.applyEdits(pageID, BlockEdits(upserts: [block.snapshot]))
+    }
+
+    /// Der Sync schreibt in den Block, in dem der Nutzer gerade tippt: Beim Speichern
+    /// führt die Bridge zusammen, statt den Text aus dem Sync zu überschreiben.
+    @Test func storeChangedWhileTypingIsMergedNotOverwritten() async throws {
+        let block = EditorBlock(text: "Mitte")
+        let bridge = bridge()
+        _ = try await bridge.load()
+        bridge.documentDidChange(EditorDocument(blocks: [block]))
+        await bridge.flush()
+
+        var received: EditorDocument?
+        bridge.onExternalChange = { received = $0; return true }
+        var typed = block
+        typed.text = "Mitte BBB"
+        bridge.documentDidChange(EditorDocument(blocks: [typed]))
+        var fromSync = block
+        fromSync.text = "AAA Mitte"
+        try await writeFromSync(fromSync)
+
+        #expect(await bridge.flush())
+        #expect(try storedBlocks().map(\.text) == ["AAA Mitte BBB"])
+        #expect(received?.blocks.map(\.text) == ["AAA Mitte BBB"])
+        #expect(!bridge.hasUnsavedChanges)
+
+        // Danach normal weiter: nur die neue Eingabe wird geschrieben.
+        typed.text = "AAA Mitte BBB!"
+        bridge.documentDidChange(EditorDocument(blocks: [typed]))
+        #expect(await bridge.flush())
+        #expect(try storedBlocks().map(\.text) == ["AAA Mitte BBB!"])
+    }
+
+    /// Lehnt der Editor das Zusammengeführte ab (markierter Text), speichert die Bridge
+    /// nichts und versucht es später; der Text aus dem Sync bleibt im Store.
+    @Test func mergeWaitsWhileTheEditorDeclines() async throws {
+        let block = EditorBlock(text: "Mitte")
+        let bridge = EditorPersistenceBridge(pageID: pageID, store: store, delay: .seconds(60), retryDelay: .seconds(60))
+        _ = try await bridge.load()
+        bridge.documentDidChange(EditorDocument(blocks: [block]))
+        await bridge.flush()
+
+        var accepts = false
+        bridge.onExternalChange = { _ in accepts }
+        var typed = block
+        typed.text = "Mitte BBB"
+        bridge.documentDidChange(EditorDocument(blocks: [typed]))
+        var fromSync = block
+        fromSync.text = "AAA Mitte"
+        try await writeFromSync(fromSync)
+
+        #expect(await !bridge.flush())
+        #expect(try storedBlocks().map(\.text) == ["AAA Mitte"])
+        #expect(bridge.hasUnsavedChanges && bridge.lastError == nil)
+
+        accepts = true
+        #expect(await bridge.flush())
+        #expect(try storedBlocks().map(\.text) == ["AAA Mitte BBB"])
+    }
+
+    /// Tippt der Nutzer weiter, während die Bridge auf den Store wartet, geht diese
+    /// Eingabe ins Zusammenführen ein und nicht verloren.
+    @Test func typingWhileMergingIsKept() async throws {
+        let block = EditorBlock(text: "Mitte")
+        let bridge = bridge()
+        _ = try await bridge.load()
+        bridge.documentDidChange(EditorDocument(blocks: [block]))
+        await bridge.flush()
+        var received: EditorDocument?
+        bridge.onExternalChange = { received = $0; return true }
+
+        var typed = block
+        typed.text = "Mitte B"
+        bridge.documentDidChange(EditorDocument(blocks: [typed]))
+        var fromSync = block
+        fromSync.text = "AAA Mitte"
+        try await writeFromSync(fromSync)
+        let saving = Task { await bridge.flush() }
+        // Sobald gespeichert wird, steht der Stand fest, mit dem die Bridge begann;
+        // der Nutzer tippt weiter.
+        while !bridge.isSaving { await Task.yield() }
+        typed.text = "Mitte BBB"
+        bridge.documentDidChange(EditorDocument(blocks: [typed]))
+        _ = await saving.value
+        #expect(await bridge.flush())
+        #expect(try storedBlocks().map(\.text) == ["AAA Mitte BBB"])
+        #expect(received != nil)
+    }
+
+    /// Gelöscht im Editor, bearbeitet im Store: Der Block bleibt, markiert.
+    @Test func blockDeletedWhileTheStoreEditedItStays() async throws {
+        let keep = EditorBlock(text: "bleibt")
+        let contested = EditorBlock(text: "umstritten")
+        let bridge = bridge()
+        _ = try await bridge.load()
+        bridge.documentDidChange(EditorDocument(blocks: [keep, contested]))
+        await bridge.flush()
+        bridge.onExternalChange = { _ in true }
+
+        bridge.documentDidChange(EditorDocument(blocks: [keep]))
+        var fromSync = contested
+        fromSync.text = "umstritten, bearbeitet"
+        try await writeFromSync(fromSync)
+        #expect(await bridge.flush())
+
+        let stored = try storedBlocks()
+        #expect(stored.map(\.text) == ["bleibt", "umstritten, bearbeitet"])
+        #expect(stored.map(\.properties.isRestored) == [false, true])
+    }
 }
 
 @MainActor

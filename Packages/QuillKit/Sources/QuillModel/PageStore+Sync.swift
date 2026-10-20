@@ -183,14 +183,6 @@ extension PageStore {
         return page.updatedAt
     }
 
-    /// Markiert eine Seite als vom Sync wiederhergestellt oder nimmt die Marke weg.
-    public func setRestored(_ pageID: UUID, _ isRestored: Bool) throws {
-        let page = try fetchPage(pageID)
-        guard page.isRestored != isRestored else { return }
-        page.isRestored = isRestored
-        try save()
-    }
-
     public func hasAsset(_ id: UUID) throws -> Bool {
         var descriptor = FetchDescriptor<Asset>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1

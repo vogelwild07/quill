@@ -32,8 +32,7 @@ struct SyncSettingsView: View {
                 offSection
             }
             if let errorMessage {
-                Label(errorMessage, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
+                ProblemLabel(message: errorMessage)
                     .accessibilityIdentifier("sync.error")
             }
         }
@@ -88,8 +87,11 @@ struct SyncSettingsView: View {
                     .textSelection(.enabled)
             }
             LabeledContent(String(localized: "Status", bundle: .module)) {
-                SyncStatusText(sync: sync)
-                    .accessibilityIdentifier("sync.status")
+                HStack(spacing: 4) {
+                    if case .failed = sync.status { ProblemSymbol() }
+                    SyncStatusText(sync: sync)
+                        .accessibilityIdentifier("sync.status")
+                }
             }
             if case .syncing(let progress) = sync.status, progress.total > 0 {
                 ProgressView(value: Double(progress.done), total: Double(progress.total))
@@ -221,8 +223,8 @@ struct SyncStatusText: View {
         case .needsConfirmation:
             Text("Wartet auf deine Zustimmung", bundle: .module)
         case .failed(let message):
+            // Das Warnsymbol setzt, wer den Status zeigt (Sidebar, Einstellungen).
             Text(message)
-                .foregroundStyle(.red)
         }
     }
 }

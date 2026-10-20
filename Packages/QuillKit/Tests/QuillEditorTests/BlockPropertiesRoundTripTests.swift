@@ -2,16 +2,18 @@ import Foundation
 @testable import QuillEditor
 @testable import QuillEditorCore
 import QuillModel
+import QuillTestFixtures
 import SwiftData
 import Testing
 
 /// Jedes Feld von `BlockProperties` muss jeden Weg überstehen: Store, Snapshot,
-/// Editor, Textspeicher und Zwischenablage. Ein neues Feld braucht in `full` einen
-/// Wert, der vom Standard abweicht, sonst schlägt `fixtureSetsEveryField` fehl.
+/// Editor, Textspeicher und Zwischenablage; den Sync prüft `SyncBlockPropertiesTests`.
+/// Ein neues Feld braucht in `SampleDocuments.fullProperties` einen Wert, der vom
+/// Standard abweicht, sonst schlägt `fixtureSetsEveryField` fehl.
 @MainActor
 @Suite("BlockProperties: Vollständigkeit", .serialized)
 struct BlockPropertiesRoundTripTests {
-    static let full = BlockProperties(indent: 2, isChecked: true, codeLanguage: "swift", assetID: UUID(), isRestored: true)
+    static let full = SampleDocuments.fullProperties
 
     @Test func fixtureSetsEveryField() throws {
         let defaults = Dictionary(uniqueKeysWithValues: Mirror(reflecting: BlockProperties()).children.map {

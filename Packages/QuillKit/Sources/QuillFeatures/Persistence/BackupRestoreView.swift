@@ -57,8 +57,7 @@ struct BackupRestoreView: View {
             }
 
             if let errorMessage {
-                Label(errorMessage, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
+                ProblemLabel(message: errorMessage)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("restore.error")
             }
@@ -105,10 +104,8 @@ struct BackupRestoreView: View {
         errorMessage = nil
         Task {
             do {
+                // Schaltet den Sync vorher aus (ADR-029); bricht das Beenden ab, läuft er weiter.
                 try await persistence.requestRestore(entry)
-                // Sonst führte der Abgleich den eingespielten Stand gleich wieder mit dem
-                // Ordner zusammen (ADR-029); bricht das Beenden ab, läuft er weiter.
-                persistence.sync.turnOffForRestore()
                 requested()
             } catch {
                 errorMessage = BackupLabel.message(for: error)

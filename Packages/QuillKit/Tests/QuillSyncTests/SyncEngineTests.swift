@@ -198,9 +198,15 @@ struct SyncEngineTests {
         let titleConflict = try #require(report.conflicts[SyncReport.treeID]?.first)
         #expect(titleConflict.objectID == page && titleConflict.field == "title")
         #expect(Set(titleConflict.values) == ["Notiz A", "Notiz B"])
-        // Bis der Nutzer wählt, bleibt der Konflikt bei jedem Abgleich bestehen.
-        let again = try await a.sync()
-        #expect(again.conflicts[page]?.first?.values == blockConflict.values)
+        // Bis der Nutzer wählt, bleibt der Konflikt bei jedem Abgleich bestehen, auch
+        // wenn beide Geräte ihren Stand danach mehrmals exportieren.
+        for _ in 0..<3 {
+            for device in [a, b] {
+                let again = try await device.sync()
+                #expect(Set(again.conflicts[page]?.first?.values ?? []) == Set(blockConflict.values), "\(device.name)")
+                #expect(Set(again.conflicts[SyncReport.treeID]?.first?.values ?? []) == ["Notiz A", "Notiz B"], "\(device.name)")
+            }
+        }
     }
 
     @Test func unreadableFileIsQuarantinedAndLeftUntouched() async throws {

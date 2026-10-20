@@ -12,9 +12,12 @@ import QuillModel
 ///   Abstand (`retryDelay` verdoppelt bis `maxRetryDelay`). Nichts wird verworfen.
 /// - Mehrere Fenster mit derselben Seite: Nach dem Speichern meldet die Bridge das
 ///   (`didSave`). Andere Bridges derselben Seite ohne offene Änderungen laden neu.
-///   Bearbeiten beide, gewinnt pro Block die letzte Speicherung (bewusste
-///   Vereinfachung bis zum CloudKit-Sync). `load()` speichert vorher offene
-///   Änderungen anderer Bridges derselben Seite, z. B. einer gerade geschlossenen.
+///   `load()` speichert vorher offene Änderungen anderer Bridges derselben Seite,
+///   z. B. einer gerade geschlossenen.
+/// - Gespeichert wird nur, wenn der Store noch dem Stand entspricht, von dem der
+///   Editor ausging. Hat inzwischen der Sync oder ein anderes Fenster geschrieben,
+///   führt die Bridge je Block zusammen (`BlockMerge`), gibt das Ergebnis dem Editor
+///   und speichert dann; so überschreibt Tippen während eines Abgleichs nichts.
 @MainActor
 @Observable
 public final class EditorPersistenceBridge {
@@ -29,6 +32,8 @@ public final class EditorPersistenceBridge {
     /// Gespeicherter Stand aus Sicht dieses Editors.
     @ObservationIgnored private var baseline: [UUID: EditorBlock] = [:]
     @ObservationIgnored private var baselineOrder: [UUID] = []
+    /// Die Blöcke im Store, auf denen `baseline` beruht; Speichern erwartet sie.
+    @ObservationIgnored private var stored: [BlockSnapshot] = []
     /// Neuester, noch nicht gespeicherter Stand.
     @ObservationIgnored private var pending: EditorDocument?
     @ObservationIgnored private var debounceTask: Task<Void, Never>?
@@ -71,6 +76,9 @@ public final class EditorPersistenceBridge {
 
     public var hasUnsavedChanges: Bool { pending != nil || saving != nil }
 
+    /// Ein Speichervorgang läuft (Tests).
+    var isSaving: Bool { saving != nil }
+
     // MARK: Alle Editoren
 
     @ObservationIgnored private static let live = NSHashTable<EditorPersistenceBridge>.weakObjects()
@@ -98,14 +106,10 @@ public final class EditorPersistenceBridge {
         for other in Self.live.allObjects where other !== self && other.pageID == pageID && other.hasUnsavedChanges {
             await other.flush()
         }
-        let blocks = try await storedBlocks()
-        setBaseline(blocks)
+        let snapshots = try await store.blocks(of: pageID)
+        let blocks = snapshots.map(EditorBlock.init(snapshot:))
+        setBaseline(blocks, stored: snapshots)
         return EditorDocument(blocks: blocks)
-    }
-
-    /// Blöcke der Seite, wie sie im Store stehen.
-    private func storedBlocks() async throws -> [EditorBlock] {
-        try await store.blocks(of: pageID).map(EditorBlock.init(snapshot:))
     }
 
     /// Nach jeder Änderung im Editor aufrufen; speichert entprellt.
@@ -182,15 +186,41 @@ public final class EditorPersistenceBridge {
         return edits
     }
 
+    /// Runden aus Zusammenführen und Speichern, bevor ein späterer Versuch übernimmt
+    /// (der Store ändert sich dann gerade laufend).
+    private static let maxMergeRounds = 3
+
     private func save(_ document: EditorDocument) async -> Bool {
-        let edits = edits(for: document)
-        guard !edits.isEmpty else { return true }
+        var document = document
         do {
-            try await store.applyEdits(pageID, edits)
-            lastError = nil
-            setBaseline(document.blocks)
-            NotificationCenter.default.post(name: Self.didSave, object: self, userInfo: ["pageID": pageID])
-            return true
+            for _ in 0..<Self.maxMergeRounds {
+                let edits = edits(for: document)
+                guard !edits.isEmpty else { return true }
+                if let saved = try await store.applyEdits(pageID, edits, expected: stored) {
+                    lastError = nil
+                    setBaseline(document.blocks, stored: saved)
+                    NotificationCenter.default.post(name: Self.didSave, object: self, userInfo: ["pageID": pageID])
+                    return true
+                }
+                // Inzwischen hat jemand anderes geschrieben: zusammenführen, dann erneut.
+                let snapshots = try await store.blocks(of: pageID)
+                let remote = snapshots.map(EditorBlock.init(snapshot:))
+                // Was der Nutzer während des Wartens getippt hat, ist neuer als `document`.
+                let local = pending ?? document
+                let merged = EditorDocument(
+                    blocks: BlockMerge.merge(base: baselineOrder.compactMap { baseline[$0] }, local: local.blocks, remote: remote)
+                )
+                if merged != local, onExternalChange?(merged) == false {
+                    // Markierter Text (IME): erst danach, sonst ginge der fremde Stand verloren.
+                    if pending == nil { pending = local }
+                    return false
+                }
+                pending = nil
+                setBaseline(remote, stored: snapshots)
+                document = merged
+            }
+            if pending == nil { pending = document }
+            return false
         } catch {
             lastError = error
             // Neuere Änderungen enthalten diese mit, weil gegen `baseline` verglichen wird.
@@ -199,9 +229,10 @@ public final class EditorPersistenceBridge {
         }
     }
 
-    private func setBaseline(_ blocks: [EditorBlock]) {
+    private func setBaseline(_ blocks: [EditorBlock], stored snapshots: [BlockSnapshot]) {
         baseline = Dictionary(blocks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         baselineOrder = blocks.map(\.id)
+        stored = snapshots
     }
 
     // MARK: Andere Fenster
@@ -221,15 +252,16 @@ public final class EditorPersistenceBridge {
     /// Lädt neu, wenn dieser Editor keine offenen Änderungen hat.
     func reloadIfUnchanged() async {
         guard !hasUnsavedChanges, let onExternalChange,
-              let blocks = try? await storedBlocks(),
+              let snapshots = try? await store.blocks(of: pageID),
               !hasUnsavedChanges else { return }
+        let blocks = snapshots.map(EditorBlock.init(snapshot:))
         // Lehnt der Editor ab, bleibt der alte Stand die Vergleichsbasis: Sonst würden
         // seine veralteten Blöcke beim nächsten Speichern als Änderung gelten.
         guard onExternalChange(EditorDocument(blocks: blocks)) else {
             needsReload = true
             return
         }
-        setBaseline(blocks)
+        setBaseline(blocks, stored: snapshots)
     }
 }
 

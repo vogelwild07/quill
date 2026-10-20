@@ -143,8 +143,9 @@ public class SyncDocument {
     }
 
     /// Setzt ein Feld, nur wenn es sich ändert; `nil` entfernt es. `true`, wenn geändert.
-    /// Gibt es mehrere Werte (Konflikt), wird immer geschrieben: Das löst ihn auf, auch
-    /// wenn der gewählte Wert der ist, den Automerge gerade vorne zeigt.
+    /// Ein Konflikt (mehrere Werte) bleibt bestehen, solange der Wert gleich dem ist,
+    /// den Automerge vorne zeigt: Der Store hat ihn nur übernommen, gewählt hat der
+    /// Nutzer nichts (ADR-026, „bis dahin bleiben beide gespeichert“).
     @discardableResult
     func set(_ map: ObjId, _ key: String, _ value: ScalarValue?, current: Value?) throws -> Bool {
         switch (value, current) {
@@ -154,9 +155,7 @@ public class SyncDocument {
             try document.delete(obj: map, key: key)
             return true
         case (let value?, .Scalar(let old)?) where old == value:
-            guard try document.getAll(obj: map, key: key).count > 1 else { return false }
-            try document.put(obj: map, key: key, value: value)
-            return true
+            return false
         case (let value?, _):
             try document.put(obj: map, key: key, value: value)
             return true

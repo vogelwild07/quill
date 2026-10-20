@@ -37,8 +37,7 @@ struct SyncReconnectView: View {
             )
 
             if let errorMessage {
-                Label(errorMessage, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
+                ProblemLabel(message: errorMessage)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("syncReconnect.error")
             }
@@ -128,8 +127,7 @@ struct SyncSidebarStatus: View {
                             .progressViewStyle(.circular)
                             .controlSize(.mini)
                     } else {
-                        Image(systemName: "exclamationmark.triangle")
-                            .foregroundStyle(.orange)
+                        ProblemSymbol()
                     }
                     SyncStatusText(sync: sync)
                         .font(.caption)

@@ -254,10 +254,28 @@ public final class QuillPersistence {
     }
 
     /// Prüft das Backup und merkt es für den nächsten Start vor; danach beendet
-    /// sich die App. Wirft, wenn es nicht eingespielt werden kann.
+    /// sich die App. Wirft, wenn es nicht eingespielt werden kann. Schaltet den Sync
+    /// vorher aus (ADR-029): Sonst führte er den eingespielten Stand nach einem Absturz
+    /// zwischen Vormerken und Ausschalten ohne Rückfrage mit dem Ordner zusammen.
+    /// Scheitert das Vormerken, läuft der Sync weiter wie vorher.
     public func requestRestore(_ entry: StoreBackup.Entry) async throws {
+        try await requestRestore(entry) { backup, entry in
+            try await Task.detached(priority: .userInitiated) { try backup.requestRestore(entry) }.value
+        }
+    }
+
+    /// `request` merkt vor; Tests prüfen damit die Reihenfolge.
+    func requestRestore(
+        _ entry: StoreBackup.Entry, request: (StoreBackup, StoreBackup.Entry) async throws -> Void
+    ) async throws {
         guard let backup else { return }
-        try await Task.detached(priority: .userInitiated) { try backup.requestRestore(entry) }.value
+        sync.turnOffForRestore()
+        do {
+            try await request(backup, entry)
+        } catch {
+            sync.cancelTurnOffForRestore()
+            throw error
+        }
     }
 
     /// Das Beenden wurde abgebrochen (Rückfrage bei ungespeicherten Änderungen): Ein

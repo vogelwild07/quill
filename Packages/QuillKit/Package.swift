@@ -51,7 +51,7 @@ let package = Package(
             dependencies: ["QuillExport", "QuillEditorCore", "QuillEditor", "QuillModel", "QuillTestFixtures"],
             exclude: ["Golden"]
         ),
-        .testTarget(name: "QuillSyncTests", dependencies: ["QuillSync", "QuillModel"]),
+        .testTarget(name: "QuillSyncTests", dependencies: ["QuillSync", "QuillModel", "QuillTestFixtures"]),
         .testTarget(
             name: "QuillFeaturesTests",
             dependencies: ["QuillFeatures", "QuillModel", "QuillEditorCore", "QuillEditor", "QuillSync", "QuillTestFixtures"]
