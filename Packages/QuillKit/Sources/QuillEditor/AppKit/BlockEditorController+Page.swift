@@ -39,11 +39,32 @@ extension BlockEditorController {
         guard !textView.hasMarkedText() else { return false }
         guard newDocument != document else { return true }
         let selection = textView.selectedRange()
+        // Cursor als Block und Abstand darin merken: Kam davor Text hinzu (Sync, anderes
+        // Fenster), bliebe er sonst an der alten Stelle und Tippen landete daneben.
+        let old = document
+        let start = mapped(selection.location, from: old, to: newDocument)
+        let end = mapped(NSMaxRange(selection), from: old, to: newDocument)
         load(newDocument)
         let limit = max(0, (textView.textStorage?.length ?? 1) - 1)
-        let location = min(selection.location, limit)
-        textView.setSelectedRange(NSRange(location: location, length: min(selection.length, limit - location)))
+        let location = min(start ?? selection.location, limit)
+        let length = end.map { max(0, $0 - location) } ?? selection.length
+        textView.setSelectedRange(NSRange(location: location, length: min(length, limit - location)))
         return true
+    }
+
+    /// Stelle im Textspeicher nach dem Neuladen, wenn es den Block noch gibt; `nil` sonst.
+    private func mapped(_ location: Int, from old: EditorDocument, to new: EditorDocument) -> Int? {
+        guard !old.blocks.isEmpty else { return nil }
+        let index = blockIndex(atCharacter: location)
+        guard old.blocks.indices.contains(index), paragraphStarts.indices.contains(index) else { return nil }
+        let block = old[index]
+        guard let newIndex = new.blocks.firstIndex(where: { $0.id == block.id }) else { return nil }
+        let offset = min(location - paragraphStarts[index], BlockRenderer.displayLength(of: block))
+        let newBlock = new[newIndex]
+        let newOffset = min(BlockMerge.mappedOffset(offset, from: block.text, to: newBlock.text), BlockRenderer.displayLength(of: newBlock))
+        var start = 0
+        for earlier in new.blocks[..<newIndex] { start += BlockRenderer.displayLength(of: earlier) + 1 }
+        return start + newOffset
     }
 
     /// Springt zu einem Block, wählt `range` darin aus (UTF-16 im Blocktext) und

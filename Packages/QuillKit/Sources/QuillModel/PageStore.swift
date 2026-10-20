@@ -264,6 +264,19 @@ extension PageStore {
         }
     }
 
+    /// Wie `applyEdits(_:_:)`, aber nur, wenn die Seite noch `expected` entspricht: dem
+    /// Stand, von dem der Editor ausging. Hat inzwischen jemand anderes geschrieben
+    /// (Sync, anderes Fenster), wird nichts geschrieben, und das Ergebnis ist `nil`;
+    /// der Editor führt dann zusammen (`BlockMerge`). Sonst die Blöcke danach.
+    public func applyEdits(_ pageID: UUID, _ edits: BlockEdits, expected: [BlockSnapshot]) throws -> [BlockSnapshot]? {
+        let page = try fetchPage(pageID, prefetching: [\.blocks])
+        guard orderedBlocks(of: page).map(\.snapshot) == expected else { return nil }
+        if apply(edits, to: page) {
+            try save()
+        }
+        return orderedBlocks(of: page).map(\.snapshot)
+    }
+
     /// Übernimmt `edits` ohne zu speichern; `true`, wenn sich etwas geändert hat
     /// (dann ist auch `page.updatedAt` neu).
     func apply(_ edits: BlockEdits, to page: Page) -> Bool {
