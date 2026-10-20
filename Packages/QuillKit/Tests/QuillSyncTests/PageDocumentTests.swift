@@ -19,7 +19,7 @@ struct PageDocumentTests {
             ),
             BlockSnapshot(
                 id: UUID(), kindRaw: BlockKind.todo.rawValue, text: "Eier",
-                properties: BlockProperties(indent: 2, isChecked: true)
+                properties: BlockProperties(indent: 2, isChecked: true, isRestored: true)
             ),
             BlockSnapshot(
                 id: UUID(), kindRaw: BlockKind.code.rawValue, text: "let a = 1\nlet b = 2",

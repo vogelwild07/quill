@@ -12,6 +12,11 @@ import Testing
         #expect(SchemaFingerprint.of(SchemaV1.self) == Self.schemaV1)
     }
 
+    /// Seit Phase 11.2 (ADR-029); Änderungen nur über `SchemaV3` plus Stufe.
+    @Test func schemaV2IsFrozen() {
+        #expect(SchemaFingerprint.of(SchemaV2.self) == Self.schemaV2)
+    }
+
     /// Regeln aus `docs/data-model.md` für jede Version im Migrationsplan.
     @Test(arguments: QuillMigrationPlan.schemas.map { SchemaBox($0) })
     func schemaFollowsCloudKitRules(_ box: SchemaBox) {
@@ -75,6 +80,58 @@ import Testing
           createdAt: Date
           id: UUID
           name: String
+          updatedAt: Date
+          pages →> Page? (cascade) ⇄ workspace
+        """
+
+    static let schemaV2 = """
+        Asset
+          createdAt: Date
+          data: Optional<Data> [externalStorage]
+          id: UUID
+          pixelHeight: Int
+          pixelWidth: Int
+          updatedAt: Date
+          uti: String
+          block → Block? (nullify) ⇄ asset
+        Block
+          codeLanguage: Optional<String>
+          createdAt: Date
+          id: UUID
+          indent: Int
+          isChecked: Bool
+          isRestored: Bool
+          kindRaw: String
+          richText: Optional<Data>
+          sortKey: String
+          text: String
+          updatedAt: Date
+          asset → Asset? (cascade) ⇄ block
+          page → Page? (nullify) ⇄ blocks
+        Page
+          createdAt: Date
+          favoriteSortKey: Optional<String>
+          icon: Optional<String>
+          id: UUID
+          isFavorite: Bool
+          isRestored: Bool
+          kindRaw: String
+          sortKey: String
+          syncDocument: Optional<Data> [externalStorage]
+          title: String
+          trashedAt: Optional<Date>
+          updatedAt: Date
+          blocks →> Block? (cascade) ⇄ page
+          children →> Page? (cascade) ⇄ parent
+          parent → Page? (nullify) ⇄ children
+          workspace → Workspace? (nullify) ⇄ pages
+        Workspace
+          createdAt: Date
+          id: UUID
+          name: String
+          syncCursors: Optional<Data>
+          syncDeviceID: Optional<UUID>
+          syncTree: Optional<Data> [externalStorage]
           updatedAt: Date
           pages →> Page? (cascade) ⇄ workspace
         """

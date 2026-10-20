@@ -21,7 +21,8 @@ struct TreeDocumentTests {
         let root = Self.record("Projekte")
         var child = PageRecord(
             id: UUID(), title: "Quill 🪶", icon: "🪶", parentID: root.id, sortKey: "a1", isFavorite: true,
-            favoriteSortKey: "a0", trashedAt: Self.created.addingTimeInterval(60), kindRaw: "board", createdAt: Self.created
+            favoriteSortKey: "a0", trashedAt: Self.created.addingTimeInterval(60), kindRaw: "board", createdAt: Self.created,
+            isRestored: true
         )
         let document = TreeDocument()
         #expect(try document.update([root, child]))
@@ -33,6 +34,7 @@ struct TreeDocumentTests {
         child.icon = nil
         child.favoriteSortKey = nil
         child.trashedAt = nil
+        child.isRestored = false
         try document.update([child])
         #expect(try document.records().first { $0.id == child.id } == child)
         #expect(try document.update([child]) == false)

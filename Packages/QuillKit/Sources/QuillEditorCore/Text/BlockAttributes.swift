@@ -10,6 +10,8 @@ extension NSAttributedString.Key {
     package static let quillIndent = NSAttributedString.Key("io.github.vogelwild07.quill.indent")
     package static let quillChecked = NSAttributedString.Key("io.github.vogelwild07.quill.checked")
     package static let quillCodeLanguage = NSAttributedString.Key("io.github.vogelwild07.quill.codeLanguage")
+    /// Vom Sync wiederhergestellt (`Bool`).
+    package static let quillRestored = NSAttributedString.Key("io.github.vogelwild07.quill.restored")
     /// `Asset.id` als `String`.
     package static let quillAssetID = NSAttributedString.Key("io.github.vogelwild07.quill.assetID")
     /// Nummer eines nummerierten Punkts; abgeleitet, wird nach jeder Änderung nachgeführt.
@@ -28,6 +30,7 @@ extension BlockProperties {
         var attributes: [NSAttributedString.Key: Any] = [
             .quillIndent: indent,
             .quillChecked: isChecked,
+            .quillRestored: isRestored,
         ]
         if let codeLanguage { attributes[.quillCodeLanguage] = codeLanguage }
         if let assetID { attributes[.quillAssetID] = assetID.uuidString }
@@ -39,7 +42,8 @@ extension BlockProperties {
             indent: attributes[.quillIndent] as? Int ?? 0,
             isChecked: attributes[.quillChecked] as? Bool ?? false,
             codeLanguage: attributes[.quillCodeLanguage] as? String,
-            assetID: (attributes[.quillAssetID] as? String).flatMap(UUID.init(uuidString:))
+            assetID: (attributes[.quillAssetID] as? String).flatMap(UUID.init(uuidString:)),
+            isRestored: attributes[.quillRestored] as? Bool ?? false
         )
     }
 }

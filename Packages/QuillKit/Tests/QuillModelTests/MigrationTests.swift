@@ -6,10 +6,10 @@ import Testing
 extension DiskStoreSuites {
     /// Migrationstests (ADR-011).
     ///
-    /// - `currentPlanOpensV1Store`: Ein mit `SchemaV1` befüllter Store öffnet mit dem
-    ///   echten `QuillMigrationPlan` ohne Datenverlust.
-    /// - `rehearsalV1ToV2`: Probelauf der Kette mit einer `SchemaV2` nur im Test,
-    ///   inklusive Backup vor der Migration.
+    /// - `v1ToV2`: Ein mit `SchemaV1` befüllter Store öffnet mit dem echten
+    ///   `QuillMigrationPlan` als V2 ohne Datenverlust; die Sync-Felder sind leer.
+    /// - `rehearsalV2ToV3`: Probelauf der Kette mit einer `SchemaV3` nur im Test und
+    ///   eigener Stufe, inklusive Backup vor der Migration.
     ///
     /// Bei jeder echten neuen Version kommt ein Test „V(n-1) → V(n)“ dazu.
     @Suite struct MigrationTests {
@@ -64,7 +64,7 @@ extension DiskStoreSuites {
             let trashedID: UUID
         }
 
-        @Test func currentPlanOpensV1Store() throws {
+        @Test func v1ToV2() throws {
             defer { try? FileManager.default.removeItem(at: directory) }
             let fixture = try makeV1Store()
 
@@ -85,9 +85,19 @@ extension DiskStoreSuites {
             #expect(blocks.map(\.kind) == [.heading1, .todo, .image])
             #expect(blocks[1].isChecked && blocks[1].indent == 1)
             #expect(blocks[2].asset?.data?.count == 200_000)
+            // Neue Felder aus V2: leer bzw. `false`.
+            #expect(pages.allSatisfy { $0.syncDocument == nil && !$0.isRestored })
+            #expect(blocks.allSatisfy { !$0.isRestored && !$0.properties.isRestored })
+            let workspace = try #require(try context.fetch(FetchDescriptor<Workspace>()).first)
+            #expect(workspace.syncTree == nil && workspace.syncDeviceID == nil && workspace.syncCursors == nil)
+            // Die neuen Felder lassen sich schreiben.
+            blocks[0].properties.isRestored = true
+            workspace.syncDeviceID = UUID()
+            try context.save()
+            #expect(try ModelContext(container).fetch(FetchDescriptor<Block>()).contains { $0.isRestored })
         }
 
-        @Test func rehearsalV1ToV2() throws {
+        @Test func rehearsalV2ToV3() throws {
             defer { try? FileManager.default.removeItem(at: directory) }
             let fixture = try makeV1Store()
             let backup = StoreBackup(
@@ -101,12 +111,12 @@ extension DiskStoreSuites {
             let upgraded = StoreBackup(
                 storeURL: storeURL,
                 backupsURL: backup.backupsURL,
-                schemaVersion: "2.0.0"
+                schemaVersion: "3.0.0"
             )
             let backupFolder = try #require(try upgraded.backupBeforeOpening())
-            #expect(backupFolder.lastPathComponent.hasSuffix("_vor-migration-1.0.0-2.0.0"))
+            #expect(backupFolder.lastPathComponent.hasSuffix("_vor-migration-1.0.0-3.0.0"))
 
-            let schema = Schema(versionedSchema: RehearsalSchemaV2.self)
+            let schema = Schema(versionedSchema: RehearsalSchemaV3.self)
             let container = try ModelContainer(
                 for: schema,
                 migrationPlan: RehearsalMigrationPlan.self,
@@ -114,7 +124,7 @@ extension DiskStoreSuites {
             )
             try upgraded.markOpened()
 
-            let pages = try ModelContext(container).fetch(FetchDescriptor<RehearsalSchemaV2.Page>())
+            let pages = try ModelContext(container).fetch(FetchDescriptor<RehearsalSchemaV3.Page>())
             #expect(pages.count == 3)
             let child = try #require(pages.first { $0.id == fixture.childID })
             #expect(child.parent?.id == fixture.rootID)
@@ -141,23 +151,23 @@ extension DiskStoreSuites {
     }
 }
 
-// MARK: - Probe-Schema V2 (nur im Test)
+// MARK: - Probe-Schema V3 (nur im Test)
 
 /// Echte Kette plus eine Probeversion. Beweist, dass Migrationen samt eigener
 /// Stufe funktionieren, bevor wir sie wirklich brauchen.
 enum RehearsalMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        QuillMigrationPlan.schemas + [RehearsalSchemaV2.self]
+        QuillMigrationPlan.schemas + [RehearsalSchemaV3.self]
     }
 
     static var stages: [MigrationStage] {
         QuillMigrationPlan.stages + [
             .custom(
-                fromVersion: SchemaV1.self,
-                toVersion: RehearsalSchemaV2.self,
+                fromVersion: SchemaV2.self,
+                toVersion: RehearsalSchemaV3.self,
                 willMigrate: nil,
                 didMigrate: { context in
-                    for page in try context.fetch(FetchDescriptor<RehearsalSchemaV2.Page>()) {
+                    for page in try context.fetch(FetchDescriptor<RehearsalSchemaV3.Page>()) {
                         page.blockCount = page.blocks?.count ?? 0
                     }
                     try context.save()
@@ -167,10 +177,10 @@ enum RehearsalMigrationPlan: SchemaMigrationPlan {
     }
 }
 
-/// `SchemaV1` plus zwei Felder an `Page`: `isLocked` (Default) und
+/// `SchemaV2` plus zwei Felder an `Page`: `isLocked` (Default) und
 /// `blockCount` (von der Stufe berechnet).
-enum RehearsalSchemaV2: VersionedSchema {
-    static var versionIdentifier: Schema.Version { Schema.Version(2, 0, 0) }
+enum RehearsalSchemaV3: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(3, 0, 0) }
 
     static var models: [any PersistentModel.Type] {
         [Workspace.self, Page.self, Block.self, Asset.self]
@@ -182,6 +192,10 @@ enum RehearsalSchemaV2: VersionedSchema {
         var name: String = "Mein Workspace"
         var createdAt: Date = Date.now
         var updatedAt: Date = Date.now
+        @Attribute(.externalStorage)
+        var syncTree: Data?
+        var syncDeviceID: UUID?
+        var syncCursors: Data?
         @Relationship(deleteRule: .cascade, inverse: \Page.workspace)
         var pages: [Page]? = []
         init() {}
@@ -199,6 +213,9 @@ enum RehearsalSchemaV2: VersionedSchema {
         var kindRaw: String = "page"
         var createdAt: Date = Date.now
         var updatedAt: Date = Date.now
+        @Attribute(.externalStorage)
+        var syncDocument: Data?
+        var isRestored: Bool = false
         var isLocked: Bool = false
         var blockCount: Int = 0
         var workspace: Workspace?
@@ -220,6 +237,7 @@ enum RehearsalSchemaV2: VersionedSchema {
         var richText: Data?
         var isChecked: Bool = false
         var codeLanguage: String?
+        var isRestored: Bool = false
         var createdAt: Date = Date.now
         var updatedAt: Date = Date.now
         var page: Page?
