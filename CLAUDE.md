@@ -62,7 +62,7 @@ Fall back to grep or file reads only for what the graph does not model: literal 
 ## Tests und Gegenproben
 - Jeder UI-Testlauf mit `timeout 600`. Ein Timeout gilt als „greift nicht sauber“ und wird gemeldet, nie ignoriert.
 - Vor UI-Tests prüfen, ob Quill läuft (`pgrep -lf Quill.app/Contents/MacOS/Quill`). Läuft es, Nutzer fragen, nie selbst beenden (echter Store, ungespeicherte Änderungen).
-- Ausnahme: übrig gebliebene Test-Instanzen (z. B. nach einem Timeout) selbst beenden, nur wenn alle drei gelten: Pfad in `~/Library/Developer/Xcode/DerivedData/`, Startargument `-QuillInMemoryStore`, kein anderer Store-Pfad (kein `-QuillStoreDirectory`). Vorher die volle Befehlszeile prüfen (`ps -o command= -p <PID>`). Alles andere, besonders `/Applications/Quill.app`, nie beenden, sondern Nutzer fragen.
+- Ausnahme: übrig gebliebene Test-Instanzen (z. B. nach einem Timeout) selbst beenden, nur wenn alle drei gelten: Debug-Build in DerivedData (Pfad `~/Library/Developer/Xcode/DerivedData/…/Build/Products/Debug/Quill.app`), Startargument genau `-QuillInMemoryStore YES` (wirkt nur im Debug-Build, ADR-019), kein `-QuillStoreDirectory`. Vorher die volle Befehlszeile prüfen (`ps -o command= -p <PID>`). Sonst nie beenden, sondern Nutzer fragen, besonders bei `/Applications/Quill.app`.
 - Gegenproben nur aus einer Kopie im Scratchpad: Datei kopieren, Fehler einbauen, Test laufen lassen, Datei aus der Kopie zurück und per `cmp` prüfen. Nie `git checkout`/`git restore` (sonst gehen uncommittete Änderungen verloren).
 - Gegenproben, deren Code nicht kompiliert, zählen nicht und werden mit kompilierbarem Fehler wiederholt.
 - In jedem Bericht die Summe über alle Test-Targets nennen (`swift test` schreibt eine Zeile „Test run with …“ pro Target), nicht nur eine Zeile.
