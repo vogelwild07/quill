@@ -4,17 +4,68 @@ import QuillEditor
 import QuillEditorCore
 import SwiftUI
 
-/// Einstellungen (⌘,). Bisher nur „Darstellung“.
+/// Einstellungen (⌘,): Darstellung, Sync, Lizenzen.
 public struct SettingsView: View {
-    public init() {}
+    private enum Pane: Hashable { case appearance, sync, licenses }
+
+    private let persistence: QuillPersistence?
+    /// Eigene Auswahl: Die Einstellungen öffnen nach jedem Start mit „Darstellung“.
+    @State private var pane = Pane.appearance
+
+    public init(persistence: QuillPersistence?) {
+        self.persistence = persistence
+    }
 
     public var body: some View {
-        TabView {
-            Tab(String(localized: "Darstellung", bundle: .module), systemImage: "paintpalette") {
+        TabView(selection: $pane) {
+            Tab(String(localized: "Darstellung", bundle: .module), systemImage: "paintpalette", value: .appearance) {
                 AppearanceSettingsView()
+            }
+            if let persistence {
+                Tab(String(localized: "Sync", bundle: .module), systemImage: "arrow.triangle.2.circlepath", value: .sync) {
+                    SyncSettingsView(sync: persistence.sync, testFolder: persistence.syncTestFolder)
+                        .frame(minHeight: 420)
+                }
+            }
+            Tab(String(localized: "Lizenzen", bundle: .module), systemImage: "doc.text", value: .licenses) {
+                LicensesView()
             }
         }
         .frame(width: 640)
+    }
+}
+
+/// Lizenztexte der Bausteine anderer, unverändert und daher nicht übersetzt
+/// (`Scripts/third-party-licenses.py`). Rund 200 KB: in Abschnitten, die erst beim
+/// Scrollen gesetzt werden.
+struct LicensesView: View {
+    private static let sections: [String] = (Bundle.module.url(forResource: "ThirdPartyLicenses", withExtension: "txt")
+        .flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? "")
+        .components(separatedBy: "\n\n")
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Quill steht unter der GPL-3.0-or-later. Es enthält diese Bausteine anderer:", bundle: .module)
+                .fixedSize(horizontal: false, vertical: true)
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 10) {
+                    ForEach(Self.sections.indices, id: \.self) { index in
+                        Text(verbatim: Self.sections[index])
+                            .font(.system(size: 11, design: .monospaced))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .padding(10)
+                // Die LazyVStack ist für VoiceOver eine eigene Gruppe und braucht einen Namen.
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel(Text("Lizenztexte", bundle: .module))
+            }
+            .background(.background.secondary, in: .rect(cornerRadius: QuillDesign.Radius.large))
+            .accessibilityIdentifier("settings.licenses")
+        }
+        .padding(20)
+        .frame(height: 420)
     }
 }
 

@@ -27,7 +27,7 @@ struct QuillApp: App {
         }
 
         Settings {
-            SettingsView()
+            SettingsView(persistence: try? appDelegate.persistence?.get())
         }
     }
 }
@@ -72,6 +72,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ProfilingSeed.seedAndQuit(persistence)
         }
         #endif
+        // Gleicht nur ab, wenn der Nutzer den Sync eingeschaltet hat (ADR-029).
+        try? persistence?.get().sync.start()
         #if DEBUG
         TestWindowSize.applyToFirstWindow()
         #endif

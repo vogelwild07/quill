@@ -83,7 +83,11 @@ struct BackupRestoreView: View {
             Button(String(localized: "Wiederherstellen und beenden", bundle: .module), role: .destructive) { restore() }
             Button(String(localized: "Abbrechen", bundle: .module), role: .cancel) {}
         } message: {
-            Text("Ungesicherte Änderungen werden vorher gespeichert.", bundle: .module)
+            if persistence.sync.isEnabled {
+                Text("Ungesicherte Änderungen werden vorher gespeichert. Der Sync wird dafür ausgeschaltet; nach dem Neustart fragt Quill, wie es weitergeht.", bundle: .module)
+            } else {
+                Text("Ungesicherte Änderungen werden vorher gespeichert.", bundle: .module)
+            }
         }
     }
 
@@ -102,6 +106,9 @@ struct BackupRestoreView: View {
         Task {
             do {
                 try await persistence.requestRestore(entry)
+                // Sonst führte der Abgleich den eingespielten Stand gleich wieder mit dem
+                // Ordner zusammen (ADR-029); bricht das Beenden ab, läuft er weiter.
+                persistence.sync.turnOffForRestore()
                 requested()
             } catch {
                 errorMessage = BackupLabel.message(for: error)

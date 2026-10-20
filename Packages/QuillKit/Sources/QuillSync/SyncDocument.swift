@@ -85,8 +85,12 @@ public class SyncDocument {
 
     public var version: DocumentVersion { DocumentVersion(heads: document.heads()) }
 
-    /// Vollständiger Stand, z. B. für den Store oder einen Snapshot im Ordner.
+    /// Vollständiger Stand samt Geschichte, z. B. für den Store oder als erste eigene
+    /// Datei in einem Ordner. `apply(changes:)` nimmt ihn wie Änderungen an.
     public func save() -> Data { document.save() }
+
+    /// Nur die gemeinsame erste Änderung, sonst nichts.
+    public var isEmpty: Bool { document.getHistory().count <= 1 }
 
     /// Änderungen seit `version`, oder alle (`nil`); zum Anhängen an den Ordner.
     public func changes(since version: DocumentVersion?) throws -> Data {

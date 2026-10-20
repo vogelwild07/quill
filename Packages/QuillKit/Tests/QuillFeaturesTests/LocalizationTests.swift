@@ -170,8 +170,9 @@ struct LocalizationTests {
     }
 
     /// Sichtbare Info.plist-Einträge der App (Debug und Release) stehen mit dem
-    /// gleichen Wert im `InfoPlist.xcstrings`. Im Schema „Quill Profiling“ ist der
-    /// Katalog ausgenommen, sonst hieße die Profiling-App wieder „Quill“.
+    /// gleichen Wert im `InfoPlist.xcstrings`. In den Schemata „Quill Profiling“ und
+    /// „Quill Synctest“ ist der Katalog ausgenommen, sonst hießen diese Varianten
+    /// wieder „Quill“.
     @Test func infoPlistIsInCatalog() throws {
         let catalog = try Catalog(path: "App/Resources/InfoPlist.xcstrings")
         #expect(catalog.sourceLanguage == "de")
@@ -179,7 +180,8 @@ struct LocalizationTests {
         let configurations = BuildSettings.configurations(in: project)
         let app = try #require(configurations.filter { $0.settings["INFOPLIST_KEY_CFBundleDisplayName"] != nil }.nilIfEmpty)
         var expected: [String: String] = [:]
-        for configuration in app where configuration.name != "Profiling" {
+        let variants: Set<String> = ["Profiling", "Synctest"]
+        for configuration in app where !variants.contains(configuration.name) {
             for (setting, value) in configuration.settings where setting.hasPrefix("INFOPLIST_KEY_") && !value.isEmpty {
                 let key = String(setting.dropFirst("INFOPLIST_KEY_".count))
                 guard BuildSettings.isVisible(key) else { continue }
@@ -194,9 +196,11 @@ struct LocalizationTests {
         for key in catalog.keys where expected[key] == nil && key != "CFBundleName" {
             Issue.record("Veraltet im InfoPlist.xcstrings: \(key)")
         }
-        let profiling = try #require(app.first { $0.name == "Profiling" })
-        #expect(profiling.settings["EXCLUDED_SOURCE_FILE_NAMES"]?.contains("InfoPlist.xcstrings") == true,
-                "Profiling nimmt InfoPlist.xcstrings nicht aus")
+        for name in variants.sorted() {
+            let variant = try #require(app.first { $0.name == name }, "Konfiguration \(name) fehlt")
+            #expect(variant.settings["EXCLUDED_SOURCE_FILE_NAMES"]?.contains("InfoPlist.xcstrings") == true,
+                    "\(name) nimmt InfoPlist.xcstrings nicht aus")
+        }
     }
 
     // MARK: - Gegenproben des Lexers

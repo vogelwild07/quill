@@ -94,6 +94,7 @@ DatabaseView         (später)  id, name, layoutRaw (table|board|calendar), conf
 - `PageStore+Sync`: `applySyncTree` (Seiten anlegen, ändern, in den Papierkorb legen, nie löschen) und `applySyncPage` (Blöcke als `BlockEdits`) speichern zusammen mit dem Sync-Dokument und den gelesenen Dateien in einem Schritt. Beide erwarten den Stand, von dem der Abgleich ausging; weicht der Store ab, schreiben sie nichts.
 - `PageSnapshot` ist die Seite als Werttyp (wie `BlockSnapshot`). Bilder aus dem Ordner legt `insertSyncedAsset` unverändert an.
 - `Workspace.syncCursors`: JSON mit der letzten übernommenen Datei je Dokument und Gerät und `updatedAt` je Seite beim letzten Abgleich.
+- `resetSyncCursors` (seit 11.4) vergisst nur die gelesenen Dateien, nicht die Sync-Dokumente samt Geschichte: vor dem Verbinden mit einem anderen Ordner. Der erste Abgleich schreibt dann jedes Dokument als ganzen Stand in den neuen Ordner (ADR-029).
 
 ## Speicherort und Backups
 

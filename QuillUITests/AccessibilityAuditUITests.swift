@@ -74,7 +74,10 @@ final class AccessibilityAuditUITests: XCTestCase {
     func testAuditFixedThemeAndSettings() throws {
         app.terminate()
         app = XCUIApplication.quill(storeDirectory: storeDirectory)
-        app.launchArguments += ["-QuillPasteboardName", pasteboard.name.rawValue, "-QuillEditorTheme", "lagune"]
+        app.launchArguments += [
+            "-QuillPasteboardName", pasteboard.name.rawValue, "-QuillEditorTheme", "lagune",
+            "-QuillSyncTestFolder", "uitest-audit-sync-\(UUID().uuidString)",
+        ]
         app.launch()
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
         app.windows.firstMatch.click()
@@ -89,7 +92,54 @@ final class AccessibilityAuditUITests: XCTestCase {
         audit("Einstellungen › Darstellung")
         app.descendants(matching: .any)["settings.theme.sonne"].click()
         audit("Einstellungen › Darstellung, Sonne gewählt")
+
+        app.toolbars.buttons["Sync"].click()
+        XCTAssertTrue(app.buttons["sync.enable"].waitForExistence(timeout: 5))
+        audit("Einstellungen › Sync (aus)")
+        app.buttons["sync.enable"].click()
+        XCTAssertTrue(app.descendants(matching: .any)["sync.pause"].waitForExistence(timeout: 10))
+        audit("Einstellungen › Sync (an)")
+        app.toolbars.buttons["Lizenzen"].click()
+        XCTAssertTrue(app.descendants(matching: .any)["settings.licenses"].waitForExistence(timeout: 5))
+        audit("Einstellungen › Lizenzen")
         app.typeKey("w", modifierFlags: .command)
+    }
+
+    /// Rückfrage nach einem eingespielten Backup bei eingeschaltetem Sync (ADR-029).
+    func testAuditSyncReconnect() throws {
+        app.terminate()
+        app = XCUIApplication.quill(storeDirectory: storeDirectory)
+        app.launchArguments += ["-QuillSyncTestFolder", "uitest-audit-sync-\(UUID().uuidString)"]
+        app.launch()
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
+        app.typeKey(",", modifierFlags: .command)
+        app.toolbars.buttons["Sync"].click()
+        app.buttons["sync.enable"].click()
+        XCTAssertTrue(app.descendants(matching: .any)["sync.pause"].waitForExistence(timeout: 10))
+        app.typeKey("w", modifierFlags: .command)
+
+        window.click()
+        app.menuBars.menuBarItems["Ablage"].click()
+        app.menuBars.menuItems["Backup wiederherstellen …"].click()
+        let row = window.sheets.firstMatch.descendants(matching: .any).matching(identifier: "restore.row").firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.click()
+        window.sheets.firstMatch.buttons["restore.confirm"].click()
+        let confirm = window.descendants(matching: .button).matching(identifier: "Wiederherstellen und beenden").firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.click()
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 30))
+
+        app.launch()
+        XCTAssertTrue(window.waitForExistence(timeout: 10))
+        let notice = window.sheets.firstMatch
+        XCTAssertTrue(notice.waitForExistence(timeout: 10))
+        notice.buttons["OK"].click()
+        XCTAssertTrue(app.buttons["syncReconnect.later"].waitForExistence(timeout: 10))
+        audit("Rückfrage zum Sync nach dem Backup")
+        // Escape heißt „Später“: Der Sync bleibt aus, die Rückfrage geht zu.
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(app.buttons["syncReconnect.later"].waitForNonExistence(timeout: 5))
     }
 
     // MARK: - Audit
@@ -103,6 +153,8 @@ final class AccessibilityAuditUITests: XCTestCase {
         /// Hosting-View im Seitenkopf (unter der beschrifteten Gruppe „Seitenkopf“).
         var headerContentFrame: CGRect?
         var toolbarFrames: [CGRect]
+        /// Titelleiste je Fenster: vom oberen Rand bis zur Symbolleiste.
+        var titlebarFrames: [CGRect]
         /// „Emojis & Symbole“ in der Touch Bar.
         var touchBarEmojiFrame: CGRect?
         /// Elemente im Sheet; alle anderen liegen dahinter.
@@ -123,6 +175,11 @@ final class AccessibilityAuditUITests: XCTestCase {
             } + (sheet.exists ? frames(sheet.children(matching: .group)) : []),
             headerContentFrame: header.exists ? header.frame : nil,
             toolbarFrames: frames(app.toolbars),
+            titlebarFrames: windows.compactMap { window in
+                let frame = window.frame
+                guard let toolbar = frames(window.toolbars).first(where: { frame.contains($0) }) else { return nil }
+                return CGRect(x: frame.minX, y: frame.minY, width: frame.width, height: toolbar.minY - frame.minY)
+            },
             touchBarEmojiFrame: emoji.exists ? emoji.frame : nil,
             sheetElementFrames: sheet.exists ? [sheet.frame] + frames(sheet.descendants(matching: .any)) : nil
         )
@@ -177,10 +234,12 @@ final class AccessibilityAuditUITests: XCTestCase {
     /// Art, Kennung, Beschriftung und Rahmen, nicht Werte: Relative Daten im
     /// Papierkorb („vor 1 Sekunde“) laufen weiter.
     private func waitUntilSettled(_ view: String) {
-        let window = window
+        // Alle Fenster: Wechselt ein Bereich der Einstellungen, ändert deren Fenster
+        // animiert die Größe, und die Rahmen von vorher stimmen nicht mehr.
+        let app = app!
         var previous: [String]?
         let settled = NSPredicate { _, _ in
-            guard let snapshot = try? window.snapshot() else { return false }
+            guard let snapshot = try? app.snapshot() else { return false }
             let current = Self.layout(of: snapshot)
             defer { previous = current }
             return current == previous
@@ -222,6 +281,9 @@ final class AccessibilityAuditUITests: XCTestCase {
             if type == .staticText, state.toolbarFrames.contains(where: { $0.contains(frame) }) {
                 return "Fenstertitel in der Symbolleiste im Systemstil (A11, Entscheidung 1)."
             }
+            if type == .staticText, state.titlebarFrames.contains(where: { $0.contains(frame) }) {
+                return "Fenstertitel in der Titelleiste der Einstellungen im Systemstil (A11, Entscheidung 1)."
+            }
             if identifier.hasSuffix(".emptyState.title") || identifier == "detail.notFound.title" {
                 return "Label aus grauem Symbol und Titel, der Audit misst beides zusammen; der Titel selbst hat 12:1 (EmptyStateSnapshotTests)."
             }
@@ -231,6 +293,9 @@ final class AccessibilityAuditUITests: XCTestCase {
             if ["trash.row", "trash.header.title", "trash.header.subtitle"].contains(identifier),
                let sheet = state.sheetElementFrames, !sheet.contains(frame) {
                 return "Zeile oder Kopf des Papierkorbs hinter dem Sheet „Backup wiederherstellen“, das System zeichnet sie gedimmt."
+            }
+            if identifier == "detail.emptyState.message", let sheet = state.sheetElementFrames, !sheet.contains(frame) {
+                return "Leerzustand hinter dem Sheet „Sync nach dem Backup“, das System zeichnet ihn gedimmt; ohne Sheet prüft ihn „Fenster ohne Seite“."
             }
             if identifier == "sidebar.emptyState.message" {
                 return "primary auf dem Glas der Sidebar; der Kontrast hängt vom Hintergrund hinter dem Fenster ab. Auf festem Hintergrund prüft EmptyStateSnapshotTests 4,5:1 (A15, Entscheidung zum Sidebar-Glas)."

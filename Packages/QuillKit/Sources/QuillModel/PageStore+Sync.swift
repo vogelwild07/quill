@@ -88,6 +88,14 @@ extension PageStore {
         try save()
     }
 
+    /// Vergisst die gelesenen Dateien, nicht die Sync-Dokumente samt Geschichte. Vor dem
+    /// Verbinden mit einem anderen Ordner: Die Nummern gehören zum bisherigen Ordner,
+    /// und der erste Abgleich schreibt jedes Dokument als ganzen Stand in den neuen.
+    public func resetSyncCursors() throws {
+        try primaryWorkspace().syncCursors = nil
+        try save()
+    }
+
     /// Alle Seiten, auch im Papierkorb.
     public func pageSnapshots() throws -> [PageSnapshot] {
         try modelContext.fetch(FetchDescriptor<Page>()).map(\.snapshot).sorted { $0.id.uuidString < $1.id.uuidString }

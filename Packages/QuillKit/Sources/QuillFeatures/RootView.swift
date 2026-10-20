@@ -25,6 +25,7 @@ public struct RootView: View {
     #if canImport(AppKit)
     @State private var window: NSWindow?
     @State private var launchNotice: LaunchNotice?
+    @State private var isSyncReconnectShown = false
     #endif
 
     @Environment(\.pageStore) private var store
@@ -49,6 +50,11 @@ public struct RootView: View {
                     actions: sidebarActions
                 )
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
+                #if canImport(AppKit)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if let sync = persistence?.sync { SyncSidebarStatus(sync: sync) }
+                }
+                #endif
             }
         } detail: {
             if isShowingTrash, let operations {
@@ -111,6 +117,16 @@ public struct RootView: View {
         } message: { notice in
             Text(notice.message)
         }
+        .sheet(isPresented: $isSyncReconnectShown) {
+            if let persistence {
+                SyncReconnectView(
+                    sync: persistence.sync, testFolder: persistence.syncTestFolder,
+                    dismiss: { isSyncReconnectShown = false }
+                )
+            }
+        }
+        // Erst nach der Meldung zum eingespielten Backup fragen, wie der Sync weitergeht.
+        .onChange(of: launchNotice == nil) { askToReconnectSync() }
         #endif
         .onAppear {
             if selection == nil { selection = UUID(uuidString: storedSelection) }
@@ -119,6 +135,7 @@ public struct RootView: View {
             if launchNotice == nil, let preparation = persistence?.takePreparation() {
                 launchNotice = BackupLabel.launchNotice(for: preparation)
             }
+            askToReconnectSync()
             #endif
             Task { try? await store?.ensureWorkspace() }
         }
@@ -252,6 +269,15 @@ public struct RootView: View {
     }
 
     #if canImport(AppKit)
+    /// Nach einem eingespielten Backup fragt das erste Fenster, wie der Sync weitergeht
+    /// (ADR-029), sobald keine andere Meldung mehr offen ist.
+    private func askToReconnectSync() {
+        guard launchNotice == nil, !isSyncReconnectShown, let persistence, persistence.sync.asksToReconnect,
+              persistence.claimSyncReconnectPrompt()
+        else { return }
+        isSyncReconnectShown = true
+    }
+
     /// Ein Backup ist vorgemerkt: beenden, beim nächsten Start wird getauscht (ADR-019).
     private func quitIfRestoreRequested() {
         guard quitsAfterRestoreSheet else { return }

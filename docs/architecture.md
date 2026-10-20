@@ -243,10 +243,16 @@ QuillSync
 QuillModel
   PageStore+Sync    Schreibwege des Abgleichs: nur vom erwarteten Stand aus, Seiten nie löschen
 QuillFeatures
-  Sync/             SyncSettings (UserDefaults, Lesezeichen), SyncController (ein/aus, Backup vorher, Pause)
+  Sync/             SyncSettings (Einstellungen, Lesezeichen), SyncController (ein/aus, Backup vorher,
+                    Pause, Wiederverbinden, Zeitpunkte), SyncSettingsView, SyncReconnectView, SyncSidebarStatus
+  Settings/         Bereiche Darstellung, Sync, Lizenzen (Resources/ThirdPartyLicenses.txt, Scripts/third-party-licenses.py)
 ```
 
-Ein Abgleich (`SyncEngine.sync`) je Dokument: aus dem Store laden, eigene Dateien nachlesen, die der Store noch nicht kennt, den Stand des Stores als nächste eigene Datei anhängen, dann neue Dateien der anderen Geräte übernehmen und das Ergebnis in den Store schreiben. Hat der Nutzer während des Abgleichs gespeichert, schreibt der Store nichts, und der nächste Abgleich nimmt die Eingabe mit. Oberfläche, Zeitpunkte des Abgleichs und Lizenztexte kommen in 11.4.
+Ein Abgleich (`SyncEngine.sync`) je Dokument: aus dem Store laden, eigene Dateien nachlesen, die der Store noch nicht kennt, den Stand des Stores als nächste eigene Datei anhängen, dann neue Dateien der anderen Geräte übernehmen und das Ergebnis in den Store schreiben. Hat der Nutzer während des Abgleichs gespeichert, schreibt der Store nichts, und der nächste Abgleich nimmt die Eingabe mit.
+
+`QuillPersistence.sync` hält den einen `SyncController` der App; `AppDelegate` startet nach dem Öffnen die Zeitpunkte (`SyncSchedule`): beim Start, wenn Quill aktiv wird, 2 s nach einer Änderung im Store (`ModelContext.didSave`) und alle 60 s. Ohne eingeschalteten Sync oder pausiert läuft nichts. Ein Abgleich blockiert die App nie; die Sidebar zeigt ab 5 Seiten den Fortschritt und Probleme an. Die Einstellungen des Sync liegen beim echten Store in den Einstellungen des Macs, bei Test-Stores im Arbeitsspeicher oder im Testordner (`SyncSettingsStorage`), weil ein Debug-Build dieselbe Bundle-ID hat. UI-Tests ersetzen die Dateiauswahl durch `-QuillSyncTestFolder <Name>` (nur Debug, nur mit Test-Store).
+
+Für den Handtest mit zwei Benutzerkonten gibt es das Schema „Quill Synctest“ (Konfiguration wie Release, Bundle-ID `io.github.vogelwild07.quill.synctest`, eigener Container mit eigenem Store und eigenen Einstellungen).
 
 Sync über einen gewählten Ordner mit Automerge, je Seite ein Dokument und eines für den Seitenbaum. Der SwiftData-Store bleibt Quelle der App: Seiten öffnen aus dem Store, Automerge braucht nur der Abgleich im Hintergrund. Automerge steht nur in der Sync-Schicht (ein Modul), damit ein Ausstieg auf dieses Modul beschränkt bleibt. Der Spike aus Phase 10.1 liegt unter `Spikes/AutomergeSpike` (Abbildung `[EditorBlock]` ↔ Automerge mit Umrechnung UTF-16 ↔ Unicode-Skalare, Messprogramm, Größenskript) und wird von App und QuillKit nie eingebunden (`SpikeIsolationTests`).
 
