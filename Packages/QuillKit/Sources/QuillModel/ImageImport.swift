@@ -48,6 +48,13 @@ public enum ImageImport {
         return (source, type, properties)
     }
 
+    /// Größe in Pixeln, wie das Bild angezeigt wird, ohne es neu zu kodieren; `nil`,
+    /// wenn die Daten kein lesbares Bild sind. Für Bilder aus dem Sync-Ordner, die
+    /// byte-gleich bleiben müssen (Name nach Inhalt, ADR-026).
+    public static func pixelSize(of data: Data) -> (width: Int, height: Int)? {
+        readable(data).map { displaySize($0.properties) }
+    }
+
     public static func prepare(_ data: Data, maxOriginalBytes: Int = maxOriginalBytes) throws -> Prepared {
         guard let (source, type, properties) = readable(data) else { throw Failure.unreadable }
 

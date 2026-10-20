@@ -129,6 +129,7 @@ enum BackupLabel {
         case .beforeRestore: String(localized: "Vor dem Wiederherstellen", bundle: .module)
         case .beforeMove: String(localized: "Vor dem Umzug des Speicherorts", bundle: .module)
         case .setAside: String(localized: "Beiseitegelegt (alter Speicherort)", bundle: .module)
+        case .beforeSync: String(localized: "Vor dem Einschalten des Sync", bundle: .module)
         case .other: String(localized: "Sonstiges", bundle: .module)
         }
     }

@@ -255,6 +255,17 @@ public final class QuillPersistence {
         }
     }
 
+    // MARK: Sync (ADR-029)
+
+    /// Backup vor dem Einschalten des Sync, der Rückweg; `nil` bei einem Store nur im
+    /// Arbeitsspeicher. Scheitert es, bleibt der Sync aus.
+    public func backupBeforeSync() async throws -> URL? {
+        guard let backup else { return nil }
+        let folder = try await Task.detached(priority: .userInitiated) { try backup.backupBeforeSync() }.value
+        if let folder { Self.logger.notice("Backup vor dem Sync: \(folder.lastPathComponent, privacy: .public)") }
+        return folder
+    }
+
     // MARK: Papierkorb (ADR-017)
 
     /// Löscht Seiten aus dem Papierkorb endgültig, in einem Schritt. Vorher ein Backup, außer der
