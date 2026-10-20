@@ -92,6 +92,9 @@
     "Code" : {
 
     },
+    "Darstellung" : {
+
+    },
     "Das Backup gibt es nicht mehr." : {
 
     },
@@ -131,6 +134,9 @@
     "Durchgestrichen" : {
 
     },
+    "Ein ruhiger Morgen" : {
+
+    },
     "Eine andere Quill-Instanz richtet gerade die Datenbank ein." : {
 
     },
@@ -144,6 +150,9 @@
 
     },
     "Endgültig löschen …" : {
+
+    },
+    "Entwurf fertig" : {
 
     },
     "Export fehlgeschlagen" : {
@@ -168,6 +177,12 @@
 
     },
     "Gelöschte Seiten bleiben hier 30 Tage und lassen sich wiederherstellen." : {
+
+    },
+    "Gute Werkzeuge treten zurück." : {
+
+    },
+    "Hell und dunkel" : {
 
     },
     "Icon" : {
@@ -209,10 +224,16 @@
     "Kursiv" : {
 
     },
+    "Link" : {
+
+    },
     "Link …" : {
 
     },
     "Löschen fehlgeschlagen" : {
+
+    },
+    "Markierter Text" : {
 
     },
     "Mit ⌘N legst du die erste Seite an." : {
@@ -237,6 +258,15 @@
 
     },
     "Noch keine Seiten" : {
+
+    },
+    "Notizen, die bleiben, und ein %@" : {
+
+    },
+    "Nur dunkel" : {
+
+    },
+    "Nur hell" : {
 
     },
     "OK" : {
@@ -345,6 +375,12 @@
     "Suchen" : {
 
     },
+    "Theme" : {
+
+    },
+    "Theme wählen" : {
+
+    },
     "Titel" : {
 
     },
@@ -382,6 +418,9 @@
 
     },
     "Vor einer Aktualisierung der Datenbank" : {
+
+    },
+    "Vorschau: %@" : {
 
     },
     "Wenn du Quill jetzt beendest, gehen diese Änderungen verloren. Solange Quill geöffnet bleibt, wird das Speichern weiter versucht.\n\n%@" : {

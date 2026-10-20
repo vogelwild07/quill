@@ -55,7 +55,7 @@ struct PageDetailView: View {
             if let session {
                 BlockEditorView(controller: session.controller)
             } else {
-                Color(nsColor: .textBackgroundColor)
+                Color(nsColor: EditorColor.background)
             }
         }
         .task {
