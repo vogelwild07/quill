@@ -28,7 +28,7 @@ Regeln: jede Textrolle mindestens 4,5 : 1 (zum Hintergrund, zur Codefläche, auf
 
 ## Fokus-Modus (ADR-027)
 
-Darstellung › Fokus-Modus (⇧⌘F) oder Einstellungen › Darstellung. Die Zeile mit dem Cursor bleibt in der Mitte des Fensters; alle anderen Blöcke und der Seitenkopf treten in Richtung Theme-Hintergrund zurück. Abgedunkelter Fließtext hat mindestens 3 : 1, mit „Kontrast erhöhen“ 4,5 : 1 (`ResolvedPalette.dimmedAlpha`, je Theme und Variante berechnet). Überschrift, Link, Zitat, Listenmarker und erledigte To-dos fallen ebenfalls nicht darunter; schwächere Rollen werden dafür weniger abgedunkelt. Mit einer Auswahl bleiben alle berührten Blöcke hell und es wird nicht gescrollt. Liegt der Fokus im Titel oder in der Sidebar, ist nichts abgedunkelt. Sidebar und Symbolleiste bleiben unverändert; sie lassen sich wie gewohnt ausblenden (⌃⌘S). Gespeichert pro Mac, wie das Theme.
+Darstellung › Fokus-Modus (⇧⌘F) oder Einstellungen › Darstellung. Die Zeile mit dem Cursor bleibt in der Mitte des Fensters; alle anderen Blöcke und der Seitenkopf treten in Richtung Theme-Hintergrund zurück. Abgedunkelter Fließtext hat mindestens 3 : 1, mit „Kontrast erhöhen“ 4,5 : 1 (`ResolvedPalette.dimmedAlpha`, je Theme und Variante berechnet). Überschrift, Link, Zitat, Listenmarker und erledigte To-dos fallen ebenfalls nicht darunter; schwächere Rollen werden dafür weniger abgedunkelt. Mit einer Auswahl bleiben alle berührten Blöcke hell und es wird nicht gescrollt. Liegt der Fokus im Titel oder in der Sidebar, ist nichts abgedunkelt. Ein leerer Titel (Platzhalter „Ohne Titel“) bleibt hell. Sidebar und Symbolleiste bleiben unverändert; sie lassen sich wie gewohnt ausblenden (⌃⌘S). Gespeichert pro Mac, wie das Theme.
 
 ## Typografie
 

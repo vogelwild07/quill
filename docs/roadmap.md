@@ -110,6 +110,14 @@ Aus dem Review von PR #10, nicht eingeplant (Urteile, kein Fehler):
 - Bundle-ID-Präfix und Mindestversion stehen in `make-release.sh`, `check-release-binary.sh` und `BundleIdentifierTests` zusätzlich zum Projekt; aus dem Build lesen (`xcodebuild -showBuildSettings`).
 - `BundleIdentifierTests` und `LocalizationTests` teilen sich `LocalizationTests.root`; eine gemeinsame Hilfe `RepoRoot` statt der Kopplung an eine fremde Testklasse.
 
+Aufräumen aus dem Review von PR #10 (Fokus-Modus), nicht eingeplant (Urteile, kein Fehler):
+- `EditorThemeState`: Palette suchen oder anlegen steht in `color` und `dimmedAlpha` doppelt; ein `palette(for:)` im Lock.
+- `EditorThemeSetup`: Auslesen von `-QuillEditorTheme` und `-QuillTestFocusMode` mit derselben Kette; Hilfe `value(after:)`.
+- Toggle-Binding für den Fokus-Modus steht in `QuillCommands` und `SettingsView`.
+- `Rendered` in `EditorFocusModeTests` ist fast wörtlich aus `EditorThemeControlTests` kopiert; nach `QuillTestFixtures`. `"hell"`/`"dunkel"` steht mehrfach.
+- `BlockLayoutFragment.isDimmed` castet bei jedem Zeichnen den Delegate (bei Bildern zweimal).
+- `-QuillEditorTheme` heißt wie der Defaults-Schlüssel `QuillEditorTheme` und wirkt deshalb über die Argument-Domain auch ohne Test-Store (wie vorher `-QuillFocusMode`); umbenennen.
+
 Infrastruktur, nicht eingeplant:
 - CI-Workflow auf GitHub (macOS-Runner): Build, Package- und App-Tests ohne Warnungen bei jedem PR. Bisher wird nur lokal getestet; PR #5 wurde auf Basis der lokalen Tests gemergt.
 
