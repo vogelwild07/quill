@@ -6,6 +6,7 @@ import Testing
 /// erlaubt; alles mit AppKit, UIKit oder SwiftUI gehört nach QuillEditor.
 @Suite("Editor-Kern: ohne AppKit, UIKit und SwiftUI")
 struct EditorCoreImportTests {
+    /// Wurzel des Repos; dieselbe wie für `LocalizationTests`, die ebenfalls Quellen lesen.
     static let root = LocalizationTests.root
     static let sources = "Packages/QuillKit/Sources/QuillEditorCore"
     static let allowed: Set<String> = ["Foundation", "Observation", "Synchronization", "QuillModel"]
@@ -23,7 +24,7 @@ struct EditorCoreImportTests {
             let lines = try String(contentsOf: file, encoding: .utf8).split(separator: "\n", omittingEmptySubsequences: false)
             for (number, line) in lines.enumerated() {
                 // `import X`, auch mit Attributen (`@testable`, `@preconcurrency`) oder Art (`import struct X.Y`).
-                let words = line.split(separator: " ").filter { !$0.hasPrefix("@") }
+                let words = line.split(whereSeparator: \.isWhitespace).filter { !$0.hasPrefix("@") }
                 guard words.first == "import", words.count >= 2 else { continue }
                 let target = Self.importKinds.contains(String(words[1])) && words.count >= 3 ? words[2] : words[1]
                 let module = String(target.split(separator: ".").first ?? target)
@@ -37,6 +38,11 @@ struct EditorCoreImportTests {
 
     @Test func coreDependsOnlyOnTheModel() throws {
         let package = try String(contentsOf: Self.root.appending(path: "Packages/QuillKit/Package.swift"), encoding: .utf8)
-        #expect(package.contains(#".target(name: "QuillEditorCore", dependencies: ["QuillModel"])"#))
+        // Unabhängig von Zeilenumbrüchen und Einrückung im Manifest.
+        let target = #/\.target\(\s*name:\s*"QuillEditorCore",\s*dependencies:\s*\[([^\]]*)\]/#
+        let match = try #require(package.firstMatch(of: target), "Target QuillEditorCore nicht gefunden")
+        let dependencies = match.1.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        #expect(dependencies == [#""QuillModel""#])
     }
 }
