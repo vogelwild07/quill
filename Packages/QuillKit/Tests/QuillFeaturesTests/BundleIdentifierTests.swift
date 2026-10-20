@@ -35,7 +35,11 @@ struct BundleIdentifierTests {
         let old = Data(Self.oldPrefix.utf8)
         let hits = try files.filter { path in
             guard !Self.allowedFiles.contains(path) else { return false }
-            return try Data(contentsOf: Self.root.appending(path: path)).range(of: old) != nil
+            // Gelöscht, aber noch nicht gestagt: `git ls-files` nennt die Datei weiter,
+            // sie kann die alte Kennung aber nicht mehr enthalten.
+            let url = Self.root.appending(path: path)
+            guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return false }
+            return try Data(contentsOf: url).range(of: old) != nil
         }
         #expect(hits.isEmpty, "Alte Kennung in: \(hits.joined(separator: ", "))")
     }
