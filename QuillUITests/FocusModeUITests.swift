@@ -58,8 +58,11 @@ final class FocusModeUITests: XCTestCase {
         XCTAssertEqual(editor.value as? String, before)
         editor.click()
         app.typeText(" und mehr")
+        let typed = editor.value as? String
         app.typeKey("z", modifierFlags: .command)
-        XCTAssertEqual(editor.value as? String, before)
+        // Undo nimmt Getipptes zurück (Tippen wird zusammengefasst), nicht den Schalter.
+        XCTAssertNotEqual(editor.value as? String, typed)
+        XCTAssertFalse((editor.value as? String ?? "").contains("und mehr"))
 
         app.typeKey("f", modifierFlags: [.command, .shift])
         XCTAssertFalse(isOn(openSettings()), "⇧⌘F schaltet wieder aus")
