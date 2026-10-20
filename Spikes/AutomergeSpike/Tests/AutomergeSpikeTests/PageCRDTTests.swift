@@ -1,6 +1,6 @@
 import Automerge
 import Foundation
-import QuillEditor
+import QuillEditorCore
 import QuillModel
 import Testing
 @testable import AutomergeSpike

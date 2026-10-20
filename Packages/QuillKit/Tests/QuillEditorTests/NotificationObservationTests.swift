@@ -1,8 +1,9 @@
 #if canImport(AppKit)
 import AppKit
+@testable import QuillEditor
+@testable import QuillEditorCore
 import Synchronization
 import Testing
-@testable import QuillEditor
 
 @MainActor
 @Suite("Editor: Beobachter")

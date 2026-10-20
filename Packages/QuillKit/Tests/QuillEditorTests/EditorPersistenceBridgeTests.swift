@@ -1,8 +1,9 @@
 import Foundation
+@testable import QuillEditor
+@testable import QuillEditorCore
 import QuillModel
 import SwiftData
 import Testing
-@testable import QuillEditor
 
 @MainActor
 @Suite("Persistenz: EditorPersistenceBridge", .serialized)

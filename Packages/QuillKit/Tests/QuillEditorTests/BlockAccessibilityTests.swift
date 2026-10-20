@@ -1,9 +1,10 @@
 #if canImport(AppKit)
 import AppKit
 import QuillDesign
+@testable import QuillEditor
+@testable import QuillEditorCore
 import QuillModel
 import Testing
-@testable import QuillEditor
 
 /// VoiceOver im Editor: Checkboxen als Elemente, Bilder beschriftet, Trenner
 /// übergangen, Blockart im Text der

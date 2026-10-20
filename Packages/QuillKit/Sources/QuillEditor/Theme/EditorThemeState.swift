@@ -1,14 +1,10 @@
 #if canImport(AppKit)
 import AppKit
+#elseif canImport(UIKit)
+import UIKit
+#endif
+import QuillEditorCore
 import Synchronization
-
-/// Rollen der Theme-Farben im Editor; `EditorColor` liefert je Rolle eine dynamische Farbe.
-enum EditorColorRole: CaseIterable, Sendable {
-    case background, text, heading, link, secondary, quoteBar, codeBackground, accent, onAccent, done, selection
-    /// Abgeleitet: Platzhalter der leeren Seite; Ziehgriff, Plus-Knopf und Trennlinie;
-    /// Rahmen der leeren Checkbox (wie `done`, im Fokus-Modus aber eine Fläche).
-    case placeholder, control, checkboxBorder
-}
 
 /// Aktuelles Theme für die dynamischen Farben des Editors.
 ///
@@ -41,15 +37,10 @@ enum EditorThemeState {
         state.withLock { $0 = State(theme: $0.theme, increaseContrast: increaseContrast) }
     }
 
-    static func color(_ role: EditorColorRole, for appearance: NSAppearance) -> NSColor {
+    static func color(_ role: EditorColorRole, for appearance: PlatformAppearance) -> PlatformColor {
         let isDimmed = isDrawingDimmed
-        return state.withLock { state in
-            let variant = EditorThemeVariant(appearance, increaseContrast: state.increaseContrast)
-            if let palette = state.palettes[variant] { return isDimmed ? palette.dimmed(role) : palette[role] }
-            let palette = ResolvedPalette(state.theme.palette(for: variant), variant: variant)
-            state.palettes[variant] = palette
-            return isDimmed ? palette.dimmed(role) : palette[role]
-        }
+        let palette = palette(for: appearance)
+        return isDimmed ? palette.dimmed(role) : palette[role]
     }
 
     /// Zeichnet `body` mit den abgedunkelten Farben des Fokus-Modus.
@@ -62,253 +53,80 @@ enum EditorThemeState {
     }
 
     /// Deckkraft abgedunkelter Absätze im Fokus-Modus für die Darstellung.
-    static func dimmedAlpha(for appearance: NSAppearance) -> CGFloat {
+    static func dimmedAlpha(for appearance: PlatformAppearance) -> CGFloat {
+        palette(for: appearance).dimmedAlpha
+    }
+
+    private static func palette(for appearance: PlatformAppearance) -> ResolvedPalette {
         state.withLock { state in
             let variant = EditorThemeVariant(appearance, increaseContrast: state.increaseContrast)
-            if let palette = state.palettes[variant] { return palette.dimmedAlpha }
+            if let palette = state.palettes[variant] { return palette }
             let palette = ResolvedPalette(state.theme.palette(for: variant), variant: variant)
             state.palettes[variant] = palette
-            return palette.dimmedAlpha
+            return palette
         }
     }
 }
 
-/// Farben einer Palette als `NSColor`, mit „Kontrast erhöhen“ verstärkt.
+/// Farben einer Palette als Plattformfarben, gerechnet in `PaletteSpec`.
 struct ResolvedPalette: Sendable {
-    private let colors: [EditorColorRole: NSColor]
+    private let colors: [EditorColorRole: PlatformColor]
     /// Abgedunkelte Farben im Fokus-Modus (`EditorThemeState.drawingDimmed`).
-    private let dimmedColors: [EditorColorRole: NSColor]
-    /// Deckkraft abgedunkelter Absätze im Fokus-Modus: Fließtext darüber Richtung
-    /// Hintergrund, so weit wie möglich, aber über `minimumDimmedContrast`. Gilt auch
-    /// für Kopf, Bilder und Flächen; Textrollen werden höchstens so weit abgedunkelt,
-    /// dass sie den Mindestkontrast behalten (`dimmed(_:)`).
+    private let dimmedColors: [EditorColorRole: PlatformColor]
+    /// Deckkraft abgedunkelter Absätze im Fokus-Modus (`PaletteSpec.dimmedAlpha`).
     let dimmedAlpha: CGFloat
 
-    subscript(role: EditorColorRole) -> NSColor { colors[role] ?? .labelColor }
+    subscript(role: EditorColorRole) -> PlatformColor { colors[role] ?? .systemLabel }
 
-    func dimmed(_ role: EditorColorRole) -> NSColor { dimmedColors[role] ?? self[role] }
+    func dimmed(_ role: EditorColorRole) -> PlatformColor { dimmedColors[role] ?? self[role] }
+
+    init(_ palette: EditorPalette, variant: EditorThemeVariant) {
+        let spec = PaletteSpec(palette, variant: variant)
+        let colors = spec.colors.mapValues(\.platformColor)
+        self.colors = colors
+        var dimmedColors: [EditorColorRole: PlatformColor] = [:]
+        for (role, alpha) in spec.dimmedAlphas {
+            dimmedColors[role] = colors[role].map { Self.faded($0, alpha: alpha) }
+        }
+        self.dimmedColors = dimmedColors
+        dimmedAlpha = spec.dimmedAlpha
+    }
 
     /// `color` mit Deckkraft `alpha`, weiter dynamisch: `withAlphaComponent` löst
     /// Systemfarben wie `labelColor` sonst einmal in der gerade aktuellen Darstellung auf.
-    static func faded(_ color: NSColor, alpha: CGFloat) -> NSColor {
-        NSColor(name: nil) { appearance in
-            var result = color
-            appearance.performAsCurrentDrawingAppearance {
-                result = (color.usingColorSpace(.sRGB) ?? color).withAlphaComponent(alpha)
-            }
-            return result
-        }
-    }
-
-    /// Textrollen, die im Fokus-Modus den Mindestkontrast behalten.
-    static let textRoles: [EditorColorRole] = [.text, .heading, .link, .secondary, .done]
-
-    /// Mindestkontrast von Text zum Hintergrund (WCAG AA bzw. AAA).
-    static let minimumContrast = 4.5
-    static let minimumHighContrast = 7.0
-    /// Bedienelemente und Linien (WCAG 1.4.11); mit „Kontrast erhöhen“ 4,5 : 1.
-    static let minimumControlContrast = 3.0
-    static let minimumHighControlContrast = 4.5
-    /// Abgedunkelter Fließtext im Fokus-Modus; mit „Kontrast erhöhen“ 4,5 : 1.
-    static let minimumDimmedContrast = 3.0
-    static let minimumHighDimmedContrast = 4.5
-
-    init(_ palette: EditorPalette, variant: EditorThemeVariant) {
-        let background = palette.background.approximation(variant)
-        let code = palette.codeBackground.approximation(variant).over(background)
-        let target = variant.isHighContrast ? Self.minimumHighContrast : Self.minimumContrast
-
-        /// Textfarben: mit „Kontrast erhöhen“ Richtung Schwarz bzw. Weiß, bis sie 7 : 1
-        /// zu Hintergrund und Codefläche erreichen. Systemfarben haben eigene Varianten.
-        func textColor(_ color: ThemeColor) -> (NSColor, SRGB) {
-            guard case .rgb = color, variant.isHighContrast else {
-                return (color.nsColor, color.approximation(variant))
-            }
-            let strong = color.approximation(variant).strengthened(against: [background, code], minimum: target)
-            return (strong.nsColor, strong)
-        }
-
-        var colors: [EditorColorRole: NSColor] = [:]
-        var textValues: [SRGB] = []
-        for (role, color) in zip(Self.textRoles, [palette.text, palette.heading, palette.link, palette.secondary, palette.done]) {
-            let (resolved, value) = textColor(color)
-            colors[role] = resolved
-            textValues.append(value)
-        }
-        colors[.background] = palette.background.nsColor
-        colors[.codeBackground] = palette.codeBackground.nsColor
-        colors[.quoteBar] = palette.quoteBar.nsColor
-        colors[.checkboxBorder] = colors[.done]
-        colors[.accent] = palette.accent.nsColor
-        // Platzhalter und Bedienelemente: Text Richtung Hintergrund, so zurückhaltend
-        // wie möglich, aber über dem Mindestkontrast.
-        let ink = textValues[0].over(background)
-        let controlTarget = variant.isHighContrast ? Self.minimumHighControlContrast : Self.minimumControlContrast
-        colors[.placeholder] = ink.softened(toward: background, minimum: target).nsColor
-        colors[.control] = ink.softened(toward: background, minimum: controlTarget).nsColor
-        // Häkchen auf der Akzentfläche: Weiß oder Tinte, je nachdem was stärker absetzt.
-        let accent = palette.accent.approximation(variant)
-        colors[.onAccent] = (SRGB.white.contrast(to: accent) >= SRGB.ink.contrast(to: accent) ? SRGB.white : SRGB.ink).nsColor
-
-        // Auswahl: weniger deckend, bis jede Textrolle darauf das Ziel erreicht.
-        var selection = palette.selection.approximation(variant)
-        func textContrast(on surface: SRGB) -> Double {
-            textValues.map { $0.over(surface).contrast(to: surface) }.min() ?? 21
-        }
-        while selection.alpha > 0.1, textContrast(on: selection.over(background)) < target {
-            selection.alpha -= 0.05
-        }
-        colors[.selection] = selection.nsColor
-        self.colors = colors
-        let dimmedTarget = variant.isHighContrast ? Self.minimumHighDimmedContrast : Self.minimumDimmedContrast
-        let alpha = ink.fadedAlpha(over: background, minimum: dimmedTarget)
-        dimmedAlpha = alpha
-        // Jede Textrolle so weit wie der Fließtext, schwächere Rollen (Zitat, Marker,
-        // Erledigt) weniger, damit sie über dem Mindestkontrast bleiben. Deckkraft
-        // relativ zur eigenen, damit Systemfarben wie `labelColor` ihre behalten.
-        var dimmedColors: [EditorColorRole: NSColor] = [:]
-        for (role, value) in zip(Self.textRoles, textValues) {
-            let roleAlpha = max(alpha, value.over(background).fadedAlpha(over: background, minimum: dimmedTarget))
-            dimmedColors[role] = colors[role].map { Self.faded($0, alpha: value.alpha * roleAlpha) }
-        }
-        // Flächen, Linien und Häkchen wie der Fließtext (ADR-027).
-        for (role, color) in [(EditorColorRole.codeBackground, palette.codeBackground), (.quoteBar, palette.quoteBar),
-                              (.accent, palette.accent), (.checkboxBorder, palette.done)] {
-            dimmedColors[role] = colors[role].map { Self.faded($0, alpha: color.approximation(variant).alpha * alpha) }
-        }
-        dimmedColors[.control] = colors[.control].map { Self.faded($0, alpha: alpha) }
-        dimmedColors[.onAccent] = colors[.onAccent].map { Self.faded($0, alpha: alpha) }
-        self.dimmedColors = dimmedColors
+    static func faded(_ color: PlatformColor, alpha: CGFloat) -> PlatformColor {
+        .dynamic(named: nil) { color.resolved(in: $0).withAlphaComponent(alpha) }
     }
 }
 
-/// sRGB-Farbe mit Deckkraft, für Kontrastrechnung nach WCAG 2.
-struct SRGB: Sendable, Equatable {
-    var red, green, blue: Double
-    var alpha = 1.0
-
-    static let white = SRGB(red: 1, green: 1, blue: 1)
-    static let black = SRGB(red: 0, green: 0, blue: 0)
-    /// Tinte aus dem App-Icon (#1F2A33).
-    static let ink = SRGB(hex: 0x1F2A33)
-
-    init(red: Double, green: Double, blue: Double, alpha: Double = 1) {
-        self.red = red
-        self.green = green
-        self.blue = blue
-        self.alpha = alpha
-    }
-
-    init(hex: UInt32, alpha: Double = 1) {
-        self.init(
-            red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255,
-            blue: Double(hex & 0xFF) / 255, alpha: alpha
-        )
-    }
-
-    var luminance: Double {
-        func linear(_ value: Double) -> Double {
-            value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
-        }
-        return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue)
-    }
-
-    /// Kontrast zweier deckender Farben, 1 bis 21.
-    func contrast(to other: SRGB) -> Double {
-        let (a, b) = (luminance, other.luminance)
-        return (max(a, b) + 0.05) / (min(a, b) + 0.05)
-    }
-
-    /// Diese Farbe mit ihrer Deckkraft über `background`.
-    func over(_ background: SRGB) -> SRGB {
-        func mix(_ top: Double, _ bottom: Double) -> Double { top * alpha + bottom * (1 - alpha) }
-        return SRGB(red: mix(red, background.red), green: mix(green, background.green), blue: mix(blue, background.blue))
-    }
-
-    /// In Schritten Richtung Schwarz (heller Hintergrund) oder Weiß, bis der Kontrast
-    /// zu allen Hintergründen reicht.
-    func strengthened(against backgrounds: [SRGB], minimum: Double) -> SRGB {
-        let lightBackground = (backgrounds.first?.luminance ?? 1) > 0.18
-        let extreme = lightBackground ? SRGB.black : SRGB.white
-        var color = self
-        var step = 0.0
-        while step < 1, backgrounds.contains(where: { color.contrast(to: $0) < minimum }) {
-            step += 0.05
-            color = SRGB(red: red + (extreme.red - red) * step, green: green + (extreme.green - green) * step,
-                         blue: blue + (extreme.blue - blue) * step, alpha: alpha)
-        }
-        return color
-    }
-
-    /// In Schritten Richtung `background`, solange der Kontrast mit etwas Reserve über
-    /// `minimum` bleibt.
-    func softened(toward background: SRGB, minimum: Double) -> SRGB {
-        var color = self
-        for step in stride(from: 0.05, through: 1, by: 0.05) {
-            let next = SRGB(red: red + (background.red - red) * step, green: green + (background.green - green) * step,
-                            blue: blue + (background.blue - blue) * step, alpha: alpha)
-            guard next.contrast(to: background) >= minimum + 0.1 else { break }
-            color = next
-        }
-        return color
-    }
-
-    /// Kleinste Deckkraft in Schritten von 0,05, bei der diese Farbe über `background`
-    /// mit etwas Reserve über `minimum` bleibt; 1, wenn sie das schon deckend nicht schafft.
-    func fadedAlpha(over background: SRGB, minimum: Double) -> CGFloat {
-        var result = 1.0
-        for alpha in stride(from: 0.95, through: 0.05, by: -0.05) {
-            var faded = self
-            faded.alpha = self.alpha * alpha
-            guard faded.over(background).contrast(to: background) >= minimum + 0.1 else { break }
-            result = alpha
-        }
-        return result
-    }
-
-    var nsColor: NSColor { NSColor(srgbRed: red, green: green, blue: blue, alpha: alpha) }
-}
-
-extension ThemeColor {
-    var nsColor: NSColor {
+extension ResolvedColor {
+    var platformColor: PlatformColor {
         switch self {
-        case .rgb(let hex, let alpha): SRGB(hex: hex, alpha: alpha).nsColor
+        #if canImport(AppKit)
+        case .srgb(let value): NSColor(srgbRed: value.red, green: value.green, blue: value.blue, alpha: value.alpha)
         case .system(.textBackground): .textBackgroundColor
         case .system(.label): .labelColor
         case .system(.quaternaryFill): .quaternarySystemFill
-        }
-    }
-
-    /// Wert für die Kontrastrechnung. Systemfarben als Näherung ihrer Werte unter
-    /// macOS 26, auch mit „Kontrast erhöhen“ die normalen: Die kontrastreichen setzen
-    /// sich stärker ab, und nur die normalen kann der Test auflösen (`EditorThemeContrastTests`).
-    func approximation(_ variant: EditorThemeVariant) -> SRGB {
-        switch self {
-        case .rgb(let hex, let alpha): SRGB(hex: hex, alpha: alpha)
-        case .system(.textBackground): variant.isDark ? SRGB(hex: 0x1E1E1E) : .white
-        case .system(.label): SRGB(hex: variant.isDark ? 0xFFFFFF : 0x000000, alpha: 0.85)
-        case .system(.quaternaryFill): SRGB(hex: variant.isDark ? 0xFFFFFF : 0x000000, alpha: variant.isDark ? 0.10 : 0.05)
+        #else
+        case .srgb(let value): UIColor(red: value.red, green: value.green, blue: value.blue, alpha: value.alpha)
+        case .system(.textBackground): .systemBackground
+        case .system(.label): .label
+        case .system(.quaternaryFill): .quaternarySystemFill
+        #endif
         }
     }
 }
-#endif
 
-#if canImport(AppKit)
 /// Farben eines Themes für Ansichten außerhalb des Editors (Vorschau in den
 /// Einstellungen, Seitentitel), so wie der Editor sie zeichnet.
 public struct EditorThemeColors: Sendable {
-    public let background, text, heading, link, secondary, quoteBar, codeBackground, accent, onAccent, done, selection: NSColor
+    public let background, text, heading, link, secondary, quoteBar, codeBackground, accent, onAccent, done, selection: PlatformColor
 }
 
 extension EditorTheme {
     /// Feste Themes haben nur eine Variante; `dark` gilt dann nicht.
     public func colors(dark: Bool, increaseContrast: Bool) -> EditorThemeColors {
-        let variant: EditorThemeVariant = switch (dark, increaseContrast) {
-        case (false, false): .light
-        case (true, false): .dark
-        case (false, true): .lightHighContrast
-        case (true, true): .darkHighContrast
-        }
+        let variant = EditorThemeVariant(dark: dark, highContrast: increaseContrast)
         let palette = ResolvedPalette(palette(for: variant), variant: variant)
         return EditorThemeColors(
             background: palette[.background], text: palette[.text], heading: palette[.heading], link: palette[.link],
@@ -317,4 +135,3 @@ extension EditorTheme {
         )
     }
 }
-#endif

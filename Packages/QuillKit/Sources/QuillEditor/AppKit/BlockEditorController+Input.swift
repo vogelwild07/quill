@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillEditorCore
 import QuillModel
 
 /// Eingabe: Abfangen von Änderungen über Blockgrenzen, Enter, Tab, Backspace,

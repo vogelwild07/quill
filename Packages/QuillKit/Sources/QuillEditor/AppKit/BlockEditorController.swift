@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillEditorCore
 import QuillModel
 
 /// Verbindet `EditorDocument` mit einem TextKit-2-`NSTextView` (ADR-007).

@@ -1,5 +1,6 @@
 import QuillDesign
 import QuillEditor
+import QuillEditorCore
 import QuillModel
 import SwiftData
 import SwiftUI
@@ -116,13 +117,12 @@ struct PageHeaderView: View {
     /// Textfarbe des Themes (ADR-024). Liest `EditorThemeSettings`, damit ein Wechsel
     /// neu zeichnet; feste Themes erzwingen ihre Darstellung schon im Editor.
     private var titleColor: Color {
-        #if canImport(AppKit)
         let settings = EditorThemeSettings.shared
         let colors = settings.theme.colors(dark: colorScheme == .dark, increaseContrast: settings.increaseContrast)
+        #if canImport(AppKit)
         return Color(nsColor: colors.text)
         #else
-        // Themes hängen noch an AppKit; plattformneutral ab Phase 10.3.
-        return .primary
+        return Color(uiColor: colors.text)
         #endif
     }
 

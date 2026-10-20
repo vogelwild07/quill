@@ -1,9 +1,8 @@
-#if canImport(AppKit)
-import AppKit
+import Foundation
 import Observation
 
 /// Fokus-Modus (Phase 18.1): Schreibmaschinen-Scrollen und abgedunkelte Umgebung.
-/// Pro Mac in den Einstellungen (`UserDefaults`), nicht im Store, in Backups oder im
+/// Pro Gerät in den Einstellungen (`UserDefaults`), nicht im Store, in Backups oder im
 /// Export, wie das Theme (ADR-024).
 ///
 /// Ein Wechsel wirkt sofort in allen Fenstern: Die Editoren beobachten `didChange`.
@@ -41,4 +40,3 @@ public final class EditorFocusSettings {
         NotificationCenter.default.post(name: Self.didChange, object: nil)
     }
 }
-#endif

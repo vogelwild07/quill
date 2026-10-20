@@ -1,4 +1,5 @@
 import Foundation
+import QuillEditorCore
 import QuillModel
 
 /// Eintrag im Slash-Menü.

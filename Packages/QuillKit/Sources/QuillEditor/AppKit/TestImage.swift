@@ -1,6 +1,7 @@
 #if canImport(AppKit) && DEBUG
 import AppKit
 import OSLog
+import QuillEditorCore
 
 /// Startargument `-QuillTestImage <Breite>x<Höhe>`, `heavy` oder `demo`:
 /// Die App erzeugt das Testbild selbst und legt es in ihre eigene Zwischenablage

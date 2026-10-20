@@ -1,9 +1,10 @@
 import Foundation
 import QuillEditor
+import QuillEditorCore
+@testable import QuillExport
 import QuillModel
 import QuillTestFixtures
 import Testing
-@testable import QuillExport
 
 @Suite struct MarkdownExporterTests {
     static let strings = ExportStrings(untitled: "Ohne Titel", subpages: "Unterseiten", missingImage: "Bild fehlt")

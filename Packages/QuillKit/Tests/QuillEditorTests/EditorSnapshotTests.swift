@@ -1,10 +1,11 @@
 #if canImport(AppKit)
 import AppKit
 import ImageIO
-import QuillModel
-import Testing
 @testable import QuillEditor
+@testable import QuillEditorCore
+import QuillModel
 import QuillTestFixtures
+import Testing
 
 /// Rendert den Editor hell und dunkel aus der App selbst (keine Bildschirmfotos)
 /// und prüft, dass selbst gezeichnete Elemente Systemfarben nutzen.

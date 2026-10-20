@@ -1,6 +1,7 @@
 import Foundation
-import Testing
 @testable import QuillEditor
+@testable import QuillEditorCore
+import Testing
 
 // Rendern erzeugt Schriften (`NSFont`); das ist nur auf dem Main Thread zuverlässig,
 // parallel auf anderen Threads kam sporadisch `nil` zurück.

@@ -1,5 +1,5 @@
 import Foundation
-import QuillEditor
+import QuillEditorCore
 import QuillModel
 import UniformTypeIdentifiers
 

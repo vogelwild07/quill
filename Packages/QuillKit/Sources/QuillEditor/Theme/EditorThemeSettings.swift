@@ -1,8 +1,8 @@
-#if canImport(AppKit)
-import AppKit
+import Foundation
 import Observation
+import QuillEditorCore
 
-/// Gewähltes Theme, pro Mac in den Einstellungen (`UserDefaults`), nicht im Store,
+/// Gewähltes Theme, pro Gerät in den Einstellungen (`UserDefaults`), nicht im Store,
 /// in Backups oder im Export (ADR-024).
 ///
 /// Ein Wechsel wirkt sofort in allen Fenstern: Die Editoren beobachten `didChange`
@@ -26,14 +26,12 @@ public final class EditorThemeSettings {
     public var theme: EditorTheme { EditorTheme.with(id: selection) }
 
     init() {
-        increaseContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        increaseContrast = Platform.increasesContrast
         EditorThemeState.setIncreaseContrast(increaseContrast)
-        contrastObservation = NotificationObservation(
-            NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil,
-            center: NSWorkspace.shared.notificationCenter
-        ) { _ in
+        let change = Platform.increasesContrastDidChange
+        contrastObservation = NotificationObservation(change.name, object: nil, center: change.center) { _ in
             MainActor.assumeIsolated {
-                EditorThemeSettings.shared.setIncreaseContrast(NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast)
+                EditorThemeSettings.shared.setIncreaseContrast(Platform.increasesContrast)
             }
         }
     }
@@ -65,4 +63,3 @@ public final class EditorThemeSettings {
         NotificationCenter.default.post(name: Self.didChange, object: nil)
     }
 }
-#endif

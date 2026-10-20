@@ -1,7 +1,8 @@
 import Foundation
+@testable import QuillEditor
+@testable import QuillEditorCore
 import QuillModel
 import Testing
-@testable import QuillEditor
 
 private let bold: Set<InlineMark> = [.bold]
 

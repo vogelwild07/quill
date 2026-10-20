@@ -1,10 +1,10 @@
 import AutomergeSpike
 import Foundation
-import QuillEditor
+import QuillEditorCore
 
 // Nur auf dem Mac: misst mit frischen Prozessen (`Process`). Auf iOS baut nur die
 // Bibliothek des Spikes mit.
-#if os(macOS)
+#if canImport(AppKit)
 
 // Misst Automerge gegen die Kriterien aus ADR-026. Nur optimiert sinnvoll:
 //   swift run -c release automerge-spike-measure [laden|abgleich|speicher|alles]

@@ -1,5 +1,4 @@
-#if canImport(AppKit)
-import AppKit
+import Foundation
 
 /// Farbschema des Editors (ADR-024): Hintergrund, Text, Akzent, Überschriften,
 /// Zitate, Code, Aufgaben und Auswahl. Sidebar und Symbolleiste bleiben im
@@ -18,8 +17,8 @@ public struct EditorTheme: Identifiable, Sendable, Equatable {
     }
 
     public let id: ID
-    let light: EditorPalette?
-    let dark: EditorPalette?
+    package let light: EditorPalette?
+    package let dark: EditorPalette?
 
     public var appearance: Appearance {
         if light == nil { return .dark }
@@ -27,32 +26,8 @@ public struct EditorTheme: Identifiable, Sendable, Equatable {
         return .followsSystem
     }
 
-    public var name: String {
-        switch id {
-        case .standard: String(localized: "Standard", bundle: .module)
-        case .quill: String(localized: "Quill", bundle: .module)
-        case .tinte: String(localized: "Tinte", bundle: .module)
-        case .sonne: String(localized: "Sonne", bundle: .module)
-        case .lagune: String(localized: "Lagune", bundle: .module)
-        case .abend: String(localized: "Abend", bundle: .module)
-        case .kontrast: String(localized: "Kontrast", bundle: .module)
-        }
-    }
-
-    /// Erscheinungsbild, das der Editor für ein festes Theme erzwingt; `nil` folgt dem System.
-    /// Kontrastreiche Erscheinungsbilder lassen sich nicht erzeugen (`NSAppearance(named:)`
-    /// liefert dafür das normale); die Theme-Farben nehmen „Kontrast erhöhen“ deshalb
-    /// aus `EditorThemeState`, nicht aus dem Erscheinungsbild.
-    public var forcedAppearance: NSAppearance? {
-        switch appearance {
-        case .followsSystem: nil
-        case .light: NSAppearance(named: .aqua)
-        case .dark: NSAppearance(named: .darkAqua)
-        }
-    }
-
     /// Farben für eine Variante; feste Themes haben nur eine.
-    func palette(for variant: EditorThemeVariant) -> EditorPalette {
+    package func palette(for variant: EditorThemeVariant) -> EditorPalette {
         let palette = variant.isDark ? (dark ?? light) : (light ?? dark)
         // Ein Theme ohne Palette gibt es im Katalog nicht (`EditorThemeCatalogTests`).
         return palette ?? EditorTheme.standard.palette(for: variant)
@@ -66,14 +41,11 @@ public struct EditorTheme: Identifiable, Sendable, Equatable {
 }
 
 /// Hell oder dunkel, jeweils normal oder mit „Kontrast erhöhen“.
-enum EditorThemeVariant: Sendable, Hashable, CaseIterable {
+package enum EditorThemeVariant: Sendable, Hashable, CaseIterable {
     case light, dark, lightHighContrast, darkHighContrast
 
-    init(_ appearance: NSAppearance, increaseContrast: Bool) {
-        let match = appearance.bestMatch(from: [.aqua, .darkAqua, .accessibilityHighContrastAqua, .accessibilityHighContrastDarkAqua])
-        let dark = match == .darkAqua || match == .accessibilityHighContrastDarkAqua
-        let high = increaseContrast || match == .accessibilityHighContrastAqua || match == .accessibilityHighContrastDarkAqua
-        switch (dark, high) {
+    package init(dark: Bool, highContrast: Bool) {
+        switch (dark, highContrast) {
         case (false, false): self = .light
         case (true, false): self = .dark
         case (false, true): self = .lightHighContrast
@@ -81,44 +53,41 @@ enum EditorThemeVariant: Sendable, Hashable, CaseIterable {
         }
     }
 
-    var isDark: Bool { self == .dark || self == .darkHighContrast }
-    var isHighContrast: Bool { self == .lightHighContrast || self == .darkHighContrast }
-
-    /// Erscheinungsbild für Systemfarben; ohne kontrastreiche Varianten (siehe `forcedAppearance`).
-    var appearanceName: NSAppearance.Name { isDark ? .darkAqua : .aqua }
+    package var isDark: Bool { self == .dark || self == .darkHighContrast }
+    package var isHighContrast: Bool { self == .lightHighContrast || self == .darkHighContrast }
 }
 
 /// Farben eines Themes in einer Darstellung. Sonnengelb nur für Flächen, nie für Text.
-struct EditorPalette: Sendable, Equatable {
-    var background: ThemeColor
-    var text: ThemeColor
-    var heading: ThemeColor
-    var link: ThemeColor
+package struct EditorPalette: Sendable, Equatable {
+    package var background: ThemeColor
+    package var text: ThemeColor
+    package var heading: ThemeColor
+    package var link: ThemeColor
     /// Zitat und Listenmarker.
-    var secondary: ThemeColor
-    var quoteBar: ThemeColor
-    var codeBackground: ThemeColor
+    package var secondary: ThemeColor
+    package var quoteBar: ThemeColor
+    package var codeBackground: ThemeColor
     /// Fläche der abgehakten Checkbox und Einfügelinie beim Ziehen.
-    var accent: ThemeColor
+    package var accent: ThemeColor
     /// Erledigte Aufgabe und Rahmen der leeren Checkbox.
-    var done: ThemeColor
+    package var done: ThemeColor
     /// Auswahl mit Deckkraft, liegt über dem Hintergrund.
-    var selection: ThemeColor
+    package var selection: ThemeColor
 }
 
 /// sRGB-Farbe als `0xRRGGBB` oder eine Systemfarbe (nur Theme „Standard“).
-enum ThemeColor: Sendable, Equatable {
+package enum ThemeColor: Sendable, Equatable {
     case rgb(UInt32, alpha: Double = 1)
     case system(SystemColor)
 
-    enum SystemColor: Sendable, Equatable {
+    package enum SystemColor: Sendable, Equatable {
         case textBackground, label, quaternaryFill
     }
 }
 
 extension EditorTheme {
     /// Systemfarben; Akzent, Links und Auswahl in Petrol aus dem App-Icon.
-    static let standard = EditorTheme(
+    package static let standard = EditorTheme(
         id: .standard,
         light: EditorPalette(
             background: .system(.textBackground), text: .system(.label), heading: .system(.label),
@@ -135,7 +104,7 @@ extension EditorTheme {
     )
 
     /// Signatur-Theme aus den Farben des Icons: Petrol, Tinte, Sonnengelb.
-    static let quill = EditorTheme(
+    package static let quill = EditorTheme(
         id: .quill,
         light: EditorPalette(
             background: .rgb(0xF7FBFA), text: .rgb(0x1F2A33), heading: .rgb(0x0A5F5A),
@@ -151,7 +120,7 @@ extension EditorTheme {
         )
     )
 
-    static let tinte = EditorTheme(
+    package static let tinte = EditorTheme(
         id: .tinte,
         light: EditorPalette(
             background: .rgb(0xF3F5F7), text: .rgb(0x1F2A33), heading: .rgb(0x1F2A33),
@@ -167,7 +136,7 @@ extension EditorTheme {
         )
     )
 
-    static let sonne = EditorTheme(
+    package static let sonne = EditorTheme(
         id: .sonne,
         light: EditorPalette(
             background: .rgb(0xFFF8E6), text: .rgb(0x2A2A1F), heading: .rgb(0x1F2A33),
@@ -179,7 +148,7 @@ extension EditorTheme {
         dark: nil
     )
 
-    static let lagune = EditorTheme(
+    package static let lagune = EditorTheme(
         id: .lagune,
         light: nil,
         dark: EditorPalette(
@@ -190,7 +159,7 @@ extension EditorTheme {
         )
     )
 
-    static let abend = EditorTheme(
+    package static let abend = EditorTheme(
         id: .abend,
         light: nil,
         dark: EditorPalette(
@@ -201,7 +170,7 @@ extension EditorTheme {
         )
     )
 
-    static let kontrast = EditorTheme(
+    package static let kontrast = EditorTheme(
         id: .kontrast,
         light: EditorPalette(
             background: .rgb(0xFFFFFF), text: .rgb(0x000000), heading: .rgb(0x000000),
@@ -217,4 +186,3 @@ extension EditorTheme {
         )
     )
 }
-#endif

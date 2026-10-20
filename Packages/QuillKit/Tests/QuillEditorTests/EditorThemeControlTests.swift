@@ -1,8 +1,9 @@
 #if canImport(AppKit)
 import AppKit
+@testable import QuillEditor
+@testable import QuillEditorCore
 import QuillTestFixtures
 import Testing
-@testable import QuillEditor
 
 /// Platzhalter, Ziehgriff, Plus-Knopf und Trennlinie in den Farben des Themes (ADR-024),
 /// gezeichnet und gemessen in jedem Theme bei hellem und dunklem System, feste Themes

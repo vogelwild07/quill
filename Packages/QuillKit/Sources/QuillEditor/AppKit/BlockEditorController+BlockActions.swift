@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillEditorCore
 import QuillModel
 
 /// Aktionen auf ganze Blöcke: verschieben per Tastatur, duplizieren, löschen.

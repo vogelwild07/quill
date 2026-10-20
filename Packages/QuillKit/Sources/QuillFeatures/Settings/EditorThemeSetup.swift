@@ -1,6 +1,7 @@
 #if canImport(AppKit)
 import Foundation
 import QuillEditor
+import QuillEditorCore
 
 /// Liest Theme (ADR-024) und Fokus-Modus vor dem ersten Fenster.
 public enum EditorThemeSetup {

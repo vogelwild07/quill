@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import QuillEditor
+import QuillEditorCore
 import SwiftUI
 
 /// Menüleiste von Quill. Kürzel wie in Apple Notizen: ⌘N Neue Seite,
