@@ -1,0 +1,4 @@
+# Kopie als Config/Local.push-check anlegen (wird nicht committet). Eine Zeile pro
+# Wert, der nie in einem Push stehen darf, mindestens die private E-Mail-Adresse.
+# Team-ID (aus Config/Local.xcconfig) und Benutzerpfad prüft Scripts/push.sh selbst.
+name@example.com
