@@ -40,4 +40,12 @@ von SwiftPM beim Laden geprüft) und wird statisch gelinkt (`staticlib`).
 
 Apple M4, 10 Kerne, 16 GB, macOS 27.0.1, Swift 6.4, Release-Build.
 
-Die Ergebnisse sind noch nicht bewertet; die Entscheidung steht danach in ADR-026.
+| Messung | Ergebnis |
+|---|---|
+| Laden einer Seite (5.000 Wörter, Commit pro Wort / pro Tastendruck) | 28 / 61 ms |
+| Laden, Schwerfall 15.000 Wörter (pro Wort / pro Tastendruck) | 85 / 194 ms |
+| Abgleich im Hintergrund, dieselben vier Fälle | 33 / 68 / 103 / 214 ms |
+| 1.000 Seiten mit Geschichte | 11,9 MB (pro Wort), 11,3 MB (pro Tastendruck) |
+| App-Größe | `.app` +4,86 MiB, `.dmg` +2,02 MiB |
+
+Bewertung, neu gefasstes Kriterium zum Laden und Entscheidung: ADR-026.
