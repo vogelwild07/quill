@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "de",
   "strings" : {
+    "Abend" : {
+
+    },
     "Abhaken" : {
 
     },
@@ -73,6 +76,12 @@
     "Keine Treffer" : {
 
     },
+    "Kontrast" : {
+
+    },
+    "Lagune" : {
+
+    },
     "Leere Seite – mit „/“ wählst du eine Blockart." : {
 
     },
@@ -103,7 +112,19 @@
     "Nummerierte Liste" : {
 
     },
+    "Quill" : {
+
+    },
+    "Sonne" : {
+
+    },
+    "Standard" : {
+
+    },
     "Text" : {
+
+    },
+    "Tinte" : {
 
     },
     "Tippen" : {

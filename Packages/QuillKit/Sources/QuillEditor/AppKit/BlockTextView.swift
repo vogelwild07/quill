@@ -33,13 +33,25 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         insertButton.textView = self
         addSubview(insertButton)
         dropIndicator.wantsLayer = true
-        dropIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+        updateLayerColors()
         dropIndicator.layer?.cornerRadius = 1
         dropIndicator.isHidden = true
         addSubview(dropIndicator)
     }
 
     required init?(coder: NSCoder) { fatalError("nicht unterstützt") }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        updateLayerColors()
+    }
+
+    /// Ebenen kennen keine dynamischen Farben; nach Theme- oder Darstellungswechsel neu setzen.
+    func updateLayerColors() {
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            dropIndicator.layer?.backgroundColor = EditorColor.accent.cgColor
+        }
+    }
 
     // MARK: Layout: zentrierte Textspalte
 
@@ -427,7 +439,7 @@ final class BlockHandleView: NSView, NSDraggingSource {
     weak var textView: BlockTextView?
     var characterOffset = 0
 
-    /// Unter dem Mauszeiger kräftiger (Systemfarben, hell und dunkel).
+    /// Unter dem Mauszeiger kräftiger, in den Farben des Themes.
     var isHovered = false {
         didSet { if isHovered != oldValue { needsDisplay = true } }
     }
@@ -459,7 +471,7 @@ final class BlockHandleView: NSView, NSDraggingSource {
 
     /// ⋮⋮ als 2 × 3 Punkte; SF Symbols hat unter macOS 26 kein passendes Zeichen.
     override func draw(_ dirtyRect: NSRect) {
-        (isHovered ? NSColor.secondaryLabelColor : NSColor.tertiaryLabelColor).setFill()
+        (isHovered ? EditorColor.secondary : EditorColor.control).setFill()
         let diameter: CGFloat = 3, spacing: CGFloat = 4.5
         let width = diameter + spacing, height = diameter + 2 * spacing
         let origin = CGPoint(x: ((bounds.width - width) / 2).rounded(), y: ((bounds.height - height) / 2).rounded())

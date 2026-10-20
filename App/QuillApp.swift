@@ -21,6 +21,10 @@ struct QuillApp: App {
         .commands {
             QuillCommands(persistence: try? appDelegate.persistence.get())
         }
+
+        Settings {
+            SettingsView()
+        }
     }
 }
 
@@ -34,6 +38,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let profilingReset: Void = ProfilingSeed.resetStoreIfRequested()
     #endif
     let persistence = Result { try QuillPersistence.open() }
+    /// Vor dem ersten Fenster, damit der erste Editor schon im gewählten Theme zeichnet.
+    private let editorTheme: Void = EditorThemeSetup.configure()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         #if QUILL_PROFILING

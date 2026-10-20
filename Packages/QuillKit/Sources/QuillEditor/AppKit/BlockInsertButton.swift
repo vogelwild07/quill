@@ -8,7 +8,7 @@ final class BlockInsertButton: NSView {
     weak var textView: BlockTextView?
     var characterOffset = 0
 
-    /// Unter dem Mauszeiger kräftiger (Systemfarben, hell und dunkel).
+    /// Unter dem Mauszeiger kräftiger, in den Farben des Themes.
     var isHovered = false {
         didSet { if isHovered != oldValue { needsDisplay = true } }
     }
@@ -29,10 +29,10 @@ final class BlockInsertButton: NSView {
     /// ＋ als zwei Striche; gezeichnet statt SF Symbol, damit die Farbe stimmt.
     override func draw(_ dirtyRect: NSRect) {
         if isHovered {
-            NSColor.quaternarySystemFill.setFill()
+            EditorColor.codeBackground.setFill()
             NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 2), xRadius: QuillDesign.Radius.small, yRadius: QuillDesign.Radius.small).fill()
         }
-        (isHovered ? NSColor.secondaryLabelColor : NSColor.tertiaryLabelColor).setStroke()
+        (isHovered ? EditorColor.secondary : EditorColor.control).setStroke()
         let center = CGPoint(x: bounds.midX.rounded(), y: bounds.midY.rounded())
         let arm: CGFloat = 5
         let plus = NSBezierPath()

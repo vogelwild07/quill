@@ -38,7 +38,7 @@ extension BlockTextView {
         super.draw(dirtyRect)
         guard showsEmptyPageHint, let rect = emptyPageHintRect else { return }
         var attributes = typingAttributes
-        attributes[.foregroundColor] = NSColor.placeholderTextColor
+        attributes[.foregroundColor] = EditorColor.placeholder
         NSAttributedString(string: Self.emptyPageHint, attributes: attributes)
             .draw(with: rect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
     }

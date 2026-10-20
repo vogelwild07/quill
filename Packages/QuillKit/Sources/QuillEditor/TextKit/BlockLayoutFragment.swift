@@ -144,7 +144,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         case .paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .todo, .divider, .image: break
         }
         for rect in inlineCodeRects {
-            fillRoundedRect(rect, radius: QuillDesign.Radius.small, color: EditorColor.quaternaryFill, in: context)
+            fillRoundedRect(rect, radius: QuillDesign.Radius.small, color: EditorColor.codeBackground, in: context)
         }
         context.restoreGState()
 
@@ -164,13 +164,13 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     }
 
     private func drawCodeBackground(in context: CGContext) {
-        fillRoundedRect(codeBackgroundRect, radius: QuillDesign.Radius.large, color: EditorColor.quaternaryFill, in: context)
+        fillRoundedRect(codeBackgroundRect, radius: QuillDesign.Radius.large, color: EditorColor.codeBackground, in: context)
     }
 
     private func drawQuoteBar(in context: CGContext) {
         let bounds = contentBounds.isNull ? CGRect(x: 0, y: 0, width: 0, height: 20) : contentBounds
         let bar = CGRect(x: markerOriginX + 2, y: bounds.minY + 2, width: QuillDesign.EditorLayout.quoteBarWidth, height: bounds.height - 4)
-        fillRoundedRect(bar, radius: QuillDesign.EditorLayout.quoteBarWidth / 2, color: EditorColor.accent.withAlphaComponent(0.6), in: context)
+        fillRoundedRect(bar, radius: QuillDesign.EditorLayout.quoteBarWidth / 2, color: EditorColor.quoteBar, in: context)
     }
 
     private func drawBullet(in context: CGContext) {
@@ -195,7 +195,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         let step = QuillDesign.Spacing.indentStep
         let x = alignRight ? markerOriginX + step - 6 - width : markerOriginX + 6
 
-        context.setFillColor(EditorColor.secondaryLabel.cgColor)
+        context.setFillColor(EditorColor.secondary.cgColor)
         context.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
         context.textPosition = CGPoint(x: x, y: firstBaseline)
         CTLineDraw(line, context)
@@ -204,7 +204,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     /// Das Attachment reserviert nur Platz; TextKit 2 zeichnet sein Bild nicht zuverlässig.
     private func drawDivider(in context: CGContext) {
         let line = textLineFragments.first?.typographicBounds ?? CGRect(x: 0, y: 0, width: 0, height: 20)
-        context.setFillColor(EditorColor.separator.cgColor)
+        context.setFillColor(EditorColor.control.cgColor)
         context.fill(CGRect(x: markerOriginX, y: line.midY.rounded(.down), width: contentMaxX - markerOriginX, height: 1))
     }
 
@@ -215,11 +215,11 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         return CGRect(x: markerOriginX, y: firstBaseline - size.height, width: size.width, height: size.height)
     }
 
-    /// Bild aus `EditorImageCache`, bis es geladen ist eine Fläche in `quaternaryFill`.
+    /// Bild aus `EditorImageCache`, bis es geladen ist eine Fläche in der Farbe der Codeblöcke.
     private func drawImage(in context: CGContext) {
         let rect = imageRect
         guard let image = assetID.flatMap({ EditorImageCache.shared.entry(for: $0)?.image }) else {
-            fillRoundedRect(rect, radius: QuillDesign.Radius.medium, color: EditorColor.quaternaryFill, in: context)
+            fillRoundedRect(rect, radius: QuillDesign.Radius.medium, color: EditorColor.codeBackground, in: context)
             return
         }
         // Der Kontext ist gespiegelt (y nach unten), `draw` erwartet y nach oben.
@@ -252,7 +252,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         } else {
             context.addPath(box)
             context.setLineWidth(1.2)
-            context.setStrokeColor(EditorColor.tertiaryLabel.cgColor)
+            context.setStrokeColor(EditorColor.done.cgColor)
             context.strokePath()
         }
     }

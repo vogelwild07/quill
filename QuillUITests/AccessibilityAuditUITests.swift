@@ -69,6 +69,29 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.typeKey(.escape, modifierFlags: [])
     }
 
+    /// Festes dunkles Theme bei hellem oder dunklem System, danach die Einstellungen
+    /// (ADR-024). Startargument wirkt nur mit Test-Store.
+    func testAuditFixedThemeAndSettings() throws {
+        app.terminate()
+        app = XCUIApplication.quill(storeDirectory: storeDirectory)
+        app.launchArguments += ["-QuillPasteboardName", pasteboard.name.rawValue, "-QuillEditorTheme", "lagune"]
+        app.launch()
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
+        app.windows.firstMatch.click()
+
+        createPage("Lagune")
+        app.typeText("\r")
+        app.typeText("# Überschrift\rText mit Inhalt\r[] Aufgabe\r\r> Zitat\r\r")
+        audit("Seite im festen Theme Lagune")
+
+        app.typeKey(",", modifierFlags: .command)
+        XCTAssertTrue(app.descendants(matching: .any)["settings.preview"].waitForExistence(timeout: 5))
+        audit("Einstellungen › Darstellung")
+        app.descendants(matching: .any)["settings.theme.sonne"].click()
+        audit("Einstellungen › Darstellung, Sonne gewählt")
+        app.typeKey("w", modifierFlags: .command)
+    }
+
     // MARK: - Audit
 
     private var window: XCUIElement { app.windows.firstMatch }
@@ -79,25 +102,27 @@ final class AccessibilityAuditUITests: XCTestCase {
         var layoutGroupFrames: [CGRect]
         /// Hosting-View im Seitenkopf (unter der beschrifteten Gruppe „Seitenkopf“).
         var headerContentFrame: CGRect?
-        var toolbarFrame: CGRect?
+        var toolbarFrames: [CGRect]
         /// „Emojis & Symbole“ in der Touch Bar.
         var touchBarEmojiFrame: CGRect?
         /// Elemente im Sheet; alle anderen liegen dahinter.
         var sheetElementFrames: [CGRect]?
     }
 
+    /// Über alle Fenster: Mit offenen Einstellungen liegt das Hauptfenster dahinter
+    /// und wird mitgeprüft.
     private func viewState() -> ViewState {
         func frames(_ query: XCUIElementQuery) -> [CGRect] { query.allElementsBoundByIndex.map(\.frame) }
+        let windows = app.windows.allElementsBoundByIndex
         let sheet = window.sheets.firstMatch
-        let header = window.textViews["editor.text"].groups["Seitenkopf"].children(matching: .group).firstMatch
-        let toolbar = window.toolbars.firstMatch
+        let header = app.textViews["editor.text"].groups["Seitenkopf"].children(matching: .group).firstMatch
         let emoji = app.touchBars.firstMatch.popUpButtons["Emojis & Symbole"]
         return ViewState(
-            layoutGroupFrames: frames(window.children(matching: .group))
-                + frames(window.splitGroups.firstMatch.children(matching: .group))
-                + (sheet.exists ? frames(sheet.children(matching: .group)) : []),
+            layoutGroupFrames: windows.flatMap { window in
+                frames(window.children(matching: .group)) + frames(window.splitGroups.firstMatch.children(matching: .group))
+            } + (sheet.exists ? frames(sheet.children(matching: .group)) : []),
             headerContentFrame: header.exists ? header.frame : nil,
-            toolbarFrame: toolbar.exists ? toolbar.frame : nil,
+            toolbarFrames: frames(app.toolbars),
             touchBarEmojiFrame: emoji.exists ? emoji.frame : nil,
             sheetElementFrames: sheet.exists ? [sheet.frame] + frames(sheet.descendants(matching: .any)) : nil
         )
@@ -194,7 +219,7 @@ final class AccessibilityAuditUITests: XCTestCase {
             if identifier == "sidebar.group" {
                 return "Gruppenköpfe im Systemstil der Source-List (A10, Entscheidung 1)."
             }
-            if type == .staticText, state.toolbarFrame?.contains(frame) == true {
+            if type == .staticText, state.toolbarFrames.contains(where: { $0.contains(frame) }) {
                 return "Fenstertitel in der Symbolleiste im Systemstil (A11, Entscheidung 1)."
             }
             if identifier.hasSuffix(".emptyState.title") || identifier == "detail.notFound.title" {

@@ -1,4 +1,5 @@
 import QuillDesign
+import QuillEditor
 import QuillModel
 import SwiftData
 import SwiftUI
@@ -19,6 +20,7 @@ struct PageHeaderView: View {
     @State private var icon = ""
     @State private var titleSelection: TextSelection?
     @FocusState private var focusedField: Field?
+    @Environment(\.colorScheme) private var colorScheme
 
     private enum Field { case title, icon }
 
@@ -76,6 +78,7 @@ struct PageHeaderView: View {
             )
             .textFieldStyle(.plain)
             .font(.system(size: QuillDesign.Typography.pageTitleSize, weight: .bold))
+            .foregroundStyle(titleColor)
             .focused($focusedField, equals: .title)
             .onSubmit { submitTitle() }
             .onKeyPress(keys: Self.tabKeys) { press in
@@ -104,6 +107,14 @@ struct PageHeaderView: View {
     }
 
     private var page: Page? { pages.first }
+
+    /// Textfarbe des Themes (ADR-024). Liest `EditorThemeSettings`, damit ein Wechsel
+    /// neu zeichnet; feste Themes erzwingen ihre Darstellung schon im Editor.
+    private var titleColor: Color {
+        let settings = EditorThemeSettings.shared
+        let colors = settings.theme.colors(dark: colorScheme == .dark, increaseContrast: settings.increaseContrast)
+        return Color(nsColor: colors.text)
+    }
 
     /// Tab und ⇧Tab (U+0019) im Kopf: Titel →Tab→ Editor, ⇧Tab → Symbol → Sidebar
     /// (`WindowFocus`).

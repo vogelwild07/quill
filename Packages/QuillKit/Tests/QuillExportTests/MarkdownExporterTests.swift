@@ -12,6 +12,26 @@ import Testing
         MarkdownExporter.plan(for: SampleDocuments.exportProject(), strings: Self.strings)
     }
 
+    /// Das Theme gilt nur für die Darstellung (ADR-024): Der Export ist in jedem gleich.
+    @MainActor
+    @Test(.renderingLock) func exportIsTheSameInEveryTheme() {
+        func files() -> [String] {
+            MarkdownExporter.plan(for: SampleDocuments.exportProject(), strings: Self.strings).files.map { file in
+                switch file.content {
+                case .markdown(let text): file.path + "\n" + text
+                case .image(let id): file.path + " ← " + id.uuidString
+                }
+            }
+        }
+        EditorThemeSettings.shared.configure(defaults: nil, initial: .standard)
+        defer { EditorThemeSettings.shared.configure(defaults: nil, initial: .standard) }
+        let standard = files()
+        for id in EditorTheme.ID.allCases {
+            EditorThemeSettings.shared.select(id)
+            #expect(files() == standard, "\(id)")
+        }
+    }
+
     // MARK: - Golden Files
 
     /// Vergleicht den Export von `SampleDocuments.exportProject()` mit

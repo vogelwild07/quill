@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import AppKit
+import QuillTestFixtures
 import Testing
 @testable import QuillEditor
 
@@ -7,7 +8,7 @@ import Testing
 /// Modell, weg beim ersten Zeichen, für VoiceOver ein Platzhalter. Dass er nicht
 /// exportiert wird, prüft `EmptyPageExportTests`.
 @MainActor
-@Suite("Editor: Hinweis auf leerer Seite", .serialized)
+@Suite("Editor: Hinweis auf leerer Seite", .serialized, .renderingLock)
 struct EmptyPageHintTests {
     private let window: NSWindow
     private let editor: BlockEditorController
