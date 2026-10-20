@@ -29,6 +29,7 @@ Package.resolved.orig
 
 # Secrets, Signing
 Config/Local.xcconfig
+Config/Local.push-check
 .env
 .env.*
 *.p12
