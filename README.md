@@ -50,6 +50,8 @@ Darstellung prüfen ohne Bildschirmfotos: `EditorSnapshotTests` und `EmptyStateS
 
 Die Datenbank liegt in `~/Library/Containers/io.github.vogelwild07.quill/Data/Library/Application Support/Quill/Store/`. Automatische Backups (beim Start höchstens einmal pro Tag, vor jeder Migration, beim Beenden nach Änderungen) liegen daneben in `Backups/` und sind über **Ablage → Backups im Finder zeigen** erreichbar. Wiederherstellen über **Ablage → Backup wiederherstellen …**: Quill beendet sich und spielt das Backup beim nächsten Start ein, der vorherige Stand bleibt als Backup erhalten. Falls Quill nicht mehr startet: [von Hand](docs/data-model.md#backup-von-hand-wiederherstellen).
 
+Sync zwischen Macs über einen Ordner (z. B. in iCloud Drive) ist in Arbeit (Phase 11, ADR-029) und noch in keinem Release. Er ist aus, bis man unter **Einstellungen › Sync** einen Ordner wählt; davor legt Quill ein Backup an. Jeder Mac schreibt dort nur eigene Dateien.
+
 Startargumente für UI-Tests:
 Alle wirken nur aus der Kommandozeile und nur in Debug-Builds (ADR-019, ADR-021).
 - `-QuillInMemoryStore YES`: Daten nur im Arbeitsspeicher, keine Backups.
@@ -59,11 +61,12 @@ Alle wirken nur aus der Kommandozeile und nur in Debug-Builds (ADR-019, ADR-021)
 - `-QuillWindowSize <Breite>x<Höhe>`: Das erste Fenster bekommt diese Größe in Punkten (für die Bilder oben).
 - `-QuillEditorTheme <id>`: Theme des Editors (`standard`, `quill`, `tinte`, `sonne`, `lagune`, `abend`, `kontrast`), nur zusammen mit einem der Test-Stores; dann liest und speichert Quill die eigene Wahl nicht.
 - `-QuillTestFocusMode YES`: Fokus-Modus beim Start, ebenso nur mit einem Test-Store.
+- `-QuillSyncTestFolder <Name>`: „Ordner wählen“ im Sync nimmt ohne Dateiauswahl diesen Unterordner des temporären Ordners der App, nur mit einem Test-Store. Test-Stores speichern die Einstellungen des Sync nie in denen des Macs.
 
 ## Struktur
 
 - `App/` – macOS-App-Target (Scenes, Menüleiste, Ressourcen)
-- `Packages/QuillKit/` – gesamte Logik: Model, Editor, Features, Export, Design
+- `Packages/QuillKit/` – gesamte Logik: Model, Editor, Features, Export, Sync, Design
 - `QuillUITests/` – UI-Tests
 - `docs/` – [Architektur](docs/architecture.md), [Entscheidungen](docs/decisions.md), [Datenmodell](docs/data-model.md), [Design](docs/design.md), [Roadmap](docs/roadmap.md), [Product Brief](docs/product-brief.md)
 
