@@ -149,7 +149,7 @@ public actor PageStore {
         return page
     }
 
-    private func primaryWorkspace() throws -> Workspace {
+    func primaryWorkspace() throws -> Workspace {
         let workspaces = try modelContext.fetch(FetchDescriptor<Workspace>())
             .sorted { ($0.createdAt, $0.id.uuidString) < ($1.createdAt, $1.id.uuidString) }
         guard let primary = workspaces.first else {
@@ -259,6 +259,14 @@ extension PageStore {
     public func applyEdits(_ pageID: UUID, _ edits: BlockEdits) throws {
         guard !edits.isEmpty else { return }
         let page = try fetchPage(pageID, prefetching: [\.blocks])
+        if apply(edits, to: page) {
+            try save()
+        }
+    }
+
+    /// Übernimmt `edits` ohne zu speichern; `true`, wenn sich etwas geändert hat
+    /// (dann ist auch `page.updatedAt` neu).
+    func apply(_ edits: BlockEdits, to page: Page) -> Bool {
         var byID: [UUID: Block] = [:]
         for block in page.blocks ?? [] where byID[block.id] == nil {
             byID[block.id] = block
@@ -316,8 +324,8 @@ extension PageStore {
 
         if changed {
             page.updatedAt = .now
-            try save()
         }
+        return changed
     }
 
     // MARK: - Hilfen

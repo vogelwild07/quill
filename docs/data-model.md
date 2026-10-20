@@ -89,10 +89,16 @@ DatabaseView         (später)  id, name, layoutRaw (table|board|calendar), conf
 - Reihenfolge: Die längste schon richtig sortierte Teilfolge behält ihre `sortKey`s; nur die übrigen Blöcke bekommen neue Schlüssel (`FractionalIndex.keys(count:between:and:)`). Blöcke, die in `order` fehlen (z. B. aus einem anderen Fenster), bleiben unverändert; neue Schlüssel werden so gewählt, dass sie nie mit deren Schlüsseln zusammenfallen.
 - Unbekannte `kindRaw`-Werte (spätere Versionen) bleiben erhalten, solange der Block im Editor nicht bearbeitet wird; angezeigt werden sie als Absatz.
 
+### Schreiben durch den Sync (Phase 11.3, ADR-029)
+
+- `PageStore+Sync`: `applySyncTree` (Seiten anlegen, ändern, in den Papierkorb legen, nie löschen) und `applySyncPage` (Blöcke als `BlockEdits`) speichern zusammen mit dem Sync-Dokument und den gelesenen Dateien in einem Schritt. Beide erwarten den Stand, von dem der Abgleich ausging; weicht der Store ab, schreiben sie nichts.
+- `PageSnapshot` ist die Seite als Werttyp (wie `BlockSnapshot`). Bilder aus dem Ordner legt `insertSyncedAsset` unverändert an.
+- `Workspace.syncCursors`: JSON mit der letzten übernommenen Datei je Dokument und Gerät und `updatedAt` je Seite beim letzten Abgleich.
+
 ## Speicherort und Backups
 
 - Store: `~/Library/Containers/io.github.vogelwild07.quill/Data/Library/Application Support/Quill/Store/Quill.store` (plus `-wal`, `-shm`, `.Quill_SUPPORT/` für externe Daten, `Quill.store.version`). Bis Phase 7.1 lagen diese Dateien direkt in `Quill/`; der erste Start einer neueren Version zieht sie nach einem Backup `vor-umzug` um. Gibt es `Store/` schon, kommen Reste im alten Ort in ein Backup `beiseitegelegt` (ADR-019).
-- Backups: daneben in `Backups/`, Regeln siehe ADR-010.
+- Backups: daneben in `Backups/`, Regeln siehe ADR-010. Vor dem Einschalten des Sync immer ein Backup `vor-sync`; es wird nie automatisch gelöscht (Rückweg, ADR-029).
 
 ### Migration auf ein neues Schema (seit Phase 11.2, ADR-029)
 

@@ -40,6 +40,21 @@ struct TreeDocumentTests {
         #expect(try document.update([child]) == false)
     }
 
+    /// Datumswerte kommen bit-gleich zurück, sonst sähe der Abgleich bei jedem Lauf
+    /// eine Änderung. Diese Werte runden über Sekunden seit 1970 (geprüft).
+    @Test func datesSurviveExactly() throws {
+        let dates = [812_345_678.987_654_3, 808_080_808.080_808].map { Date(timeIntervalSinceReferenceDate: $0) }
+        let document = TreeDocument()
+        let records = dates.map { PageRecord(id: UUID(), trashedAt: $0, createdAt: $0) }
+        try document.update(records)
+        let loaded = try TreeDocument(bytes: document.save()).records()
+        for record in records {
+            let back = try #require(loaded.first { $0.id == record.id })
+            #expect(back.trashedAt == record.trashedAt)
+            #expect(back.createdAt == record.createdAt)
+        }
+    }
+
     @Test func deletedPagesStayAsTombstoneInTheTrash() throws {
         let page = Self.record("Weg")
         let document = TreeDocument()

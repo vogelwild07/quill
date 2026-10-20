@@ -8,13 +8,13 @@ import Testing
 struct BackupSlugTests {
     static let reasons: [StoreBackup.Reason] = [
         .launch, .quit, .beforeMigration(from: "1.0.0", to: "2.0.0"),
-        .beforeEmptyingTrash, .beforeRestore, .beforeMove, .setAside,
+        .beforeEmptyingTrash, .beforeRestore, .beforeMove, .setAside, .beforeSync,
     ]
 
     @Test func namesStayAsBefore() {
         #expect(Self.reasons.map(\.slug) == [
             "start", "beenden", "vor-migration-1.0.0-2.0.0",
-            "vor-papierkorb-leeren", "vor-wiederherstellen", "vor-umzug", "beiseitegelegt",
+            "vor-papierkorb-leeren", "vor-wiederherstellen", "vor-umzug", "beiseitegelegt", "vor-sync",
         ])
     }
 

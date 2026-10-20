@@ -21,11 +21,15 @@ public struct PageRecord: Identifiable, Equatable, Sendable {
     public var createdAt: Date
     /// Vom Sync wiederhergestellt (im Papierkorb auf einem Gerät, bearbeitet auf einem anderen).
     public var isRestored: Bool
+    /// Stand des Seiten-Dokuments, als die Seite in den Papierkorb kam. Ein anderes Gerät
+    /// erkennt daran, ob es die Seite seitdem bearbeitet hat (dann bleibt sie, ADR-029).
+    public var trashedVersion: DocumentVersion?
 
     public init(
         id: UUID, title: String = "", icon: String? = nil, parentID: UUID? = nil, sortKey: String = "",
         isFavorite: Bool = false, favoriteSortKey: String? = nil, trashedAt: Date? = nil, deletedAt: Date? = nil,
-        kindRaw: String = PageKind.page.rawValue, createdAt: Date = .now, isRestored: Bool = false
+        kindRaw: String = PageKind.page.rawValue, createdAt: Date = .now, isRestored: Bool = false,
+        trashedVersion: DocumentVersion? = nil
     ) {
         self.id = id
         self.title = title
@@ -39,6 +43,27 @@ public struct PageRecord: Identifiable, Equatable, Sendable {
         self.kindRaw = kindRaw
         self.createdAt = createdAt
         self.isRestored = isRestored
+        self.trashedVersion = trashedVersion
+    }
+
+    /// Aus dem Store; Grabstein und Stand beim Papierkorb kennt nur das Dokument.
+    public init(_ page: PageSnapshot) {
+        self.init(
+            id: page.id, title: page.title, icon: page.icon, parentID: page.parentID, sortKey: page.sortKey,
+            isFavorite: page.isFavorite, favoriteSortKey: page.favoriteSortKey, trashedAt: page.trashedAt,
+            kindRaw: page.kindRaw, createdAt: page.createdAt, isRestored: page.isRestored
+        )
+    }
+
+    /// Für den Store. Eine endgültig gelöschte Seite liegt dort im Papierkorb (ADR-029),
+    /// außer sie wurde wiederhergestellt, weil dieses Gerät sie inzwischen bearbeitet hat.
+    public var snapshot: PageSnapshot {
+        PageSnapshot(
+            id: id, title: title, icon: icon, parentID: parentID, sortKey: sortKey, isFavorite: isFavorite,
+            favoriteSortKey: favoriteSortKey, trashedAt: trashedAt ?? (isRestored ? nil : deletedAt), kindRaw: kindRaw,
+            createdAt: createdAt,
+            isRestored: isRestored
+        )
     }
 }
 
@@ -71,6 +96,7 @@ public final class TreeDocument: SyncDocument {
             if case .Scalar(.String(let kind))? = fields["kind"] { record.kindRaw = kind }
             record.createdAt = Self.date(fields["created"]) ?? .distantPast
             if case .Scalar(.Boolean(let restored))? = fields["restored"] { record.isRestored = restored }
+            if case .Scalar(.Bytes(let bytes))? = fields["trashedVersion"] { record.trashedVersion = DocumentVersion(data: bytes) }
             result.append(record)
         }
         return result.sorted { $0.id.uuidString < $1.id.uuidString }
@@ -99,6 +125,10 @@ public final class TreeDocument: SyncDocument {
             changed = try set(map, "favorite", .Boolean(record.isFavorite), current: fields["favorite"]) || changed
             changed = try set(map, "favoriteSortKey", record.favoriteSortKey.map { .String($0) }, current: fields["favoriteSortKey"]) || changed
             changed = try set(map, "trashed", record.trashedAt.map(Self.value), current: fields["trashed"]) || changed
+            changed = try set(
+                map, "trashedVersion", record.trashedAt == nil ? nil : record.trashedVersion.map { .Bytes($0.data) },
+                current: fields["trashedVersion"]
+            ) || changed
             if let deletedAt = record.deletedAt {
                 changed = try set(map, "deleted", Self.value(deletedAt), current: fields["deleted"]) || changed
             }
@@ -110,12 +140,16 @@ public final class TreeDocument: SyncDocument {
         return changed
     }
 
-    /// Endgültig gelöscht auf diesem Gerät: Grabstein setzen, Papierkorb falls nötig.
+    /// Endgültig gelöscht auf diesem Gerät: Grabstein setzen, Papierkorb falls nötig;
+    /// `trashedVersion` gilt nur, wenn die Seite hier noch nicht im Papierkorb stand.
     @discardableResult
-    public func markDeleted(_ id: UUID, at date: Date = .now) throws -> Bool {
+    public func markDeleted(_ id: UUID, at date: Date = .now, trashedVersion: DocumentVersion? = nil) throws -> Bool {
         guard var record = try records().first(where: { $0.id == id }), record.deletedAt == nil else { return false }
         record.deletedAt = date
-        if record.trashedAt == nil { record.trashedAt = date }
+        if record.trashedAt == nil {
+            record.trashedAt = date
+            record.trashedVersion = trashedVersion
+        }
         return try update([record])
     }
 
@@ -123,10 +157,12 @@ public final class TreeDocument: SyncDocument {
         try conflicts(in: Self.conflictFields)
     }
 
-    private static func value(_ date: Date) -> ScalarValue { .F64(date.timeIntervalSince1970) }
+    /// Sekunden seit 2001 wie `Date` selbst: verlustfrei, damit ein Datum aus dem Store
+    /// nach dem Lesen gleich bleibt (sonst sähe der Abgleich eine Änderung).
+    private static func value(_ date: Date) -> ScalarValue { .F64(date.timeIntervalSinceReferenceDate) }
 
     private static func date(_ value: Value?) -> Date? {
         guard case .Scalar(.F64(let seconds))? = value else { return nil }
-        return Date(timeIntervalSince1970: seconds)
+        return Date(timeIntervalSinceReferenceDate: seconds)
     }
 }

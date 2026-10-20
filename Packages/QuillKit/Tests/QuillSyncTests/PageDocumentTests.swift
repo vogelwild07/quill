@@ -242,3 +242,35 @@ extension PageDocument {
         return document.save()
     }
 }
+
+@Suite("Automerge-Daten prüfen")
+struct ChunkCheckTests {
+    static func changes() throws -> (PageDocument, Data) {
+        let document = PageDocument()
+        try document.update(to: [BlockSnapshot(id: UUID(), text: "Hallo")])
+        return (document, try document.changes(since: nil))
+    }
+
+    @Test func validChangesSnapshotsAndSeveralChunksPass() throws {
+        let (document, first) = try Self.changes()
+        try ChunkCheck.validate(first)
+        try ChunkCheck.validate(document.save())
+        let version = document.version
+        try document.update(to: [BlockSnapshot(id: UUID(), text: "Welt")])
+        try ChunkCheck.validate(first + document.changes(since: version))
+    }
+
+    /// Automerge selbst nimmt all das ohne Fehler an; übernommen werden darf es nicht.
+    @Test func emptyForeignTruncatedAndAlteredDataAreUnreadable() throws {
+        let (_, valid) = try Self.changes()
+        var altered = valid
+        altered[altered.count - 1] ^= 0xFF
+        for (name, data) in [
+            ("leer", Data()), ("fremd", Data("kein Automerge".utf8)), ("abgeschnitten", valid.prefix(valid.count - 5)),
+            ("nur Kopf", valid.prefix(6)), ("verändert", altered), ("Rest dahinter", valid + Data([0x85])),
+        ] {
+            #expect(throws: SyncError.self, "\(name)") { try PageDocument().apply(changes: data) }
+            #expect(throws: SyncError.self, "\(name)") { try PageDocument(bytes: data) }
+        }
+    }
+}
