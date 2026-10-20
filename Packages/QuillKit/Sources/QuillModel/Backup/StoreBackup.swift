@@ -333,7 +333,8 @@ public struct StoreBackup: Sendable {
         return BackupName(candidate)
     }
 
-    var lastOpenedSchemaVersion: String? {
+    /// Zuletzt geöffnete Schema-Version, `nil` ohne Vermerk (z. B. von Hand eingespielt).
+    public var lastOpenedSchemaVersion: String? {
         (try? Data(contentsOf: versionFileURL)).map { String(decoding: $0, as: UTF8.self) }
     }
 
@@ -359,7 +360,7 @@ public struct StoreBackup: Sendable {
 
     // MARK: - SQLite
 
-    private static func vacuum(_ source: URL, into target: URL) throws {
+    static func vacuum(_ source: URL, into target: URL) throws {
         try withDatabase(source) { db in
             let escaped = target.path(percentEncoded: false).replacingOccurrences(of: "'", with: "''")
             try execute(db, "VACUUM INTO '\(escaped)'")
