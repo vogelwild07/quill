@@ -54,6 +54,10 @@ Ideen aus Phase 7, nicht eingeplant:
   läuft `SidebarView.body` dreimal statt einmal (`docs/performance.md`). Danach Schwelle
   `sidebarReload` wieder auf 100 ms.
 
+Bei Phase 13 (aus dem Review von Phase 11):
+- Undo-Liste bleibt erhalten, wenn fremde Änderungen (Sync, anderes Fenster) in die offene
+  Seite übernommen werden. Bisher leert das Neuladen sie (`BlockEditorController.load`).
+
 Ideen aus der Roadmap 10–18, nicht eingeplant:
 - iPad-App (Architektur aus Phase 10 lässt sie zu).
 - Direkter Sync im WLAN ohne Ordner (braucht Berechtigung „Lokales Netzwerk“).
