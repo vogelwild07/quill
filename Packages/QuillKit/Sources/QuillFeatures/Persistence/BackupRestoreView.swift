@@ -57,8 +57,7 @@ struct BackupRestoreView: View {
             }
 
             if let errorMessage {
-                Label(errorMessage, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
+                ProblemLabel(message: errorMessage)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("restore.error")
             }
