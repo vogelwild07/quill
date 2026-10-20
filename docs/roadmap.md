@@ -12,6 +12,17 @@
 | 7 Feinschliff ✅ | Accessibility, Lokalisierung, Performance, Icon, Leerzustände, Aufräumen aus dem Review von Phase 3 (feste Layout-Zahlen im Editor als `QuillDesign`-Tokens, Namen wie `T`/`S` und `longestIncreasingRun`, doppelter Code beim Laden in `EditorPersistenceBridge`) und aus dem Review von Phase 6 (Sortiervergleich `(sortKey, createdAt, id)` an fünf Stellen zusammenfassen, `title`/`untitled` im Export als fertige Namensbasis übergeben), **„Backup wiederherstellen …“** (7.1 ✅, gemergt PR #7: Menüpunkt, Tausch von `Store/` in einem Schritt beim Start, Umzug, Rückweg, ADR-019); 7.2 Aufräumen + Performance ✅, gemergt PR #8 (Messung und Schwellen ADR-020, `docs/performance.md`; Produktziel `sidebarReload` 100 ms verfehlt, für v0.1 akzeptiert, Lösung unter „Später“), darin zusätzlich aus dem Review von PR #7: ein gemeinsames Mapping Slug ↔ Anlass für Backups (`Reason`, `Kind`, `BackupLabel`), Backup-Namen als eigener Typ statt `String`, `restoreBackup` als App-Aktion statt in `PageActions`; offen: Ursache der fremden Bildbytes (in 7.2 einmal in 50 Läufen ohne Serialisierung nachgestellt, ADR-019), solange laufen `DiskStoreSuites` nacheinander; 7.3 Bedienungshilfen, Leerzustände, Lokalisierung, Icon ✅ (Audit rot bei jeder neuen Meldung, `EmptyState`, `LocalizationTests`, `AppIcon.icon`, ADR-021), gemergt PR #9 | v0.1 |
 | 8 Release ✅ | GitHub-Release v0.1.0 veröffentlicht (Tag `v0.1.0`, PR #10, neues öffentliches Repo mit bereinigter History, altes als privates Archiv): ad hoc signierte App als .dmg mit Prüfsumme (`Scripts/make-release.sh`, ADR-022), nur Apple Silicon, macOS 26.0, Installationsanleitung, Lizenz GPL-3.0-or-later (Icon ausgenommen), History vor Veröffentlichung geprüft | v0.1.0 |
 | 9 Icon und Themes ✅ | 9.1 neues App-Icon als Markenzeichen mit eigener Dunkel-Variante je Ebene (ADR-023) ✅, gemergt PR #4; 9.2 sieben Themes für den Editor unter Einstellungen › Darstellung, Akzent Petrol (ADR-024) ✅, gemergt PR #5; GitHub-Release v0.2.0 (Tag `v0.2.0`) | v0.2.0 |
+| 10 Architektur Mac + iPhone | QuillKit baut auch für iOS 26; Editor-Kern (`EditorDocument`, Block-Attribute, Layout) getrennt von AppKit; Spike Automerge gegen die Kriterien aus ADR-026 (Laden einer Seite mit Geschichte < 50 ms, 1.000 Seiten mit Geschichte < 50 MB zusätzlich, App höchstens wenige MB größer); Messwerte ins ADR; reißt der Spike sie, Zahlen und Alternativen vorlegen. iPad nicht verbauen (`NavigationSplitView`, Größenklassen, `Commands`) | Format entschieden, Package baut für beide Plattformen |
+| 11 Ordner-Sync (Mac) | Sync-Schicht über `PageStore` mit Automerge, Format im Ordner nach ADR-026 (jedes Gerät schreibt nur eigene Dateien, Bilder nach Inhalt benannt), Konflikte sichtbar statt verworfen, Quarantäne für unlesbare Dateien; neue Schemaversion mit Test „V1 → V2“, Backup vor der Migration, Rückweg getestet; Ordner per Lesezeichen (`bookmarks.app-scope`); getestet Mac ↔ Mac, ohne Developer Program | v0.4.0 (Beta zum Einschalten) |
+| 12 Zeitreise | Seite an einem Tag ansehen und einzelne Absätze wiederherstellen, aus der Geschichte des Automerge-Dokuments (synchronisiert mit); Bilder nicht versioniert, verwaiste Bilder nach einstellbarer Frist löschbar | v0.4.0 |
+| 13 iPhone-App | Developer Program vorher (Anmeldung durch den Nutzer); Sidebar, Editor auf `UITextView` mit Tastaturleiste, Slash-Menü, Blöcke ziehen, Bilder per `PhotosPicker`; Themes und Icon; Ordner über die Dateien-App; TestFlight | iPhone 0.5 (TestFlight) + Mac v0.5.0 |
+| 14 Verschlüsselung | optional Ende-zu-Ende für den Sync-Ordner (CryptoKit, ChaCha20-Poly1305), Schlüssel aus Passphrase, nur im Schlüsselbund des Geräts; beim Einrichten Wiederherstellungsschlüssel und klarer Hinweis, dass ohne Passphrase und Wiederherstellungsschlüssel der Ordner unlesbar ist | v0.6.0 |
+| 15 Apple-Ökosystem | App Intents und Siri („Neue Seite“, „Zur Einkaufsliste hinzufügen“), Spotlight, Schnellnotiz (Mac: Menüleiste mit globalem Kürzel; iPhone: Kontrollzentrum, Aktionstaste, Widget), Teilen-Erweiterung (braucht App Group, also Developer Program), To-dos mit Erinnerungen, Tagesseite mit heutigen Terminen | v0.6.0 |
+| 16 Lokale KI | Foundation Models nur auf dem Gerät: Seite zusammenfassen, in To-dos umwandeln, „Frag deine Notizen“ mit Quellen, Link-Vorschläge; ohne Apple Intelligence ausgeblendet mit Erklärung in den Einstellungen | v0.7.0 |
+| 17 Erfassen ohne Tippen | Sprachnotizen mit Abschrift auf dem Gerät (durchsuchbar), Text in Bildern per Vision durchsuchbar | v0.8.0 |
+| 18 Schreiben und Lesen | 18.1 Fokus-Modus (Schreibmaschinen-Scrollen, Umgebung abgedunkelt passend zum Theme) für v0.3.0, zusammen mit dem neuen Fenster der .dmg (ADR-025); 18.2 Präsentieren (Folien an Überschriften) für v0.8.0 | v0.3.0 / v0.8.0 |
+
+Reihenfolge: 18.1 zuerst (v0.3.0 bekommt etwas Sichtbares), dann 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18.2. Das Sync-Format wird schon in Phase 10 festgelegt, weil es Datenmodell, Speicher und Zeitreise bestimmt; die Zeitreise folgt direkt auf den Sync, weil die Geschichte dann schon vorliegt. Bis Phase 13 alles ohne Developer Program (Grenzen in ADR-026). Danach v1.0: Feinschliff, App Store (iPhone, optional Mac; GPL-Ausnahme für den App Store vor dem ersten fremden Beitrag klären).
 
 Jede Phase auf eigenem Branch mit PR; auf `main` nur grüne Builds.
 
@@ -39,6 +50,10 @@ Ideen aus Phase 7, nicht eingeplant:
   bauen. SwiftData meldet nach jeder Store-Änderung `Page.parent` als geändert, dadurch
   läuft `SidebarView.body` dreimal statt einmal (`docs/performance.md`). Danach Schwelle
   `sidebarReload` wieder auf 100 ms.
+
+Ideen aus der Roadmap 10–18, nicht eingeplant:
+- iPad-App (Architektur aus Phase 10 lässt sie zu).
+- Direkter Sync im WLAN ohne Ordner (braucht Berechtigung „Lokales Netzwerk“).
 
 Ideen aus Phase 9, nicht eingeplant:
 - Eigene Themes anlegen und bearbeiten.
@@ -88,7 +103,6 @@ Aus dem Review von PR #9, nicht eingeplant (Urteile, kein Fehler):
 Ideen aus Phase 8, nicht eingeplant:
 - Developer-ID-Zertifikat (bezahlter Developer Account) und Notarisierung, damit der erste Start ohne „Dennoch öffnen“ klappt und Updates keine neue Bestätigung brauchen.
 - Auto-Update (z. B. Sparkle) mit signierten Updates.
-- Fenster der .dmg gestalten (Hintergrund, Symbolpositionen).
 - Release-Build in CI statt lokal.
 - Englische Fassung der Installationsanleitung.
 
@@ -103,4 +117,4 @@ Infrastruktur, nicht eingeplant:
 
 - Keine offenen. Behoben in Phase 4: Inline-Code-Hintergrund in der Zeile darüber (siehe `architecture.md`, Erkenntnisse aus Phase 4).
 
-**Signing:** Personal Team (gratis) → keine Notarisierung. Das Release ist nur ad hoc signiert und startet auf fremden Macs erst nach „Dennoch öffnen“ in Datenschutz & Sicherheit (ADR-022). CloudKit und App Store brauchen später einen bezahlten Developer Account.
+**Signing:** Personal Team (gratis) → keine Notarisierung. Das Release ist nur ad hoc signiert und startet auf fremden Macs erst nach „Dennoch öffnen“ in Datenschutz & Sicherheit (ADR-022). Sync läuft über einen Ordner ohne CloudKit (ADR-026). iPhone-Verteilung, App Group (Widgets, Teilen-Erweiterung) und App Store brauchen den bezahlten Developer Account; Anmeldung vor Phase 13.

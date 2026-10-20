@@ -1,4 +1,4 @@
-# Datenmodell (SwiftData, CloudKit-tauglich)
+# Datenmodell (SwiftData, CloudKit-tauglich; Sync über Ordner nach ADR-026)
 
 ## Regeln
 
