@@ -122,7 +122,7 @@ struct PageStoreSyncTests {
         #expect(try await store.pageUpdateDates()[page] == updated)
     }
 
-    @Test func resetForgetsDocumentsButKeepsPages() async throws {
+    @Test func resetForgetsOnlyTheReadFiles() async throws {
         let page = try await store.createPage(title: "Bleibt")
         let block = BlockSnapshot(id: UUID(), text: "Text")
         try await store.applyEdits(page, BlockEdits(upserts: [block], order: [block.id]))
@@ -133,10 +133,10 @@ struct PageStoreSyncTests {
         _ = try await store.applySyncTree([], tree: Data("t".utf8), cursors: Data("c".utf8))
         let before = try await snapshot(page)
 
-        try await store.resetSyncDocuments()
-        #expect(try await store.syncState() == SyncStoreState(deviceID: device, tree: nil, cursors: nil))
-        #expect(try await store.syncPage(page)?.document == nil)
-        #expect(try await store.syncPage(page)?.blocks.map(\.text) == ["Text"])
+        try await store.resetSyncCursors()
+        // Dokumente samt Geschichte bleiben; nur die Nummern des bisherigen Ordners gehen.
+        #expect(try await store.syncState() == SyncStoreState(deviceID: device, tree: Data("t".utf8), cursors: nil))
+        #expect(try await store.syncPage(page)?.document == Data("d".utf8))
         #expect(try await snapshot(page) == before)
     }
 

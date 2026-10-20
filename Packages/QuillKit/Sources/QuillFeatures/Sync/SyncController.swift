@@ -127,16 +127,16 @@ public final class SyncController {
 
     /// Schaltet den Sync mit `folder` ein: zuerst das Backup (der Rückweg), dann eine
     /// neue Geräte-ID und die Verbindung. Den Ordner beschreibt erst `syncNow()`.
-    /// Ist es der Ordner von vor dem Ausschalten, führt Quill zusammen; sonst beginnt
-    /// es dort neu und vergisst die Sync-Dokumente, deren Geschichte nur im alten
-    /// Ordner steht. Gibt den Ordner des Backups zurück (`nil` bei einem Store nur im
+    /// Ist es der Ordner von vor dem Ausschalten, führt Quill zusammen; mit jedem
+    /// anderen Ordner beginnt es dort neu und schreibt jedes Dokument samt Geschichte
+    /// hinein. Gibt den Ordner des Backups zurück (`nil` bei einem Store nur im
     /// Arbeitsspeicher).
     @discardableResult
     public func enable(folder: URL) async throws -> URL? {
         let inspection = try inspect(folder)
         let previous = settings.previousConnection
         let merging = inspection.folderID != nil && inspection.folderID == previous?.folderID
-        return try await connect(folder, folderID: merging ? previous?.folderID : nil, resetDocuments: !merging)
+        return try await connect(folder, folderID: merging ? previous?.folderID : nil, newFolder: !merging)
     }
 
     /// Antwort auf die Rückfrage nach einem eingespielten Backup.
@@ -148,14 +148,14 @@ public final class SyncController {
             guard let previous, let folder = try? SyncFolderBookmark.resolve(previous.bookmark).folder else {
                 throw EnableError.noPreviousFolder
             }
-            return try await connect(folder, folderID: previous.folderID, resetDocuments: false)
+            return try await connect(folder, folderID: previous.folderID, newFolder: false)
         case .startOver(let folder):
             let inspection = try inspect(folder)
             if let previous, inspection.folderID == previous.folderID || isSameFolder(folder, previous) {
                 throw EnableError.sameAsPreviousFolder
             }
             guard inspection.isEmpty else { throw EnableError.folderNotEmpty }
-            return try await connect(folder, folderID: nil, resetDocuments: true)
+            return try await connect(folder, folderID: nil, newFolder: true)
         }
     }
 
@@ -164,10 +164,10 @@ public final class SyncController {
         settings.askAfterRestore = false
     }
 
-    private func connect(_ folder: URL, folderID: UUID?, resetDocuments: Bool) async throws -> URL? {
+    private func connect(_ folder: URL, folderID: UUID?, newFolder: Bool) async throws -> URL? {
         let backup = try await backupBeforeSync()
         let bookmark = try withAccess(to: folder) { try SyncFolderBookmark.make(for: folder) }
-        if resetDocuments { try await store.resetSyncDocuments() }
+        if newFolder { try await store.resetSyncCursors() }
         try await store.setSyncDeviceID(UUID())
         settings.connection = SyncConnection(bookmark: bookmark, folderID: folderID)
         settings.askAfterRestore = false

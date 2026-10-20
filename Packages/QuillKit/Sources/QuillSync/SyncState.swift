@@ -54,8 +54,22 @@ struct SyncCursors: Codable, Equatable {
     /// Seiten-ID → `updatedAt` der Seite beim letzten Abgleich; spätere Änderungen
     /// machen die Seite für den nächsten Abgleich fällig.
     var synced: [String: Date] = [:]
+    /// Dokumente, deren Stand samt Geschichte schon in diesem Ordner steht. Für alle
+    /// anderen schreibt der nächste Abgleich als erste eigene Datei den ganzen Stand
+    /// (ADR-029, 11.4): nach dem Wechsel auf einen anderen Ordner hat ein Gerät dort
+    /// sonst nur Änderungen, deren Grundlage im vorherigen Ordner liegt.
+    var inFolder: Set<String> = []
 
     init() {}
+
+    private enum CodingKeys: String, CodingKey { case read, synced, inFolder }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        read = try container.decodeIfPresent([String: [String: Int]].self, forKey: .read) ?? [:]
+        synced = try container.decodeIfPresent([String: Date].self, forKey: .synced) ?? [:]
+        inFolder = try container.decodeIfPresent(Set<String>.self, forKey: .inFolder) ?? []
+    }
 
     init(data: Data?) {
         self = data.flatMap { try? SyncJSON.decoder.decode(SyncCursors.self, from: $0) } ?? SyncCursors()

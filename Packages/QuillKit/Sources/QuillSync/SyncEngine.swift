@@ -184,9 +184,8 @@ public actor SyncEngine {
             else { continue }
             assetFiles[asset] = try writeAsset(image.data, uti: image.uti)
         }
-        if try document.update(to: state.blocks, assetFiles: assetFiles) {
-            try append(document.changes(since: beforeExport), in: ownFolder, last: &ownLast)
-        }
+        let changed = try document.update(to: state.blocks, assetFiles: assetFiles)
+        try appendLocal(document, changed: changed, since: beforeExport, key: key, in: ownFolder, last: &ownLast, cursors: &next)
         next.setLast(ownLast, key, device: device)
 
         // Änderungen anderer Geräte
@@ -314,9 +313,7 @@ public actor SyncEngine {
             let version = record.trashedAt == nil ? folderPageVersion(record.id) : nil
             changed = try document.markDeleted(record.id, trashedVersion: version) || changed
         }
-        if changed {
-            try append(document.changes(since: beforeExport), in: ownFolder, last: &ownLast)
-        }
+        try appendLocal(document, changed: changed, since: beforeExport, key: key, in: ownFolder, last: &ownLast, cursors: &next)
         next.setLast(ownLast, key, device: device)
 
         // Änderungen anderer Geräte
@@ -446,6 +443,23 @@ public actor SyncEngine {
     }
 
     /// Hängt `changes` als nächste eigene Datei an.
+    /// Lokale Änderungen als nächste eigene Datei. Steht das Dokument noch nicht in
+    /// diesem Ordner, ist es der ganze Stand samt Geschichte, auch was andere Geräte im
+    /// vorherigen Ordner beigetragen haben: Ein Gerät hier soll auch ältere Stände
+    /// abrufen können. Die Datei heißt trotzdem `<Nr>.changes`, weil der Lesepfad beides
+    /// annimmt; beim Verdichten vor v0.4.0 wird daraus `snapshot` (ADR-029).
+    private func appendLocal(
+        _ document: SyncDocument, changed: Bool, since version: DocumentVersion, key: String,
+        in folder: URL, last: inout Int, cursors next: inout SyncCursors
+    ) throws {
+        if next.inFolder.contains(key) {
+            if changed { try append(document.changes(since: version), in: folder, last: &last) }
+            return
+        }
+        if !document.isEmpty { try append(document.save(), in: folder, last: &last) }
+        next.inFolder.insert(key)
+    }
+
     private func append(_ changes: Data, in folder: URL, last: inout Int) throws {
         guard !changes.isEmpty else { return }
         try gate.checkWritable()

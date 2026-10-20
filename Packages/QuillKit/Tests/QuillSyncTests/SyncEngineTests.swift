@@ -73,6 +73,73 @@ struct SyncEngineTests {
         #expect(try folder.files().filter { $0.contains(b.deviceID.uuidString) } == ["devices/\(b.deviceID.uuidString).json"])
     }
 
+    // MARK: Ordnerwechsel (11.4)
+
+    /// Mit einem anderen Ordner bleibt die Geschichte: Die erste eigene Datei je
+    /// Dokument ist der ganze Stand, auch mit Beiträgen anderer Geräte aus dem
+    /// vorherigen Ordner. Ein neues Gerät im neuen Ordner kann alte Stände abrufen.
+    @Test func newFolderGetsTheWholeHistory() async throws {
+        let first = try TestFolder()
+        let a = try await TestDevice("A", folder: first.url)
+        let c = try await TestDevice("C", folder: first.url)
+        let (page, blocks) = try await a.createPage("Alt", texts: ["eins"])
+        try await a.sync()
+        let byA = try await pageVersion(a, page)
+        try await c.sync()
+        try await c.edit(page, blocks[0]) { $0.text = "zwei" }
+        try await c.sync()
+        try await a.sync()
+        let byC = try await pageVersion(a, page)
+        let oldTree = try TreeDocument(bytes: #require(try await a.store.syncState().tree)).version
+        try await a.store.rename(page, to: "Neu")
+        try await a.sync()
+
+        // A wechselt in einen anderen Ordner, als neues Gerät.
+        let second = try TestFolder()
+        try await a.store.resetSyncCursors()
+        try await a.store.setSyncDeviceID(UUID())
+        let moved = SyncEngine(store: a.store, folder: second.url, gate: SyncGate(), deviceName: "A")
+        let folderID = try await moved.sync(connectedFolderID: nil).folderID
+        let written = try second.fingerprint()
+        _ = try await moved.sync(connectedFolderID: folderID)
+        #expect(try second.fingerprint().filter { !$0.key.hasPrefix("Quill/devices/") } == written.filter { !$0.key.hasPrefix("Quill/devices/") })
+
+        let b = try await TestDevice("B", folder: second.url)
+        try await b.sync()
+        #expect(try await b.texts(of: "Neu") == ["zwei"])
+        let document = try PageDocument(bytes: #require(try await b.store.syncPage(page)?.document))
+        #expect(document.contains(byA) && document.contains(byC))
+        #expect(try document.blocks(at: byA).map(\.text) == ["eins"])
+        #expect(try document.blocks(at: byC).map(\.text) == ["zwei"])
+        let tree = try TreeDocument(bytes: #require(try await b.store.syncState().tree))
+        #expect(tree.contains(oldTree))
+
+        // Danach geht es mit einzelnen Änderungen weiter, in beide Richtungen.
+        try await b.edit(page, blocks[0]) { $0.text = "drei" }
+        try await b.sync()
+        _ = try await moved.sync(connectedFolderID: folderID)
+        #expect(try await a.texts(of: "Neu") == ["drei"])
+    }
+
+    /// Wer eine Seite nur empfängt, schreibt keine Kopie davon in den Ordner.
+    @Test func receivingDeviceWritesNoCopies() async throws {
+        let folder = try TestFolder()
+        let a = try await TestDevice("A", folder: folder.url)
+        let b = try await TestDevice("B", folder: folder.url)
+        let (page, blocks) = try await a.createPage("Seite", texts: ["eins"])
+        try await a.sync()
+        try await b.sync()
+        try await a.edit(page, blocks[0]) { $0.text = "zwei" }
+        try await a.sync()
+        try await b.sync()
+        #expect(try await b.texts(of: "Seite") == ["zwei"])
+        #expect(try folder.files().filter { $0.contains(b.deviceID.uuidString) } == ["devices/\(b.deviceID.uuidString).json"])
+    }
+
+    private func pageVersion(_ device: TestDevice, _ page: UUID) async throws -> DocumentVersion {
+        try PageDocument(bytes: #require(try await device.store.syncPage(page)?.document)).version
+    }
+
     // MARK: Fälle aus ADR-026
 
     @Test func concurrentTypingInTheSameBlockIsMerged() async throws {

@@ -264,6 +264,7 @@ final class SyncControllerTests {
         let sync = controller(persistence)
         try await sync.enable(folder: syncFolder)
         await sync.syncNow()
+        let old = try await pageVersion(persistence.store, page)
         try await persistence.store.applyEdits(page, BlockEdits(upserts: [BlockSnapshot(id: try #require(try await persistence.store.blocks(of: page).first?.id), text: "Nachher")]))
         await sync.syncNow()
         sync.disable()
@@ -277,6 +278,9 @@ final class SyncControllerTests {
         let fresh = try await freshDevice(in: other, folderID: try #require(settings.connection?.folderID))
         #expect(try await fresh.pageSnapshots().map(\.title) == ["Seite"])
         #expect(try await fresh.blocks(of: page).map(\.text) == ["Nachher"])
+        // Mit Geschichte: Der Stand aus dem alten Ordner ist abrufbar.
+        let document = try PageDocument(bytes: #require(try await fresh.syncPage(page)?.document))
+        #expect(try document.blocks(at: old).map(\.text) == ["Vorher"])
     }
 
     @Test func reconnectAfterRestoreMergesWithoutOverwriting() async throws {
@@ -313,6 +317,9 @@ final class SyncControllerTests {
         let sync = controller(persistence)
         try await sync.enable(folder: syncFolder)
         await sync.syncNow()
+        let old = try await pageVersion(persistence.store, page)
+        try await persistence.store.applyEdits(page, BlockEdits(upserts: [BlockSnapshot(id: try #require(try await persistence.store.blocks(of: page).first?.id), text: "Neuer")]))
+        await sync.syncNow()
         sync.turnOffForRestore()
         let before = folderContents()
 
@@ -328,7 +335,13 @@ final class SyncControllerTests {
         #expect(sync.status == .idle)
         #expect(folderContents() == before)
         let fresh = try await freshDevice(in: empty, folderID: try #require(settings.connection?.folderID))
-        #expect(try await fresh.blocks(of: page).map(\.text) == ["Text"])
+        #expect(try await fresh.blocks(of: page).map(\.text) == ["Neuer"])
+        let document = try PageDocument(bytes: #require(try await fresh.syncPage(page)?.document))
+        #expect(try document.blocks(at: old).map(\.text) == ["Text"])
+    }
+
+    func pageVersion(_ store: PageStore, _ page: UUID) async throws -> DocumentVersion {
+        try PageDocument(bytes: #require(try await store.syncPage(page)?.document)).version
     }
 
     @Test func decliningKeepsSyncOffAndStopsAsking() async throws {
