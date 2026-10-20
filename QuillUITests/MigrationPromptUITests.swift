@@ -1,8 +1,7 @@
 import XCTest
 
-/// Rückfrage vor der Migration auf ein neues Schema (Phase 11.2, ADR-029): Return
-/// beendet, ohne etwas zu verändern; Escape tut nichts; nur ein Klick auf „Umstellen“
-/// migriert. Der Store liegt im temporären Ordner der App (`-QuillStoreDirectory`) und
+/// Rückfrage vor der Migration auf ein neues Schema (Phase 11.2, ADR-029): Return und
+/// Escape beenden, ohne etwas zu verändern; nur ein Klick auf „Umstellen“ migriert. Der Store liegt im temporären Ordner der App (`-QuillStoreDirectory`) und
 /// beginnt im alten Format V1 (`-QuillSeedSchemaV1`); `-QuillAskBeforeMigration` fragt
 /// wie beim echten Store. Die Dateischritte prüft `MigrationPromptTests`.
 @MainActor
@@ -18,7 +17,7 @@ final class MigrationPromptUITests: XCTestCase {
         app?.terminate()
     }
 
-    func testReturnQuitsAndOnlyAClickMigrates() throws {
+    func testReturnAndEscapeQuitAndOnlyAClickMigrates() throws {
         // 1. Return wählt „Beenden“: Quill endet ohne Fenster.
         launch()
         let quit = app.buttons["migration.quit"]
@@ -27,15 +26,17 @@ final class MigrationPromptUITests: XCTestCase {
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(app.wait(for: .notRunning, timeout: 15), "Return beendet Quill nicht")
 
-        // 2. Nicht umgestellt: Die Rückfrage kommt wieder. Escape tut nichts.
+        // 2. Nicht umgestellt: Die Rückfrage kommt wieder. Escape wählt auch „Beenden“.
         launch()
         XCTAssertTrue(app.buttons["migration.quit"].waitForExistence(timeout: 10), "Store wurde ohne Zustimmung umgestellt")
         app.typeKey(.escape, modifierFlags: [])
-        XCTAssertTrue(app.buttons["migration.migrate"].waitForExistence(timeout: 2), "Escape schließt die Rückfrage")
-        XCTAssertEqual(app.state, .runningForeground)
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 15), "Escape beendet Quill nicht")
 
         // 3. Klick auf „Umstellen“: Quill öffnet mit dem alten Bestand.
-        app.buttons["migration.migrate"].click()
+        launch()
+        let migrate = app.buttons["migration.migrate"]
+        XCTAssertTrue(migrate.waitForExistence(timeout: 10), "Store wurde ohne Zustimmung umgestellt")
+        migrate.click()
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
         assertSidebarContains("Projekte")
         app.typeKey("q", modifierFlags: .command)

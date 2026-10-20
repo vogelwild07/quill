@@ -55,10 +55,33 @@ struct MigrationPromptTests {
         let alert = MigrationPrompt.makeAlert()
         #expect(alert.buttons.map { $0.accessibilityIdentifier() } == ["migration.quit", "migration.migrate"])
         #expect(alert.buttons.map(\.title) == ["Beenden", "Umstellen"])
-        // Return löst „Beenden“ aus; „Umstellen“ hat weder Return noch Escape.
+        // Return löst „Beenden“ aus (Escape siehe unten); „Umstellen“ hat kein Kürzel.
         #expect(alert.buttons[0].keyEquivalent == "\r")
         #expect(alert.buttons[1].keyEquivalent.isEmpty)
         #expect(alert.alertStyle == .warning)
+    }
+
+    @Test func escapeQuitsLikeTheDefault() throws {
+        let alert = MigrationPrompt.makeAlert()
+        alert.layout()
+        var stopped: [NSApplication.ModalResponse] = []
+        let handler = MigrationPrompt.escapeHandler(for: alert) { stopped.append($0) }
+        func key(_ characters: String, code: UInt16, window: Int) throws -> NSEvent {
+            try #require(NSEvent.keyEvent(
+                with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: window,
+                context: nil, characters: characters, charactersIgnoringModifiers: characters, isARepeat: false, keyCode: code
+            ))
+        }
+        let window = alert.window.windowNumber
+        // Escape im Fenster der Rückfrage: verbraucht, Antwort wie „Beenden“.
+        #expect(handler(try key("\u{1b}", code: MigrationPrompt.escapeKeyCode, window: window)) == nil)
+        #expect(stopped == [.alertFirstButtonReturn])
+        #expect(MigrationPrompt.answer(for: stopped[0]) == .quit)
+        #expect(MigrationPrompt.answer(for: .alertSecondButtonReturn) == .migrate)
+        // Andere Tasten und Escape in anderen Fenstern gehen weiter.
+        #expect(handler(try key("x", code: 7, window: window)) != nil)
+        #expect(handler(try key("\u{1b}", code: MigrationPrompt.escapeKeyCode, window: window + 1)) != nil)
+        #expect(stopped.count == 1)
     }
 
     @Test func declineLeavesTheStoreUntouched() throws {
