@@ -30,6 +30,7 @@ Quill ist nur ad hoc signiert und nicht von Apple notarisiert. macOS blockiert d
 - macOS 26 oder neuer, Apple Silicon
 - Xcode 27+ (aktiv via `xcode-select`)
 - Optional Signier-Team: `Config/Local.xcconfig.example` nach `Config/Local.xcconfig` kopieren und die eigene Team-ID eintragen. Die Datei wird nicht committet; ohne sie baut Xcode mit „Sign to Run Locally“.
+- Für Pushes: `Config/Local.push-check.example` nach `Config/Local.push-check` kopieren und die eigene private E-Mail-Adresse eintragen. `Scripts/push.sh` prüft damit vor jedem Push, dass keine persönlichen Werte in Commits stehen.
 
 ## Bauen und testen
 
