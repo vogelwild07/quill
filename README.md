@@ -42,7 +42,7 @@ xcodebuild -project Quill.xcodeproj -scheme Quill -destination 'platform=macOS' 
 swift test --package-path Packages/QuillKit
 ```
 
-Release bauen: `Scripts/make-release.sh` erzeugt aus einer sauberen Arbeitskopie die ad hoc signierte, geprüfte App als `dist/Quill-<Version>.dmg` samt `.sha256` (ADR-022).
+Release bauen: `Scripts/make-release.sh` erzeugt aus einer sauberen Arbeitskopie die ad hoc signierte, geprüfte App als `dist/Quill-<Version>.dmg` samt `.sha256` (ADR-022), mit gestaltetem Fenster und Volume-Icon (`Scripts/dmg/`, ADR-025).
 
 Darstellung prüfen ohne Bildschirmfotos: `EditorSnapshotTests` und `EmptyStateSnapshotTests` rendern Editor und Leerzustände hell und dunkel und legen PNGs in `$TMPDIR/QuillEditorSnapshots/` ab. Die Bilder oben nimmt `Scripts/readme-screenshots.sh` auf (UI-Test mit Demo-Inhalten, Store nur im Arbeitsspeicher). Die Aufnahme liest Bildschirmpixel, deshalb vorher ein neutrales Schreibtischbild einstellen, andere Fenster ausblenden und „Nicht stören“ einschalten. Das App-Icon (`App/Resources/AppIcon.icon`) wird in Icon Composer bearbeitet. Performance: `python3 Scripts/perf-package.py 3` (Package, optimiert) und `python3 Scripts/perf-ui.py` (App im Schema „Quill Profiling“); Ziele und Messwerte in `docs/performance.md`. Der letzte Stand des Editor-Spikes aus Phase 1 ist der Git-Tag `editor-spike`.
 
