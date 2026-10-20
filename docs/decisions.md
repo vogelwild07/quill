@@ -464,3 +464,35 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - **Rückfrage vor jeder Migration** auf ein neues Schema, beim echten Store immer: „Beenden“ ist der Standardknopf (Return), Escape wählt es ebenfalls (lokaler Event-Monitor während der Rückfrage, weil ein Knopf nur ein Tastenkürzel hat); „Umstellen“ hat kein Tastenkürzel und muss angeklickt werden. Gefragt wird nach dem Einspielen eines vorgemerkten Backups, damit „Beenden“ ein eingespieltes V1-Backup für eine ältere Version lässt. Die Frage kommt erst nach dem Start der App (`applicationDidFinishLaunching`): Ein Dialog vorher war in einem ersten Versuch für Bedienungshilfen nicht erreichbar (UI-Test: „has not loaded accessibility“), also auch nicht für VoiceOver. Ohne anstehende Migration öffnet der Store wie bisher vor dem ersten Fenster.
 - `BlockProperties` liest fehlende Felder mit Standard, damit ältere Daten (Zwischenablage) lesbar bleiben.
 - Gegenproben 11.2 (alle rot): Return auf „Umstellen“ (Unit- und UI-Test), Escape nicht verbraucht (Unit-Test), Escape-Monitor nicht installiert (UI-Test), keine Rückfrage beim echten Store, Rückfrage vor dem Einspielen des Backups (Rückweg), `isRestored` als Pflichtfeld beim Lesen, `isRestored` nicht aus dem Store gelesen. Eine Gegenprobe deckte nebenbei auf, dass der V1-Testbestand mit offener WAL angelegt wurde und „unverändert“ deshalb nicht byte-genau messbar war; er entsteht jetzt per `VACUUM INTO` als eine Datei (15 von 15 Läufen grün).
+
+**Umsetzung 11.3 (Ordnerzugriff und Abgleich):**
+- **Abgleich** (`SyncEngine`, Actor in QuillSync) je Dokument: aus dem Store laden; eigene Dateien nachlesen, die der Store noch nicht kennt (Abbruch zwischen Ordner und Store); den Stand des Stores übernehmen und die neuen Änderungen als nächste eigene Datei anhängen; dann neue Dateien der anderen Geräte übernehmen, der Reihe nach bis zur ersten Lücke; das Ergebnis mit Dokument und gelesenen Dateien in einem Schritt in den Store schreiben. Seiten vor dem Seitenbaum, neue Seiten anderer Geräte bekommen ihren Inhalt im selben Abgleich. Fällig sind Seiten mit neuerem `updatedAt` als beim letzten Abgleich oder mit neuen Dateien anderer Geräte.
+- **Eingaben während des Abgleichs:** `PageStore.applySyncTree` und `applySyncPage` schreiben nur, wenn der Store noch dem Stand entspricht, von dem der Abgleich ausging; sonst nichts, und der nächste Abgleich nimmt die Eingabe mit. Der Abgleich überschreibt so nie eine Eingabe des Nutzers.
+- **Dateien:** Eigene Dateien werden vollständig daneben geschrieben und dann umbenannt; existiert der Name schon, scheitert es, statt zu überschreiben. Die nächste Nummer folgt auf die höchste vorhandene eigene Datei. Lesen und Schreiben über `NSFileCoordinator`. Nicht geladene Dateien (Platzhalter `.name.icloud`, `ubiquitousItemDownloadingStatus`) werden angefordert und nie koordiniert gelesen, weil das bis zum Laden wartet; der nächste Abgleich holt sie.
+- **Automerge-Daten prüfen:** automerge-swift 0.7.2 nimmt leere, fremde und abgeschnittene Daten ohne Fehler an (geprüft). Eine halb geladene Datei hätte dann als gelesen gegolten, und ihre Änderungen wären für immer verloren gewesen. `ChunkCheck` prüft deshalb Kennung, Länge und Prüfsumme jedes Blocks (bei komprimierten Blöcken Kennung und Länge). Unlesbares bleibt unverändert liegen, steht im Bericht und wird bei jedem Abgleich erneut versucht.
+- **Ordner:** `quill.json` legt Quill nur beim ersten Verbinden mit einem leeren Ordner an. Ein Ordner mit vorhandenen Quill-Daten, auch der eines eigenen zweiten Macs, oder mit anderer Ordner-ID wird erst nach Zustimmung zusammengeführt. Fehlt `quill.json` im verbundenen Ordner, oder stammt es aus einer neueren Version, schreibt Quill nichts.
+- **Löschen gegen Bearbeiten:** Verschwindet ein Block durch fremde Änderungen, sucht der Abgleich in der Geschichte die löschende Änderung und vergleicht den Block, wie das löschende Gerät ihn sah, mit dem eigenen Stand. Weicht er ab, kommt der Block mit dem eigenen Stand zurück, markiert als wiederhergestellt (`restored`), und geht als eigene Änderung an die anderen Geräte.
+- **Papierkorb gegen Bearbeiten:** Wer eine Seite in den Papierkorb legt, schreibt den Stand ihres Seiten-Dokuments dazu (`trashedVersion`). Ein anderes Gerät, das die Seite seitdem bearbeitet hat, behält sie, markiert als wiederhergestellt. Kennt es den Stand nicht, behält es sie auch, lieber eine Seite zu viel. Für eine hier endgültig gelöschte Seite wird der Stand aus den Dateien im Ordner bis zu den gelesenen Nummern nachgebaut. Eine endgültig gelöschte Seite liegt auf den anderen Geräten im Papierkorb, bis „Papierkorb leeren“ sie dort löscht, und kommt danach nirgends zurück.
+- **Konflikte und Baum:** Haben zwei Geräte denselben Wert gesetzt, ist das kein Konflikt für den Nutzer. Über Kreuz verschobene Seiten (Kreis) kommen auf die oberste Ebene: je Kreis die mit der kleinsten ID, auf jedem Gerät dieselbe. Datumswerte stehen als Sekunden seit 2001 im Seitenbaum (wie `Date`), damit sie verlustfrei zurückkommen; seit 1970 rundete es.
+- **Bilder:** Datei `assets/<SHA-256>.<Endung>` mit den unveränderten Bytes; der Block nennt sie im Feld `assetFile`. Eine Seite mit einem noch nicht geladenen Bild wartet, sonst verlöre der Block beim Speichern seinen Verweis.
+- **Ein und aus** (`SyncController`, `SyncSettings` in QuillFeatures):
+  - Einschalten legt zuerst ein Backup `vor-sync` an (nie automatisch gelöscht); scheitert es, bleibt der Sync aus. Dann folgen eine neue Geräte-ID (bei jedem Einschalten) und die Verbindung mit Lesezeichen (`com.apple.security.files.bookmarks.app-scope`) in den Einstellungen des Macs. Den Ordner beschreibt erst der erste Abgleich.
+  - Ausschalten lässt Store und Ordner unverändert.
+  - „Sync pausieren“ bleibt über Neustarts; `SyncGate` wird vor jedem Schreiben in den Ordner gefragt und stoppt auch einen laufenden Abgleich sofort.
+  - Vor dem Einspielen eines Backups schaltet `turnOffForRestore()` den Sync aus und merkt die Rückfrage für den Neustart vor. Wieder verbinden heißt: als neues Gerät. Neuere Stände aus dem Ordner kommen dabei zurück, weil der Abgleich zusammenführt; die Oberfläche (11.4) sagt das.
+  - Geänderte Seiten laden offene Editoren neu wie bei Änderungen aus einem anderen Fenster.
+- **Noch nicht in 11.3:** Oberfläche, Zeitpunkte des Abgleichs (11.4); Verdichten der eigenen Dateien zu `snapshot` (vor v0.4.0).
+- Gegenproben 11.3 (alle rot):
+  - kein Wiederherstellen nach „Löschen gegen Bearbeiten“;
+  - Seite und Seitenbaum ohne Vergleich mit dem erwarteten Stand;
+  - ohne Prüfung der Automerge-Daten;
+  - Anhängen ohne Pausen-Prüfung, Pausieren nur in den Einstellungen (laufender Abgleich schreibt weiter);
+  - „Papierkorb gegen Bearbeiten“ ohne Prüfung;
+  - endgültig gelöscht ohne Stand;
+  - nicht geladene Datei gelesen;
+  - fremder Ordner ohne Rückfrage;
+  - eigene Dateien nicht nachgelesen (Text doppelt nach Abbruch);
+  - Einschalten ohne Backup;
+  - Datum seit 1970;
+  - Kreis nicht aufgelöst.
+  - Zwei Gegenproben waren zuerst grün (Datum, Pausieren während des Abgleichs); die Tests wurden verschärft.

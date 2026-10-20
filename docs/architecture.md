@@ -24,7 +24,7 @@ quill/
 │  ├─ QuillApp.swift
 │  ├─ Commands/                 Menüleiste, Shortcuts
 │  ├─ Resources/                Assets.xcassets, Localizable.xcstrings
-│  └─ Quill.entitlements        App Sandbox, user-selected files r/w
+│  └─ Quill.entitlements        App Sandbox, user-selected files r/w, Lesezeichen (app-scope) für den Sync-Ordner
 ├─ Packages/QuillKit/
 │  ├─ Sources/{QuillModel,QuillEditor,QuillFeatures,QuillExport,QuillDesign}
 │  └─ Tests/                    Swift Testing; `QuillTestFixtures` = gemeinsame `SampleDocuments`
@@ -236,7 +236,17 @@ QuillSync
   TreeDocument      [PageRecord] ↔ Map pages, Grabstein statt Entfernen
   TextMarks         RichText ↔ Marks in Unicode-Skalaren
   SyncFolderLayout  Pfade, quill.json (FolderManifest), devices/ (DeviceInfo), <Nr>.changes
+  SyncEngine        Abgleich Store ↔ Ordner (Actor): Seiten, dann Seitenbaum
+  SyncFileAccess    Lesen/Schreiben per NSFileCoordinator, nie überschreiben, nicht geladene Dateien
+  ChunkCheck        Automerge-Daten prüfen, bevor sie übernommen werden
+  SyncState         SyncGate („Sync pausieren“), SyncFailure, SyncReport, gelesene Dateien
+QuillModel
+  PageStore+Sync    Schreibwege des Abgleichs: nur vom erwarteten Stand aus, Seiten nie löschen
+QuillFeatures
+  Sync/             SyncSettings (UserDefaults, Lesezeichen), SyncController (ein/aus, Backup vorher, Pause)
 ```
+
+Ein Abgleich (`SyncEngine.sync`) je Dokument: aus dem Store laden, eigene Dateien nachlesen, die der Store noch nicht kennt, den Stand des Stores als nächste eigene Datei anhängen, dann neue Dateien der anderen Geräte übernehmen und das Ergebnis in den Store schreiben. Hat der Nutzer während des Abgleichs gespeichert, schreibt der Store nichts, und der nächste Abgleich nimmt die Eingabe mit. Oberfläche, Zeitpunkte des Abgleichs und Lizenztexte kommen in 11.4.
 
 Sync über einen gewählten Ordner mit Automerge, je Seite ein Dokument und eines für den Seitenbaum. Der SwiftData-Store bleibt Quelle der App: Seiten öffnen aus dem Store, Automerge braucht nur der Abgleich im Hintergrund. Automerge steht nur in der Sync-Schicht (ein Modul), damit ein Ausstieg auf dieses Modul beschränkt bleibt. Der Spike aus Phase 10.1 liegt unter `Spikes/AutomergeSpike` (Abbildung `[EditorBlock]` ↔ Automerge mit Umrechnung UTF-16 ↔ Unicode-Skalare, Messprogramm, Größenskript) und wird von App und QuillKit nie eingebunden (`SpikeIsolationTests`).
 
