@@ -412,3 +412,12 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Neuer Code in QuillKit muss auf beiden Plattformen bauen; ein Nur-Mac-Typ im gemeinsamen Code fällt beim nächsten vollen Lauf auf.
 - Gegenproben: Ein Nur-Mac-Typ im gemeinsamen Code (`LaunchNotice` in `RootView`) und eine Compiler-Warnung lassen `check-ios-build.sh` scheitern.
 
+**Entscheidung (10.3, Editor-Kern):**
+- Neues Target `QuillEditorCore` nur mit Foundation, Observation, Synchronization und QuillModel: `EditorDocument`, `EditorBlock`, Inline-Text und `RichText`, Markdown (Serialisierung, Kürzel), Format der Zwischenablage, Block-Attribute im Textspeicher, `EditorPersistenceBridge`, `NotificationObservation`, der Theme-Katalog mit Paletten und Varianten, die Kontrastrechnung (`SRGB`) und `PaletteSpec` (Farben je Rolle, Verstärkung bei „Kontrast erhöhen“, Deckkraft im Fokus-Modus) sowie `EditorFocusSettings`. `EditorCoreImportTests` lässt nur diese Importe und nur die Abhängigkeit auf QuillModel zu.
+- QuillEditor behält, was Oberfläche oder Plattform braucht: die TextKit-Schicht (`BlockStyle`, `BlockLayoutFragment`, `BlockRenderer`, Anhänge), die schon für AppKit und UIKit baut; `ResolvedPalette`, die aus `PaletteSpec` `NSColor` bzw. `UIColor` anlegt; `EditorThemeState` (Cache, abgedunkeltes Zeichnen je Thread), `EditorThemeSettings` und `EditorColor` für beide Plattformen; Name und erzwungene Darstellung der Themes; `SlashCommand` und `BlockConversion` (lokalisierte Menütitel); den Controller mit `NSTextView` hinter `#if canImport(AppKit)`.
+- Zugriff über die Modulgrenze mit `package` statt `public`; nach außen bleibt die API von QuillKit gleich. QuillExport hängt nur noch am Kern.
+- Der Seitentitel nimmt jetzt auch auf iOS die Theme-Farbe (Übergang aus 10.2 entfernt). Systemfarben des Themes „Standard“ werden für die Kontrastrechnung mit ihren macOS-Werten genähert; auf iOS weichen `systemBackground` und `label` davon ab. Das wird in Phase 13 auf dem Gerät geprüft.
+
+**Konsequenzen (10.3):**
+- Darstellung unverändert: Alle 128 PNGs der Snapshot- und Pixeltests sind vor und nach dem Umbau byte-gleich (zwei Ausgangsläufe untereinander ebenfalls). Gegenprobe: ein um 0,5 schwächerer Platzhalter-Kontrast im Kern ändert die Bilder.
+- Gegenproben `EditorCoreImportTests`: `import SwiftUI`, `import struct CoreGraphics.CGFloat`, `@preconcurrency import AppKit` und eine Abhängigkeit auf QuillDesign fallen auf.
