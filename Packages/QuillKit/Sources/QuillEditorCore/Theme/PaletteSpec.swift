@@ -194,7 +194,6 @@ package struct SRGB: Sendable, Equatable {
         }
         return result
     }
-
 }
 
 extension ThemeColor {

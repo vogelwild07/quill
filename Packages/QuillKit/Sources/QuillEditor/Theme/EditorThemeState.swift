@@ -76,7 +76,7 @@ struct ResolvedPalette: Sendable {
     /// Deckkraft abgedunkelter Absätze im Fokus-Modus (`PaletteSpec.dimmedAlpha`).
     let dimmedAlpha: CGFloat
 
-    subscript(role: EditorColorRole) -> PlatformColor { colors[role] ?? .labelFallback }
+    subscript(role: EditorColorRole) -> PlatformColor { colors[role] ?? .systemLabel }
 
     func dimmed(_ role: EditorColorRole) -> PlatformColor { dimmedColors[role] ?? self[role] }
 
@@ -95,17 +95,7 @@ struct ResolvedPalette: Sendable {
     /// `color` mit Deckkraft `alpha`, weiter dynamisch: `withAlphaComponent` löst
     /// Systemfarben wie `labelColor` sonst einmal in der gerade aktuellen Darstellung auf.
     static func faded(_ color: PlatformColor, alpha: CGFloat) -> PlatformColor {
-        #if canImport(AppKit)
-        NSColor(name: nil) { appearance in
-            var result = color
-            appearance.performAsCurrentDrawingAppearance {
-                result = (color.usingColorSpace(.sRGB) ?? color).withAlphaComponent(alpha)
-            }
-            return result
-        }
-        #else
-        UIColor { traits in color.resolvedColor(with: traits).withAlphaComponent(alpha) }
-        #endif
+        .dynamic(named: nil) { color.resolved(in: $0).withAlphaComponent(alpha) }
     }
 }
 
@@ -124,17 +114,6 @@ extension ResolvedColor {
         case .system(.quaternaryFill): .quaternarySystemFill
         #endif
         }
-    }
-}
-
-extension PlatformColor {
-    /// Ersatz, falls eine Rolle fehlt; im Katalog kommt das nicht vor.
-    fileprivate static var labelFallback: PlatformColor {
-        #if canImport(AppKit)
-        .labelColor
-        #else
-        .label
-        #endif
     }
 }
 

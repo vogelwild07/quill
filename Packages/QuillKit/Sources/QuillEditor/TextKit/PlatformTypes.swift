@@ -42,24 +42,81 @@ public enum EditorColor {
     static let onAccent = themed(.onAccent)
 
     /// Deckkraft abgedunkelter Absätze im Fokus-Modus, für die aktuelle Darstellung.
-    static var dimmedAlpha: CGFloat {
-        #if canImport(AppKit)
-        EditorThemeState.dimmedAlpha(for: NSAppearance.currentDrawing())
-        #else
-        EditorThemeState.dimmedAlpha(for: UITraitCollection.current)
-        #endif
-    }
+    static var dimmedAlpha: CGFloat { EditorThemeState.dimmedAlpha(for: Platform.drawingAppearance) }
 
     /// Zeichnet `body` mit den abgedunkelten Farben des Fokus-Modus: Textrollen behalten
     /// ihren Mindestkontrast, Flächen nehmen `dimmedAlpha`.
     static func drawingDimmed(_ body: () -> Void) { EditorThemeState.drawingDimmed(body) }
 
     private static func themed(_ role: EditorColorRole) -> PlatformColor {
+        .dynamic(named: "QuillEditor.\(role)") { EditorThemeState.color(role, for: $0) }
+    }
+}
+
+/// Die Weichen zwischen AppKit und UIKit für Farben und Bedienungshilfen, an einer
+/// Stelle statt verteilt (ADR-028).
+enum Platform {
+    /// Darstellung, in der gerade gezeichnet wird.
+    static var drawingAppearance: PlatformAppearance {
         #if canImport(AppKit)
-        NSColor(name: NSColor.Name("QuillEditor.\(role)")) { EditorThemeState.color(role, for: $0) }
+        NSAppearance.currentDrawing()
         #else
-        UIColor { EditorThemeState.color(role, for: $0) }
+        UITraitCollection.current
+        #endif
+    }
+
+    /// „Kontrast erhöhen“ in den Bedienungshilfen (auf iOS „Dunklere Systemfarben“ in der API).
+    @MainActor static var increasesContrast: Bool {
+        #if canImport(AppKit)
+        NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        #else
+        UIAccessibility.isDarkerSystemColorsEnabled
+        #endif
+    }
+
+    /// Benachrichtigung, wenn sich `increasesContrast` ändert, mit ihrem Center.
+    @MainActor static var increasesContrastDidChange: (name: Notification.Name, center: NotificationCenter) {
+        #if canImport(AppKit)
+        (NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, NSWorkspace.shared.notificationCenter)
+        #else
+        (UIAccessibility.darkerSystemColorsStatusDidChangeNotification, .default)
         #endif
     }
 }
 
+extension PlatformColor {
+    /// Farbe, die sich in jeder Darstellung neu aus `provider` ergibt. Auf iOS wird das
+    /// Ergebnis in den Traits aufgelöst, falls `provider` selbst eine dynamische Farbe
+    /// liefert (`label`, `systemBackground`); ob UIKit verschachtelte dynamische Farben
+    /// nachauflöst, ist nicht zugesichert.
+    static func dynamic(
+        named name: String?,
+        _ provider: @escaping @Sendable (PlatformAppearance) -> PlatformColor
+    ) -> PlatformColor {
+        #if canImport(AppKit)
+        NSColor(name: name.map { NSColor.Name($0) }, dynamicProvider: provider)
+        #else
+        UIColor { traits in provider(traits).resolvedColor(with: traits) }
+        #endif
+    }
+
+    /// Die Farbe, aufgelöst in `appearance`; Systemfarben wie `labelColor` werden damit fest.
+    func resolved(in appearance: PlatformAppearance) -> PlatformColor {
+        #if canImport(AppKit)
+        var result = self
+        appearance.performAsCurrentDrawingAppearance { result = self.usingColorSpace(.sRGB) ?? self }
+        return result
+        #else
+        resolvedColor(with: appearance)
+        #endif
+    }
+
+    /// Textfarbe des Systems, als Ersatz, falls eine Rolle fehlt.
+    static var systemLabel: PlatformColor {
+        #if canImport(AppKit)
+        .labelColor
+        #else
+        .label
+        #endif
+    }
+}

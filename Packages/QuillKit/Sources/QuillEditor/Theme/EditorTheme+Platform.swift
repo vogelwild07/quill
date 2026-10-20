@@ -32,15 +32,6 @@ extension EditorTheme {
         case .dark: NSAppearance(named: .darkAqua)
         }
     }
-    #elseif canImport(UIKit)
-    /// Interface-Stil, den der Editor für ein festes Theme erzwingt; `.unspecified` folgt dem System.
-    public var forcedInterfaceStyle: UIUserInterfaceStyle {
-        switch appearance {
-        case .followsSystem: .unspecified
-        case .light: .light
-        case .dark: .dark
-        }
-    }
     #endif
 }
 

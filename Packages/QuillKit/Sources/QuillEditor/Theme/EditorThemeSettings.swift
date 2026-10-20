@@ -1,8 +1,4 @@
-#if canImport(AppKit)
-import AppKit
-#elseif canImport(UIKit)
-import UIKit
-#endif
+import Foundation
 import Observation
 import QuillEditorCore
 
@@ -30,29 +26,14 @@ public final class EditorThemeSettings {
     public var theme: EditorTheme { EditorTheme.with(id: selection) }
 
     init() {
-        increaseContrast = Self.systemIncreasesContrast
+        increaseContrast = Platform.increasesContrast
         EditorThemeState.setIncreaseContrast(increaseContrast)
-        #if canImport(AppKit)
-        let name = NSWorkspace.accessibilityDisplayOptionsDidChangeNotification
-        let center = NSWorkspace.shared.notificationCenter
-        #else
-        let name = UIAccessibility.darkerSystemColorsStatusDidChangeNotification
-        let center = NotificationCenter.default
-        #endif
-        contrastObservation = NotificationObservation(name, object: nil, center: center) { _ in
+        let change = Platform.increasesContrastDidChange
+        contrastObservation = NotificationObservation(change.name, object: nil, center: change.center) { _ in
             MainActor.assumeIsolated {
-                EditorThemeSettings.shared.setIncreaseContrast(Self.systemIncreasesContrast)
+                EditorThemeSettings.shared.setIncreaseContrast(Platform.increasesContrast)
             }
         }
-    }
-
-    /// „Kontrast erhöhen“ in den Bedienungshilfen (auf iOS „Dunklere Systemfarben“ in der API).
-    private static var systemIncreasesContrast: Bool {
-        #if canImport(AppKit)
-        NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
-        #else
-        UIAccessibility.isDarkerSystemColorsEnabled
-        #endif
     }
 
     /// „Kontrast erhöhen“ geändert: Farben neu ableiten und alle Editoren neu zeichnen.
