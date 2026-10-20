@@ -2,6 +2,19 @@
 
 Zwei Macs, nachgestellt mit zwei Testvarianten der App in einem Benutzerkonto und einem gemeinsamen Ordner (ADR-029). Getestet wird nur mit **Quill Synctest A** (Bundle-ID `io.github.vogelwild07.quill.synctest.a`) und **Quill Synctest B** (`io.github.vogelwild07.quill.synctest.b`): Jede hat ihren eigenen Container mit eigenem Store und eigenen Einstellungen, beide laufen gleichzeitig. Die echte App unter `/Applications/Quill.app` und ihr Store bleiben unberührt; sie muss während des Tests nicht laufen. `BundleIdentifierTests` stellt sicher, dass keine Variante die Kennung der echten App hat, und `Scripts/make-synctest.sh` prüft die Kennung jedes Builds.
 
+## Automatisch
+
+Die meisten Fälle laufen auch als UI-Test mit beiden Apps nebeneinander, mit Wegwerf-Stores und einem Wegwerf-Ordner im temporären Ordner des Test-Runners (`SyncTwoAppsUITests`, ADR-029):
+
+```sh
+Scripts/test-synctest-ui.sh                          # alle Fälle, jeder einzeln mit 600 s Grenze
+Scripts/test-synctest-ui.sh testTypingWithoutPause   # einzelne Fälle
+```
+
+Vorher Quill und beide Testvarianten beenden; das Skript bricht sonst ab. Automatisch: Fall 1 bis 12 und 14 (Fall 14 zweimal, auch mit ungespeicherten Eingaben). Per Hand bleiben Fall 13 und „Neu beginnen …“ aus Fall 11 (beide in Phase 13) und in Fall 9 der Pfad in der aufgeklappten Gruppe „Unlesbare Dateien“.
+
+## Per Hand
+
 **A** und **B** heißen im Folgenden die beiden Apps. Am Menü erkennst du, welche vorne ist („Quill Synctest A“ oder „Quill Synctest B“).
 
 ## Vorbereitung
