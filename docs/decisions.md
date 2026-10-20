@@ -347,3 +347,17 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Das Datenmodell bleibt nach den Regeln aus ADR-002 aufgebaut; CloudKit ist nicht mehr geplant. ADR-012 (letzte Speicherung pro Block) gilt weiter für zwei Fenster auf einem Mac.
 - Ein Sync-Ordner ist kein Backup: Löschen wird synchronisiert. Die lokalen Backups bleiben.
 - Direkter Sync im WLAN steht unter „Später“.
+
+## ADR-027: Fokus-Modus mit Schreibmaschinen-Scrollen und abgedunkelter Umgebung (2026-10-20)
+
+**Kontext:** Phase 18.1 der Roadmap, vorgezogen für v0.3.0. Gewünscht: Fokus-Modus mit Schreibmaschinen-Scrollen und abgedunkelter Umgebung, passend zu den Themes (ADR-024).
+
+**Entscheidung:**
+- Ein Schalter für beides, im Menü Darstellung (⇧⌘F; ⌘F, ⌥⌘F und ⌃⌘F sind belegt) und unter Einstellungen › Darstellung. Pro Mac in `UserDefaults` (`QuillFocusMode`), nicht im Store, in Backups oder im Export; wirkt sofort in allen Fenstern, ändert keinen Text, kein Undo-Schritt, kein Speichern. UI-Tests mit Test-Store lesen und schreiben die Wahl nie (`-QuillFocusMode YES`).
+- Abdunkeln: Alle Blöcke außer denen mit Cursor oder Auswahl und der Seitenkopf werden als Ganzes mit geringerer Deckkraft über den Theme-Hintergrund gezeichnet, also in Richtung der Theme-Farbe statt grau. Die Deckkraft berechnet `ResolvedPalette` je Theme und Variante so niedrig wie möglich, solange der Fließtext mindestens 3 : 1 behält (mit „Kontrast erhöhen“ 4,5 : 1). Nebenrollen (Zitat, Marker, Erledigt) dürfen abgedunkelt darunter liegen; sie sind schon im Normalzustand zurückgenommen. Abgedunkelt wird nur, solange der Text den Fokus hat.
+- Schreibmaschinen-Scrollen: Die Zeile mit dem Cursor bleibt in der Mitte des sichtbaren Bereichs. Unter dem Text kommt eine halbe Fensterhöhe Platz dazu, damit auch die letzte Zeile in die Mitte kann; oben bleibt die Seite am Anfang (Kopf sichtbar), statt Leerraum davor zu setzen. Nicht bei einer Auswahl, nicht bei markiertem Text (IME), nicht während des Ziehens mit der Maus; nach einem Klick sanft (0,25 s), bei „Bewegung reduzieren“ ohne Animation.
+- Sidebar und Symbolleiste bleiben; kein automatisches Vollbild.
+
+**Konsequenzen:**
+- `EditorFocusModeTests` prüft die Deckkraft für alle Themes und Varianten, gezeichnet in jedem Theme bei hellem und dunklem System, sowie Abdunkeln, Kopf, Scrollen und Einstellung; Gegenproben (schwächerer Mindestkontrast, kein Abdunkeln beim Zeichnen, kein Nachmessen, kein Platz unter dem Text, Abdunkeln ohne Fokus) fallen durch.
+- Der Kontrast-Audit der UI-Tests läuft ohne Fokus-Modus; abgedunkelter Text liegt bewusst unter 4,5 : 1.
