@@ -16,15 +16,15 @@ Der Editor zeichnet in einem Theme, gewählt unter Einstellungen (⌘,) › Dars
 
 | Theme | Hell | Dunkel | Charakter |
 |---|---|---|---|
-| Standard | ✓ | ✓ | Systemfarben; Akzent, Links, Auswahl Petrol `#08736C` / `#3DCBBE` |
-| Quill | ✓ | ✓ | Signatur: Hintergrund `#F7FBFA` / `#151D23`, Text Tinte, Überschriften Petrol, Zitatbalken und Auswahl Sonnengelb |
+| Standard | ✓ | ✓ | Systemfarben; Links Petrol `#08736C` / `#3DCBBE`, Akzent, Zitatbalken und Auswahl `#0B8F86` / `#3DCBBE` |
+| Quill | ✓ | ✓ | Signatur: Hintergrund `#F7FBFA` / `#151D23`, Text Tinte, Überschriften Petrol, Auswahl Sonnengelb, Zitatbalken hell Petrol, dunkel Sonnengelb |
 | Tinte | ✓ | ✓ | Blaugrau, zurückhaltend |
-| Sonne | ✓ | – | warmes Papier `#FFF8E6` |
+| Sonne | ✓ | – | warmes Papier `#FFF8E6`, Zitatbalken dunkles Bernstein `#B07A00` |
 | Lagune | – | ✓ | tiefes Petrol `#062E2B` |
 | Abend | – | ✓ | warmes Dunkel `#1C1A16`, Checkbox Sonnengelb |
 | Kontrast | ✓ | ✓ | Schwarz auf Weiß bzw. Weiß auf Schwarz |
 
-Regeln: Text mindestens 4,5 : 1 (zum Hintergrund, zur Codefläche, auf der Auswahl), Grafik 3 : 1, mit „Kontrast erhöhen“ Text 7 : 1 (abgeleitet). Sonnengelb `#FFC23A` nur für Flächen, nie für Text. Feste Themes erzwingen hell bzw. dunkel nur im Editor. Werte in `EditorTheme.swift`, geprüft von `EditorThemeContrastTests`.
+Regeln: jede Textrolle mindestens 4,5 : 1 (zum Hintergrund, zur Codefläche, auf der Auswahl), Platzhalter der leeren Seite 4,5 : 1, Grafik (Zitatbalken, Checkbox, Ziehgriff, Plus-Knopf, Trennlinie) 3 : 1. Mit „Kontrast erhöhen“ Text und Platzhalter 7 : 1, Ziehgriff, Plus und Trennlinie 4,5 : 1 (abgeleitet). Platzhalter und Bedienelemente sind aus der Textfarbe abgeleitet: so zurückhaltend wie möglich, aber über dem Mindestkontrast. Sonnengelb `#FFC23A` nur für Flächen, nie für Text, und nur wo es 3 : 1 erreicht. Feste Themes erzwingen hell bzw. dunkel nur im Editor. Werte in `EditorTheme.swift`, geprüft von `EditorThemeContrastTests` (Rechnung) und `EditorThemeControlTests` (gezeichnet, jedes Theme bei hellem und dunklem System).
 
 ## Typografie
 

@@ -93,7 +93,7 @@ Der Controller ist auf Erweiterungen verteilt: `+Input` (Tastatur, Kürzel, Slas
 ### Themes (ADR-024)
 
 - `QuillEditor/Theme/`: `EditorTheme` (Katalog, Paletten aus `ThemeColor`), `EditorThemeState` (aktuelles Theme hinter `Mutex`, aufgelöste Paletten je Variante, Ableitung für „Kontrast erhöhen“), `EditorThemeSettings` (`@Observable`, `UserDefaults`, Notification `didChange`).
-- `EditorColor` gibt je Rolle eine dynamische `NSColor` zurück; Textspeicher und Fragmente nutzen nur diese. Ein Wechsel: `BlockEditorController+Theme` setzt bei festen Themes `scrollView.appearance`, verwirft die Layout-Fragmente und zeichnet neu. Kein Eingriff in den Text.
+- `EditorColor` gibt je Rolle eine dynamische `NSColor` zurück; Textspeicher, Fragmente, Platzhalter, Ziehgriff und Plus-Knopf nutzen nur diese. `placeholder` und `control` leitet `ResolvedPalette` aus der Textfarbe ab. Ein Wechsel: `BlockEditorController+Theme` setzt bei festen Themes `scrollView.appearance`, verwirft die Layout-Fragmente und zeichnet neu. Kein Eingriff in den Text.
 - `QuillFeatures/Settings/`: `EditorThemeSetup` (Start, Test-Store ohne `UserDefaults`), `SettingsView` (Szene `Settings` in `QuillApp`). Seitentitel und Platzhalter in `PageDetailView` nehmen die Theme-Farben.
 
 ### Erkenntnisse aus dem Spike

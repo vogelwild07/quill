@@ -29,7 +29,7 @@ UUID-`id`, `createdAt`/`updatedAt`, alle Attribute optional oder mit Default, **
 - Inline-Formatierung: `.quillMarks` + `.link` im Textspeicher = Quelle, Schrift/Farbe abgeleitet. Gespeichert als `Block.richText` (`RichText`-JSON, `nil` ohne Formatierung). Blöcke schreibt nur `EditorPersistenceBridge` via `PageStore.applyEdits` (ADR-013).
 - Speichern darf nie still scheitern: Bridge wiederholt mit Backoff, Seite zeigt `lastError`, Beenden fragt via `QuitGuard`. Neuladen aus anderen Fenstern nie bei markiertem Text.
 - Test-Beispieldokumente nur aus `SampleDocuments` (Target `QuillTestFixtures`, Tests/QuillTestFixtures).
-- Selbst gezeichnete Elemente nur Farben aus `EditorColor` (Theme-Rollen, ADR-024) oder Systemfarben; SF Symbols nicht mit `NSColor.set()` einfärben (bleibt schwarz). Hell + dunkel per `EditorSnapshotTests` prüfen. Tests, die zeichnen oder das Theme wechseln, mit Trait `.renderingLock` (Theme gilt prozessweit).
+- Selbst gezeichnete Elemente nur Farben aus `EditorColor` (Theme-Rollen, ADR-024) oder Systemfarben; SF Symbols nicht mit `NSColor.set()` einfärben (bleibt schwarz). Hell + dunkel per `EditorSnapshotTests` prüfen. Tests, die zeichnen oder das Theme wechseln, mit Trait `.renderingLock` aus `QuillTestFixtures` (Theme gilt prozessweit, auch über Test-Targets).
 
 ## Design
 Apple HIG, Liquid Glass nur Sidebar/Toolbars/Popover, nicht Inhalt. SF Pro / SF Mono, Systemfarben, Dark Mode automatisch. Tokens in `QuillDesign`, Details `docs/design.md`. Leerzustände nur über `EmptyState`/`EmptyStateView`. `AccessibilityAuditUITests` ist rot bei jeder neuen Meldung; Ausnahmen nur einzeln mit Begründung, keine Prüfart pauschal. Icon `App/Resources/AppIcon.icon`, nur in Icon Composer ändern.

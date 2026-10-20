@@ -44,9 +44,23 @@ Ideen aus Phase 9, nicht eingeplant:
 - Eigene Themes anlegen und bearbeiten.
 - Themes importieren und exportieren.
 - Schriftgröße im Editor einstellen.
-- Feste Themes mit „Kontrast erhöhen“: Systemelemente im Editor (Rollbalken, Platzhalter)
-  bleiben im normalen Kontrast, weil sich kontrastreiche Erscheinungsbilder nicht erzwingen
-  lassen (ADR-024).
+- Feste Themes mit „Kontrast erhöhen“: Rollbalken im Editor bleiben im normalen Kontrast,
+  weil sich kontrastreiche Erscheinungsbilder nicht erzwingen lassen (ADR-024).
+
+Aufräumen aus dem Review von PR #5 (Themes), nicht eingeplant (Urteile, kein Fehler):
+- `SettingsView`: feste Zahlen (Breite, Schriftgröße, Abstände, Radien) als Tokens nach
+  `QuillDesign`.
+- Zuordnung „dunkel + Kontrast → Variante“ steht in `EditorThemeVariant.init` und
+  `EditorTheme.colors(dark:increaseContrast:)`, „Erscheinung → hell/dunkel“ an drei Stellen;
+  auf eine Stelle bringen (z. B. `EditorThemeVariant(dark:highContrast:)`).
+- Die Farbrollen stehen in `EditorColorRole`, `EditorPalette`, `ResolvedPalette`, `EditorColor`
+  und `EditorThemeColors`; eine neue Rolle braucht viele Änderungen. `EditorThemeColors` könnte
+  `ResolvedPalette` sein.
+- `PageHeaderView` und `ThemeColorsReader` bauen bei jedem `body` eine neue `ResolvedPalette`
+  und umgehen den Cache in `EditorThemeState`.
+- Standard mit „Kontrast erhöhen“: Systemfarben (`labelColor`) bleiben unverändert; der Test
+  rechnet mit Näherungen statt mit den echten kontrastreichen Systemfarben. Belegen, sobald
+  sich die kontrastreiche Variante im Test auflösen lässt.
 
 Aufräumen aus dem Review von PR #8, nicht eingeplant (Urteile, kein Fehler):
 - `PageTree.Entry` hat eine zweite Kopie der Reihenfolge-Regel (`siblingOrder`,
