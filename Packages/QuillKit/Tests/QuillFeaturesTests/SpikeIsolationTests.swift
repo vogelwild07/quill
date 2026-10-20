@@ -24,6 +24,8 @@ struct SpikeIsolationTests {
         "Packages/QuillKit/Sources/QuillSync/",
         "Packages/QuillKit/Tests/QuillSyncTests/",
         "Packages/QuillKit/Tests/QuillFeaturesTests/AutomergeIsolationTests.swift",
+        // Prüft die Paketnamen in den Lizenztexten, importiert nichts.
+        "Packages/QuillKit/Tests/QuillFeaturesTests/ThirdPartyLicensesTests.swift",
     ]
 
     @Test func spikeExists() {

@@ -35,21 +35,31 @@ public struct SettingsView: View {
     }
 }
 
-/// Lizenztexte der Bausteine anderer, unverändert und daher nicht übersetzt.
+/// Lizenztexte der Bausteine anderer, unverändert und daher nicht übersetzt
+/// (`Scripts/third-party-licenses.py`). Rund 200 KB: in Abschnitten, die erst beim
+/// Scrollen gesetzt werden.
 struct LicensesView: View {
-    private static let text: String = Bundle.module.url(forResource: "ThirdPartyLicenses", withExtension: "txt")
-        .flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? ""
+    private static let sections: [String] = (Bundle.module.url(forResource: "ThirdPartyLicenses", withExtension: "txt")
+        .flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? "")
+        .components(separatedBy: "\n\n")
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Quill steht unter der GPL-3.0-or-later. Es enthält diese Bausteine anderer:", bundle: .module)
                 .fixedSize(horizontal: false, vertical: true)
             ScrollView {
-                Text(verbatim: Self.text)
-                    .font(.system(size: 11, design: .monospaced))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(10)
+                LazyVStack(alignment: .leading, spacing: 10) {
+                    ForEach(Self.sections.indices, id: \.self) { index in
+                        Text(verbatim: Self.sections[index])
+                            .font(.system(size: 11, design: .monospaced))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .padding(10)
+                // Die LazyVStack ist für VoiceOver eine eigene Gruppe und braucht einen Namen.
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel(Text("Lizenztexte", bundle: .module))
             }
             .background(.background.secondary, in: .rect(cornerRadius: QuillDesign.Radius.large))
             .accessibilityIdentifier("settings.licenses")
