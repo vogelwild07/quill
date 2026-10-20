@@ -46,6 +46,8 @@ struct LocalizationTests {
         Allowed(file: "QuillModel/Backup/StoreBackup.swift", text: "PRAGMA quick_check", reason: "SQL."),
         Allowed(file: "QuillExport/ExportWriter.swift", text: "(Quill …)",
                 reason: "Ordnername mit Produktname und ISO-Datum, sprachneutral."),
+        Allowed(file: "QuillSync/SyncFolderLayout.swift", text: "Quill",
+                reason: "Name des Ordners im Sync-Ordner (ADR-026), gleich auf allen Geräten, sprachneutral."),
         Allowed(file: "QuillExport/MarkdownExporter.swift", text: "---", isPrefix: true,
                 reason: "YAML-Kopf; Schlüssel gehören zum Format, nicht zur Sprache."),
     ]
@@ -83,6 +85,8 @@ struct LocalizationTests {
         Module(name: "QuillEditorCore", sources: "Packages/QuillKit/Sources/QuillEditorCore", catalog: nil, isPackage: true),
         Module(name: "QuillModel", sources: "Packages/QuillKit/Sources/QuillModel", catalog: nil, isPackage: true),
         Module(name: "QuillExport", sources: "Packages/QuillKit/Sources/QuillExport", catalog: nil, isPackage: true),
+        // Sync ohne Oberfläche (11.1); Texte für die Einstellungen kommen mit 11.4 in QuillFeatures.
+        Module(name: "QuillSync", sources: "Packages/QuillKit/Sources/QuillSync", catalog: nil, isPackage: true),
         Module(name: "QuillDesign", sources: "Packages/QuillKit/Sources/QuillDesign", catalog: nil, isPackage: true),
     ]
 
