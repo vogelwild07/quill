@@ -203,6 +203,10 @@ PageStore.exportSnapshot  →  MarkdownExporter.plan  →  ExportWriter.write
 - Golden Files: `Tests/QuillExportTests/Golden/ExportProject/` aus `SampleDocuments.exportProject()`; neu schreiben mit `QUILL_UPDATE_GOLDEN=1 swift test --filter MarkdownExporterTests`, dann den Diff prüfen.
 - UI-Test: `-QuillExportDirectory <Name>` schreibt ohne Dialog in den temporären Ordner der App (Sandbox).
 
+## Mac und iPhone (ADR-028)
+
+QuillKit baut für macOS 26 und iOS 26 (`Scripts/check-ios-build.sh`). Nur-Mac-Teile (Menüs, Fenster, Einstellungsfenster, Seitenbaum mit `NSOutlineView`, Editor-Sitzung mit `NSTextView`) stehen hinter `#if canImport(AppKit)`; `RootView` bleibt ein `NavigationSplitView` für beide Plattformen, damit das iPad später passt. Tests laufen bis vor Phase 13 nur auf dem Mac.
+
 ## Sync (ADR-026, ab Phase 11)
 
 Sync über einen gewählten Ordner mit Automerge, je Seite ein Dokument und eines für den Seitenbaum. Der SwiftData-Store bleibt Quelle der App: Seiten öffnen aus dem Store, Automerge braucht nur der Abgleich im Hintergrund. Automerge steht nur in der Sync-Schicht (ein Modul), damit ein Ausstieg auf dieses Modul beschränkt bleibt. Der Spike aus Phase 10.1 liegt unter `Spikes/AutomergeSpike` (Abbildung `[EditorBlock]` ↔ Automerge mit Umrechnung UTF-16 ↔ Unicode-Skalare, Messprogramm, Größenskript) und wird von App und QuillKit nie eingebunden (`SpikeIsolationTests`).
