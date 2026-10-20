@@ -2,9 +2,9 @@
 
 **Was:** Quill ist ein ruhiger, schneller Ort für Seiten, Notizen und Aufgaben auf dem Mac – mit dem Gefühl einer echten Apple-App.
 
-**Für wen:** Einzelpersonen, die Notion-artige Struktur (verschachtelte Seiten, Blöcke) wollen, aber Tempo, Offline-Betrieb, Privatsphäre und natives macOS-Gefühl schätzen.
+**Für wen:** Einzelpersonen, die verschachtelte Seiten und Blöcke wollen, dazu Tempo, Offline-Betrieb, Privatsphäre und natives macOS-Gefühl.
 
-**Warum:** Notion ist web-basiert, langsam beim Start, cloud-pflichtig und fühlt sich auf dem Mac fremd an. Apple Notizen ist nativ, aber unstrukturiert.
+**Warum:** Strukturierte Seiten, die sofort starten, ohne Konto und Cloud funktionieren und sich wie eine Mac-App anfühlen.
 
 ## Prinzipien
 
@@ -16,7 +16,7 @@
 
 **Nicht-Ziele (MVP):** Kollaboration, Web-Version, KI-Features, Datenbanken, Sync.
 
-**Erfolg (MVP):** Eine Woche lang täglich statt Notion für persönliche Notizen genutzt.
+**Erfolg (MVP):** Eine Woche lang täglich für persönliche Notizen genutzt.
 
 ## Feature-Liste
 
@@ -27,7 +27,7 @@
 | Blöcke: Text, H1–H3, Aufzählung, nummerierte Liste, To-do, Zitat, Code, Trenner, Bild | Vorlagen |
 | Einrücken von Listen (Tab / ⇧Tab) | CloudKit-Sync |
 | Slash-Menü mit Filter | iPhone/iPad |
-| Drag & Drop von Blöcken (Griff ⋮⋮) | Notion → Quill-Import |
+| Drag & Drop von Blöcken (Griff ⋮⋮) | Import aus anderen Apps |
 | Markdown-Kürzel `#` `##` `###` `-` `*` `1.` `[]` `>` ```` ``` ```` `---` | Toggle, Callout, Tabellen-Block, Embeds |
 | Inline: fett, kursiv, Code, durchgestrichen, Link (⌘B, ⌘I, ⇧⌘M, ⇧⌘X, ⌘K) | Seiten-Cover, Kommentare, Versionsverlauf |
 | Schnell öffnen ⌘O: Suche nach Titel und Volltext | Spotlight-Integration, Share-Extension |
