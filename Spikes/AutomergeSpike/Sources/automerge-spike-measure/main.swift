@@ -2,6 +2,10 @@ import AutomergeSpike
 import Foundation
 import QuillEditor
 
+// Nur auf dem Mac: misst mit frischen Prozessen (`Process`). Auf iOS baut nur die
+// Bibliothek des Spikes mit.
+#if os(macOS)
+
 // Misst Automerge gegen die Kriterien aus ADR-026. Nur optimiert sinnvoll:
 //   swift run -c release automerge-spike-measure [laden|abgleich|speicher|alles]
 // Die App-Größe misst Scripts/spike-app-size.sh im Spike-Ordner.
@@ -182,3 +186,4 @@ if mode == "speicher" || mode == "alles" {
     }
     print()
 }
+#endif
