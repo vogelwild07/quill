@@ -78,6 +78,15 @@ public enum SampleDocuments {
         return EditorDocument(blocks: blocks)
     }
 
+    // MARK: - Block-Felder
+
+    /// Jedes Feld von `BlockProperties` mit einem Wert, der vom Standard abweicht
+    /// (ADR-014). `BlockPropertiesRoundTripTests.fixtureSetsEveryField` erzwingt ihn
+    /// für neue Felder; Editor und Sync prüfen ihre Wege damit.
+    public static let fullProperties = BlockProperties(
+        indent: 2, isChecked: true, codeLanguage: "swift", assetID: UUID(), isRestored: true
+    )
+
     // MARK: - Export
 
     /// Feste IDs und Daten, damit die Golden Files des Exports stabil bleiben.
