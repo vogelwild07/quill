@@ -45,10 +45,6 @@ Ideen aus Phase 7, nicht eingeplant:
 - Englische Lokalisierung (bisher nur Deutsch).
 - Eigenes URL-Schema `quill://` für Links auf Seiten (Deep Links).
 - „Kontrast erhöhen“ von Hand prüfen (offscreen nicht nachstellbar, ADR-021).
-- UI-Tests legen das Fenster immer auf den Hauptbildschirm, damit Messungen (Kontrast-Audit,
-  README-Bilder) bei mehreren Monitoren vergleichbar sind. Mit zweitem Monitor meldete der
-  Audit zusätzlich den Erklärtext im Sheet „Backup wiederherstellen“, auf einem Bildschirm
-  mit neutralem Hintergrund nicht.
 - Sidebar aus einer Momentaufnahme des `PageStore` statt aus beobachteten `Page`-Objekten
   bauen. SwiftData meldet nach jeder Store-Änderung `Page.parent` als geändert, dadurch
   läuft `SidebarView.body` dreimal statt einmal (`docs/performance.md`). Danach Schwelle
@@ -63,6 +59,23 @@ Aus den UI-Läufen von Phase 11 (2026-10-21):
   nach vielen UI-Läufen scheitern, bis der Mac neu startet (zweimal an einem Tag, auch auf
   `main`, nach Neustart grün). Mögliche Ursachen: übrig gebliebene eigene Zwischenablagen
   (`-QuillPasteboardName`), übrig gebliebene Prozesse (App, Test-Runner, `pboard`).
+
+Aus dem Review von 11.6 und dem Verdichten (2026-10-21), nicht eingeplant:
+- Ist die neueste verdichtete Datei eines Geräts noch nicht geladen, nimmt Quill keine ältere,
+  schon geladene verdichtete Datei, sondern nur die `.changes`-Dateien danach.
+- `storedConflicts` setzt nebenbei die Geräte-ID der Engine (`device`); ohne Seiteneffekt lösen.
+- Nachdem ein Store hinter dem Ordner zurückliegt (Abbruch zwischen Ordner und Store, älteres
+  Backup), erscheint beim Nachlesen der eigenen Dateien ein Konflikt mit einem doppelten Block,
+  unabhängig vom Verdichten (`SyncCompactionTests`). Ursache suchen.
+- Urteile, kein Fehler:
+  - Name der Blockart steht in `ConflictLabel` und `BlockTextView+Accessibility` doppelt.
+  - Feldnamen der Konflikte (`"kind"`, `"title"` …) als Strings an drei Stellen; ein Enum
+    `ConflictField`.
+  - Seite für den Sprung holen steht dreimal (Einstellungen › Sync, Lücken, Seitenkopf).
+  - `blockText` und `pageTitle` reisen immer zusammen durch die Konfliktansichten; ein Typ.
+  - `SyncController.localDeviceName` reicht nur weiter.
+  - `rewrite` endet mit `fatalError`; ohne unerreichbaren Zweig formulieren.
+  - `device(of:)` liest die Geräte-ID aus der Hex-Beschreibung der Automerge-Actor-ID.
 
 Ideen aus der Roadmap 10–18, nicht eingeplant:
 - iPad-App (Architektur aus Phase 10 lässt sie zu).
