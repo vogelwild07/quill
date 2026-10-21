@@ -583,7 +583,11 @@ public actor SyncEngine {
         // Lücke: Spätere Dateien sind da, die nächste fehlt, und keine verdichtete Datei
         // darüber ist zu sehen (die meldet oben schon „noch nicht geladen“ oder „unlesbar“).
         let open = numbered.highest > last && numbered.changes[last + 1] == nil && !numbered.snapshots.keys.contains { $0 > last }
-        if let since = next.gap(key, device: source, open: open, now: now()), now().timeIntervalSince(since) >= Self.gapReportDelay {
+        let date = now()
+        // Auch in den gelesenen Nummern dieses Abgleichs: Endet der Abgleich der Seite
+        // früher (z. B. wartet sie auf ein Bild), bleibt der Beginn trotzdem gespeichert.
+        _ = cursors.gap(key, device: source, open: open, now: date)
+        if let since = next.gap(key, device: source, open: open, now: date), date.timeIntervalSince(since) >= Self.gapReportDelay {
             report.gaps.append(SyncGap(document: UUID(uuidString: key) ?? SyncReport.treeID, device: source, since: since))
         }
         return max(last, numbered.highest)

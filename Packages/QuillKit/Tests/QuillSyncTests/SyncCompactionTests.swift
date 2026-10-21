@@ -207,6 +207,36 @@ struct SyncCompactionTests {
         #expect(try await b.sync().gaps.isEmpty)
     }
 
+    /// Wartet die Seite zugleich auf ein Bild, endet ihr Abgleich vor dem Speichern;
+    /// der Beginn der Lücke bleibt trotzdem gespeichert.
+    @Test func gapIsReportedEvenWhileThePageWaitsForAnImage() async throws {
+        let folder = try TestFolder()
+        let a = try await TestDevice("A", folder: folder.url)
+        let clock = Mutex(Date(timeIntervalSince1970: 1_900_000_000))
+        let b = try await TestDevice("B", folder: folder.url) { clock.withLock { $0 } }
+        let page = try await a.store.createPage(title: "Bild")
+        let image = try await a.store.importImage(try TestImage.png(red: 0.3))
+        let picture = BlockSnapshot(id: UUID(), kindRaw: BlockKind.image.rawValue, properties: BlockProperties(assetID: image.assetID))
+        let text = BlockSnapshot(id: UUID(), kindRaw: BlockKind.paragraph.rawValue, text: "Anfang")
+        try await a.store.applyEdits(page, BlockEdits(upserts: [picture, text], order: [picture.id, text.id]))
+        try await a.sync()
+        try await edit(a, page, text.id, times: 2)
+        let missing = "000000000002.changes"
+        #expect(try ownFiles(folder, page: page, device: a).contains(missing))
+        #expect(try !folder.files().contains("tree/\(a.deviceID.uuidString)/\(missing)"))
+        let asset = try #require(try folder.files().first { $0.hasPrefix("assets/") })
+        b.files.state.withLock {
+            $0.invisible = [missing]
+            $0.notDownloaded = [String(asset.dropFirst("assets/".count))]
+        }
+        let start = clock.withLock { $0 }
+
+        #expect(try await b.sync().gaps.isEmpty)
+        clock.withLock { $0 = start.addingTimeInterval(SyncEngine.gapReportDelay) }
+        #expect(try await b.sync().gaps == [SyncGap(document: page, device: a.deviceID, since: start)])
+        #expect(try await b.blocks(of: "Bild").isEmpty)
+    }
+
     // MARK: Eigene Dateien noch nicht übernommen (Review)
 
     /// Sync-Dokument und gelesene Dateien im Store.
