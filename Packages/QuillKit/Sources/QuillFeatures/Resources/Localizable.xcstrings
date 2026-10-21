@@ -544,6 +544,9 @@
     "Seiten: %lld · Bilder: %lld" : {
 
     },
+    "Seitenbaum von „%@“: Dateien fehlen seit %@." : {
+
+    },
     "Seitenkopf" : {
 
     },
@@ -646,7 +649,7 @@
     "Unlesbare Dateien" : {
 
     },
-    "Unlesbare und noch nicht geladene Dateien bleiben unverändert liegen; Quill versucht es bei jedem Abgleich wieder." : {
+    "Unlesbare, noch nicht geladene und fehlende Dateien bleiben unverändert; Quill versucht es bei jedem Abgleich wieder." : {
 
     },
     "Unterseiten" : {
@@ -788,6 +791,9 @@
 
     },
     "„%@“ exportiert" : {
+
+    },
+    "„%@“ von „%@“: Dateien fehlen seit %@." : {
 
     },
     "„Quill/quill.json“ ist unlesbar." : {

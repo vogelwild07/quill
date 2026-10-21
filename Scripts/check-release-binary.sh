@@ -5,7 +5,8 @@
 # legt Swift nicht als Text ab; „QuillSeedPages“ steht deshalb in einer
 # Lognachricht des Seeds. Ebenso fehlen das Testbild für UI-Tests (`TestImage`,
 # nur Debug) und die Fenstergröße für die README-Bilder (`TestWindowSize`, nur
-# Debug, Name „QuillWindowSize“ zu kurz), erkannt an ihren Lognachrichten, die
+# Debug, Name „QuillWindowSize“ zu kurz), erkannt an ihren Lognachrichten, der
+# Hauptbildschirm für UI-Tests (`TestWindowScreen`, „QuillWindowsOnMainScreen“), die
 # Namen der drei Startargumente für den Store und die Zwischenablage (nur Debug)
 # und Test-Bundles (`.xctest`, `PlugIns/`). Ebenso fehlt alles aus den
 # Testvarianten Synctest A und B (QUILL_SYNCTEST, Scripts/make-synctest.sh): die
@@ -65,7 +66,7 @@ fi
 
 found=0
 for marker in QuillSeedPages ProfilingSeed io.github.vogelwild07.quill.profiling \
-  "Testbild in eigener Zwischenablage" "Fenstergröße für UI-Tests" QuillInMemoryStore QuillStoreDirectory QuillPasteboardName \
+  "Testbild in eigener Zwischenablage" "Fenstergröße für UI-Tests" QuillWindowsOnMainScreen QuillInMemoryStore QuillStoreDirectory QuillPasteboardName \
   QuillSyncSharedFolder QuillSyncTestFolder QuillSyncHaltBeforePage QuillSaveDelay QuillSyncDeviceName QuillSyncUITests \
   io.github.vogelwild07.quill.synctest; do
   # LC_ALL=C: byteweise; mit UTF-8-Locale findet grep in Binärdaten keine Umlaute.

@@ -171,7 +171,7 @@ private struct SyncReportSection: View {
 
     var body: some View {
         let conflicts = report.conflicts.values.reduce(0) { $0 + $1.count }
-        if conflicts > 0 || !report.unreadable.isEmpty || !report.waitingForDownload.isEmpty {
+        if conflicts > 0 || !report.unreadable.isEmpty || !report.waitingForDownload.isEmpty || !report.gaps.isEmpty {
             Section {
                 if conflicts > 0 {
                     LabeledContent(String(localized: "Zwei Werte für ein Feld", bundle: .module)) {
@@ -193,6 +193,10 @@ private struct SyncReportSection: View {
                         Text(report.waitingForDownload.count, format: .number)
                     }
                 }
+                ForEach(report.gaps, id: \.self) { gap in
+                    Label(gapText(gap), systemImage: "exclamationmark.triangle")
+                        .accessibilityIdentifier("sync.gap")
+                }
                 if !report.unreadable.isEmpty {
                     DisclosureGroup(String(localized: "Unlesbare Dateien", bundle: .module)) {
                         ForEach(report.unreadable, id: \.path) { file in
@@ -206,7 +210,7 @@ private struct SyncReportSection: View {
             } header: {
                 Text("Letzter Abgleich", bundle: .module)
             } footer: {
-                Text("Unlesbare und noch nicht geladene Dateien bleiben unverändert liegen; Quill versucht es bei jedem Abgleich wieder.", bundle: .module)
+                Text("Unlesbare, noch nicht geladene und fehlende Dateien bleiben unverändert; Quill versucht es bei jedem Abgleich wieder.", bundle: .module)
             }
         }
     }
@@ -220,6 +224,14 @@ private struct SyncReportSection: View {
             return (id, page.title)
         }
         .sorted { ($0.title.localizedLowercase, $0.id.uuidString) < ($1.title.localizedLowercase, $1.id.uuidString) }
+    }
+
+    private func gapText(_ gap: SyncGap) -> String {
+        let title: String? = gap.document == SyncReport.treeID ? nil : {
+            let id = gap.document
+            return (try? context.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.id == id })).first?.title) ?? ""
+        }()
+        return SyncLabel.gap(gap, device: sync.deviceName(gap.device), pageTitle: title)
     }
 
     /// Zur Seite und zum ersten Block mit Konflikt; ohne offenes Fenster ein neues.

@@ -50,7 +50,7 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
 - 4-pt-Raster; Block-Abstand 4 pt, vor Überschriften 16 pt
 - Eckenradien 4 pt (Inline-Code, Checkbox, Bild), 6 pt (Bild-Platzhalter), 8 pt
   (Code-Block, Hinweise)
-- Alle Werte als Tokens in `QuillDesign` (`Typography`, `Spacing`, `EditorLayout`, `Radius`)
+- Alle Werte als Tokens in `QuillDesign` (`Typography`, `Spacing`, `EditorLayout`, `Radius`, `SyncNotice`)
 - Block-Griff nur bei Hover im linken Rand
 
 ## Interaktionsprinzipien
@@ -73,7 +73,7 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   Wiederhergestellt: Pfeil zurück in `EditorColor.secondary`. Ein Konflikt geht vor.
   Klick öffnet ein Popover (Wahl je Fassung mit Gerät bzw. Erklärung und „Markierung
   entfernen“).
-- **Hinweis unter dem Seitentitel:** matte Fläche (`quaternary`, 8 pt Radius), kein Glas,
+- **Hinweis unter dem Seitentitel:** matte Fläche (`quaternary` mit 50 % Deckkraft, 8 pt Radius, Maße in `QuillDesign.SyncNotice`), kein Glas,
   weil Inhalt. „N Stellen mit zwei Fassungen · Wählen …“ und bei einer wiederhergestellten
   Seite „Markierung entfernen“ und „In den Papierkorb“.
 - **Sidebar:** Symbol `arrow.uturn.backward.circle` am Zeilenende mit Tooltip; Kontextmenü

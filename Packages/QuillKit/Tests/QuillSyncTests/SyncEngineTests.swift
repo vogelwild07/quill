@@ -18,8 +18,8 @@ struct SyncEngineTests {
         let device = mac.deviceID.uuidString
         #expect(try folder.files() == [
             "quill.json", "devices/\(device).json",
-            "tree/\(device)/000000000001.changes",
-            "pages/\(page.uuidString)/\(device)/000000000001.changes",
+            "tree/\(device)/000000000001.snapshot",
+            "pages/\(page.uuidString)/\(device)/000000000001.snapshot",
         ])
         #expect(report.conflicts.isEmpty && report.unreadable.isEmpty && report.postponed.isEmpty)
         // Dateinamen ohne Titel (ADR-026).
@@ -281,6 +281,28 @@ struct SyncEngineTests {
         #expect(try await a.blocks(of: "Notiz").map(\.kindRaw) == [BlockKind.todo.rawValue])
     }
 
+    @Test func choiceSurvivesAFailedWrite() async throws {
+        let folder = try TestFolder()
+        let a = try await TestDevice("A", folder: folder.url)
+        let b = try await TestDevice("B", folder: folder.url)
+        let (page, blocks) = try await a.createPage("Notiz", texts: ["Punkt"])
+        try await a.sync()
+        try await b.sync()
+        try await a.edit(page, blocks[0]) { $0.kindRaw = BlockKind.todo.rawValue }
+        try await b.edit(page, blocks[0]) { $0.kindRaw = BlockKind.heading2.rawValue }
+        try await a.sync()
+        try await b.sync()
+        #expect(try await a.sync().conflicts[page] != nil)
+
+        await a.engine.choose(ConflictChoice(documentID: page, objectID: blocks[0], field: "kind", value: BlockKind.heading2.rawValue))
+        a.files.state.withLock { $0.onCreate = { _ in throw CocoaError(.fileWriteOutOfSpace) } }
+        await #expect(throws: CocoaError.self) { try await a.sync() }
+        a.files.state.withLock { $0.onCreate = nil }
+        let report = try await a.sync()
+        #expect(report.conflicts.isEmpty)
+        #expect(try await a.blocks(of: "Notiz").map(\.kindRaw) == [BlockKind.heading2.rawValue])
+    }
+
     @Test func storedConflictsMatchTheLastSyncWithoutWriting() async throws {
         let folder = try TestFolder()
         let a = try await TestDevice("A", folder: folder.url)
@@ -309,6 +331,13 @@ struct SyncEngineTests {
         let fresh = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
         let never = SyncEngine(store: fresh, folder: folder.url, gate: gate, deviceName: "C", files: TestFileAccess())
         #expect(try await never.storedConflicts(folderID: report.folderID) == nil)
+
+        // Neustart ohne Pause: Auch ein Abgleich, in dem keine Seite fällig ist, meldet
+        // die Konflikte weiter, bis der Nutzer wählt.
+        let running = SyncEngine(store: a.store, folder: folder.url, gate: SyncGate(), deviceName: "A", files: TestFileAccess())
+        for _ in 0..<2 {
+            #expect(try await running.sync(connectedFolderID: report.folderID).conflicts == report.conflicts)
+        }
     }
 
     @Test func unreadableFileIsQuarantinedAndLeftUntouched() async throws {
@@ -471,7 +500,7 @@ struct SyncEngineTests {
         // Mitten im Abgleich pausieren: nach der ersten Seiten-Datei.
         mac.files.state.withLock { state in
             state.onCreate = { url in
-                if SyncFolderLayout.changesNumber(url.lastPathComponent) != nil, url.path().contains("/pages/") { gate.pause() }
+                if url.path().contains("/pages/") { gate.pause() }
             }
         }
         await #expect(throws: SyncFailure.paused) { try await mac.sync() }

@@ -59,23 +59,42 @@ struct SyncCursors: Codable, Equatable {
     /// (ADR-029, 11.4): nach dem Wechsel auf einen anderen Ordner hat ein Gerät dort
     /// sonst nur Änderungen, deren Grundlage im vorherigen Ordner liegt.
     var inFolder: Set<String> = []
+    /// Dokument → Geräte-ID → seit wann eine Lücke ohne verdichtete Datei besteht
+    /// (`SyncGap`). Verschwindet, sobald es weitergeht.
+    var gaps: [String: [String: Date]] = [:]
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case read, synced, inFolder }
+    private enum CodingKeys: String, CodingKey { case read, synced, inFolder, gaps }
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         read = try container.decodeIfPresent([String: [String: Int]].self, forKey: .read) ?? [:]
         synced = try container.decodeIfPresent([String: Date].self, forKey: .synced) ?? [:]
         inFolder = try container.decodeIfPresent(Set<String>.self, forKey: .inFolder) ?? []
+        gaps = try container.decodeIfPresent([String: [String: Date]].self, forKey: .gaps) ?? [:]
     }
 
+    /// Zeitpunkte als Zahl, ohne Rundung: `synced` muss `updatedAt` genau treffen, sonst
+    /// wäre jede Seite bei jedem Abgleich fällig. Bis zum Review von 11.6 standen sie
+    /// auf die Sekunde gerundet (ISO 8601) im Store; solche Daten werden noch gelesen.
     init(data: Data?) {
-        self = data.flatMap { try? SyncJSON.decoder.decode(SyncCursors.self, from: $0) } ?? SyncCursors()
+        self = data.flatMap { data in
+            (try? Self.decoder.decode(SyncCursors.self, from: data)) ?? (try? SyncJSON.decoder.decode(SyncCursors.self, from: data))
+        } ?? SyncCursors()
     }
 
-    func encoded() throws -> Data { try SyncJSON.encoder.encode(self) }
+    func encoded() throws -> Data {
+        let encoder = SyncJSON.encoder
+        encoder.dateEncodingStrategy = .deferredToDate
+        return try encoder.encode(self)
+    }
+
+    private static var decoder: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .deferredToDate
+        return decoder
+    }
 
     func last(_ document: String, device: UUID) -> Int {
         read[document]?[device.uuidString] ?? 0
@@ -83,6 +102,35 @@ struct SyncCursors: Codable, Equatable {
 
     mutating func setLast(_ number: Int, _ document: String, device: UUID) {
         read[document, default: [:]][device.uuidString] = number
+    }
+
+    /// Merkt den Beginn einer Lücke (oder löscht ihn) und gibt ihn zurück.
+    mutating func gap(_ document: String, device: UUID, open: Bool, now: Date) -> Date? {
+        guard open else {
+            gaps[document]?[device.uuidString] = nil
+            if gaps[document]?.isEmpty == true { gaps[document] = nil }
+            return nil
+        }
+        if let since = gaps[document]?[device.uuidString] { return since }
+        gaps[document, default: [:]][device.uuidString] = now
+        return now
+    }
+}
+
+/// Lücke in den Dateien eines Geräts ohne verdichtete Datei: Nummern fehlen, obwohl
+/// spätere da sind, z. B. weil der Anbieter das Löschen alter Dateien vor der neuen
+/// verdichteten Datei übertragen hat. Quill wartet; dauert es länger als
+/// `SyncEngine.gapReportDelay`, steht die Lücke im Bericht.
+public struct SyncGap: Hashable, Sendable {
+    /// Seiten-ID oder `SyncReport.treeID`.
+    public var document: UUID
+    public var device: UUID
+    public var since: Date
+
+    public init(document: UUID, device: UUID, since: Date) {
+        self.document = document
+        self.device = device
+        self.since = since
     }
 }
 
@@ -112,6 +160,8 @@ public struct SyncReport: Equatable, Sendable {
     public var changedPages: Set<UUID> = []
     /// Namen der Geräte aus `devices/` im Ordner, dazu dieses Gerät.
     public var devices: [UUID: String] = [:]
+    /// Lücken, die schon länger als `SyncEngine.gapReportDelay` bestehen.
+    public var gaps: [SyncGap] = []
 
     /// Schlüssel in `conflicts` für den Seitenbaum.
     public static let treeID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!

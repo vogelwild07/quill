@@ -23,6 +23,7 @@ public actor SyncEngine {
     private let files: any SyncFileAccess
     private let gate: SyncGate
     private let deviceName: String
+    private let now: @Sendable () -> Date
     private var running: Task<SyncReport, any Error>?
 
     // Zustand eines Abgleichs
@@ -32,6 +33,9 @@ public actor SyncEngine {
     private var report = SyncReport(folderID: UUID())
     private var assetNames: Set<String> = []
     private var updateDates: [UUID: Date] = [:]
+    /// Konflikte je Dokument über Abgleiche hinweg: Ein Abgleich lädt nur fällige Seiten,
+    /// der Bericht nennt aber alle. Beim ersten Abgleich aus dem Store gefüllt.
+    private var knownConflicts: [UUID: [FieldConflict]]?
     /// Wahl des Nutzers je Dokument, bis der nächste Abgleich sie schreibt (`choose(_:)`).
     private var choices: [UUID: [ConflictChoice]] = [:]
     #if DEBUG || QUILL_SYNCTEST
@@ -42,10 +46,18 @@ public actor SyncEngine {
     private var storedPages = 0
     #endif
 
+    /// Ab so vielen eigenen Dateien nach der letzten verdichteten Datei verdichtet der
+    /// Abgleich ein Dokument (ADR-026).
+    public static let compactAfter = 50
+    /// So lange wartet Quill still auf eine Lücke ohne verdichtete Datei, danach steht
+    /// sie im Bericht (`SyncReport.gaps`).
+    public static let gapReportDelay: TimeInterval = 3600
+
     public init(
         store: PageStore, folder: URL, gate: SyncGate, deviceName: String,
-        files: any SyncFileAccess = CoordinatedFileAccess()
+        files: any SyncFileAccess = CoordinatedFileAccess(), now: @escaping @Sendable () -> Date = { .now }
     ) {
+        self.now = now
         self.store = store
         self.layout = SyncFolderLayout(chosenFolder: folder)
         self.gate = gate
@@ -86,12 +98,18 @@ public actor SyncEngine {
         device = deviceID
         var result = SyncReport(folderID: folderID)
         result.devices = deviceNames()
+        result.conflicts = Self.conflicts(in: stored)
+        return result
+    }
+
+    private static func conflicts(in stored: StoredSyncDocuments) -> [UUID: [FieldConflict]] {
+        var result: [UUID: [FieldConflict]] = [:]
         if let tree = stored.tree, let conflicts = try? TreeDocument(bytes: tree).conflicts(), !conflicts.isEmpty {
-            result.conflicts[SyncReport.treeID] = conflicts
+            result[SyncReport.treeID] = conflicts
         }
         for (pageID, data) in stored.pages {
             if let conflicts = try? PageDocument(bytes: data).conflicts(), !conflicts.isEmpty {
-                result.conflicts[pageID] = conflicts
+                result[pageID] = conflicts
             }
         }
         return result
@@ -109,6 +127,7 @@ public actor SyncEngine {
         assetNames = Set(try files.contents(of: layout.assets).filter(\.isDownloaded).map(\.name))
         try writeDeviceInfo()
         report.devices = deviceNames()
+        if knownConflicts == nil { knownConflicts = Self.conflicts(in: try await store.storedSyncDocuments()) }
 
         var due = try await duePages()
         var done = 0
@@ -128,6 +147,7 @@ public actor SyncEngine {
         if cursors != savedCursors {
             try await store.saveSyncCursors(cursors.encoded())
         }
+        report.conflicts = (knownConflicts ?? [:]).filter { $0.key == SyncReport.treeID || updateDates[$0.key] != nil }
         return report
     }
 
@@ -199,11 +219,12 @@ public actor SyncEngine {
 
     private func hasNewFiles(in folder: URL, document: String) throws -> Bool {
         for deviceFolder in try files.contents(of: folder) where deviceFolder.isDirectory {
-            guard let other = UUID(uuidString: deviceFolder.name), other != device else { continue }
-            let last = cursors.last(document, device: other)
-            let numbers = try files.contents(of: folder.appending(path: deviceFolder.name, directoryHint: .isDirectory))
-                .compactMap { SyncFolderLayout.changesNumber($0.name) }
-            if numbers.contains(where: { $0 > last }) { return true }
+            // Auch der eigene Ordner: Eigene Dateien, die noch fehlten (nicht geladen), holt
+            // der Abgleich nach, sobald sie da sind.
+            guard let source = UUID(uuidString: deviceFolder.name) else { continue }
+            let last = cursors.last(document, device: source)
+            let numbered = try DeviceFiles(files.contents(of: folder.appending(path: deviceFolder.name, directoryHint: .isDirectory)))
+            if numbered.highest > last { return true }
         }
         return false
     }
@@ -226,6 +247,10 @@ public actor SyncEngine {
         let pageFolder = layout.pages.appending(path: key, directoryHint: .isDirectory)
         let ownFolder = layout.page(pageID, device: device)
         var ownLast = try importFiles(in: ownFolder, into: document, key: key, from: device, cursors: &next)
+        // Alle eigenen Dateien übernommen? Sonst (noch nicht geladen, unlesbar, z. B. nach
+        // einem älteren Backup) bleibt die gelesene eigene Nummer stehen, damit der nächste
+        // Abgleich sie nachliest, und es wird weder verdichtet noch gelöscht.
+        let ownComplete = next.last(key, device: device) == ownLast
 
         // Lokale Änderungen
         let beforeExport = document.version
@@ -237,8 +262,8 @@ public actor SyncEngine {
             assetFiles[asset] = try writeAsset(image.data, uti: image.uti)
         }
         let changed = try document.update(to: state.blocks, assetFiles: assetFiles)
-        try appendLocal(document, changed: changed, since: beforeExport, key: key, in: ownFolder, last: &ownLast, cursors: &next)
-        next.setLast(ownLast, key, device: device)
+        try appendLocal(document, changed: changed, since: beforeExport, key: key, in: ownFolder, complete: ownComplete, last: &ownLast, cursors: &next)
+        if ownComplete { next.setLast(ownLast, key, device: device) }
 
         // Änderungen anderer Geräte
         let beforeImport = document.version
@@ -251,15 +276,18 @@ public actor SyncEngine {
         if !restored.isEmpty {
             report.restoredBlocks += restored
             try append(document.changes(since: imported), in: ownFolder, last: &ownLast)
-            next.setLast(ownLast, key, device: device)
+            if ownComplete { next.setLast(ownLast, key, device: device) }
         }
         if try applyChoices(pageID, to: document, in: ownFolder, last: &ownLast) {
-            next.setLast(ownLast, key, device: device)
+            if ownComplete { next.setLast(ownLast, key, device: device) }
+        }
+        if try compact(document, in: ownFolder, complete: ownComplete, last: &ownLast) {
+            if ownComplete { next.setLast(ownLast, key, device: device) }
         }
         let after = try document.blocks()
         guard try await fetchAssets(of: after, files: document.assetFiles()) else { return }
         let conflicts = try document.conflicts()
-        if !conflicts.isEmpty { report.conflicts[pageID] = conflicts }
+        knownConflicts?[pageID] = conflicts.isEmpty ? nil : conflicts
 
         let edits = Self.edits(from: before, to: after)
         guard document.version != loaded || next != cursors || !edits.isEmpty else {
@@ -363,6 +391,10 @@ public actor SyncEngine {
         var next = cursors
         let ownFolder = layout.tree(device: device)
         var ownLast = try importFiles(in: ownFolder, into: document, key: key, from: device, cursors: &next)
+        // Alle eigenen Dateien übernommen? Sonst (noch nicht geladen, unlesbar, z. B. nach
+        // einem älteren Backup) bleibt die gelesene eigene Nummer stehen, damit der nächste
+        // Abgleich sie nachliest, und es wird weder verdichtet noch gelöscht.
+        let ownComplete = next.last(key, device: device) == ownLast
 
         // Lokale Änderungen, auch endgültig gelöschte Seiten (Grabstein)
         let beforeExport = document.version
@@ -384,8 +416,8 @@ public actor SyncEngine {
             let version = record.trashedAt == nil ? folderPageVersion(record.id) : nil
             changed = try document.markDeleted(record.id, trashedVersion: version) || changed
         }
-        try appendLocal(document, changed: changed, since: beforeExport, key: key, in: ownFolder, last: &ownLast, cursors: &next)
-        next.setLast(ownLast, key, device: device)
+        try appendLocal(document, changed: changed, since: beforeExport, key: key, in: ownFolder, complete: ownComplete, last: &ownLast, cursors: &next)
+        if ownComplete { next.setLast(ownLast, key, device: device) }
 
         // Änderungen anderer Geräte
         let before = Dictionary(try document.records().map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -395,7 +427,8 @@ public actor SyncEngine {
         let imported = document.version
         try await keepEditedPages(document, before: before, inStore: inStore, ownFolder: ownFolder, imported: imported, ownLast: &ownLast)
         _ = try applyChoices(SyncReport.treeID, to: document, in: ownFolder, last: &ownLast)
-        next.setLast(ownLast, key, device: device)
+        _ = try compact(document, in: ownFolder, complete: ownComplete, last: &ownLast)
+        if ownComplete { next.setLast(ownLast, key, device: device) }
 
         var changes: [PageSnapshotChange] = []
         var created: [UUID] = []
@@ -407,7 +440,7 @@ public actor SyncEngine {
             if current == nil { created.append(record.id) }
         }
         let conflicts = try document.conflicts()
-        if !conflicts.isEmpty { report.conflicts[SyncReport.treeID] = conflicts }
+        knownConflicts?[SyncReport.treeID] = conflicts.isEmpty ? nil : conflicts
         guard document.version != loaded || next != cursors || !changes.isEmpty else { return [] }
         guard try await store.applySyncTree(changes, tree: document.save(), cursors: next.encoded()) else {
             report.postponed.append(SyncReport.treeID)
@@ -422,17 +455,19 @@ public actor SyncEngine {
     /// Schreibt die vorgemerkte Wahl des Nutzers ins Dokument und als nächste eigene
     /// Datei, nach den Änderungen der anderen Geräte: So entscheidet der Nutzer über
     /// das, was er gesehen hat, und eine inzwischen anderswo getroffene Wahl bleibt.
-    /// `true`, wenn eine Datei dazukam.
+    /// `true`, wenn eine Datei dazukam. Die Wahl entfällt erst, wenn sie im Ordner steht
+    /// oder nichts mehr zu entscheiden ist; scheitert das Schreiben, gilt sie beim
+    /// nächsten Abgleich wieder.
     private func applyChoices(_ documentID: UUID, to document: SyncDocument, in folder: URL, last: inout Int) throws -> Bool {
-        guard let chosen = choices.removeValue(forKey: documentID) else { return false }
+        guard let chosen = choices[documentID] else { return false }
         let before = document.version
         var resolved = false
         for choice in chosen {
             resolved = try document.resolve(choice.objectID, field: choice.field, choosing: choice.value) || resolved
         }
-        guard resolved else { return false }
-        try append(document.changes(since: before), in: folder, last: &last)
-        return true
+        if resolved { try append(document.changes(since: before), in: folder, last: &last) }
+        choices[documentID] = nil
+        return resolved
     }
 
     /// Papierkorb gegen Bearbeiten (ADR-029): Kommt eine Seite von einem anderen Gerät
@@ -467,8 +502,10 @@ public actor SyncEngine {
     }
 
     /// Stand des Seiten-Dokuments einer hier schon gelöschten Seite: aus den Dateien im
-    /// Ordner bis zu den gelesenen Nummern, also genau das, was dieses Gerät kannte.
-    /// `nil`, wenn eine Datei fehlt oder unlesbar ist.
+    /// Ordner bis zu den gelesenen Nummern, also genau das, was dieses Gerät kannte: je
+    /// Gerät die verdichtete Datei bis dahin (die Nummer `n` ist immer genau diese Datei,
+    /// gelesen hat dieses Gerät sie also selbst) und die Dateien danach. `nil`, wenn eine
+    /// Datei fehlt oder unlesbar ist, z. B. weil das Gerät inzwischen weiter verdichtet hat.
     private func folderPageVersion(_ pageID: UUID) -> DocumentVersion? {
         let key = pageID.uuidString
         let document = PageDocument()
@@ -479,10 +516,14 @@ public actor SyncEngine {
         for source in devices {
             let last = cursors.last(key, device: source)
             guard last > 0 else { continue }
-            for number in 1...last {
-                guard let data = try? files.read(SyncFolderLayout.changes(number, in: layout.page(pageID, device: source))),
-                      (try? document.apply(changes: data)) != nil
-                else { return nil }
+            let folder = layout.page(pageID, device: source)
+            guard let numbered = try? DeviceFiles(files.contents(of: folder)) else { return nil }
+            var urls: [URL] = []
+            let start = numbered.snapshots.keys.filter { $0 <= last }.max() ?? 0
+            if start > 0 { urls.append(SyncFolderLayout.snapshot(start, in: folder)) }
+            if start < last { urls += (start + 1...last).map { SyncFolderLayout.changes($0, in: folder) } }
+            for url in urls {
+                guard let data = try? files.read(url), (try? document.apply(changes: data)) != nil else { return nil }
             }
         }
         return document.version
@@ -500,18 +541,32 @@ public actor SyncEngine {
             .filter { $0 != device }.sorted { $0.uuidString < $1.uuidString }
     }
 
-    /// Übernimmt neue Dateien eines Geräts der Reihe nach, bis zur ersten Lücke, zur
-    /// ersten nicht geladenen oder unlesbaren Datei. Gibt die höchste vorhandene Nummer
-    /// zurück (für eigene Ordner: die nächste Datei bekommt die Nummer danach).
+    /// Liest neue Dateien eines Geräts der Reihe nach (ADR-026). Eine verdichtete Datei
+    /// über der gelesenen Nummer kommt zuerst; ist sie noch nicht geladen oder unlesbar,
+    /// bleibt sie liegen und wird gemeldet, und es geht mit den nummerierten Dateien
+    /// weiter, solange sie lückenlos da sind. Eine Lücke ohne verdichtete Datei wartet
+    /// still und steht nach `gapReportDelay` im Bericht. Gibt die höchste Nummer im
+    /// Ordner zurück (für eigene Ordner: die nächste Datei bekommt die Nummer danach).
     private func importFiles(
         in folder: URL, into document: SyncDocument, key: String, from source: UUID, cursors next: inout SyncCursors
     ) throws -> Int {
-        var entries: [Int: SyncFileEntry] = [:]
-        for entry in try files.contents(of: folder) where !entry.isDirectory {
-            if let number = SyncFolderLayout.changesNumber(entry.name) { entries[number] = entry }
-        }
+        let numbered = try DeviceFiles(files.contents(of: folder))
         var last = next.last(key, device: source)
-        while let entry = entries[last + 1] {
+        if let number = numbered.snapshots.keys.filter({ $0 > last }).max(), let entry = numbered.snapshots[number] {
+            let url = SyncFolderLayout.snapshot(number, in: folder)
+            if !entry.isDownloaded {
+                try? files.requestDownload(url)
+                report.waitingForDownload.append(relativePath(url))
+            } else {
+                do {
+                    try document.apply(changes: files.read(url))
+                    last = number
+                } catch {
+                    report.unreadable.append(UnreadableFile(path: relativePath(url), reason: String(describing: error)))
+                }
+            }
+        }
+        while let entry = numbered.changes[last + 1] {
             let url = SyncFolderLayout.changes(last + 1, in: folder)
             guard entry.isDownloaded else {
                 try? files.requestDownload(url)
@@ -527,25 +582,81 @@ public actor SyncEngine {
             last += 1
         }
         next.setLast(last, key, device: source)
-        return max(last, entries.keys.max() ?? 0)
+        // Lücke: Spätere Dateien sind da, die nächste fehlt, und keine verdichtete Datei
+        // darüber ist zu sehen (die meldet oben schon „noch nicht geladen“ oder „unlesbar“).
+        let open = numbered.highest > last && numbered.changes[last + 1] == nil && !numbered.snapshots.keys.contains { $0 > last }
+        let date = now()
+        // Auch in den gelesenen Nummern dieses Abgleichs: Endet der Abgleich der Seite
+        // früher (z. B. wartet sie auf ein Bild), bleibt der Beginn trotzdem gespeichert.
+        _ = cursors.gap(key, device: source, open: open, now: date)
+        if let since = next.gap(key, device: source, open: open, now: date), date.timeIntervalSince(since) >= Self.gapReportDelay {
+            report.gaps.append(SyncGap(document: UUID(uuidString: key) ?? SyncReport.treeID, device: source, since: since))
+        }
+        return max(last, numbered.highest)
     }
 
-    /// Hängt `changes` als nächste eigene Datei an.
     /// Lokale Änderungen als nächste eigene Datei. Steht das Dokument noch nicht in
-    /// diesem Ordner, ist es der ganze Stand samt Geschichte, auch was andere Geräte im
-    /// vorherigen Ordner beigetragen haben: Ein Gerät hier soll auch ältere Stände
-    /// abrufen können. Die Datei heißt trotzdem `<Nr>.changes`, weil der Lesepfad beides
-    /// annimmt; beim Verdichten vor v0.4.0 wird daraus `snapshot` (ADR-029).
+    /// diesem Ordner, ist die erste Datei eine verdichtete (`<Nr>.snapshot`) mit dem
+    /// ganzen Stand samt Geschichte, auch was andere Geräte im vorherigen Ordner
+    /// beigetragen haben: Ein Gerät hier soll auch ältere Stände abrufen können
+    /// (ADR-029, 11.4). Fehlen noch eigene Dateien (`complete == false`), ist es eine
+    /// gewöhnliche Datei mit dem ganzen Stand: Eine verdichtete Datei ersetzt alle eigenen
+    /// Dateien darunter und darf deshalb nur entstehen, wenn sie alle enthält.
     private func appendLocal(
         _ document: SyncDocument, changed: Bool, since version: DocumentVersion, key: String,
-        in folder: URL, last: inout Int, cursors next: inout SyncCursors
+        in folder: URL, complete: Bool, last: inout Int, cursors next: inout SyncCursors
     ) throws {
         if next.inFolder.contains(key) {
             if changed { try append(document.changes(since: version), in: folder, last: &last) }
             return
         }
-        if !document.isEmpty { try append(document.save(), in: folder, last: &last) }
+        if !document.isEmpty {
+            if complete {
+                try writeSnapshot(document, in: folder, last: &last)
+            } else {
+                try append(document.save(), in: folder, last: &last)
+            }
+        }
         next.inFolder.insert(key)
+    }
+
+    /// Verdichtet die eigenen Dateien eines Dokuments, sobald seit der letzten
+    /// verdichteten Datei `compactAfter` eigene Dateien dazugekommen sind, und räumt
+    /// eigene Dateien unter der neuesten verdichteten Datei auf (auch nach einem Abbruch
+    /// zwischen Schreiben und Löschen). `true`, wenn eine Datei dazukam.
+    ///
+    /// Nur, wenn alle eigenen Dateien übernommen sind (`complete`): Dann enthält jede
+    /// eigene verdichtete Datei alle eigenen Dateien darunter, auch beim Aufräumen.
+    private func compact(_ document: SyncDocument, in ownFolder: URL, complete: Bool, last: inout Int) throws -> Bool {
+        guard complete else { return false }
+        let numbered = try DeviceFiles(files.contents(of: ownFolder))
+        let latest = numbered.snapshots.keys.max() ?? 0
+        guard numbered.changes.keys.count(where: { $0 > latest }) >= Self.compactAfter else {
+            try deleteOwnFiles(below: latest, in: ownFolder, numbered)
+            return false
+        }
+        try writeSnapshot(document, in: ownFolder, last: &last)
+        return true
+    }
+
+    /// Ganzer Stand als nächste eigene Datei; erst danach verschwinden die eigenen
+    /// Dateien davor. Andere Geräte finden so immer entweder die alten Dateien oder die
+    /// verdichtete Datei.
+    private func writeSnapshot(_ document: SyncDocument, in ownFolder: URL, last: inout Int) throws {
+        try gate.checkWritable()
+        try files.create(SyncFolderLayout.snapshot(last + 1, in: ownFolder), with: document.save())
+        last += 1
+        try deleteOwnFiles(below: last, in: ownFolder, DeviceFiles(files.contents(of: ownFolder)))
+    }
+
+    /// Nur im Ordner dieses Geräts: Nummern unter `number` sind in der verdichteten
+    /// Datei `number` enthalten.
+    private func deleteOwnFiles(below number: Int, in ownFolder: URL, _ numbered: DeviceFiles) throws {
+        let old = numbered.changes.keys.filter { $0 < number }.map { SyncFolderLayout.changes($0, in: ownFolder) }
+            + numbered.snapshots.keys.filter { $0 < number }.map { SyncFolderLayout.snapshot($0, in: ownFolder) }
+        guard !old.isEmpty else { return }
+        try gate.checkWritable()
+        for url in old { try files.delete(url) }
     }
 
     private func append(_ changes: Data, in folder: URL, last: inout Int) throws {
@@ -558,4 +669,22 @@ public actor SyncEngine {
     private func relativePath(_ url: URL) -> String {
         String(url.path(percentEncoded: false).dropFirst(layout.root.path(percentEncoded: false).count))
     }
+}
+
+/// Nummerierte Dateien eines Geräts für ein Dokument.
+private struct DeviceFiles {
+    var changes: [Int: SyncFileEntry] = [:]
+    var snapshots: [Int: SyncFileEntry] = [:]
+
+    init(_ entries: [SyncFileEntry]) {
+        for entry in entries where !entry.isDirectory {
+            if let number = SyncFolderLayout.changesNumber(entry.name) {
+                changes[number] = entry
+            } else if let number = SyncFolderLayout.snapshotNumber(entry.name) {
+                snapshots[number] = entry
+            }
+        }
+    }
+
+    var highest: Int { max(changes.keys.max() ?? 0, snapshots.keys.max() ?? 0) }
 }

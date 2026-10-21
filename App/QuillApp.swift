@@ -76,6 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         try? persistence?.get().sync.start()
         #if DEBUG
         TestWindowSize.applyToFirstWindow()
+        TestWindowScreen.start()
         #endif
     }
 

@@ -17,12 +17,12 @@ struct TestDevice {
     let files: TestFileAccess
     let deviceID: UUID
 
-    init(_ name: String, folder: URL) async throws {
+    init(_ name: String, folder: URL, now: @escaping @Sendable () -> Date = { .now }) async throws {
         self.name = name
         store = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
         gate = SyncGate()
         files = TestFileAccess()
-        engine = SyncEngine(store: store, folder: folder, gate: gate, deviceName: name, files: files)
+        engine = SyncEngine(store: store, folder: folder, gate: gate, deviceName: name, files: files, now: now)
         deviceID = UUID()
         try await store.setSyncDeviceID(deviceID)
     }
@@ -106,8 +106,13 @@ final class TestFileAccess: SyncFileAccess {
     struct State {
         var connected: UUID?
         var notDownloaded: Set<String> = []
+        /// Dateien, die dieses Gerät (noch) gar nicht sieht, z. B. weil der Anbieter sie
+        /// noch nicht übertragen hat.
+        var invisible: Set<String> = []
         var downloadRequests: [String] = []
         var created: [String] = []
+        var deleted: [String] = []
+        var onDelete: (@Sendable (URL) throws -> Void)?
         var onCreate: (@Sendable (URL) throws -> Void)?
         var onContents: (@Sendable (URL) throws -> Void)?
     }
@@ -122,8 +127,8 @@ final class TestFileAccess: SyncFileAccess {
 
     func contents(of directory: URL) throws -> [SyncFileEntry] {
         try state.withLock { $0.onContents }?(directory)
-        let hidden = state.withLock { $0.notDownloaded }
-        return try real.contents(of: directory).map { entry in
+        let (hidden, invisible) = state.withLock { ($0.notDownloaded, $0.invisible) }
+        return try real.contents(of: directory).filter { !invisible.contains($0.name) }.map { entry in
             var entry = entry
             if hidden.contains(directory.appending(path: entry.name).lastPathComponent) || hidden.contains(entry.name) {
                 entry.isDownloaded = false
@@ -152,6 +157,12 @@ final class TestFileAccess: SyncFileAccess {
 
     func requestDownload(_ url: URL) throws {
         state.withLock { $0.downloadRequests.append(url.lastPathComponent) }
+    }
+
+    func delete(_ url: URL) throws {
+        try state.withLock { $0.onDelete }?(url)
+        try real.delete(url)
+        state.withLock { $0.deleted.append(url.lastPathComponent) }
     }
 }
 

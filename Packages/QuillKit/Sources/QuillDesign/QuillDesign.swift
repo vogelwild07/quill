@@ -55,6 +55,26 @@ public enum QuillDesign {
         public static let quoteBarWidth: CGFloat = 3
     }
 
+    /// Popover und Hinweis des Sync (Konflikte, „wiederhergestellt“), siehe `docs/design.md`.
+    public enum SyncNotice {
+        /// Rand eines Popovers.
+        public static let popoverPadding: CGFloat = 16
+        public static let conflictsWidth: CGFloat = 360
+        public static let restoredWidth: CGFloat = 320
+        /// Zwischen Überschrift, Abschnitten und Hinweis eines Popovers.
+        public static let sectionSpacing: CGFloat = 12
+        /// Zwischen den Zeilen eines Abschnitts und zwischen Text und Knöpfen.
+        public static let rowSpacing: CGFloat = 8
+        /// Zwischen Wert und Gerät einer Fassung.
+        public static let lineSpacing: CGFloat = 2
+        /// Mindestabstand vor dem Knopf „Wählen“.
+        public static let buttonGap: CGFloat = 12
+        /// Rand des Hinweises unter dem Seitentitel; Fläche `quaternary` mit dieser
+        /// Deckkraft und `Radius.large`.
+        public static let noticePadding: CGFloat = 12
+        public static let noticeFillOpacity: Double = 0.5
+    }
+
     /// Eckenradien.
     public enum Radius {
         /// Inline-Code, Checkbox, Bild, Hover-Fläche des ＋.

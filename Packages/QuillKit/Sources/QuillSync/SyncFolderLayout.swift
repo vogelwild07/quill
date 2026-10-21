@@ -71,13 +71,18 @@ public struct DeviceInfo: Codable, Equatable, Sendable {
 ///   quill.json
 ///   devices/<Geräte-ID>.json
 ///   tree/<Geräte-ID>/<Nr>.changes
+///   tree/<Geräte-ID>/<Nr>.snapshot
 ///   pages/<Seiten-ID>/<Geräte-ID>/<Nr>.changes
-///   pages/<Seiten-ID>/<Geräte-ID>/snapshot
+///   pages/<Seiten-ID>/<Geräte-ID>/<Nr>.snapshot
 ///   assets/<SHA-256>.<Endung>
 /// ```
+///
+/// Eine verdichtete Datei (`<Nr>.snapshot`) ist der ganze Stand des Dokuments samt
+/// Geschichte und ersetzt alle eigenen Dateien bis zu ihrer Nummer (ADR-026).
 public struct SyncFolderLayout: Equatable, Sendable {
     public static let folderName = "Quill"
     static let changesExtension = "changes"
+    static let snapshotExtension = "snapshot"
     /// Stellen der Nummer im Dateinamen; sortiert damit auch im Finder richtig.
     static let numberDigits = 12
 
@@ -111,7 +116,9 @@ public struct SyncFolderLayout: Equatable, Sendable {
         directory.appending(path: changesFileName(number))
     }
 
-    public static func snapshot(in directory: URL) -> URL { directory.appending(path: "snapshot") }
+    public static func snapshot(_ number: Int, in directory: URL) -> URL {
+        directory.appending(path: fileName(number, snapshotExtension))
+    }
 
     /// Bild nach Inhalt benannt: gleiche Daten ergeben denselben Namen, zwei Geräte
     /// schreiben dann dieselbe Datei mit demselben Inhalt.
@@ -119,15 +126,22 @@ public struct SyncFolderLayout: Equatable, Sendable {
         assets.appending(path: "\(Self.sha256(data)).\(fileExtension.lowercased())")
     }
 
-    static func changesFileName(_ number: Int) -> String {
+    static func changesFileName(_ number: Int) -> String { fileName(number, changesExtension) }
+
+    private static func fileName(_ number: Int, _ fileExtension: String) -> String {
         let digits = String(number)
-        return String(repeating: "0", count: max(0, numberDigits - digits.count)) + digits + "." + changesExtension
+        return String(repeating: "0", count: max(0, numberDigits - digits.count)) + digits + "." + fileExtension
     }
 
     /// Nummer aus einem Dateinamen wie `000000000042.changes`; `nil` für alles andere.
-    public static func changesNumber(_ fileName: String) -> Int? {
+    public static func changesNumber(_ fileName: String) -> Int? { number(fileName, changesExtension) }
+
+    /// Nummer aus einem Dateinamen wie `000000000051.snapshot`; `nil` für alles andere.
+    public static func snapshotNumber(_ fileName: String) -> Int? { number(fileName, snapshotExtension) }
+
+    private static func number(_ fileName: String, _ fileExtension: String) -> Int? {
         let parts = fileName.split(separator: ".")
-        guard parts.count == 2, parts[1] == changesExtension, parts[0].count == numberDigits,
+        guard parts.count == 2, parts[1] == fileExtension, parts[0].count == numberDigits,
               parts[0].allSatisfy(\.isASCII), let number = Int(parts[0]), number >= 0
         else { return nil }
         return number

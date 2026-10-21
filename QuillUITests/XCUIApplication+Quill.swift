@@ -12,12 +12,16 @@ extension XCUIApplication {
     /// `-QuillInMemoryStore YES` sorgt dafür, dass Tests nie die echte Datenbank
     /// oder die Backups des Nutzers berühren (`QuillPersistence.inMemoryArgument`).
     ///
+    /// `-QuillWindowsOnMainScreen YES` legt jedes Fenster auf den Hauptbildschirm
+    /// (`TestWindowScreen`), damit der Kontrast-Audit mit mehreren Monitoren gleich ausfällt.
+    ///
     /// Mit `storeDirectory` liegt die Datenbank stattdessen in diesem Unterordner
     /// des temporären Ordners der App (`QuillPersistence.storeDirectoryArgument`),
     /// für Tests über Neustarts hinweg; auch dann nie die echten Daten.
     static func quill(storeDirectory: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments += ["-ApplePersistenceIgnoreState", "YES"]
+        app.launchArguments += ["-QuillWindowsOnMainScreen", "YES"]
         if let storeDirectory {
             app.launchArguments += ["-QuillStoreDirectory", storeDirectory]
         } else {
