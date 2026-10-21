@@ -28,6 +28,11 @@ final class SyncTwoAppsUITests: XCTestCase {
     }
 
     override func tearDown() async throws {
+        // Rot: A und B noch kurz laufen lassen, damit test-synctest-ui.sh Stack-Stichproben
+        // nehmen kann (Wächter fragt jede Sekunde, `sample` braucht 3 s).
+        if (testRun?.failureCount ?? 0) > 0 {
+            try? await Task.sleep(for: .seconds(6))
+        }
         a?.app.terminate()
         b?.app.terminate()
         a?.pasteboard.releaseGlobally()
