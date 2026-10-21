@@ -76,6 +76,16 @@ public actor PageStore {
         try save()
     }
 
+    /// Marke „wiederhergestellt“ einer Seite (ADR-029): Der Sync setzt sie, der Nutzer
+    /// entfernt sie mit „Markierung entfernen“; der Abgleich verteilt beides.
+    public func setRestored(_ pageID: UUID, _ isRestored: Bool) throws {
+        let page = try fetchPage(pageID)
+        guard page.isRestored != isRestored else { return }
+        page.isRestored = isRestored
+        page.updatedAt = .now
+        try save()
+    }
+
     /// Verschiebt eine Seite unter `parentID` (`nil` = oberste Ebene).
     ///
     /// Ändert im Normalfall nur diese eine Seite.
