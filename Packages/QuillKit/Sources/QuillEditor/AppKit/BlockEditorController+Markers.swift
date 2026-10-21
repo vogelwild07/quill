@@ -132,7 +132,7 @@ extension BlockTextView {
     func markerLabel(ofBlock blockID: UUID, marker: BlockMarker) -> String {
         let text = editor?.document.blocks.first { $0.id == blockID }?.text ?? ""
         let help = markerHelp(marker)
-        return text.isEmpty ? help : "\(help): \(text.prefix(40))"
+        return text.isEmpty ? help : String(localized: "\(help): \(String(text.prefix(40)))", bundle: .module)
     }
 }
 
