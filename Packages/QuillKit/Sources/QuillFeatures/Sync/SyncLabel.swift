@@ -16,6 +16,16 @@ enum SyncLabel {
         }
     }
 
+    /// Eine Lücke im Ordner (`SyncGap`): welche Seite, welches Gerät, seit wann.
+    /// `pageTitle` ist `nil` für den Seitenbaum.
+    static func gap(_ gap: SyncGap, device: String, pageTitle: String?) -> String {
+        let since = gap.since.formatted(date: .abbreviated, time: .shortened)
+        guard let pageTitle else {
+            return String(localized: "Seitenbaum von „\(device)“: Dateien fehlen seit \(since).", bundle: .module)
+        }
+        return String(localized: "„\(PageLabel.title(pageTitle))“ von „\(device)“: Dateien fehlen seit \(since).", bundle: .module)
+    }
+
     static func failureMessage(for error: any Error) -> String {
         switch error {
         case SyncFailure.folderMissing:
