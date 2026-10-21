@@ -58,6 +58,12 @@ Bei Phase 13 (aus dem Review von Phase 11):
 - Undo-Liste bleibt erhalten, wenn fremde Änderungen (Sync, anderes Fenster) in die offene
   Seite übernommen werden. Bisher leert das Neuladen sie (`BlockEditorController.load`).
 
+Aus den UI-Läufen von Phase 11 (2026-10-21):
+- Untersuchen, warum die Einsetz-Tests (`ImageBlockUITests`, Fall 3 in `SyncTwoAppsUITests`)
+  nach vielen UI-Läufen scheitern, bis der Mac neu startet (zweimal an einem Tag, auch auf
+  `main`, nach Neustart grün). Mögliche Ursachen: übrig gebliebene eigene Zwischenablagen
+  (`-QuillPasteboardName`), übrig gebliebene Prozesse (App, Test-Runner, `pboard`).
+
 Ideen aus der Roadmap 10–18, nicht eingeplant:
 - iPad-App (Architektur aus Phase 10 lässt sie zu).
 - Direkter Sync im WLAN ohne Ordner (braucht Berechtigung „Lokales Netzwerk“).
