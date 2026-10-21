@@ -1,3 +1,4 @@
+import QuillDesign
 import QuillModel
 import QuillSync
 import SwiftData
@@ -22,7 +23,7 @@ struct ConflictListView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: QuillDesign.SyncNotice.sectionSpacing) {
             Text("Zwei Fassungen nach dem Abgleich", bundle: .module)
                 .font(.headline)
             if conflicts.isEmpty {
@@ -30,7 +31,7 @@ struct ConflictListView: View {
                     .foregroundStyle(.secondary)
             }
             ForEach(conflicts) { conflict in
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: QuillDesign.SyncNotice.rowSpacing) {
                     Text(heading(conflict))
                         .font(.subheadline.weight(.semibold))
                     ForEach(conflict.conflict.versions, id: \.value) { version in
@@ -45,8 +46,8 @@ struct ConflictListView: View {
                     .accessibilityIdentifier("conflict.paused")
             }
         }
-        .padding(16)
-        .frame(width: 360, alignment: .leading)
+        .padding(QuillDesign.SyncNotice.popoverPadding)
+        .frame(width: QuillDesign.SyncNotice.conflictsWidth, alignment: .leading)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("conflict.list")
     }
@@ -55,14 +56,14 @@ struct ConflictListView: View {
         let value = ConflictLabel.value(version, in: conflict, pageTitle: pageTitle)
         let device = sync.deviceName(version.device)
         return HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: QuillDesign.SyncNotice.lineSpacing) {
                 Text(verbatim: value)
                     .lineLimit(2)
                 Text("von \(device)", bundle: .module)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Spacer(minLength: 12)
+            Spacer(minLength: QuillDesign.SyncNotice.buttonGap)
             Button(String(localized: "Wählen", bundle: .module)) {
                 Task { await sync.choose(conflict.choice(version)) }
             }
@@ -86,7 +87,7 @@ struct RestoredBlockView: View {
     let clear: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: QuillDesign.SyncNotice.sectionSpacing) {
             Text("Wiederhergestellt nach dem Abgleich", bundle: .module)
                 .font(.headline)
             Text("Ein anderes Gerät hat diesen Block gelöscht oder anders geändert, während er hier bearbeitet wurde. Quill hat ihn behalten, damit nichts verloren geht.", bundle: .module)
@@ -95,8 +96,8 @@ struct RestoredBlockView: View {
             Button(String(localized: "Markierung entfernen", bundle: .module), action: clear)
                 .accessibilityIdentifier("restored.clear")
         }
-        .padding(16)
-        .frame(width: 320, alignment: .leading)
+        .padding(QuillDesign.SyncNotice.popoverPadding)
+        .frame(width: QuillDesign.SyncNotice.restoredWidth, alignment: .leading)
     }
 }
 
@@ -116,9 +117,9 @@ struct PageSyncNotice: View {
     var body: some View {
         let count = sync?.conflicts(onPage: pageID).count ?? 0
         if count > 0 || isRestored {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: QuillDesign.SyncNotice.rowSpacing) {
                 if count > 0, let sync {
-                    HStack(spacing: 10) {
+                    HStack(spacing: QuillDesign.SyncNotice.rowSpacing) {
                         Label(String(localized: "\(count) Stellen mit zwei Fassungen", bundle: .module), systemImage: "square.on.square")
                         Button(String(localized: "Wählen …", bundle: .module)) { showsConflicts = true }
                             .accessibilityIdentifier("detail.conflicts")
@@ -130,7 +131,7 @@ struct PageSyncNotice: View {
                     .accessibilityIdentifier("detail.conflictNotice")
                 }
                 if isRestored {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: QuillDesign.SyncNotice.rowSpacing) {
                         Label(
                             String(localized: "Hier behalten: Auf einem anderen Gerät kam die Seite in den Papierkorb, hier wurde sie bearbeitet.", bundle: .module),
                             systemImage: "arrow.uturn.backward.circle"
@@ -148,9 +149,9 @@ struct PageSyncNotice: View {
                 }
             }
             .font(.callout)
-            .padding(10)
+            .padding(QuillDesign.SyncNotice.noticePadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 8))
+            .background(.quaternary.opacity(QuillDesign.SyncNotice.noticeFillOpacity), in: .rect(cornerRadius: QuillDesign.Radius.large))
         }
     }
 }
