@@ -11,7 +11,7 @@ Scripts/test-synctest-ui.sh                          # alle Fälle, jeder einzel
 Scripts/test-synctest-ui.sh testTypingWithoutPause   # einzelne Fälle
 ```
 
-Vorher Quill und beide Testvarianten beenden; das Skript bricht sonst ab. Automatisch: Fall 1 bis 12 und 14 (Fall 14 zweimal, auch mit ungespeicherten Eingaben). Ab 11.6 prüft der Test in Fall 5 das Zeichen „wiederhergestellt“ am Block, in Fall 6 die Wahl mit Gerätenamen (pausiert gesperrt, danach in beiden Apps gleich, Sprung aus den Einstellungen) und in Fall 7 Hinweis und Kontextmenü der Seite; die beiden Apps heißen dort „Gerät A“ und „Gerät B“ (`-QuillSyncDeviceName`). Per Hand bleiben Fall 13 und „Neu beginnen …“ aus Fall 11 (beide in Phase 13) und in Fall 9 der Pfad in der aufgeklappten Gruppe „Unlesbare Dateien“.
+Vorher Quill und beide Testvarianten beenden; das Skript bricht sonst ab. Bei Rot oder Timeout behält es Protokoll und `.xcresult` in `dist/synctest-logs/<Zeit>/`, dazu Stack-Stichproben von A, B und dem Test-Runner (`sample`, nur lesend) vom Moment des ersten Fehlers. Automatisch: Fall 1 bis 12 und 14 (Fall 14 zweimal, auch mit ungespeicherten Eingaben). Ab 11.6 prüft der Test in Fall 5 das Zeichen „wiederhergestellt“ am Block, in Fall 6 die Wahl mit Gerätenamen (pausiert gesperrt, danach in beiden Apps gleich, Sprung aus den Einstellungen) und in Fall 7 Hinweis und Kontextmenü der Seite; die beiden Apps heißen dort „Gerät A“ und „Gerät B“ (`-QuillSyncDeviceName`). Per Hand bleiben Fall 13 und „Neu beginnen …“ aus Fall 11 (beide in Phase 13) und in Fall 9 der Pfad in der aufgeklappten Gruppe „Unlesbare Dateien“.
 
 ## Per Hand
 
