@@ -455,17 +455,19 @@ public actor SyncEngine {
     /// Schreibt die vorgemerkte Wahl des Nutzers ins Dokument und als nächste eigene
     /// Datei, nach den Änderungen der anderen Geräte: So entscheidet der Nutzer über
     /// das, was er gesehen hat, und eine inzwischen anderswo getroffene Wahl bleibt.
-    /// `true`, wenn eine Datei dazukam.
+    /// `true`, wenn eine Datei dazukam. Die Wahl entfällt erst, wenn sie im Ordner steht
+    /// oder nichts mehr zu entscheiden ist; scheitert das Schreiben, gilt sie beim
+    /// nächsten Abgleich wieder.
     private func applyChoices(_ documentID: UUID, to document: SyncDocument, in folder: URL, last: inout Int) throws -> Bool {
-        guard let chosen = choices.removeValue(forKey: documentID) else { return false }
+        guard let chosen = choices[documentID] else { return false }
         let before = document.version
         var resolved = false
         for choice in chosen {
             resolved = try document.resolve(choice.objectID, field: choice.field, choosing: choice.value) || resolved
         }
-        guard resolved else { return false }
-        try append(document.changes(since: before), in: folder, last: &last)
-        return true
+        if resolved { try append(document.changes(since: before), in: folder, last: &last) }
+        choices[documentID] = nil
+        return resolved
     }
 
     /// Papierkorb gegen Bearbeiten (ADR-029): Kommt eine Seite von einem anderen Gerät

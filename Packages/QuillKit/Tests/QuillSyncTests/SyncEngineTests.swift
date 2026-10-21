@@ -281,6 +281,28 @@ struct SyncEngineTests {
         #expect(try await a.blocks(of: "Notiz").map(\.kindRaw) == [BlockKind.todo.rawValue])
     }
 
+    @Test func choiceSurvivesAFailedWrite() async throws {
+        let folder = try TestFolder()
+        let a = try await TestDevice("A", folder: folder.url)
+        let b = try await TestDevice("B", folder: folder.url)
+        let (page, blocks) = try await a.createPage("Notiz", texts: ["Punkt"])
+        try await a.sync()
+        try await b.sync()
+        try await a.edit(page, blocks[0]) { $0.kindRaw = BlockKind.todo.rawValue }
+        try await b.edit(page, blocks[0]) { $0.kindRaw = BlockKind.heading2.rawValue }
+        try await a.sync()
+        try await b.sync()
+        #expect(try await a.sync().conflicts[page] != nil)
+
+        await a.engine.choose(ConflictChoice(documentID: page, objectID: blocks[0], field: "kind", value: BlockKind.heading2.rawValue))
+        a.files.state.withLock { $0.onCreate = { _ in throw CocoaError(.fileWriteOutOfSpace) } }
+        await #expect(throws: CocoaError.self) { try await a.sync() }
+        a.files.state.withLock { $0.onCreate = nil }
+        let report = try await a.sync()
+        #expect(report.conflicts.isEmpty)
+        #expect(try await a.blocks(of: "Notiz").map(\.kindRaw) == [BlockKind.heading2.rawValue])
+    }
+
     @Test func storedConflictsMatchTheLastSyncWithoutWriting() async throws {
         let folder = try TestFolder()
         let a = try await TestDevice("A", folder: folder.url)
