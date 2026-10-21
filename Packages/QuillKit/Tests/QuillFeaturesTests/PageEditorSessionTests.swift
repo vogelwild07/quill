@@ -49,7 +49,8 @@ struct PageEditorSessionTests {
         session.controller.textView.setSelectedRange(NSRange(location: 6, length: 4))
         session.controller.toggleMark(.bold)
         session.close()
-        await EditorPersistenceBridge.flushAll()
+        // Nur die eigene Sitzung: `flushAll` speicherte auch Editoren anderer Tests im Prozess.
+        await session.bridge.flush()
 
         let (reopened, _) = await openSession()
         let blocks = reopened.controller.document.blocks
@@ -61,7 +62,7 @@ struct PageEditorSessionTests {
     @Test func viewingAnEmptyPageWritesNothing() async throws {
         let (session, _) = await openSession()
         session.close()
-        await EditorPersistenceBridge.flushAll()
+        await session.bridge.flush()
         #expect(try ModelContext(container).fetchCount(FetchDescriptor<Block>()) == 0)
     }
 
