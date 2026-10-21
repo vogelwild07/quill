@@ -279,6 +279,8 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Als reine Silhouette bleibt nur die Seite (ein Rechteck); erkennbar wird das Icon über Farbe und Inhalt. Im einfarbigen Systemstil („klar“) bleiben Bild, Haken und Zeilen sichtbar.
 - Das Icon bleibt von der GPL ausgenommen (`ICON-LICENSE`).
 
+**Neues Motiv (2026-10-21, Wahl des Nutzers):** „Slash mit Cursor, Kante“ ersetzt die Seite: weißer Slash (das Zeichen für das Slash-Menü) mit gelber Schreibmarke auf Petrol, darunter eine Kante des Slash in dunklem Petrol ohne Liquid Glass. Die Schreibmarke hat keine Kante, weil sie bei 16 pt sonst doppelt wirkt; schwächer nur in kleinen Größen geht nicht, da `.icon` nicht nach Größe unterscheidet. Farben, Dunkel-Variante je Ebene und Maße in `design.md`. Geprüft mit `ictool` (hell, dunkel, klar, 16 pt @1x und @2x) und im gebauten Bundle (`Assets.car` mit Aqua, DarkAqua und Tintable; Icon über `NSWorkspace` im dunklen Modus, `AppIcon.icns` hell).
+
 ## ADR-024: Themes für den Editor (2026-10-20)
 
 **Kontext:** Phase 9.2. Der Editor zeigte nur Systemfarben. Gewünscht waren wenige feste Farbschemata in den Einstellungen, aus den Farben des neuen Icons (ADR-023), mit nachgerechnetem Kontrast und sofortigem Wechsel, gespeichert pro Mac.
