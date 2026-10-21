@@ -19,6 +19,8 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     let isChecked: Bool
     let ordinal: Int
     let assetID: UUID?
+    /// Vom Sync wiederhergestellt (ADR-029); zeigt das Zeichen am rechten Rand.
+    let isRestored: Bool
     /// Block-ID aus dem Absatz, für den Fokus-Modus.
     let blockID: UUID?
     /// Im Fokus-Modus außerhalb der Auswahl: mit den abgedunkelten Farben gezeichnet
@@ -43,6 +45,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         isChecked = properties.isChecked
         ordinal = attributes[.quillOrdinal] as? Int ?? 1
         assetID = properties.assetID
+        isRestored = properties.isRestored
         blockID = (attributes[.quillBlockID] as? String).flatMap(UUID.init(uuidString:))
         super.init(textElement: textElement, range: rangeInElement)
     }
@@ -83,6 +86,22 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         let size = QuillDesign.EditorLayout.checkboxSize
         let centerY = firstBaseline - markerFont.capHeight / 2
         return CGRect(x: markerOriginX + 3, y: centerY - size / 2, width: size, height: size)
+    }
+
+    /// Zeichen am rechten Rand (11.6): Konflikt vor „wiederhergestellt“. Beim Zeichnen
+    /// gelesen, wie `isDimmed`.
+    var marker: BlockMarker? {
+        if let blockID, (textLayoutManager?.delegate as? BlockLayoutDelegate)?.conflictBlocks.contains(blockID) == true {
+            return .conflict
+        }
+        return isRestored ? .restored : nil
+    }
+
+    /// Feld des Zeichens rechts neben der Textspalte, auf Höhe der ersten Zeile.
+    var markerRect: CGRect {
+        let size = QuillDesign.EditorLayout.blockMarkerSize
+        let centerY = firstBaseline - markerFont.capHeight / 2
+        return CGRect(x: contentMaxX + QuillDesign.EditorLayout.blockMarkerGap, y: centerY - size / 2, width: size, height: size)
     }
 
     private var contentBounds: CGRect {
@@ -142,6 +161,8 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         if kind == .quote { bounds = bounds.union(CGRect(x: markerOriginX, y: 0, width: 8, height: layoutFragmentFrame.height)) }
         if kind.isListItem { bounds = bounds.union(checkboxRect.insetBy(dx: -4, dy: -4)) }
         if kind == .image { bounds = bounds.union(imageRect) }
+        // Immer, nicht nur mit Zeichen: Ein Zeichen kommt ohne neues Layout dazu.
+        bounds = bounds.union(markerRect.insetBy(dx: -2, dy: -2))
         return bounds
     }
 
@@ -179,7 +200,47 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         case .image: drawImage(in: context)
         case .paragraph, .heading1, .heading2, .heading3, .quote, .code: break
         }
+        switch marker {
+        case .conflict: drawConflictMarker(in: context)
+        case .restored: drawRestoredMarker(in: context)
+        case nil: break
+        }
         context.restoreGState()
+    }
+
+    /// Zwei versetzte Rahmen: zwei Fassungen.
+    private func drawConflictMarker(in context: CGContext) {
+        let rect = markerRect.insetBy(dx: 1, dy: 1)
+        let side = rect.width * 0.68
+        let back = CGRect(x: rect.maxX - side, y: rect.minY, width: side, height: side)
+        let front = CGRect(x: rect.minX, y: rect.maxY - side, width: side, height: side)
+        context.setLineWidth(1.5)
+        context.setStrokeColor(EditorColor.accent.cgColor)
+        context.addPath(Self.roundedRect(back, radius: 2))
+        context.strokePath()
+        context.addPath(Self.roundedRect(front, radius: 2))
+        context.setFillColor(EditorColor.background.cgColor)
+        context.drawPath(using: .fillStroke)
+    }
+
+    /// Pfeil im Bogen zurück: wiederhergestellt.
+    private func drawRestoredMarker(in context: CGContext) {
+        let rect = markerRect.insetBy(dx: 2, dy: 2)
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let radius = rect.width / 2
+        // Kontext mit y nach unten: Der Bogen beginnt oben und läuft gegen den Uhrzeigersinn.
+        let start = -CGFloat.pi / 2, end = start + 1.6 * .pi
+        context.setLineWidth(1.5)
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+        context.setStrokeColor(EditorColor.secondary.cgColor)
+        context.addArc(center: center, radius: radius, startAngle: start, endAngle: end, clockwise: false)
+        context.strokePath()
+        let tip = CGPoint(x: center.x, y: center.y - radius)
+        context.move(to: CGPoint(x: tip.x + 3.5, y: tip.y - 3))
+        context.addLine(to: tip)
+        context.addLine(to: CGPoint(x: tip.x + 3.5, y: tip.y + 3))
+        context.strokePath()
     }
 
     private func drawCodeBackground(in context: CGContext) {
@@ -291,12 +352,22 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
     }
 }
 
+/// Zeichen am rechten Rand eines Blocks (11.6).
+public enum BlockMarker: Sendable {
+    /// Zwei Fassungen nach dem Abgleich; der Nutzer wählt.
+    case conflict
+    /// Vom Sync wiederhergestellt (Löschen gegen Bearbeiten, ADR-026).
+    case restored
+}
+
 /// Liefert `BlockLayoutFragment` für jeden Absatz.
 final class BlockLayoutDelegate: NSObject, NSTextLayoutManagerDelegate {
     /// Fokus-Modus: Blöcke mit Auswahl oder Cursor; alle anderen werden abgedunkelt
     /// (`BlockLayoutFragment.isDimmed`). `nil` dunkelt nichts ab. Nach einer Änderung
     /// die betroffenen Absätze neu zeichnen.
     var focusedBlocks: Set<UUID>?
+    /// Blöcke mit einem Konflikt aus dem Abgleich (`BlockLayoutFragment.marker`).
+    var conflictBlocks: Set<UUID> = []
 
     func textLayoutManager(
         _ textLayoutManager: NSTextLayoutManager,

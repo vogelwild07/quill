@@ -48,6 +48,10 @@ public enum QuillDesign {
         /// Zwischen ＋ und Textanfang.
         public static let blockControlGap: CGFloat = 6
         public static let checkboxSize: CGFloat = 14
+        /// Zeichen „Konflikt“ bzw. „wiederhergestellt“ rechts neben der Textspalte.
+        public static let blockMarkerSize: CGFloat = 16
+        /// Zwischen Textspalte und Zeichen am rechten Rand; passt in `minSideMargin`.
+        public static let blockMarkerGap: CGFloat = 12
         public static let quoteBarWidth: CGFloat = 3
     }
 

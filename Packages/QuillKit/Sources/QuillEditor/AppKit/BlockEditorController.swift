@@ -75,6 +75,9 @@ public final class BlockEditorController: NSObject {
     /// Eingefügte Bilder, deren Import noch läuft; ihr Block zeigt den Platzhalter.
     var pendingImports: Set<UUID> = []
     lazy var noticeView = EditorNoticeView()
+    /// Inhalt des Popovers zum Zeichen am Rand eines Blocks (`+Markers`); `nil` zeigt nichts.
+    public var markerPopoverContent: ((_ blockID: UUID, _ marker: BlockMarker) -> NSViewController?)?
+    var markerPopover: NSPopover?
 
     public init(document: EditorDocument) {
         self.document = document
@@ -285,6 +288,7 @@ public final class BlockEditorController: NSObject {
 /// Namen der Undo-Schritte („Widerrufen: …“).
 enum UndoAction {
     static var typing: String { String(localized: "Tippen", bundle: .module) }
+    static var clearRestored: String { String(localized: "Markierung entfernen", bundle: .module) }
     static var newBlock: String { String(localized: "Neuer Block", bundle: .module) }
     static var indent: String { String(localized: "Einrücken", bundle: .module) }
     static var outdent: String { String(localized: "Ausrücken", bundle: .module) }
