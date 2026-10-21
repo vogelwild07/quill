@@ -236,6 +236,97 @@ final class SyncControllerTests {
         #expect(changed.contains(page))
     }
 
+    // MARK: Konflikte (11.6)
+
+    @Test func choosingAVersionNeedsSyncOnAndResolvesEverywhere() async throws {
+        let persistence = try open()
+        try FileManager.default.createDirectory(at: syncFolder, withIntermediateDirectories: true)
+        let sync = controller(persistence)
+        try await sync.enable(folder: syncFolder)
+        let page = try await persistence.store.createPage(title: "Notiz")
+        await sync.syncNow()
+        let folderID = try #require(settings.connection?.folderID)
+        let other = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
+        try await other.setSyncDeviceID(UUID())
+        let otherEngine = SyncEngine(store: other, folder: syncFolder, gate: SyncGate(), deviceName: "Anderer")
+        _ = try await otherEngine.sync(connectedFolderID: folderID)
+        try await persistence.store.rename(page, to: "Notiz hier")
+        try await other.rename(page, to: "Notiz dort")
+        await sync.syncNow()
+        _ = try await otherEngine.sync(connectedFolderID: folderID)
+        await sync.syncNow()
+
+        let conflict = try #require(sync.conflicts(onPage: page).first)
+        #expect(conflict.isPageField && conflict.conflict.field == "title")
+        #expect(sync.pagesWithConflicts == [page])
+        let devices = Dictionary(uniqueKeysWithValues: conflict.conflict.versions.map { ($0.value, sync.deviceName($0.device)) })
+        #expect(devices == ["Notiz hier": "Test", "Notiz dort": "Anderer"])
+        #expect(sync.deviceName(nil) == "Unbekanntes Gerät")
+        let theirs = try #require(conflict.conflict.versions.first { $0.value == "Notiz dort" })
+
+        // Pausiert: keine Wahl, nichts im Ordner.
+        sync.pause()
+        #expect(!sync.canChoose)
+        let before = folderContents()
+        await sync.choose(conflict.choice(theirs))
+        #expect(folderContents() == before)
+        #expect(sync.conflicts(onPage: page) == [conflict])
+
+        sync.resume()
+        #expect(sync.canChoose)
+        await sync.choose(conflict.choice(theirs))
+        #expect(sync.conflicts(onPage: page).isEmpty)
+        #expect(sync.pagesWithConflicts.isEmpty)
+        #expect(try await persistence.store.pageSnapshots().first { $0.id == page }?.title == "Notiz dort")
+        let report = try await otherEngine.sync(connectedFolderID: folderID)
+        #expect(report.conflicts.isEmpty)
+        #expect(try await other.pageSnapshots().first { $0.id == page }?.title == "Notiz dort")
+    }
+
+    @Test func conflictsShowAfterRestartWhilePausedWithoutWriting() async throws {
+        let persistence = try open()
+        try FileManager.default.createDirectory(at: syncFolder, withIntermediateDirectories: true)
+        let sync = controller(persistence)
+        try await sync.enable(folder: syncFolder)
+        let page = try await createPage(persistence.store, title: "Notiz", text: "Text")
+        await sync.syncNow()
+        let folderID = try #require(settings.connection?.folderID)
+        let other = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
+        try await other.setSyncDeviceID(UUID())
+        let otherEngine = SyncEngine(store: other, folder: syncFolder, gate: SyncGate(), deviceName: "Anderer")
+        _ = try await otherEngine.sync(connectedFolderID: folderID)
+        try await persistence.store.rename(page, to: "Notiz hier")
+        try await other.rename(page, to: "Notiz dort")
+        await sync.syncNow()
+        _ = try await otherEngine.sync(connectedFolderID: folderID)
+        await sync.syncNow()
+        let expected = sync.conflicts(onPage: page)
+        #expect(expected.count == 1)
+        sync.pause()
+
+        // Neustart, weiter pausiert: Konflikte aus dem Store, Ordner und Store unverändert.
+        let folder = folderContents()
+        let state = try await persistence.store.syncState()
+        let document = try await persistence.store.syncPage(page)?.document
+        let pages = try await persistence.store.pageSnapshots()
+        let restarted = controller(persistence)
+        #expect(restarted.status == .paused && restarted.conflicts(onPage: page).isEmpty)
+        restarted.start()
+        for _ in 0..<100 where restarted.conflicts(onPage: page).isEmpty {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(restarted.conflicts(onPage: page) == expected)
+        #expect(restarted.pagesWithConflicts == [page])
+        let devices = Set(expected[0].conflict.versions.map { restarted.deviceName($0.device) })
+        #expect(devices == ["Test", "Anderer"])
+        #expect(!restarted.canChoose)
+        #expect(restarted.lastSyncDate == nil)
+        #expect(folderContents() == folder)
+        #expect(try await persistence.store.syncState() == state)
+        #expect(try await persistence.store.syncPage(page)?.document == document)
+        #expect(try await persistence.store.pageSnapshots() == pages)
+    }
+
     // MARK: Wiederverbinden (11.4)
 
     @Test func sameFolderAfterTurningOffMergesWithoutAsking() async throws {

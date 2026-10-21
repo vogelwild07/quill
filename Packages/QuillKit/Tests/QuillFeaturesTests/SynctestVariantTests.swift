@@ -55,7 +55,7 @@ struct SynctestVariantTests {
         #expect(script.contains("'SWIFT_ACTIVE_COMPILATION_CONDITIONS=QUILL_SYNCTEST $(inherited)'"))
         // Die Release-Prüfung sucht nach den Namen der Synctest-Schalter.
         let check = try String(contentsOf: Self.root.appending(path: "Scripts/check-release-binary.sh"), encoding: .utf8)
-        for marker in ["QuillSyncSharedFolder", "QuillSyncHaltBeforePage", "QuillSaveDelay", "QuillSyncTestFolder", "QuillSyncUITests", "temporary-exception"] {
+        for marker in ["QuillSyncSharedFolder", "QuillSyncHaltBeforePage", "QuillSaveDelay", "QuillSyncDeviceName", "QuillSyncTestFolder", "QuillSyncUITests", "temporary-exception"] {
             #expect(check.contains(marker), "\(marker) fehlt in check-release-binary.sh")
         }
     }
@@ -79,6 +79,15 @@ struct SynctestVariantTests {
         #expect(try halt("0") == nil)
         #expect(try halt("x") == nil)
         #expect(try QuillPersistence.open(arguments: ["Quill", "-QuillInMemoryStore", "YES"]) { _, _ in .migrate }.sync.testHaltBeforeStoringPage == nil)
+    }
+
+    @Test func deviceNameOnlyWithATestStore() throws {
+        func name(_ arguments: [String]) throws -> String {
+            try QuillPersistence.open(arguments: ["Quill", "-QuillInMemoryStore", "YES"] + arguments) { _, _ in .migrate }.sync.localDeviceName
+        }
+        #expect(try name(["-QuillSyncDeviceName", "Gerät A"]) == "Gerät A")
+        #expect(try name(["-QuillSyncDeviceName", ""]) == SyncController.defaultDeviceName)
+        #expect(try name([]) == SyncController.defaultDeviceName)
     }
 
     @Test func saveDelayOnlyWithAPositiveNumber() throws {

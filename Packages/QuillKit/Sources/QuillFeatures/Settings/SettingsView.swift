@@ -2,6 +2,7 @@
 import QuillDesign
 import QuillEditor
 import QuillEditorCore
+import SwiftData
 import SwiftUI
 
 /// Einstellungen (⌘,): Darstellung, Sync, Lizenzen.
@@ -25,6 +26,8 @@ public struct SettingsView: View {
                 Tab(String(localized: "Sync", bundle: .module), systemImage: "arrow.triangle.2.circlepath", value: .sync) {
                     SyncSettingsView(sync: persistence.sync, testFolder: persistence.syncTestFolder)
                         .frame(minHeight: 420)
+                        // Titel der Seiten mit Konflikt; die Einstellungen sind eine eigene Szene.
+                        .modelContainer(persistence.container)
                 }
             }
             Tab(String(localized: "Lizenzen", bundle: .module), systemImage: "doc.text", value: .licenses) {

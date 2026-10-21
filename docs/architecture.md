@@ -231,7 +231,7 @@ QuillEditor       AppKit oder UIKit
 
 ```text
 QuillSync
-  SyncDocument      gemeinsame erste Änderung, neue Akteurs-ID je Sitzung, Konflikte
+  SyncDocument      gemeinsame erste Änderung, Akteurs-ID aus Gerät + Sitzung, Konflikte mit Gerät je Fassung, Wahl (resolve)
   PageDocument      [BlockSnapshot] ↔ Map blocks (order, kind, text mit Marks, Felder)
   TreeDocument      [PageRecord] ↔ Map pages, Grabstein statt Entfernen
   TextMarks         RichText ↔ Marks in Unicode-Skalaren
@@ -244,13 +244,17 @@ QuillModel
   PageStore+Sync    Schreibwege des Abgleichs: nur vom erwarteten Stand aus, Seiten nie löschen
 QuillFeatures
   Sync/             SyncSettings (Einstellungen, Lesezeichen), SyncController (ein/aus, Backup vorher,
-                    Pause, Wiederverbinden, Zeitpunkte), SyncSettingsView, SyncReconnectView, SyncSidebarStatus
+                    Pause, Wiederverbinden, Zeitpunkte, Konflikte je Seite und Wahl), SyncSettingsView,
+                    SyncReconnectView, SyncSidebarStatus, ConflictViews/ConflictLabel (Popover, Hinweis im Seitenkopf)
+  Window/           PageJumpRouter (Sprung aus Einstellungen › Sync zur Seite im vordersten Fenster)
+QuillEditor
+  BlockLayoutFragment, BlockEditorController+Markers   Zeichen am Blockrand (Konflikt, wiederhergestellt), Popover, Undo
   Settings/         Bereiche Darstellung, Sync, Lizenzen (Resources/ThirdPartyLicenses.txt, Scripts/third-party-licenses.py)
 ```
 
-Ein Abgleich (`SyncEngine.sync`) je Dokument: aus dem Store laden, eigene Dateien nachlesen, die der Store noch nicht kennt, den Stand des Stores als nächste eigene Datei anhängen, dann neue Dateien der anderen Geräte übernehmen und das Ergebnis in den Store schreiben. Hat der Nutzer während des Abgleichs gespeichert, schreibt der Store nichts, und der nächste Abgleich nimmt die Eingabe mit.
+Ein Abgleich (`SyncEngine.sync`) je Dokument: aus dem Store laden, eigene Dateien nachlesen, die der Store noch nicht kennt, den Stand des Stores als nächste eigene Datei anhängen, dann neue Dateien der anderen Geräte übernehmen und das Ergebnis in den Store schreiben. Hat der Nutzer während des Abgleichs gespeichert, schreibt der Store nichts, und der nächste Abgleich nimmt die Eingabe mit. Beim Start liest `SyncEngine.storedConflicts` die Konflikte nur aus den Dokumenten im Store, auch pausiert. Eine Wahl bei einem Konflikt (`SyncEngine.choose`) wartet bis zum nächsten Abgleich der Seite und wird nach den Dateien der anderen Geräte als eigene Datei geschrieben.
 
-`QuillPersistence.sync` hält den einen `SyncController` der App; `AppDelegate` startet nach dem Öffnen die Zeitpunkte (`SyncSchedule`): beim Start, wenn Quill aktiv wird, 2 s nach einer Änderung im Store (`ModelContext.didSave`) und alle 60 s. Ohne eingeschalteten Sync oder pausiert läuft nichts. Ein Abgleich blockiert die App nie; die Sidebar zeigt ab 5 Seiten den Fortschritt und Probleme an. Die Einstellungen des Sync liegen beim echten Store in den Einstellungen des Macs, bei Test-Stores im Arbeitsspeicher oder im Testordner (`SyncSettingsStorage`), weil ein Debug-Build dieselbe Bundle-ID hat. UI-Tests ersetzen die Dateiauswahl durch `-QuillSyncTestFolder <Name>` (nur Debug, nur mit Test-Store).
+`QuillPersistence.sync` hält den einen `SyncController` der App; `AppDelegate` startet nach dem Öffnen die Zeitpunkte (`SyncSchedule`): beim Start, wenn Quill aktiv wird, 2 s nach einer Änderung im Store (`ModelContext.didSave`) und alle 60 s. Ohne eingeschalteten Sync oder pausiert läuft nichts. Ein Abgleich blockiert die App nie; die Sidebar zeigt ab 5 Seiten den Fortschritt und Probleme an. Die Einstellungen des Sync liegen beim echten Store in den Einstellungen des Macs, bei Test-Stores im Arbeitsspeicher oder im Testordner (`SyncSettingsStorage`), weil ein Debug-Build dieselbe Bundle-ID hat. UI-Tests ersetzen die Dateiauswahl durch `-QuillSyncTestFolder <Name>` und den Gerätenamen durch `-QuillSyncDeviceName <Name>` (nur Debug oder Testvariante, nur mit Test-Store).
 
 Für den Handtest gibt es das Schema „Quill Synctest“ mit den Konfigurationen `SynctestA` und `SynctestB` (wie Release, Bundle-IDs `io.github.vogelwild07.quill.synctest.a` und `.b`, Namen „Quill Synctest A“ und „Quill Synctest B“). Jede Variante hat einen eigenen Container mit eigenem Store und eigenen Einstellungen, so laufen zwei „Geräte“ zugleich in einem Benutzerkonto. `Scripts/make-synctest.sh` baut sie mit `QUILL_SYNCTEST` (nur auf der Kommandozeile, für alle Targets samt Paket): Dann gelten die Test-Schalter des Debug-Builds auch dort, dazu `-QuillSyncSharedFolder <Name>` (gemeinsamer Ordner im temporären Ordner des UI-Test-Runners, freigegeben nur in `App/QuillSynctest.entitlements`), `-QuillSyncHaltBeforePage <n>` (Haltepunkt im Abgleich) und `-QuillSaveDelay <ms>` (Wartezeit der Bridge). `SyncTwoAppsUITests` bedient beide Apps über ihre Bundle-IDs (`Scripts/test-synctest-ui.sh`).
 

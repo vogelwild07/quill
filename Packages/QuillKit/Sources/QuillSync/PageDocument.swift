@@ -103,32 +103,48 @@ public final class PageDocument: SyncDocument {
         var result: [Entry] = []
         for (id, key) in itemKeys(at: heads) {
             guard let map = try map(key, at: heads) else { continue }
-            let fields = try fields(of: map, at: heads)
-            guard case .Scalar(.String(let kindRaw))? = fields["kind"],
-                  case .Object(let textID, .Text)? = fields["text"]
-            else {
-                throw SyncError.malformed(key)
-            }
-            var properties = BlockProperties()
-            if case .Scalar(.Int(let indent))? = fields["indent"] { properties.indent = Int(indent) }
-            if case .Scalar(.Boolean(let checked))? = fields["checked"] { properties.isChecked = checked }
-            if case .Scalar(.String(let language))? = fields["lang"] { properties.codeLanguage = language }
-            if case .Scalar(.String(let asset))? = fields["asset"] { properties.assetID = UUID(uuidString: asset) }
-            if case .Scalar(.Boolean(let restored))? = fields["restored"] { properties.isRestored = restored }
-            let text = try heads.map { try document.textAt(obj: textID, heads: $0) } ?? document.text(obj: textID)
-            let rawMarks = try heads.map { try document.marksAt(obj: textID, heads: $0) } ?? document.marks(obj: textID)
-            let marks = TextMarks.assignments(of: rawMarks, count: text.unicodeScalars.count)
-            var order = ""
-            if case .Scalar(.String(let value))? = fields["order"] { order = value }
-            var assetFile: String?
-            if case .Scalar(.String(let value))? = fields["assetFile"] { assetFile = value }
-            let block = BlockSnapshot(
-                id: id, kindRaw: kindRaw, text: text,
-                richText: TextMarks.richText(text: text, assignments: marks), properties: properties
-            )
-            result.append(Entry(order: order, block: block, assetFile: assetFile))
+            result.append(try entry(id, map: map, at: heads))
         }
         return result.sorted { ($0.order, $0.block.id.uuidString) < ($1.order, $1.block.id.uuidString) }
+    }
+
+    private func entry(_ id: UUID, map: ObjId, at heads: Set<ChangeHash>?) throws -> Entry {
+        let key = id.uuidString
+        let fields = try fields(of: map, at: heads)
+        guard case .Scalar(.String(let kindRaw))? = fields["kind"],
+              case .Object(let textID, .Text)? = fields["text"]
+        else {
+            throw SyncError.malformed(key)
+        }
+        var properties = BlockProperties()
+        if case .Scalar(.Int(let indent))? = fields["indent"] { properties.indent = Int(indent) }
+        if case .Scalar(.Boolean(let checked))? = fields["checked"] { properties.isChecked = checked }
+        if case .Scalar(.String(let language))? = fields["lang"] { properties.codeLanguage = language }
+        if case .Scalar(.String(let asset))? = fields["asset"] { properties.assetID = UUID(uuidString: asset) }
+        if case .Scalar(.Boolean(let restored))? = fields["restored"] { properties.isRestored = restored }
+        let text = try heads.map { try document.textAt(obj: textID, heads: $0) } ?? document.text(obj: textID)
+        let rawMarks = try heads.map { try document.marksAt(obj: textID, heads: $0) } ?? document.marks(obj: textID)
+        let marks = TextMarks.assignments(of: rawMarks, count: text.unicodeScalars.count)
+        var order = ""
+        if case .Scalar(.String(let value))? = fields["order"] { order = value }
+        var assetFile: String?
+        if case .Scalar(.String(let value))? = fields["assetFile"] { assetFile = value }
+        let block = BlockSnapshot(
+            id: id, kindRaw: kindRaw, text: text,
+            richText: TextMarks.richText(text: text, assignments: marks), properties: properties
+        )
+        return Entry(order: order, block: block, assetFile: assetFile)
+    }
+
+    override func summary(of map: ObjId) throws -> String? {
+        guard case .Object(let textID, .Text)? = try fields(of: map)["text"] else { return nil }
+        return try document.text(obj: textID)
+    }
+
+    override func rewrite(_ key: String, from map: ObjId) throws {
+        guard let id = UUID(uuidString: key) else { return }
+        let chosen = try entry(id, map: map, at: nil)
+        try insert(chosen.block, order: chosen.order, assetFile: chosen.assetFile)
     }
 
     /// Gleichzeitige Änderungen derselben Felder, die der Nutzer entscheidet.

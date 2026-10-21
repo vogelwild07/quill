@@ -101,6 +101,38 @@ struct TreeDocumentTests {
         #expect(try b.conflicts() == conflicts)
     }
 
+    @Test func choosingATitleAndADoubledPage() throws {
+        let page = Self.record("Notiz")
+        let a = TreeDocument()
+        try a.update([page])
+        let b = try TreeDocument(bytes: a.save())
+        var onA = page, onB = page
+        onA.title = "Notiz A"
+        onB.title = "Notiz B"
+        try a.update([onA])
+        try b.update([onB])
+        // Dieselbe neue Seite auf beiden Geräten unabhängig angelegt: doppelt.
+        let twin = Self.record("Zwilling A")
+        var twinB = twin
+        twinB.title = "Zwilling B"
+        try a.update([twin])
+        try b.update([twinB])
+        try Self.exchange(a, b)
+        let doubled = try #require(try a.conflicts().first { $0.objectID == twin.id && $0.field == nil })
+        #expect(Set(doubled.versions.compactMap(\.summary)) == ["Zwilling A", "Zwilling B"])
+        let chosen = try #require(doubled.versions.first { $0.summary == "Zwilling B" })
+        #expect(try a.resolve(twin.id, field: nil, choosing: chosen.value))
+        #expect(try a.resolve(page.id, field: "title", choosing: "Notiz A"))
+        #expect(try a.conflicts().isEmpty)
+        let records = Dictionary(try a.records().map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        #expect(records[page.id]?.title == "Notiz A")
+        #expect(records[twin.id]?.title == "Zwilling B")
+        #expect(records[twin.id]?.sortKey == twin.sortKey && records[twin.id]?.createdAt == twin.createdAt)
+        try b.apply(changes: a.changes(since: nil))
+        #expect(try b.conflicts().isEmpty)
+        #expect(try b.records() == a.records())
+    }
+
     @Test func trashAgainstEditIsNoFieldConflict() throws {
         // Papierkorb gegen Bearbeiten entscheidet die Sync-Schicht (die Seite bleibt).
         let page = Self.record("Notiz")

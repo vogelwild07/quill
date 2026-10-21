@@ -15,10 +15,13 @@ struct PageDetailView: View {
     @Binding var revealRequest: RevealRequest?
     let rename: @MainActor (_ id: UUID, _ title: String) -> Void
     let setIcon: @MainActor (_ id: UUID, _ icon: String?) -> Void
+    /// Seitenaktionen zu den Hinweisen des Sync (Marke entfernen, Papierkorb).
+    let syncActions: PageSyncActions
 
     @Query private var pages: [Page]
     @Environment(\.pageStore) private var store
     @Environment(\.modelContext) private var context
+    @Environment(\.quillPersistence) private var persistence
     #if canImport(AppKit)
     @State private var session: PageEditorSession?
     @State private var isLoaded = false
@@ -30,8 +33,10 @@ struct PageDetailView: View {
         editorFocusRequest: Binding<UUID?>,
         revealRequest: Binding<RevealRequest?>,
         rename: @escaping @MainActor (UUID, String) -> Void,
-        setIcon: @escaping @MainActor (UUID, String?) -> Void
+        setIcon: @escaping @MainActor (UUID, String?) -> Void,
+        syncActions: PageSyncActions = PageSyncActions()
     ) {
+        self.syncActions = syncActions
         self.pageID = pageID
         self._titleFocusRequest = titleFocusRequest
         self._editorFocusRequest = editorFocusRequest
@@ -62,13 +67,20 @@ struct PageDetailView: View {
         .task {
             guard session == nil, let store else { return }
             let page = pages.first
+            var actions = syncActions
+            let context = context
+            actions.pageTitle = { id in
+                try? context.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.id == id })).first?.title
+            }
             let session = PageEditorSession(
                 pageID: pageID, title: page?.title ?? "", icon: page?.icon,
-                store: store, context: context, rename: rename, setIcon: setIcon
+                store: store, context: context, rename: rename, setIcon: setIcon,
+                sync: persistence?.sync, pageActions: actions
             )
             self.session = session
             applyTitleFocusRequest()
             await session.load()
+            updateConflictBlocks()
             isLoaded = true
             QuillSignposts.pageDidLoad()
             applyRevealRequest()
@@ -83,6 +95,13 @@ struct PageDetailView: View {
         .onChange(of: titleFocusRequest) { applyTitleFocusRequest() }
         .onChange(of: editorFocusRequest) { applyEditorFocusRequest() }
         .onChange(of: revealRequest) { applyRevealRequest() }
+        .onChange(of: persistence?.sync.conflicts(onPage: pageID)) { updateConflictBlocks() }
+    }
+
+    /// Zeichen am Rand für Blöcke mit Konflikt (11.6).
+    private func updateConflictBlocks() {
+        let conflicts = persistence?.sync.conflicts(onPage: pageID) ?? []
+        session?.controller.conflictBlocks = Set(conflicts.filter { !$0.isPageField }.map(\.conflict.objectID))
     }
 
     /// Erst nach dem Laden und einen Durchlauf später, wenn der Editor im Fenster

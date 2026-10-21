@@ -28,6 +28,20 @@ struct PageStoreSyncTests {
         #expect(try await store.syncState().cursors == Data("c".utf8))
     }
 
+    @Test func restoredMarkIsSetAndClearedAsAChange() async throws {
+        let page = try await store.createPage(title: "Notiz")
+        let dates = try await store.pageUpdateDates()
+        try await store.setRestored(page, true)
+        #expect(try await snapshot(page).isRestored)
+        let marked = try await store.pageUpdateDates()
+        // Der Abgleich sieht die Änderung (ADR-029: fällig ist, was neuer ist).
+        #expect(try #require(marked[page]) > #require(dates[page]))
+        try await store.setRestored(page, true)
+        #expect(try await store.pageUpdateDates() == marked)
+        try await store.setRestored(page, false)
+        #expect(try await !snapshot(page).isRestored)
+    }
+
     @Test func treeChangesCreateUpdateAndTrashButNeverDelete() async throws {
         let existing = try await store.createPage(title: "Alt")
         let before = try await snapshot(existing)

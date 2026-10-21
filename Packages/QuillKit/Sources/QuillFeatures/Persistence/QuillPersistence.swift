@@ -42,6 +42,9 @@ public final class QuillPersistence {
     /// Startargument `-QuillSaveDelay <ms>`, nur mit einem Test-Store: Editoren warten so
     /// lange vor dem Speichern (Fall 14, `EditorPersistenceBridge.testDelay`).
     public static let saveDelayArgument = "QuillSaveDelay"
+    /// Startargument `-QuillSyncDeviceName <Name>`, nur mit einem Test-Store: Gerätename
+    /// im Ordner statt des Mac-Namens; Synctest A und B laufen auf demselben Mac (11.6).
+    public static let syncDeviceNameArgument = "QuillSyncDeviceName"
     /// Relativ zum Benutzerordner; steht genauso in `App/QuillSynctest.entitlements`.
     public static let syncSharedFolderRoot = "Library/Containers/io.github.vogelwild07.quill.UITests.xctrunner/Data/tmp/QuillSyncUITests"
     #endif
@@ -112,8 +115,21 @@ public final class QuillPersistence {
     /// Ordner-Sync (ADR-029); aus, bis der Nutzer ihn einschaltet.
     public private(set) lazy var sync = SyncController(
         store: store, settings: SyncSettings(storage: syncStorage),
-        backupBeforeSync: { [unowned self] in try await self.backupBeforeSync() }
+        backupBeforeSync: { [unowned self] in try await self.backupBeforeSync() },
+        deviceName: syncDeviceName
     )
+    #if DEBUG || QUILL_SYNCTEST
+    /// Nur für Tests: Gerätename statt des Mac-Namens (`syncDeviceNameArgument`).
+    private var testDeviceName: String?
+    #endif
+
+    private var syncDeviceName: String {
+        #if DEBUG || QUILL_SYNCTEST
+        testDeviceName ?? SyncController.defaultDeviceName
+        #else
+        SyncController.defaultDeviceName
+        #endif
+    }
     /// Nur für UI-Tests: Ordner statt der Dateiauswahl (`syncTestFolderArgument`).
     public let syncTestFolder: URL?
     private let syncStorage: any SyncSettingsStorage
@@ -256,12 +272,17 @@ public final class QuillPersistence {
     }
 
     #if DEBUG || QUILL_SYNCTEST
-    /// Haltepunkt im Abgleich und Wartezeit vor dem Speichern, nur mit einem Test-Store.
+    /// Gerätename, Haltepunkt im Abgleich und Wartezeit vor dem Speichern, nur mit einem Test-Store.
     private static func configureTestHooks(_ persistence: QuillPersistence, arguments: [String]) {
-        func number(_ argument: String) -> Int? {
+        func value(_ argument: String) -> String? {
             guard let index = arguments.firstIndex(of: "-\(argument)"), arguments.indices.contains(index + 1) else { return nil }
-            return Int(arguments[index + 1]).flatMap { $0 > 0 ? $0 : nil }
+            return arguments[index + 1]
         }
+        func number(_ argument: String) -> Int? {
+            value(argument).flatMap(Int.init).flatMap { $0 > 0 ? $0 : nil }
+        }
+        // Vor dem ersten Zugriff auf `sync`, der den Namen übernimmt.
+        persistence.testDeviceName = value(syncDeviceNameArgument).flatMap { $0.isEmpty ? nil : $0 }
         persistence.sync.testHaltBeforeStoringPage = number(syncHaltArgument)
         EditorPersistenceBridge.testDelay = number(saveDelayArgument).map { .milliseconds($0) }
     }

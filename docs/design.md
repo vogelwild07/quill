@@ -65,6 +65,24 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
 - Vollständige Menüleiste: Ablage, Bearbeiten, Format, Darstellung, Seite, Fenster, Hilfe
 - Ein Fenster mit System-Tabs (⌘T); Seite optional in neuem Fenster
 
+## Sync-Hinweise (11.6, ADR-029)
+
+- **Zeichen am Blockrand:** rechts neben der Textspalte (16 pt, 12 pt Abstand,
+  `QuillDesign.blockMarkerSize`/`blockMarkerGap`), nur gezeichnet, klickbar, für VoiceOver
+  ein Knopf. Zwei Fassungen: zwei versetzte Quadrate in `EditorColor.accent`.
+  Wiederhergestellt: Pfeil zurück in `EditorColor.secondary`. Ein Konflikt geht vor.
+  Klick öffnet ein Popover (Wahl je Fassung mit Gerät bzw. Erklärung und „Markierung
+  entfernen“).
+- **Hinweis unter dem Seitentitel:** matte Fläche (`quaternary`, 8 pt Radius), kein Glas,
+  weil Inhalt. „N Stellen mit zwei Fassungen · Wählen …“ und bei einer wiederhergestellten
+  Seite „Markierung entfernen“ und „In den Papierkorb“.
+- **Sidebar:** Symbol `arrow.uturn.backward.circle` am Zeilenende mit Tooltip; Kontextmenü
+  „Markierung entfernen“.
+- **Einstellungen › Sync:** unter der Zahl der Konflikte die Seiten als Links, Klick springt
+  zur Stelle.
+- Pausiert sind die Wahlknöpfe aus, mit Hinweis „Zum Wählen Sync fortsetzen.“; eine Marke
+  verschwindet nie von selbst.
+
 ## Leerzustände
 
 Nach HIG: Symbol, Titel, ein Satz Erklärung, wo es passt ein Knopf. Alle Fälle im Katalog

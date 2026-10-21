@@ -84,6 +84,8 @@ public final class SyncController {
     private var turnedOffForRestore: SyncConnection?
     private var timer: Task<Void, Never>?
     private var observations: [NotificationObservation] = []
+    /// Wahl des Nutzers bei Konflikten, bis der nächste Abgleich sie mitnimmt.
+    private var pendingChoices: [ConflictChoice] = []
     #if DEBUG || QUILL_SYNCTEST
     /// Nur für Tests: `SyncEngine.setHaltBeforeStoringPage` (`-QuillSyncHaltBeforePage`).
     public var testHaltBeforeStoringPage: Int?
@@ -290,6 +292,50 @@ public final class SyncController {
         await syncNow()
     }
 
+    // MARK: Konflikte (11.6)
+
+    /// Wählen geht nur, wenn der Sync an und nicht pausiert ist: Die Pause verspricht,
+    /// dass nichts in den Ordner geschrieben wird.
+    public var canChoose: Bool { canSync }
+
+    /// Konflikte einer Seite aus dem letzten Abgleich: Titel, Symbol und Ort aus dem
+    /// Seitenbaum zuerst, dann die Blöcke.
+    public func conflicts(onPage pageID: UUID) -> [PageConflict] {
+        guard let report = lastReport else { return [] }
+        let tree = (report.conflicts[SyncReport.treeID] ?? []).filter { $0.objectID == pageID }
+            .map { PageConflict(documentID: SyncReport.treeID, conflict: $0) }
+        let blocks = (report.conflicts[pageID] ?? []).map { PageConflict(documentID: pageID, conflict: $0) }
+        return tree + blocks
+    }
+
+    /// Seiten mit mindestens einem Konflikt.
+    public var pagesWithConflicts: Set<UUID> {
+        guard let report = lastReport else { return [] }
+        var pages = Set(report.conflicts.keys.filter { $0 != SyncReport.treeID })
+        pages.formUnion((report.conflicts[SyncReport.treeID] ?? []).map(\.objectID))
+        return pages
+    }
+
+    /// Name dieses Geräts im Ordner (`devices/<ID>.json`).
+    var localDeviceName: String { deviceName }
+
+    /// Name des Geräts aus `devices/` im Ordner.
+    public func deviceName(_ id: UUID?) -> String {
+        id.flatMap { lastReport?.devices[$0] } ?? String(localized: "Unbekanntes Gerät", bundle: .module)
+    }
+
+    /// Übernimmt die Wahl des Nutzers: Der Konflikt verschwindet sofort aus der
+    /// Anzeige, der nächste Abgleich schreibt die Wahl in Ordner und Store.
+    public func choose(_ choice: ConflictChoice) async {
+        guard canChoose else { return }
+        pendingChoices.append(choice)
+        if var conflicts = lastReport?.conflicts[choice.documentID] {
+            conflicts.removeAll { $0.objectID == choice.objectID && $0.field == choice.field }
+            lastReport?.conflicts[choice.documentID] = conflicts.isEmpty ? nil : conflicts
+        }
+        await syncNow()
+    }
+
     // MARK: Zeitpunkte
 
     /// Gleicht ab jetzt selbst ab (`SyncSchedule`), solange der Sync an ist. Mehrfach
@@ -312,7 +358,26 @@ public final class SyncController {
                 await self.syncNow()
             }
         }
+        Task { await loadStoredConflicts() }
         requestSync(after: .zero)
+    }
+
+    /// Konflikte beim Start, nur lesend aus dem Store (`SyncEngine.storedConflicts`), auch
+    /// pausiert: Bis zum ersten Abgleich der Sitzung zeigen Seite und Einstellungen sie
+    /// trotzdem. Ein schon fertiger Abgleich hat Vorrang.
+    func loadStoredConflicts() async {
+        guard lastReport == nil, let connection = settings.connection, let folderID = connection.folderID,
+              let folder = try? SyncFolderBookmark.resolve(connection.bookmark).folder
+        else { return }
+        let engine = engine(for: folder)
+        let accessing = folder.startAccessingSecurityScopedResource()
+        defer { if accessing { folder.stopAccessingSecurityScopedResource() } }
+        do {
+            guard let report = try await engine.storedConflicts(folderID: folderID), lastReport == nil else { return }
+            lastReport = report
+        } catch {
+            Self.logger.error("Konflikte aus dem Store nicht lesbar: \(error, privacy: .public)")
+        }
     }
 
     /// Eigene Schreibvorgänge des Abgleichs lösen keinen weiteren aus; was der Nutzer
@@ -372,6 +437,8 @@ public final class SyncController {
             return
         }
         let engine = engine(for: folder)
+        for choice in pendingChoices { await engine.choose(choice) }
+        pendingChoices.removeAll()
         #if DEBUG || QUILL_SYNCTEST
         await engine.setHaltBeforeStoringPage(testHaltBeforeStoringPage)
         #endif
@@ -431,5 +498,20 @@ public final class SyncController {
         for page in pages {
             NotificationCenter.default.post(name: EditorPersistenceBridge.didSave, object: nil, userInfo: ["pageID": page])
         }
+    }
+}
+
+/// Ein Konflikt auf einer Seite, mit dem Dokument, in dem er steht (Seite oder Seitenbaum).
+public struct PageConflict: Identifiable, Hashable, Sendable {
+    public var documentID: UUID
+    public var conflict: FieldConflict
+
+    public var id: String { "\(documentID)/\(conflict.objectID)/\(conflict.field ?? "")" }
+
+    /// Im Seitenbaum: Titel, Symbol oder Ort der Seite; sonst ein Block.
+    public var isPageField: Bool { documentID == SyncReport.treeID }
+
+    public func choice(_ version: ConflictVersion) -> ConflictChoice {
+        ConflictChoice(documentID: documentID, objectID: conflict.objectID, field: conflict.field, value: version.value)
     }
 }

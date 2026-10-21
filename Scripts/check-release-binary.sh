@@ -9,8 +9,8 @@
 # Namen der drei Startargumente für den Store und die Zwischenablage (nur Debug)
 # und Test-Bundles (`.xctest`, `PlugIns/`). Ebenso fehlt alles aus den
 # Testvarianten Synctest A und B (QUILL_SYNCTEST, Scripts/make-synctest.sh): die
-# Startargumente für den gemeinsamen Ordner, den Testordner, den Haltepunkt und die
-# Wartezeit vor dem Speichern, der
+# Startargumente für den gemeinsamen Ordner, den Testordner, den Haltepunkt, die
+# Wartezeit vor dem Speichern und den Gerätenamen, der
 # Ordnername im Test-Runner, ihre Bundle-ID und jede Ausnahme in den Entitlements.
 #
 # Aufruf: Scripts/check-release-binary.sh [zusätzliche xcodebuild-Einstellungen]
@@ -66,7 +66,8 @@ fi
 found=0
 for marker in QuillSeedPages ProfilingSeed io.github.vogelwild07.quill.profiling \
   "Testbild in eigener Zwischenablage" "Fenstergröße für UI-Tests" QuillInMemoryStore QuillStoreDirectory QuillPasteboardName \
-  QuillSyncSharedFolder QuillSyncTestFolder QuillSyncHaltBeforePage QuillSaveDelay QuillSyncUITests io.github.vogelwild07.quill.synctest; do
+  QuillSyncSharedFolder QuillSyncTestFolder QuillSyncHaltBeforePage QuillSaveDelay QuillSyncDeviceName QuillSyncUITests \
+  io.github.vogelwild07.quill.synctest; do
   # LC_ALL=C: byteweise; mit UTF-8-Locale findet grep in Binärdaten keine Umlaute.
   hits=$(LC_ALL=C grep -r -l -a -F "$marker" "$copies" 2>/dev/null)
   if [ -n "$hits" ]; then

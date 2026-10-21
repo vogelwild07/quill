@@ -1,5 +1,7 @@
 #if canImport(AppKit)
+import QuillModel
 import QuillSync
+import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -20,7 +22,7 @@ struct SyncSettingsView: View {
             if sync.isEnabled {
                 connectedSection
                 if let report = sync.lastReport {
-                    SyncReportSection(report: report)
+                    SyncReportSection(report: report, sync: sync)
                 }
                 Section {
                     Button(String(localized: "Sync ausschalten …", bundle: .module), role: .destructive) { isConfirmingOff = true }
@@ -162,6 +164,10 @@ struct SyncSettingsView: View {
 /// Ergebnis des letzten Abgleichs: nur, was der Nutzer wissen sollte.
 private struct SyncReportSection: View {
     let report: SyncReport
+    let sync: SyncController
+
+    @Environment(\.modelContext) private var context
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         let conflicts = report.conflicts.values.reduce(0) { $0 + $1.count }
@@ -170,6 +176,16 @@ private struct SyncReportSection: View {
                 if conflicts > 0 {
                     LabeledContent(String(localized: "Zwei Werte für ein Feld", bundle: .module)) {
                         Text(conflicts, format: .number)
+                    }
+                    ForEach(conflictPages, id: \.id) { page in
+                        Button {
+                            jump(to: page.id)
+                        } label: {
+                            Label(PageLabel.title(page.title), systemImage: "square.on.square")
+                        }
+                        .buttonStyle(.link)
+                        .help(String(localized: "Zur Stelle springen", bundle: .module))
+                        .accessibilityIdentifier("sync.conflictPage")
                     }
                 }
                 if !report.waitingForDownload.isEmpty {
@@ -193,6 +209,25 @@ private struct SyncReportSection: View {
                 Text("Unlesbare und noch nicht geladene Dateien bleiben unverändert liegen; Quill versucht es bei jedem Abgleich wieder.", bundle: .module)
             }
         }
+    }
+
+    /// Seiten mit Konflikt, nach Titel; Seiten, die es hier nicht (mehr) gibt, fehlen.
+    private var conflictPages: [(id: UUID, title: String)] {
+        sync.pagesWithConflicts.compactMap { id in
+            guard let page = try? context.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.id == id })).first,
+                  page.trashedAt == nil
+            else { return nil }
+            return (id, page.title)
+        }
+        .sorted { ($0.title.localizedLowercase, $0.id.uuidString) < ($1.title.localizedLowercase, $1.id.uuidString) }
+    }
+
+    /// Zur Seite und zum ersten Block mit Konflikt; ohne offenes Fenster ein neues.
+    private func jump(to pageID: UUID) {
+        let block = sync.conflicts(onPage: pageID).first { !$0.isPageField }?.conflict.objectID
+        guard !PageJumpRouter.shared.jump(to: pageID, blockID: block) else { return }
+        WindowRouter.shared.prepare(pageID: pageID, asTabOf: nil)
+        openWindow(id: WindowRouter.windowID)
     }
 }
 

@@ -2,6 +2,7 @@ import QuillDesign
 import QuillEditor
 import QuillEditorCore
 import QuillModel
+import QuillSync
 import SwiftData
 import SwiftUI
 
@@ -17,6 +18,9 @@ struct PageHeaderView: View {
     let submitTitle: @MainActor () -> Void
     /// Jeder Stand des Titels, auch der erste (z. B. leer → Platzhalter sichtbar).
     let titleDidChange: @MainActor (_ title: String) -> Void
+    /// Hinweise des Sync (11.6): Konflikte und Marke „wiederhergestellt“.
+    let sync: SyncController?
+    let pageActions: PageSyncActions
 
     @Query private var pages: [Page]
     @State private var title = ""
@@ -37,8 +41,12 @@ struct PageHeaderView: View {
         rename: @escaping @MainActor (UUID, String) -> Void,
         setIcon: @escaping @MainActor (UUID, String?) -> Void,
         submitTitle: @escaping @MainActor () -> Void,
-        titleDidChange: @escaping @MainActor (String) -> Void = { _ in }
+        titleDidChange: @escaping @MainActor (String) -> Void = { _ in },
+        sync: SyncController? = nil,
+        pageActions: PageSyncActions = PageSyncActions()
     ) {
+        self.sync = sync
+        self.pageActions = pageActions
         self.pageID = pageID
         self.focus = focus
         self.rename = rename
@@ -96,6 +104,12 @@ struct PageHeaderView: View {
             }
             .accessibilityLabel(String(localized: "Seitentitel", bundle: .module))
             .accessibilityIdentifier("detail.title")
+
+            PageSyncNotice(
+                pageID: pageID, sync: sync, isRestored: page?.isRestored ?? false,
+                clearRestored: { pageActions.clearRestored(pageID) }, trash: { pageActions.trash(pageID) },
+                blockText: pageActions.blockText, pageTitle: pageActions.pageTitle
+            )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onChange(of: page?.title) { if focusedField != .title, let page { title = page.title } }
@@ -157,4 +171,13 @@ final class HeaderFocus {
     private(set) var titleRequest = 0
 
     func requestTitle() { titleRequest += 1 }
+}
+
+/// Aktionen zu den Hinweisen des Sync im Seitenkopf; die Seitenaktionen kommen vom
+/// Fenster (mit Undo und Auswahl danach).
+struct PageSyncActions {
+    var clearRestored: @MainActor (UUID) -> Void = { _ in }
+    var trash: @MainActor (UUID) -> Void = { _ in }
+    var blockText: (UUID) -> String? = { _ in nil }
+    var pageTitle: (UUID) -> String? = { _ in nil }
 }

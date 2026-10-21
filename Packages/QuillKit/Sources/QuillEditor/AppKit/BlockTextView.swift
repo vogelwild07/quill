@@ -22,6 +22,8 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     private var hoverTrackingArea: NSTrackingArea?
     /// Checkboxen für VoiceOver, pro Block (`BlockTextView+Accessibility`).
     var checkboxElements: [UUID: CheckboxAccessibilityElement] = [:]
+    /// Zeichen am rechten Rand für VoiceOver, pro Block (`BlockEditorController+Markers`).
+    var markerElements: [UUID: MarkerAccessibilityElement] = [:]
     /// Zuletzt gezeichneter Stand des Hinweises (`BlockTextView+EmptyPageHint`).
     var isShowingEmptyPageHint = false
 
@@ -143,6 +145,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
             children.append(view)
         }
         children.append(contentsOf: checkboxAccessibilityElements())
+        children.append(contentsOf: markerAccessibilityElements())
         return children
     }
 
@@ -216,6 +219,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     override func mouseDown(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
+        if handleMarkerClick(at: point) { return }
         if let fragment = fragment(atViewPoint: point), fragment.kind == .todo,
            let offset = characterOffset(of: fragment) {
             let frame = viewFrame(of: fragment)

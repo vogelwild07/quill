@@ -490,6 +490,12 @@ struct PageOutlineView: NSViewRepresentable {
             menu.addItem(menuItem(String(localized: "In den Papierkorb legen", bundle: .module)) { [weak self] in
                 self?.parent?.actions.trash(id)
             })
+            if clicked.node.isRestored {
+                menu.addItem(.separator())
+                menu.addItem(menuItem(String(localized: "Markierung entfernen", bundle: .module)) { [weak self] in
+                    self?.parent?.actions.clearRestored(id)
+                })
+            }
         }
 
         private func menuItem(_ title: String, action: @escaping @MainActor () -> Void) -> NSMenuItem {
@@ -586,6 +592,8 @@ final class GroupCellView: NSTableCellView {
 final class PageCellView: NSTableCellView {
     private let iconLabel = NSTextField(labelWithString: "")
     private let symbolView = DecorativeImageView()
+    /// Marke „wiederhergestellt“ am Zeilenende (11.6); VoiceOver hört sie im Wert der Zeile.
+    private let restoredView = DecorativeImageView()
 
     init(identifier: NSUserInterfaceItemIdentifier) {
         super.init(frame: .zero)
@@ -595,6 +603,11 @@ final class PageCellView: NSTableCellView {
         symbolView.contentTintColor = .secondaryLabelColor
         symbolView.symbolConfiguration = .init(scale: .medium)
         iconLabel.alignment = .center
+        restoredView.image = NSImage(systemSymbolName: "arrow.uturn.backward.circle", accessibilityDescription: nil)
+        restoredView.contentTintColor = .secondaryLabelColor
+        restoredView.symbolConfiguration = .init(scale: .small)
+        restoredView.toolTip = String(localized: "Wiederhergestellt nach dem Abgleich", bundle: .module)
+        restoredView.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         let title = NSTextField(labelWithString: "")
         title.isEditable = true
@@ -604,7 +617,7 @@ final class PageCellView: NSTableCellView {
         title.placeholderString = String(localized: "Ohne Titel", bundle: .module)
         textField = title
 
-        for view in [symbolView, iconLabel, title] as [NSView] {
+        for view in [symbolView, iconLabel, title, restoredView] as [NSView] {
             view.translatesAutoresizingMaskIntoConstraints = false
             addSubview(view)
         }
@@ -615,8 +628,10 @@ final class PageCellView: NSTableCellView {
             iconLabel.centerXAnchor.constraint(equalTo: symbolView.centerXAnchor),
             iconLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
             title.leadingAnchor.constraint(equalTo: symbolView.trailingAnchor, constant: 6),
-            title.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+            title.trailingAnchor.constraint(equalTo: restoredView.leadingAnchor, constant: -4),
             title.centerYAnchor.constraint(equalTo: centerYAnchor),
+            restoredView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+            restoredView.centerYAnchor.constraint(equalTo: centerYAnchor),
         ])
     }
 
@@ -631,7 +646,11 @@ final class PageCellView: NSTableCellView {
         iconLabel.stringValue = icon
         iconLabel.isHidden = icon.isEmpty
         symbolView.isHidden = !icon.isEmpty
+        restoredView.isHidden = !node.isRestored
         setAccessibilityLabel(PageLabel.title(node.title))
+        textField?.setAccessibilityValueDescription(
+            node.isRestored ? String(localized: "Wiederhergestellt nach dem Abgleich", bundle: .module) : nil
+        )
     }
 }
 
