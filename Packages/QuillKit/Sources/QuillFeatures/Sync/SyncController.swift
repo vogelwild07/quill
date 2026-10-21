@@ -328,12 +328,26 @@ public final class SyncController {
     /// Anzeige, der nächste Abgleich schreibt die Wahl in Ordner und Store.
     public func choose(_ choice: ConflictChoice) async {
         guard canChoose else { return }
-        pendingChoices.append(choice)
-        if var conflicts = lastReport?.conflicts[choice.documentID] {
-            conflicts.removeAll { $0.objectID == choice.objectID && $0.field == choice.field }
-            lastReport?.conflicts[choice.documentID] = conflicts.isEmpty ? nil : conflicts
-        }
+        remember(choice)
         await syncNow()
+    }
+
+    /// Merkt die Wahl für den nächsten Abgleich vor und nimmt den Konflikt aus der Anzeige.
+    func remember(_ choice: ConflictChoice) {
+        pendingChoices.append(choice)
+        lastReport = lastReport.map(hidingPendingChoices)
+    }
+
+    /// Bericht ohne die Konflikte, die der Nutzer schon entschieden hat, die aber erst
+    /// der nächste Abgleich schreibt: Ein laufender Abgleich kennt die Wahl noch nicht.
+    private func hidingPendingChoices(_ report: SyncReport) -> SyncReport {
+        var report = report
+        for choice in pendingChoices {
+            guard var conflicts = report.conflicts[choice.documentID] else { continue }
+            conflicts.removeAll { $0.objectID == choice.objectID && $0.field == choice.field }
+            report.conflicts[choice.documentID] = conflicts.isEmpty ? nil : conflicts
+        }
+        return report
     }
 
     // MARK: Zeitpunkte
@@ -374,7 +388,7 @@ public final class SyncController {
         defer { if accessing { folder.stopAccessingSecurityScopedResource() } }
         do {
             guard let report = try await engine.storedConflicts(folderID: folderID), lastReport == nil else { return }
-            lastReport = report
+            lastReport = hidingPendingChoices(report)
         } catch {
             Self.logger.error("Konflikte aus dem Store nicht lesbar: \(error, privacy: .public)")
         }
@@ -456,7 +470,7 @@ public final class SyncController {
                 current.folderID = report.folderID
                 settings.connection = current
             }
-            lastReport = report
+            lastReport = hidingPendingChoices(report)
             lastSyncDate = .now
             completedRuns += 1
             status = !isEnabled ? .off : gate.isPaused ? .paused : .idle

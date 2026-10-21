@@ -283,6 +283,46 @@ final class SyncControllerTests {
         #expect(try await other.pageSnapshots().first { $0.id == page }?.title == "Notiz dort")
     }
 
+    @Test func choiceDuringARunningSyncStaysHidden() async throws {
+        let persistence = try open()
+        try FileManager.default.createDirectory(at: syncFolder, withIntermediateDirectories: true)
+        let files = HookedFileAccess()
+        let sync = SyncController(
+            store: persistence.store, settings: settings, backupBeforeSync: { nil }, deviceName: "Test", files: files
+        )
+        try await sync.enable(folder: syncFolder)
+        let page = try await persistence.store.createPage(title: "Notiz")
+        await sync.syncNow()
+        let folderID = try #require(settings.connection?.folderID)
+        let other = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
+        try await other.setSyncDeviceID(UUID())
+        let otherEngine = SyncEngine(store: other, folder: syncFolder, gate: SyncGate(), deviceName: "Anderer")
+        _ = try await otherEngine.sync(connectedFolderID: folderID)
+        try await persistence.store.rename(page, to: "Notiz hier")
+        try await other.rename(page, to: "Notiz dort")
+        await sync.syncNow()
+        _ = try await otherEngine.sync(connectedFolderID: folderID)
+        await sync.syncNow()
+        let conflict = try #require(sync.conflicts(onPage: page).first)
+        let theirs = try #require(conflict.conflict.versions.first { $0.value == "Notiz dort" })
+
+        // Der Nutzer wählt, während ein Abgleich läuft, der die Wahl noch nicht kennt.
+        let block = BlockSnapshot(id: UUID(), text: "Neu")
+        try await persistence.store.applyEdits(page, BlockEdits(upserts: [block], order: [block.id]))
+        files.onCreate.withLock { hook in
+            hook = { url in
+                guard url.path(percentEncoded: false).contains("/pages/") else { return }
+                files.onCreate.withLock { $0 = nil }
+                DispatchQueue.main.sync { MainActor.assumeIsolated { sync.remember(conflict.choice(theirs)) } }
+            }
+        }
+        await sync.syncNow()
+        #expect(sync.conflicts(onPage: page).isEmpty)
+        await sync.syncNow()
+        #expect(sync.conflicts(onPage: page).isEmpty)
+        #expect(try await persistence.store.pageSnapshots().first { $0.id == page }?.title == "Notiz dort")
+    }
+
     @Test func conflictsShowAfterRestartWhilePausedWithoutWriting() async throws {
         let persistence = try open()
         try FileManager.default.createDirectory(at: syncFolder, withIntermediateDirectories: true)
