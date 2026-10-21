@@ -147,7 +147,9 @@ public actor SyncEngine {
         if cursors != savedCursors {
             try await store.saveSyncCursors(cursors.encoded())
         }
-        report.conflicts = (knownConflicts ?? [:]).filter { $0.key == SyncReport.treeID || updateDates[$0.key] != nil }
+        // Seiten im Store nach dem Seitenbaum: auch die, die dieser Abgleich neu angelegt hat.
+        let pages = try await store.pageUpdateDates()
+        report.conflicts = (knownConflicts ?? [:]).filter { $0.key == SyncReport.treeID || pages[$0.key] != nil }
         return report
     }
 
@@ -246,7 +248,12 @@ public actor SyncEngine {
         var next = cursors
         let pageFolder = layout.pages.appending(path: key, directoryHint: .isDirectory)
         let ownFolder = layout.page(pageID, device: device)
+        let waiting = report.waitingForDownload.count
         var ownLast = try importFiles(in: ownFolder, into: document, key: key, from: device, cursors: &next)
+        // Eigene Datei noch nicht geladen: Die Seite wartet, wie auf ein Bild. Sonst
+        // verglichen die Blöcke im Store mit einem Dokument, dem eigene Änderungen fehlen,
+        // und ein dort angelegter Block entstünde ein zweites Mal (Store hinter dem Ordner).
+        guard report.waitingForDownload.count == waiting else { return }
         // Alle eigenen Dateien übernommen? Sonst (noch nicht geladen, unlesbar, z. B. nach
         // einem älteren Backup) bleibt die gelesene eigene Nummer stehen, damit der nächste
         // Abgleich sie nachliest, und es wird weder verdichtet noch gelöscht.
@@ -390,7 +397,11 @@ public actor SyncEngine {
         let loaded = document.version
         var next = cursors
         let ownFolder = layout.tree(device: device)
+        let waiting = report.waitingForDownload.count
         var ownLast = try importFiles(in: ownFolder, into: document, key: key, from: device, cursors: &next)
+        // Eigene Datei noch nicht geladen: Der Seitenbaum wartet (wie `syncPage`), sonst
+        // stünde eine dort angelegte Seite nachher zweimal im Baum.
+        guard report.waitingForDownload.count == waiting else { return [] }
         // Alle eigenen Dateien übernommen? Sonst (noch nicht geladen, unlesbar, z. B. nach
         // einem älteren Backup) bleibt die gelesene eigene Nummer stehen, damit der nächste
         // Abgleich sie nachliest, und es wird weder verdichtet noch gelöscht.

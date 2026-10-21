@@ -260,8 +260,9 @@ struct SyncCompactionTests {
         #expect(try await device.store.applySyncPage(page, expected: current, edits: BlockEdits(), document: old.document, cursors: old.cursors) != nil)
     }
 
-    /// Eine eigene Datei ist noch nicht geladen (iCloud hat sie ausgelagert), der Store
-    /// kennt sie nicht. Verdichtet und gelöscht wird erst, wenn alle da sind.
+    /// Eine eigene Datei ist unlesbar (z. B. halb übertragen), der Store kennt sie nicht.
+    /// Verdichtet und gelöscht wird erst, wenn alle gelesen sind. (Noch nicht geladene
+    /// eigene Dateien lassen die Seite warten, `SyncStoreBehindFolderTests`.)
     @Test func ownFilesNotYetReadAreNeverCompactedAway() async throws {
         let folder = try TestFolder()
         let a = try await TestDevice("A", folder: folder.url)
@@ -279,19 +280,21 @@ struct SyncCompactionTests {
         try await b.sync()
 
         try await rollBack(a, page, to: old)
-        a.files.state.withLock { $0.notDownloaded = ["000000000006.changes"] }
+        let file6 = SyncFolderLayout.changes(6, in: folder.layout.page(page, device: a.deviceID))
+        let good = try Data(contentsOf: file6)
+        try Data("kaputt".utf8).write(to: file6)
         try await edit(a, page, blocks[0], times: SyncEngine.compactAfter + 5, from: 100)
         #expect(a.files.state.withLock { $0.deleted }.isEmpty)
         #expect(try ownFiles(folder, page: page, device: a).filter { $0.hasSuffix(".snapshot") } == ["000000000001.snapshot"])
         #expect(FileManager.default.fileExists(atPath: SyncFolderLayout.changes(6, in: folder.layout.page(page, device: a.deviceID)).path()))
 
-        // Geladen: alles übernommen, dann verdichtet, ohne neue Änderung auf der Seite
+        // Repariert: alles übernommen, dann verdichtet, ohne neue Änderung auf der Seite
         // (fällig wird sie über den eigenen Ordner).
         try await a.sync()
         let settled = try folder.fingerprint()
         try await a.sync()
         #expect(try folder.fingerprint() == settled)
-        a.files.state.withLock { $0.notDownloaded = [] }
+        try good.write(to: file6)
         try await a.sync()
         let files = try ownFiles(folder, page: page, device: a)
         #expect(files.count == 1 && files[0].hasSuffix(".snapshot"), "\(files)")
@@ -341,7 +344,7 @@ struct SyncCompactionTests {
     }
 
     /// Dokument noch nicht im Ordner (gelesene Dateien vergessen) und eine eigene Datei
-    /// fehlt: Die erste Datei mit ganzem Stand ist eine gewöhnliche, keine verdichtete.
+    /// unlesbar: Die erste Datei mit ganzem Stand ist eine gewöhnliche, keine verdichtete.
     @Test func firstFileIsNoSnapshotWhileOwnFilesAreMissing() async throws {
         let folder = try TestFolder()
         let a = try await TestDevice("A", folder: folder.url)
@@ -351,7 +354,7 @@ struct SyncCompactionTests {
         try await edit(a, page, blocks[0], times: 3)
         let current = try await a.store.blocks(of: page)
         #expect(try await a.store.applySyncPage(page, expected: current, edits: BlockEdits(), document: document, cursors: SyncCursors().encoded()) != nil)
-        a.files.state.withLock { $0.notDownloaded = ["000000000003.changes"] }
+        try Data("kaputt".utf8).write(to: SyncFolderLayout.changes(3, in: folder.layout.page(page, device: a.deviceID)))
         try await a.sync()
         #expect(try ownFiles(folder, page: page, device: a) == [
             "000000000001.snapshot", "000000000002.changes", "000000000003.changes", "000000000004.changes", "000000000005.changes",

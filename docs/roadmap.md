@@ -64,9 +64,9 @@ Aus dem Review von 11.6 und dem Verdichten (2026-10-21), nicht eingeplant:
 - Ist die neueste verdichtete Datei eines Geräts noch nicht geladen, nimmt Quill keine ältere,
   schon geladene verdichtete Datei, sondern nur die `.changes`-Dateien danach.
 - `storedConflicts` setzt nebenbei die Geräte-ID der Engine (`device`); ohne Seiteneffekt lösen.
-- Nachdem ein Store hinter dem Ordner zurückliegt (Abbruch zwischen Ordner und Store, älteres
-  Backup), erscheint beim Nachlesen der eigenen Dateien ein Konflikt mit einem doppelten Block,
-  unabhängig vom Verdichten (`SyncCompactionTests`). Ursache suchen.
+- `SyncTypingTests.typingWhileTheSyncWritesTheSameBlockKeepsBoth` war einmal in fünf vollen
+  Package-Läufen rot (Zeile 48: Store von A nicht „AAA Mitte“), allein und danach grün.
+  Zeitabhängigkeit suchen (Bridge reagiert auf das Speichern des Abgleichs?).
 - Urteile, kein Fehler:
   - Name der Blockart steht in `ConflictLabel` und `BlockTextView+Accessibility` doppelt.
   - Feldnamen der Konflikte (`"kind"`, `"title"` …) als Strings an drei Stellen; ein Enum
