@@ -64,7 +64,9 @@ Aus den UI-Läufen von Phase 11 (2026-10-21):
     `dist/synctest-logs/spuren-20261021-205502/` (Übersicht in `LIESMICH.txt`). Keine übrigen
     Prozesse, `pboard` klein (4,6 MB). Quill meldet gehäuft „Error occurred requesting metadata
     to refresh cache for pasteboard Apple CFPasteboard general result: -22“ (19 Uhr 53-mal, vor
-    dem grünen Lauf um 13:56 keinmal); Hinweis, kein Beleg.
+    dem grünen Lauf um 13:56 keinmal); Hinweis, kein Beleg. Danach half `killall pboard` ohne
+    Neustart des Macs: `ImageBlockUITests` sofort wieder grün. Der Fehler liegt also im Zustand
+    von `pboard`.
   - Als erste Spur prüfen: Geben alle Tests ihre benannten Zwischenablagen immer frei
     (`releaseGlobally` im Tear Down), auch nach einem Timeout, bei dem der Tear Down nicht
     läuft? Und räumt `test-synctest-ui.sh` nach einem Abbruch auf (Zwischenablagen, A und B,

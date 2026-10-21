@@ -70,7 +70,7 @@ Fall back to grep or file reads only for what the graph does not model: literal 
 - In jedem Bericht die Summe über alle Test-Targets nennen (`swift test` schreibt eine Zeile „Test run with …“ pro Target), nicht nur eine Zeile; jeden Test nur einmal zählen: Package-Tests, die der App-Lauf (`xcodebuild test`) noch einmal ausführt, nicht dazuzählen.
 
 ## Fehlersuche
-- Schlagen Einsetz-Tests (z. B. `ImageBlockUITests`, Fall 3 in `SyncTwoAppsUITests`) auch auf `main` fehl, zuerst den Nutzer den Mac neu starten lassen und erneut testen, bevor nach einer Ursache im Code gesucht wird (2026-10-21: nach Neustart grün, ohne Codeänderung).
+- Schlagen Einsetz-Tests (z. B. `ImageBlockUITests`, Fall 3 in `SyncTwoAppsUITests`) auch auf `main` fehl, zuerst den Nutzer `killall pboard` ausführen lassen und erneut testen (PID von `pboard` vorher und nachher prüfen); erst wenn das nicht hilft, den Mac neu starten lassen. Beides vor jeder Suche nach einer Ursache im Code (2026-10-21: einmal nach Neustart des Macs grün, einmal nach Neustart von `pboard` grün, ohne Codeänderung).
 
 ## Git
 - Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`), kleine Commits.
