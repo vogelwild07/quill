@@ -207,6 +207,156 @@ struct SyncCompactionTests {
         #expect(try await b.sync().gaps.isEmpty)
     }
 
+    // MARK: Eigene Dateien noch nicht übernommen (Review)
+
+    /// Sync-Dokument und gelesene Dateien im Store.
+    struct StoreState {
+        var document: Data
+        var cursors: Data
+    }
+
+    func storeState(_ device: TestDevice, _ page: UUID) async throws -> StoreState {
+        StoreState(
+            document: try #require(try await device.store.syncPage(page)?.document),
+            cursors: try #require(try await device.store.syncState().cursors)
+        )
+    }
+
+    /// Wie nach einem Abbruch zwischen Ordner und Store: Die Blöcke sind gespeichert,
+    /// Dokument und gelesene Dateien stehen noch auf `old`, die eigenen Dateien danach
+    /// liegen nur im Ordner.
+    func rollBack(_ device: TestDevice, _ page: UUID, to old: StoreState) async throws {
+        let current = try await device.store.blocks(of: page)
+        #expect(try await device.store.applySyncPage(page, expected: current, edits: BlockEdits(), document: old.document, cursors: old.cursors) != nil)
+    }
+
+    /// Eine eigene Datei ist noch nicht geladen (iCloud hat sie ausgelagert), der Store
+    /// kennt sie nicht. Verdichtet und gelöscht wird erst, wenn alle da sind.
+    @Test func ownFilesNotYetReadAreNeverCompactedAway() async throws {
+        let folder = try TestFolder()
+        let a = try await TestDevice("A", folder: folder.url)
+        let b = try await TestDevice("B", folder: folder.url)
+        let (page, blocks) = try await a.createPage("Notiz", texts: ["Anfang"])
+        try await a.sync()
+        try await edit(a, page, blocks[0], times: 4)
+        let old = try await storeState(a, page)
+        let extra = BlockSnapshot(id: UUID(), text: "Nur in Datei 6")
+        try await a.store.applyEdits(page, BlockEdits(upserts: [extra], order: [blocks[0], extra.id]))
+        try await a.sync()
+        let withFile6 = try PageDocument(bytes: #require(try await a.store.syncPage(page)?.document)).version
+        try await edit(a, page, blocks[0], times: 5, from: 5)
+        #expect(try ownFiles(folder, page: page, device: a).last == "000000000011.changes")
+        try await b.sync()
+
+        try await rollBack(a, page, to: old)
+        a.files.state.withLock { $0.notDownloaded = ["000000000006.changes"] }
+        try await edit(a, page, blocks[0], times: SyncEngine.compactAfter + 5, from: 100)
+        #expect(a.files.state.withLock { $0.deleted }.isEmpty)
+        #expect(try ownFiles(folder, page: page, device: a).filter { $0.hasSuffix(".snapshot") } == ["000000000001.snapshot"])
+        #expect(FileManager.default.fileExists(atPath: SyncFolderLayout.changes(6, in: folder.layout.page(page, device: a.deviceID)).path()))
+
+        // Geladen: alles übernommen, dann verdichtet, ohne neue Änderung auf der Seite
+        // (fällig wird sie über den eigenen Ordner).
+        try await a.sync()
+        let settled = try folder.fingerprint()
+        try await a.sync()
+        #expect(try folder.fingerprint() == settled)
+        a.files.state.withLock { $0.notDownloaded = [] }
+        try await a.sync()
+        let files = try ownFiles(folder, page: page, device: a)
+        #expect(files.count == 1 && files[0].hasSuffix(".snapshot"), "\(files)")
+        #expect(try await a.texts(of: "Notiz").contains("Nur in Datei 6"))
+        // Datei 6 selbst ist nachgelesen, nicht nur ihr Inhalt aus dem Store neu angelegt.
+        #expect(try PageDocument(bytes: #require(try await a.store.syncPage(page)?.document)).contains(withFile6))
+        let fresh = try await TestDevice("Neu", folder: folder.url)
+        try await fresh.sync()
+        #expect(try await fresh.texts(of: "Notiz") == a.texts(of: "Notiz"))
+        #expect(try await fresh.texts(of: "Notiz").contains("Nur in Datei 6"))
+        // B kannte Datei 6 schon und kommt auf denselben Stand. (Den Block gibt es dabei im
+        // Dokument zweimal, weil der Store ihn neu angelegt hat, solange Datei 6 fehlte;
+        // das zeigt die Seite als Konflikt zur Wahl, unabhängig vom Verdichten.)
+        try await b.sync()
+        #expect(try await b.texts(of: "Notiz") == a.texts(of: "Notiz"))
+    }
+
+    /// `synced` trifft `updatedAt` nach dem Speichern genau; ältere, auf Sekunden
+    /// gerundete Daten werden noch gelesen.
+    @Test func cursorsKeepExactDates() throws {
+        var cursors = SyncCursors()
+        let date = Date(timeIntervalSinceReferenceDate: 800_000_000.123456789)
+        cursors.synced["Seite"] = date
+        cursors.gaps["Seite", default: [:]]["Gerät"] = date
+        let decoded = SyncCursors(data: try cursors.encoded())
+        #expect(decoded == cursors)
+        let old = Data(#"{"read":{"tree":{"A":3}},"synced":{"Seite":"2026-10-21T10:00:00Z"}}"#.utf8)
+        #expect(SyncCursors(data: old).last("tree", device: UUID()) == 0)
+        #expect(SyncCursors(data: old).read["tree"]?["A"] == 3)
+        #expect(SyncCursors(data: old).synced["Seite"] != nil)
+    }
+
+    /// Fehlt dem Store die gelesene Nummer eigener Dateien, wird die Seite fällig, auch
+    /// ohne Änderung, und holt sie nach.
+    @Test func missingOwnFilesMakeThePageDue() async throws {
+        let folder = try TestFolder()
+        let a = try await TestDevice("A", folder: folder.url)
+        let (page, blocks) = try await a.createPage("Notiz", texts: ["Anfang"])
+        try await a.sync()
+        try await edit(a, page, blocks[0], times: 3)
+        var cursors = SyncCursors(data: try await a.store.syncState().cursors)
+        #expect(cursors.last(page.uuidString, device: a.deviceID) == 4)
+        cursors.setLast(2, page.uuidString, device: a.deviceID)
+        try await a.store.saveSyncCursors(cursors.encoded())
+        try await a.sync()
+        #expect(SyncCursors(data: try await a.store.syncState().cursors).last(page.uuidString, device: a.deviceID) == 4)
+    }
+
+    /// Dokument noch nicht im Ordner (gelesene Dateien vergessen) und eine eigene Datei
+    /// fehlt: Die erste Datei mit ganzem Stand ist eine gewöhnliche, keine verdichtete.
+    @Test func firstFileIsNoSnapshotWhileOwnFilesAreMissing() async throws {
+        let folder = try TestFolder()
+        let a = try await TestDevice("A", folder: folder.url)
+        let (page, blocks) = try await a.createPage("Notiz", texts: ["Anfang"])
+        try await a.sync()
+        let document = try #require(try await a.store.syncPage(page)?.document)
+        try await edit(a, page, blocks[0], times: 3)
+        let current = try await a.store.blocks(of: page)
+        #expect(try await a.store.applySyncPage(page, expected: current, edits: BlockEdits(), document: document, cursors: SyncCursors().encoded()) != nil)
+        a.files.state.withLock { $0.notDownloaded = ["000000000003.changes"] }
+        try await a.sync()
+        #expect(try ownFiles(folder, page: page, device: a) == [
+            "000000000001.snapshot", "000000000002.changes", "000000000003.changes", "000000000004.changes", "000000000005.changes",
+        ])
+    }
+
+    /// Abbruch zwischen Schreiben und Löschen, dazu ein Store von vorher, und die
+    /// verdichtete und eine alte Datei sind noch nicht geladen: kein Aufräumen.
+    @Test func cleanupWaitsUntilAllOwnFilesAreRead() async throws {
+        let folder = try TestFolder()
+        let a = try await TestDevice("A", folder: folder.url)
+        let (page, blocks) = try await a.createPage("Notiz", texts: ["Anfang"])
+        try await a.sync()
+        let old = try await storeState(a, page)
+        try await edit(a, page, blocks[0], times: SyncEngine.compactAfter - 1)
+        struct Abort: Error {}
+        a.files.state.withLock { $0.onDelete = { _ in throw Abort() } }
+        await #expect(throws: Abort.self) { try await self.edit(a, page, blocks[0], times: 1, from: SyncEngine.compactAfter) }
+        a.files.state.withLock { $0.onDelete = nil }
+        #expect(try ownFiles(folder, page: page, device: a).count == SyncEngine.compactAfter + 2)
+
+        try await rollBack(a, page, to: old)
+        a.files.state.withLock { $0.notDownloaded = ["000000000052.snapshot", "000000000030.changes"] }
+        let before = try ownFiles(folder, page: page, device: a)
+        try await a.sync()
+        try await a.sync()
+        #expect(a.files.state.withLock { $0.deleted }.isEmpty)
+        #expect(Set(before).isSubset(of: Set(try ownFiles(folder, page: page, device: a))))
+
+        a.files.state.withLock { $0.notDownloaded = [] }
+        try await a.sync()
+        #expect(try ownFiles(folder, page: page, device: a).allSatisfy { !$0.hasPrefix("0000000000") || Int($0.prefix(12))! >= 52 })
+        #expect(try await a.texts(of: "Notiz") == ["Fassung \(SyncEngine.compactAfter)"])
+    }
+
     // MARK: Pause, Abbruch, fremde Dateien
 
     @Test func pausedNothingIsCompactedOrDeleted() async throws {

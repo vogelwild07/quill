@@ -75,11 +75,26 @@ struct SyncCursors: Codable, Equatable {
         gaps = try container.decodeIfPresent([String: [String: Date]].self, forKey: .gaps) ?? [:]
     }
 
+    /// Zeitpunkte als Zahl, ohne Rundung: `synced` muss `updatedAt` genau treffen, sonst
+    /// wäre jede Seite bei jedem Abgleich fällig. Bis zum Review von 11.6 standen sie
+    /// auf die Sekunde gerundet (ISO 8601) im Store; solche Daten werden noch gelesen.
     init(data: Data?) {
-        self = data.flatMap { try? SyncJSON.decoder.decode(SyncCursors.self, from: $0) } ?? SyncCursors()
+        self = data.flatMap { data in
+            (try? Self.decoder.decode(SyncCursors.self, from: data)) ?? (try? SyncJSON.decoder.decode(SyncCursors.self, from: data))
+        } ?? SyncCursors()
     }
 
-    func encoded() throws -> Data { try SyncJSON.encoder.encode(self) }
+    func encoded() throws -> Data {
+        let encoder = SyncJSON.encoder
+        encoder.dateEncodingStrategy = .deferredToDate
+        return try encoder.encode(self)
+    }
+
+    private static var decoder: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .deferredToDate
+        return decoder
+    }
 
     func last(_ document: String, device: UUID) -> Int {
         read[document]?[device.uuidString] ?? 0

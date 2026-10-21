@@ -309,6 +309,13 @@ struct SyncEngineTests {
         let fresh = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
         let never = SyncEngine(store: fresh, folder: folder.url, gate: gate, deviceName: "C", files: TestFileAccess())
         #expect(try await never.storedConflicts(folderID: report.folderID) == nil)
+
+        // Neustart ohne Pause: Auch ein Abgleich, in dem keine Seite fällig ist, meldet
+        // die Konflikte weiter, bis der Nutzer wählt.
+        let running = SyncEngine(store: a.store, folder: folder.url, gate: SyncGate(), deviceName: "A", files: TestFileAccess())
+        for _ in 0..<2 {
+            #expect(try await running.sync(connectedFolderID: report.folderID).conflicts == report.conflicts)
+        }
     }
 
     @Test func unreadableFileIsQuarantinedAndLeftUntouched() async throws {
