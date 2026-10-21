@@ -117,15 +117,23 @@ beim ersten Zeichen.
 
 ## App-Icon
 
-`App/Resources/AppIcon.icon` (Icon Composer, ADR-023): eine Seite aus Quill mit Überschrift,
-Bild-Block (Sonne über Hügeln) und abgehaktem To-do auf Petrol (`#0B8F86`, Markenfarbe).
-Vier Ebenen in einer Gruppe, von unten: Seite (Weiß, Liquid Glass), Text (Tinte `#1F2A33`),
-Bild und Haken (Petrol), Sonne und Hügel (Sonnengelb `#FFC23A`, Liquid Glass). Hintergrund als
-Füllung der Datei. Bei 16 pt bleibt „Seite mit Inhalt“ erkennbar.
+`App/Resources/AppIcon.icon` (Icon Composer, ADR-023): ein weißer Slash mit Schreibmarke auf
+Petrol (`#0B8F86`, Markenfarbe, Füllung der Datei). Zwei Gruppen:
+- **Vorn** (Liquid Glass, zurückhaltend: Glanzlicht, keine Lichtdurchlässigkeit, Schatten 25 %):
+  Slash in Weiß, gezeichnete Form mit runden Enden, 15 % der Breite stark, 25° geneigt, leicht
+  links der Mitte; rechts daneben die Schreibmarke als senkrechter, runder Balken in Sonnengelb
+  `#FFC23A`, 75 % der Slash-Höhe.
+- **Kante** (ohne Liquid Glass): eine Kopie des Slash in dunklem Petrol `#065C56`, um 3 % nach
+  rechts unten versetzt. Die Schreibmarke hat keine Kante; mit Kante wirkte sie bei 16 pt wie
+  ein doppelter Balken.
+
+Bei 16 pt @2x ist die Kante ein sauberer Pixel, bei @1x (ohne Retina) ein leichter Saum. Eine
+`.icon`-Datei kann nicht nach Größe unterscheiden, nur nach Erscheinungsbild und Gerät.
 
 Dunkel: Den Hintergrund setzt macOS im dunklen Modus selbst (Schwarz), eine eigene Füllung
 für dunkel wird ignoriert. Wirksam sind nur Farben je Ebene (`fill-specializations` der
-Ebenen): Seite dunkelgrau `#33373C`, Text `#E6EBEE`, Petrol heller `#3DCBBE`, Gelb `#FFC74D`.
+Ebenen): Slash `#F2F5F5`, Schreibmarke `#FFC74D`, Kante Petrol `#159F95` (auf Schwarz gut
+sichtbar).
 Prüfen offline mit `ictool` aus Icon Composer (`--rendition Default|Dark|ClearLight`) und im
 gebauten Bundle über `Assets.car`. Anpassen nur in Icon Composer.
 
