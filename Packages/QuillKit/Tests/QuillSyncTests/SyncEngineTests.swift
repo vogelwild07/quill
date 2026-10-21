@@ -18,8 +18,8 @@ struct SyncEngineTests {
         let device = mac.deviceID.uuidString
         #expect(try folder.files() == [
             "quill.json", "devices/\(device).json",
-            "tree/\(device)/000000000001.changes",
-            "pages/\(page.uuidString)/\(device)/000000000001.changes",
+            "tree/\(device)/000000000001.snapshot",
+            "pages/\(page.uuidString)/\(device)/000000000001.snapshot",
         ])
         #expect(report.conflicts.isEmpty && report.unreadable.isEmpty && report.postponed.isEmpty)
         // Dateinamen ohne Titel (ADR-026).
@@ -471,7 +471,7 @@ struct SyncEngineTests {
         // Mitten im Abgleich pausieren: nach der ersten Seiten-Datei.
         mac.files.state.withLock { state in
             state.onCreate = { url in
-                if SyncFolderLayout.changesNumber(url.lastPathComponent) != nil, url.path().contains("/pages/") { gate.pause() }
+                if url.path().contains("/pages/") { gate.pause() }
             }
         }
         await #expect(throws: SyncFailure.paused) { try await mac.sync() }

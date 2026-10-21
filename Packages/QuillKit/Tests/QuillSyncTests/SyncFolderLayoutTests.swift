@@ -15,7 +15,7 @@ struct SyncFolderLayoutTests {
         let pageFolder = layout.page(page, device: device)
         #expect(pageFolder.path == "/tmp/Ordner/Quill/pages/\(page.uuidString)/\(device.uuidString)")
         #expect(SyncFolderLayout.changes(42, in: pageFolder).lastPathComponent == "000000000042.changes")
-        #expect(SyncFolderLayout.snapshot(in: pageFolder).lastPathComponent == "snapshot")
+        #expect(SyncFolderLayout.snapshot(51, in: pageFolder).lastPathComponent == "000000000051.snapshot")
     }
 
     @Test func changeNumbersParseOnlyOwnNames() {
@@ -23,6 +23,15 @@ struct SyncFolderLayoutTests {
         #expect(SyncFolderLayout.changesNumber(SyncFolderLayout.changesFileName(7)) == 7)
         for name in ["42.changes", "000000000042.txt", "snapshot", ".000000000042.changes.icloud", "00000000004a.changes", "-00000000042.changes"] {
             #expect(SyncFolderLayout.changesNumber(name) == nil, "\(name)")
+        }
+    }
+
+    @Test func snapshotNumbersParseOnlySnapshotNames() {
+        #expect(SyncFolderLayout.snapshotNumber("000000000051.snapshot") == 51)
+        #expect(SyncFolderLayout.snapshotNumber("000000000051.changes") == nil)
+        #expect(SyncFolderLayout.changesNumber("000000000051.snapshot") == nil)
+        for name in ["snapshot", "51.snapshot", ".000000000051.snapshot.icloud"] {
+            #expect(SyncFolderLayout.snapshotNumber(name) == nil, "\(name)")
         }
     }
 

@@ -16,4 +16,5 @@ final class HookedFileAccess: SyncFileAccess {
     }
     func replace(_ url: URL, with data: Data) throws { try real.replace(url, with: data) }
     func requestDownload(_ url: URL) throws { try real.requestDownload(url) }
+    func delete(_ url: URL) throws { try real.delete(url) }
 }

@@ -28,6 +28,9 @@ public protocol SyncFileAccess: Sendable {
     func replace(_ url: URL, with data: Data) throws
     /// Bittet den Datei-Anbieter, eine noch nicht geladene Datei zu laden.
     func requestDownload(_ url: URL) throws
+    /// Löscht eine eigene Datei, die eine verdichtete Datei ersetzt (ADR-026). Nie
+    /// für Dateien anderer Geräte. Gibt es sie nicht mehr, ist das kein Fehler.
+    func delete(_ url: URL) throws
 }
 
 /// Echter Zugriff über `NSFileCoordinator`, damit Datei-Anbieter Lesen und Schreiben
@@ -99,6 +102,15 @@ public struct CoordinatedFileAccess: SyncFileAccess {
 
     public func requestDownload(_ url: URL) throws {
         try FileManager.default.startDownloadingUbiquitousItem(at: url)
+    }
+
+    public func delete(_ url: URL) throws {
+        try coordinate(.writing(url, .forDeleting)) { target in
+            do {
+                try FileManager.default.removeItem(at: target)
+            } catch CocoaError.fileNoSuchFile {
+            }
+        }
     }
 
     private enum Access {
