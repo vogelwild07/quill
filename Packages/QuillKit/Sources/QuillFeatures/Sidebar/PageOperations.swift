@@ -77,6 +77,16 @@ struct PageOperations {
         }
     }
 
+    /// Entfernt die Marke „wiederhergestellt“ einer Seite (11.6).
+    func clearRestored(_ id: UUID) {
+        perform {
+            try await store.setRestored(id, false)
+            register(String(localized: "Markierung entfernen", bundle: .module),
+                     undo: { try await store.setRestored(id, true) },
+                     redo: { try await store.setRestored(id, false) })
+        }
+    }
+
     /// Hinzufügen an `position` oder Entfernen; Undo stellt den alten Platz wieder her.
     func setFavorite(_ id: UUID, _ isFavorite: Bool, at position: SiblingPosition = .last) {
         let name = if isFavorite {

@@ -46,6 +46,20 @@ import QuillModel
         #expect(PageTree.dropPosition(of: d, into: siblings, at: 99) == .after(c))
     }
 
+    @Test func restoredMarkReachesTheSidebar() {
+        let tree = PageTree.build([
+            PageTree.Entry(id: a, parentID: nil, title: "A", icon: nil, sortKey: "V", createdAt: .distantPast,
+                           isFavorite: true, favoriteSortKey: "V", isRestored: true),
+            PageTree.Entry(id: b, parentID: a, title: "B", icon: nil, sortKey: "V", createdAt: .distantPast),
+        ])
+        #expect(tree.map(\.isRestored) == [true])
+        #expect(tree.first?.children.map(\.isRestored) == [false])
+        #expect(PageTree.favorites([
+            PageTree.Entry(id: a, parentID: nil, title: "A", icon: nil, sortKey: "V", createdAt: .distantPast,
+                           isFavorite: true, favoriteSortKey: "V", isRestored: true),
+        ], in: tree).map(\.isRestored) == [true])
+    }
+
     @Test func descendantsAndAncestors() {
         let tree = [
             PageNode(id: a, title: "A", children: [

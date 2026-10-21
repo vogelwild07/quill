@@ -4,6 +4,7 @@ import QuillDesign
 import QuillEditor
 import QuillEditorCore
 import QuillModel
+import QuillSync
 import SwiftData
 import SwiftUI
 
@@ -27,9 +28,13 @@ final class PageEditorSession {
         store: PageStore,
         context: ModelContext,
         rename: @escaping @MainActor (UUID, String) -> Void,
-        setIcon: @escaping @MainActor (UUID, String?) -> Void
+        setIcon: @escaping @MainActor (UUID, String?) -> Void,
+        sync: SyncController? = nil,
+        pageActions: PageSyncActions = PageSyncActions()
     ) {
         bridge = EditorPersistenceBridge(pageID: pageID, store: store)
+        var pageActions = pageActions
+        pageActions.blockText = { [weak controller] id in controller?.document.blocks.first { $0.id == id }?.text }
         controller.imageStore = store
         controller.topPadding = QuillDesign.EditorLayout.pageTopPadding
         controller.isEditable = false
@@ -41,7 +46,9 @@ final class PageEditorSession {
             rename: rename,
             setIcon: setIcon,
             submitTitle: { [weak controller] in controller?.focusStart() },
-            titleDidChange: { [weak controller] in controller?.headerShowsPlaceholder = $0.isEmpty }
+            titleDidChange: { [weak controller] in controller?.headerShowsPlaceholder = $0.isEmpty },
+            sync: sync,
+            pageActions: pageActions
         )
         let headerView = EditorHeaderView(rootView: header.modelContext(context))
         headerView.setAccessibilityLabel(String(localized: "Seitenkopf", bundle: .module))
@@ -49,6 +56,21 @@ final class PageEditorSession {
         controller.headerShowsPlaceholder = title.isEmpty
         controller.onExitTop = { [headerFocus] in headerFocus.requestTitle() }
         controller.onExitForward = { [weak controller] in WindowFocus.sidebar(in: controller?.scrollView.window) }
+        controller.markerPopoverContent = { [weak controller] blockID, marker in
+            switch marker {
+            case .conflict:
+                guard let sync else { return nil }
+                return NSHostingController(rootView: ConflictListView(
+                    pageID: pageID, sync: sync, blockID: blockID,
+                    blockText: pageActions.blockText, pageTitle: pageActions.pageTitle
+                ))
+            case .restored:
+                return NSHostingController(rootView: RestoredBlockView {
+                    controller?.closeMarkerPopover()
+                    controller?.clearRestored(blockID: blockID)
+                })
+            }
+        }
     }
 
     func load() async {

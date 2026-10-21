@@ -236,6 +236,53 @@ final class SyncControllerTests {
         #expect(changed.contains(page))
     }
 
+    // MARK: Konflikte (11.6)
+
+    @Test func choosingAVersionNeedsSyncOnAndResolvesEverywhere() async throws {
+        let persistence = try open()
+        try FileManager.default.createDirectory(at: syncFolder, withIntermediateDirectories: true)
+        let sync = controller(persistence)
+        try await sync.enable(folder: syncFolder)
+        let page = try await persistence.store.createPage(title: "Notiz")
+        await sync.syncNow()
+        let folderID = try #require(settings.connection?.folderID)
+        let other = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
+        try await other.setSyncDeviceID(UUID())
+        let otherEngine = SyncEngine(store: other, folder: syncFolder, gate: SyncGate(), deviceName: "Anderer")
+        _ = try await otherEngine.sync(connectedFolderID: folderID)
+        try await persistence.store.rename(page, to: "Notiz hier")
+        try await other.rename(page, to: "Notiz dort")
+        await sync.syncNow()
+        _ = try await otherEngine.sync(connectedFolderID: folderID)
+        await sync.syncNow()
+
+        let conflict = try #require(sync.conflicts(onPage: page).first)
+        #expect(conflict.isPageField && conflict.conflict.field == "title")
+        #expect(sync.pagesWithConflicts == [page])
+        let devices = Dictionary(uniqueKeysWithValues: conflict.conflict.versions.map { ($0.value, sync.deviceName($0.device)) })
+        #expect(devices == ["Notiz hier": "Test", "Notiz dort": "Anderer"])
+        #expect(sync.deviceName(nil) == "Unbekanntes Gerät")
+        let theirs = try #require(conflict.conflict.versions.first { $0.value == "Notiz dort" })
+
+        // Pausiert: keine Wahl, nichts im Ordner.
+        sync.pause()
+        #expect(!sync.canChoose)
+        let before = folderContents()
+        await sync.choose(conflict.choice(theirs))
+        #expect(folderContents() == before)
+        #expect(sync.conflicts(onPage: page) == [conflict])
+
+        sync.resume()
+        #expect(sync.canChoose)
+        await sync.choose(conflict.choice(theirs))
+        #expect(sync.conflicts(onPage: page).isEmpty)
+        #expect(sync.pagesWithConflicts.isEmpty)
+        #expect(try await persistence.store.pageSnapshots().first { $0.id == page }?.title == "Notiz dort")
+        let report = try await otherEngine.sync(connectedFolderID: folderID)
+        #expect(report.conflicts.isEmpty)
+        #expect(try await other.pageSnapshots().first { $0.id == page }?.title == "Notiz dort")
+    }
+
     // MARK: Wiederverbinden (11.4)
 
     @Test func sameFolderAfterTurningOffMergesWithoutAsking() async throws {

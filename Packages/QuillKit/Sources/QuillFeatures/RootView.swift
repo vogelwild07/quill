@@ -66,7 +66,11 @@ public struct RootView: View {
                     editorFocusRequest: $editorFocusRequest,
                     revealRequest: $revealRequest,
                     rename: { id, title in Task { try? await store.rename(id, to: title) } },
-                    setIcon: { id, icon in Task { try? await store.setIcon(id, to: icon) } }
+                    setIcon: { id, icon in Task { try? await store.setIcon(id, to: icon) } },
+                    syncActions: PageSyncActions(
+                        clearRestored: { operations?.clearRestored($0) },
+                        trash: { id in operations?.trash(id, selectionAfter: selectionAfterTrashing(id)) }
+                    )
                 )
                 .id(selection)
                 .toolbar {
@@ -88,10 +92,12 @@ public struct RootView: View {
         .overlay { quickOpen }
         .background(WindowAccessor { window in
             self.window = window
+            PageJumpRouter.shared.register(window)
             if let pageID = WindowRouter.shared.claim(for: window) {
                 selection = pageID
             }
         })
+        .onChange(of: PageJumpRouter.shared.request) { applyPageJump() }
         #endif
         .focusedSceneValue(\.pageActions, operations.map(pageActions))
         .focusedSceneValue(\.windowActions, persistence.map { _ in WindowActions(restoreBackup: { isRestoreShown = true }) })
@@ -178,6 +184,7 @@ public struct RootView: View {
         actions.openInTab = { open($0, asTab: true) }
         actions.openInWindow = { open($0, asTab: false) }
         actions.export = { exportPage($0) }
+        actions.clearRestored = { operations.clearRestored($0) }
         actions.search = { isQuickOpenShown = true }
         actions.focusPage = { target in
             guard let selection else { return }
@@ -224,6 +231,18 @@ public struct RootView: View {
                     .padding(.top, 56)
             }
         }
+    }
+    #endif
+
+    #if canImport(AppKit)
+    /// Sprung aus einem anderen Fenster (Einstellungen › Sync): Seite wählen und zum Block.
+    private func applyPageJump() {
+        guard let request = PageJumpRouter.shared.claim(for: window) else { return }
+        isShowingTrash = false
+        if let blockID = request.blockID {
+            revealRequest = RevealRequest(pageID: request.pageID, blockID: blockID, range: NSRange(location: 0, length: 0))
+        }
+        selection = request.pageID
     }
     #endif
 

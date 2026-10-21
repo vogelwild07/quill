@@ -19,6 +19,8 @@ final class PageOutlineActions {
     var openInTab: (_ id: UUID) -> Void = { _ in }
     var openInWindow: (_ id: UUID) -> Void = { _ in }
     var export: (_ id: UUID) -> Void = { _ in }
+    /// Marke „wiederhergestellt“ entfernen (11.6).
+    var clearRestored: (_ id: UUID) -> Void = { _ in }
     /// „Schnell öffnen“ (⌘O).
     var search: () -> Void = {}
     /// Tab aus der Sidebar: Fokus in Titel oder Editor der ausgewählten Seite.

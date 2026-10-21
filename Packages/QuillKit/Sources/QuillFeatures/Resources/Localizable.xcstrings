@@ -1,6 +1,12 @@
 {
   "sourceLanguage" : "de",
   "strings" : {
+    "%@ von %@ wählen" : {
+
+    },
+    "%@ · „%@“" : {
+
+    },
     "%lld Seiten endgültig löschen?" : {
       "localizations" : {
         "de" : {
@@ -23,6 +29,28 @@
         }
       }
     },
+    "%lld Stellen mit zwei Fassungen" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Stelle mit zwei Fassungen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Stellen mit zwei Fassungen"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Abbrechen" : {
 
     },
@@ -36,6 +64,9 @@
 
     },
     "Alte Dateien beiseitegelegt" : {
+
+    },
+    "Aufzählung" : {
 
     },
     "Aus" : {
@@ -90,6 +121,12 @@
 
     },
     "Bereit" : {
+
+    },
+    "Bild" : {
+
+    },
+    "Bild %@" : {
 
     },
     "Bild fehlt" : {
@@ -179,6 +216,9 @@
     "Durchgestrichen" : {
 
     },
+    "Ein anderes Gerät hat diesen Block gelöscht oder anders geändert, während er hier bearbeitet wurde. Quill hat ihn behalten, damit nichts verloren geht." : {
+
+    },
     "Ein ruhiger Morgen" : {
 
     },
@@ -186,6 +226,9 @@
 
     },
     "Eingespielt: Backup vom %@." : {
+
+    },
+    "Einzug" : {
 
     },
     "Emoji eingeben oder mit ⌃⌘Leertaste auswählen" : {
@@ -198,6 +241,9 @@
 
     },
     "Entwurf fertig" : {
+
+    },
+    "Erledigt" : {
 
     },
     "Export fehlgeschlagen" : {
@@ -230,6 +276,12 @@
     "Für das Backup hat Quill den Sync ausgeschaltet. Wie soll es weitergehen?" : {
 
     },
+    "Ganze Seite" : {
+
+    },
+    "Ganzer Block" : {
+
+    },
     "Gelöschte Seiten bleiben hier 30 Tage und lassen sich wiederherstellen." : {
 
     },
@@ -240,6 +292,9 @@
 
     },
     "Hell und dunkel" : {
+
+    },
+    "Hier behalten: Auf einem anderen Gerät kam die Seite in den Papierkorb, hier wurde sie bearbeitet." : {
 
     },
     "Icon" : {
@@ -261,6 +316,9 @@
 
     },
     "Im gewählten Ordner liegen schon Quill-Daten. Zum Neubeginnen braucht Quill einen leeren Ordner." : {
+
+    },
+    "In den Papierkorb" : {
 
     },
     "In den Papierkorb legen" : {
@@ -290,7 +348,13 @@
     "Keine Treffer" : {
 
     },
+    "Keine offenen Konflikte." : {
+
+    },
     "Kursiv" : {
+
+    },
+    "Leerer Block" : {
 
     },
     "Letzter Abgleich" : {
@@ -312,6 +376,9 @@
 
     },
     "Markierter Text" : {
+
+    },
+    "Markierung entfernen" : {
 
     },
     "Mit dem bisherigen Ordner „%@“. Neuere Stände aus dem Ordner kommen dabei zurück, auch solche, die das Backup zurückgesetzt hat." : {
@@ -353,6 +420,9 @@
     "Notizen, die bleiben, und ein %@" : {
 
     },
+    "Nummerierte Liste" : {
+
+    },
     "Nur dunkel" : {
 
     },
@@ -360,6 +430,9 @@
 
     },
     "OK" : {
+
+    },
+    "Oberste Ebene" : {
 
     },
     "Ohne Titel" : {
@@ -375,6 +448,9 @@
 
     },
     "Ordner: %@" : {
+
+    },
+    "Ort" : {
 
     },
     "Papierkorb" : {
@@ -486,13 +562,22 @@
     "Sperre nicht möglich: %@" : {
 
     },
+    "Sprache" : {
+
+    },
     "Später" : {
 
     },
     "Status" : {
 
     },
+    "Stufe %@" : {
+
+    },
     "Suchen" : {
+
+    },
+    "Symbol" : {
 
     },
     "Sync" : {
@@ -519,6 +604,9 @@
     "Sync pausieren" : {
 
     },
+    "Text" : {
+
+    },
     "Theme" : {
 
     },
@@ -526,6 +614,12 @@
 
     },
     "Titel" : {
+
+    },
+    "To-do" : {
+
+    },
+    "Trennlinie" : {
 
     },
     "Trotzdem beenden" : {
@@ -538,6 +632,9 @@
 
     },
     "Umzug angehalten, im Ziel liegt schon: %@" : {
+
+    },
+    "Unbekanntes Gerät" : {
 
     },
     "Ungesicherte Änderungen werden vorher gespeichert." : {
@@ -594,6 +691,9 @@
     "Wenn du Quill jetzt beendest, gehen diese Änderungen verloren. Solange Quill geöffnet bleibt, wird das Speichern weiter versucht.\n\n%@" : {
 
     },
+    "Wiederhergestellt nach dem Abgleich" : {
+
+    },
     "Wiederherstellen" : {
 
     },
@@ -612,7 +712,16 @@
     "Wähle links eine Seite oder lege eine neue an." : {
 
     },
+    "Wählen" : {
+
+    },
+    "Wählen …" : {
+
+    },
     "Wählst du den bisherigen Ordner „%@“ wieder, führt Quill zusammen. Mit einem anderen Ordner beginnt es dort neu." : {
+
+    },
+    "Zitat" : {
 
     },
     "Zu Favoriten hinzufügen" : {
@@ -624,22 +733,55 @@
     "Zuletzt bearbeitet" : {
 
     },
+    "Zum Wählen Sync fortsetzen." : {
+
+    },
+    "Zur Stelle springen" : {
+
+    },
     "Zusammenführen" : {
+
+    },
+    "Zwei Fassungen nach dem Abgleich" : {
 
     },
     "Zwei Werte für ein Feld" : {
 
     },
+    "erledigt" : {
+
+    },
+    "keine" : {
+
+    },
     "nicht erreichbar" : {
 
     },
+    "offen" : {
+
+    },
     "unbekannt" : {
+
+    },
+    "von %@" : {
 
     },
     "Änderungen konnten nicht gespeichert werden" : {
 
     },
     "Änderungen konnten nicht gespeichert werden. Quill versucht es automatisch erneut.\n%@" : {
+
+    },
+    "Überschrift 1" : {
+
+    },
+    "Überschrift 2" : {
+
+    },
+    "Überschrift 3" : {
+
+    },
+    "„%@“" : {
 
     },
     "„%@“ endgültig löschen?" : {

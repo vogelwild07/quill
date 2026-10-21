@@ -6,12 +6,15 @@ public struct PageNode: Identifiable, Hashable, Sendable {
     public let id: UUID
     public var title: String
     public var icon: String?
+    /// Vom Sync behalten, obwohl auf einem anderen Gerät im Papierkorb (ADR-029).
+    public var isRestored: Bool
     public var children: [PageNode]
 
-    public init(id: UUID, title: String, icon: String? = nil, children: [PageNode] = []) {
+    public init(id: UUID, title: String, icon: String? = nil, isRestored: Bool = false, children: [PageNode] = []) {
         self.id = id
         self.title = title
         self.icon = icon
+        self.isRestored = isRestored
         self.children = children
     }
 }
@@ -28,11 +31,13 @@ public enum PageTree {
         public let createdAt: Date
         public let isFavorite: Bool
         public let favoriteSortKey: String?
+        public let isRestored: Bool
 
         public init(
             id: UUID, parentID: UUID?, title: String, icon: String?, sortKey: String, createdAt: Date,
-            isFavorite: Bool = false, favoriteSortKey: String? = nil
+            isFavorite: Bool = false, favoriteSortKey: String? = nil, isRestored: Bool = false
         ) {
+            self.isRestored = isRestored
             self.id = id
             self.parentID = parentID
             self.title = title
@@ -53,7 +58,8 @@ public enum PageTree {
                 sortKey: page.sortKey,
                 createdAt: page.createdAt,
                 isFavorite: page.isFavorite,
-                favoriteSortKey: page.favoriteSortKey
+                favoriteSortKey: page.favoriteSortKey,
+                isRestored: page.isRestored
             )
         }
 
@@ -71,7 +77,7 @@ public enum PageTree {
             // Werttypen: direkt vergleichen, `sortedInSiblingOrder` lohnt nur bei SwiftData.
             (byParent[parentID] ?? [])
                 .sorted { $0.siblingOrder < $1.siblingOrder }
-                .map { PageNode(id: $0.id, title: $0.title, icon: $0.icon, children: nodes(under: $0.id)) }
+                .map { PageNode(id: $0.id, title: $0.title, icon: $0.icon, isRestored: $0.isRestored, children: nodes(under: $0.id)) }
         }
         return nodes(under: nil)
     }
@@ -82,7 +88,7 @@ public enum PageTree {
         entries
             .filter { $0.isFavorite && find($0.id, in: tree) != nil }
             .sorted { $0.favoriteOrder < $1.favoriteOrder }
-            .map { PageNode(id: $0.id, title: $0.title, icon: $0.icon) }
+            .map { PageNode(id: $0.id, title: $0.title, icon: $0.icon, isRestored: $0.isRestored) }
     }
 
     /// Stelle für einen Drop an `index` unter Geschwistern `siblings` (wie angezeigt,
