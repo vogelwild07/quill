@@ -64,13 +64,16 @@ Aus dem Review von 11.6 und dem Verdichten (2026-10-21), nicht eingeplant:
 - Ist die neueste verdichtete Datei eines Geräts noch nicht geladen, nimmt Quill keine ältere,
   schon geladene verdichtete Datei, sondern nur die `.changes`-Dateien danach.
 - `storedConflicts` setzt nebenbei die Geräte-ID der Engine (`device`); ohne Seiteneffekt lösen.
-- `SyncTypingTests.typingWhileTheSyncWritesTheSameBlockKeepsBoth` war einmal in fünf vollen
-  Package-Läufen rot (Zeile 48: Store von A nicht „AAA Mitte“), allein und danach grün.
-  Zeitabhängigkeit suchen (Bridge reagiert auf das Speichern des Abgleichs?).
-- `SyncTwoAppsUITests.testTypingWithoutPause` (Fall 14) war im vollen Synctest-Lauf vom
-  2026-10-21 einmal rot nach 358 s: „Failed to get matching snapshot: Unable to perform work on
-  main run loop, process main thread busy for 30.0s“ beim Tippen in A; danach einzeln zweimal
-  grün. Prüfen, ob A beim Abgleich den Main Thread blockiert oder nur XCTest hängt.
+- `SyncTwoAppsUITests.testTypingWithoutPause` (Fall 14) ist selten rot beim Tippen in A
+  (Zeile 394), bisher nur unter zusätzlicher Last: 2 von 30 Läufen (2026-10-21), einmal im
+  vollen Synctest-Lauf direkt nach allen UI-Klassen („process main thread busy for 30.0s“),
+  einmal während Stack-Stichproben liefen („Timed out while synthesizing event“). Ohne Last
+  20 von 20 einzeln und der volle Synctest-Lauf grün. In den Stichproben des zweiten Rots
+  (alle 5 s, je 2 s) wartet der Main Thread von A und B im Run Loop, ab dem Fehlschlag
+  durchgehend; ein 30-s-Block hätte mindestens fünf Stichproben getroffen. Vermutung: XCTest
+  stellt das Ereignis unter Last nicht zu, kein Hänger in Quill; nicht belegt. Seit
+  `test-synctest-ui.sh` bei Rot Protokoll, `.xcresult` und Stichproben von A, B und Test-Runner
+  in `dist/synctest-logs/` behält, beim nächsten Rot dort nachsehen.
 - Urteile, kein Fehler:
   - Name der Blockart steht in `ConflictLabel` und `BlockTextView+Accessibility` doppelt.
   - Feldnamen der Konflikte (`"kind"`, `"title"` …) als Strings an drei Stellen; ein Enum
