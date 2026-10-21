@@ -27,6 +27,7 @@ Zum Mitschreiben: Fall, OK/Fehler, Beobachtung. Bildschirmfotos brauche ich nich
 ```sh
 find ~/QuillSyncTest/Quill -type f | sed "s|$HOME/QuillSyncTest/||" | sort
 ```
+Die erste Datei je Dokument und Gerät heißt `<Nr>.snapshot` (ganzer Stand); ab 50 eigenen Dateien fasst Quill sie zu einer neuen `<Nr>.snapshot` zusammen und löscht die eigenen Dateien davor (ADR-029).
 
 ## Fälle
 
