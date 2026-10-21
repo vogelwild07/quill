@@ -83,23 +83,38 @@ public final class TreeDocument: SyncDocument {
         var result: [PageRecord] = []
         for (id, key) in itemKeys() {
             guard let map = try map(key) else { continue }
-            let fields = try fields(of: map)
-            var record = PageRecord(id: id)
-            if case .Scalar(.String(let title))? = fields["title"] { record.title = title }
-            if case .Scalar(.String(let icon))? = fields["icon"] { record.icon = icon }
-            if case .Scalar(.String(let parent))? = fields["parent"] { record.parentID = UUID(uuidString: parent) }
-            if case .Scalar(.String(let sortKey))? = fields["sortKey"] { record.sortKey = sortKey }
-            if case .Scalar(.Boolean(let favorite))? = fields["favorite"] { record.isFavorite = favorite }
-            if case .Scalar(.String(let key))? = fields["favoriteSortKey"] { record.favoriteSortKey = key }
-            record.trashedAt = Self.date(fields["trashed"])
-            record.deletedAt = Self.date(fields["deleted"])
-            if case .Scalar(.String(let kind))? = fields["kind"] { record.kindRaw = kind }
-            record.createdAt = Self.date(fields["created"]) ?? .distantPast
-            if case .Scalar(.Boolean(let restored))? = fields["restored"] { record.isRestored = restored }
-            if case .Scalar(.Bytes(let bytes))? = fields["trashedVersion"] { record.trashedVersion = DocumentVersion(data: bytes) }
-            result.append(record)
+            result.append(try record(id, fields: fields(of: map)))
         }
         return result.sorted { $0.id.uuidString < $1.id.uuidString }
+    }
+
+    private func record(_ id: UUID, fields: [String: Value]) -> PageRecord {
+        var record = PageRecord(id: id)
+        if case .Scalar(.String(let title))? = fields["title"] { record.title = title }
+        if case .Scalar(.String(let icon))? = fields["icon"] { record.icon = icon }
+        if case .Scalar(.String(let parent))? = fields["parent"] { record.parentID = UUID(uuidString: parent) }
+        if case .Scalar(.String(let sortKey))? = fields["sortKey"] { record.sortKey = sortKey }
+        if case .Scalar(.Boolean(let favorite))? = fields["favorite"] { record.isFavorite = favorite }
+        if case .Scalar(.String(let key))? = fields["favoriteSortKey"] { record.favoriteSortKey = key }
+        record.trashedAt = Self.date(fields["trashed"])
+        record.deletedAt = Self.date(fields["deleted"])
+        if case .Scalar(.String(let kind))? = fields["kind"] { record.kindRaw = kind }
+        record.createdAt = Self.date(fields["created"]) ?? .distantPast
+        if case .Scalar(.Boolean(let restored))? = fields["restored"] { record.isRestored = restored }
+        if case .Scalar(.Bytes(let bytes))? = fields["trashedVersion"] { record.trashedVersion = DocumentVersion(data: bytes) }
+        return record
+    }
+
+    override func summary(of map: ObjId) throws -> String? {
+        guard case .Scalar(.String(let title))? = try fields(of: map)["title"] else { return nil }
+        return title
+    }
+
+    override func rewrite(_ key: String, from map: ObjId) throws {
+        guard let id = UUID(uuidString: key) else { return }
+        let chosen = record(id, fields: try fields(of: map))
+        let fresh = try document.putObject(obj: itemsID, key: key, ty: .Map)
+        _ = try write(chosen, to: fresh, fields: [:])
     }
 
     /// Übernimmt `records` (neu oder geändert) und hält die Änderung als Commit fest.
@@ -117,26 +132,31 @@ public final class TreeDocument: SyncDocument {
                 map = try document.putObject(obj: itemsID, key: key, ty: .Map)
                 changed = true
             }
-            let fields = try fields(of: map)
-            changed = try set(map, "title", .String(record.title), current: fields["title"]) || changed
-            changed = try set(map, "icon", record.icon.map { .String($0) }, current: fields["icon"]) || changed
-            changed = try set(map, "parent", record.parentID.map { .String($0.uuidString) }, current: fields["parent"]) || changed
-            changed = try set(map, "sortKey", .String(record.sortKey), current: fields["sortKey"]) || changed
-            changed = try set(map, "favorite", .Boolean(record.isFavorite), current: fields["favorite"]) || changed
-            changed = try set(map, "favoriteSortKey", record.favoriteSortKey.map { .String($0) }, current: fields["favoriteSortKey"]) || changed
-            changed = try set(map, "trashed", record.trashedAt.map(Self.value), current: fields["trashed"]) || changed
-            changed = try set(
-                map, "trashedVersion", record.trashedAt == nil ? nil : record.trashedVersion.map { .Bytes($0.data) },
-                current: fields["trashedVersion"]
-            ) || changed
-            if let deletedAt = record.deletedAt {
-                changed = try set(map, "deleted", Self.value(deletedAt), current: fields["deleted"]) || changed
-            }
-            changed = try set(map, "kind", .String(record.kindRaw), current: fields["kind"]) || changed
-            changed = try set(map, "created", Self.value(record.createdAt), current: fields["created"]) || changed
-            changed = try set(map, "restored", record.isRestored ? .Boolean(true) : nil, current: fields["restored"]) || changed
+            changed = try write(record, to: map, fields: fields(of: map)) || changed
         }
         if changed { document.commitWith() }
+        return changed
+    }
+
+    private func write(_ record: PageRecord, to map: ObjId, fields: [String: Value]) throws -> Bool {
+        var changed = false
+        changed = try set(map, "title", .String(record.title), current: fields["title"]) || changed
+        changed = try set(map, "icon", record.icon.map { .String($0) }, current: fields["icon"]) || changed
+        changed = try set(map, "parent", record.parentID.map { .String($0.uuidString) }, current: fields["parent"]) || changed
+        changed = try set(map, "sortKey", .String(record.sortKey), current: fields["sortKey"]) || changed
+        changed = try set(map, "favorite", .Boolean(record.isFavorite), current: fields["favorite"]) || changed
+        changed = try set(map, "favoriteSortKey", record.favoriteSortKey.map { .String($0) }, current: fields["favoriteSortKey"]) || changed
+        changed = try set(map, "trashed", record.trashedAt.map(Self.value), current: fields["trashed"]) || changed
+        changed = try set(
+            map, "trashedVersion", record.trashedAt == nil ? nil : record.trashedVersion.map { .Bytes($0.data) },
+            current: fields["trashedVersion"]
+        ) || changed
+        if let deletedAt = record.deletedAt {
+            changed = try set(map, "deleted", Self.value(deletedAt), current: fields["deleted"]) || changed
+        }
+        changed = try set(map, "kind", .String(record.kindRaw), current: fields["kind"]) || changed
+        changed = try set(map, "created", Self.value(record.createdAt), current: fields["created"]) || changed
+        changed = try set(map, "restored", record.isRestored ? .Boolean(true) : nil, current: fields["restored"]) || changed
         return changed
     }
 

@@ -110,9 +110,27 @@ public struct SyncReport: Equatable, Sendable {
     public var restoredPages: [UUID] = []
     /// Seiten, deren Inhalt sich durch Änderungen anderer Geräte geändert hat.
     public var changedPages: Set<UUID> = []
+    /// Namen der Geräte aus `devices/` im Ordner, dazu dieses Gerät.
+    public var devices: [UUID: String] = [:]
 
     /// Schlüssel in `conflicts` für den Seitenbaum.
     public static let treeID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+}
+
+/// Wahl des Nutzers bei einem Konflikt: in welchem Dokument (Seite oder `SyncReport.treeID`),
+/// welches Objekt und Feld, welcher Wert (`ConflictVersion.value`).
+public struct ConflictChoice: Hashable, Sendable {
+    public var documentID: UUID
+    public var objectID: UUID
+    public var field: String?
+    public var value: String
+
+    public init(documentID: UUID, objectID: UUID, field: String?, value: String) {
+        self.documentID = documentID
+        self.objectID = objectID
+        self.field = field
+        self.value = value
+    }
 }
 
 /// Fortschritt beim Abgleich der Seiten (`done` von `total`).

@@ -1,3 +1,4 @@
+import Automerge
 import Foundation
 import QuillModel
 import Testing
@@ -141,7 +142,8 @@ struct PageDocumentTests {
         try b.update(to: [BlockSnapshot(id: id, kindRaw: BlockKind.quote.rawValue, text: "Titel")])
         try Self.exchange(a, b)
         let conflicts = try a.conflicts()
-        #expect(conflicts == [FieldConflict(objectID: id, field: "kind", values: ["heading1", "quote"])])
+        #expect(conflicts.map(\.objectID) == [id] && conflicts.map(\.field) == ["kind"])
+        #expect(conflicts.map(\.values) == [["heading1", "quote"]])
         #expect(try b.conflicts() == conflicts)
         // Den vorne gezeigten Wert zurückzuschreiben (wie jeder Abgleich mit dem Stand
         // des Stores) löst nichts auf; erst ein anderer Wert ist eine Änderung.
@@ -152,6 +154,79 @@ struct PageDocumentTests {
         #expect(try a.update(to: [BlockSnapshot(id: id, kindRaw: other, text: "Titel")]))
         #expect(try a.conflicts().isEmpty)
         #expect(try a.blocks()[0].kindRaw == other)
+    }
+
+    // MARK: Wahl bei Konflikten (11.6)
+
+    @Test func everyVersionNamesTheDeviceThatWroteIt() throws {
+        let id = UUID(), deviceA = UUID(), deviceB = UUID()
+        let a = PageDocument()
+        a.write(as: deviceA)
+        try a.update(to: [BlockSnapshot(id: id, text: "Titel")])
+        let b = try Self.copy(a)
+        b.write(as: deviceB)
+        try a.update(to: [BlockSnapshot(id: id, kindRaw: BlockKind.heading1.rawValue, text: "Titel")])
+        try b.update(to: [BlockSnapshot(id: id, kindRaw: BlockKind.quote.rawValue, text: "Titel")])
+        try Self.exchange(a, b)
+        let versions = try #require(try a.conflicts().first).versions
+        #expect(versions == [ConflictVersion(value: "heading1", device: deviceA), ConflictVersion(value: "quote", device: deviceB)])
+        #expect(try b.conflicts().first?.versions == versions)
+        // Ohne `write(as:)` (vor 11.6) nennt die Änderung kein Gerät.
+        #expect(SyncDocument.device(of: ActorId()) == nil)
+        #expect(SyncDocument.device(of: SyncDocument.actor(device: deviceA)) == deviceA)
+    }
+
+    @Test func choosingTheShownValueStillResolvesTheConflict() throws {
+        let id = UUID()
+        let a = PageDocument()
+        try a.update(to: [BlockSnapshot(id: id, text: "Titel")])
+        let b = try Self.copy(a)
+        try a.update(to: [BlockSnapshot(id: id, kindRaw: BlockKind.heading1.rawValue, text: "Titel")])
+        try b.update(to: [BlockSnapshot(id: id, kindRaw: BlockKind.quote.rawValue, text: "Titel")])
+        try Self.exchange(a, b)
+        let shown = try a.blocks()[0].kindRaw
+        #expect(try a.resolve(id, field: "kind", choosing: shown))
+        #expect(try a.conflicts().isEmpty)
+        #expect(try a.blocks()[0].kindRaw == shown)
+        // Das andere Gerät übernimmt die Wahl.
+        try b.apply(changes: a.changes(since: nil))
+        #expect(try b.conflicts().isEmpty)
+        #expect(try b.blocks()[0].kindRaw == shown)
+    }
+
+    @Test func choosingWithoutConflictOrWithAnUnknownValueChangesNothing() throws {
+        let id = UUID()
+        let a = PageDocument()
+        try a.update(to: [BlockSnapshot(id: id, text: "Titel")])
+        let version = a.version
+        #expect(try !a.resolve(id, field: "kind", choosing: BlockKind.paragraph.rawValue))
+        #expect(try !a.resolve(id, field: nil, choosing: "Map 1@ab"))
+        #expect(try !a.resolve(UUID(), field: "kind", choosing: "quote"))
+        #expect(a.version == version)
+        let b = try Self.copy(a)
+        try a.update(to: [BlockSnapshot(id: id, kindRaw: BlockKind.heading1.rawValue, text: "Titel")])
+        try b.update(to: [BlockSnapshot(id: id, kindRaw: BlockKind.quote.rawValue, text: "Titel")])
+        try Self.exchange(a, b)
+        #expect(try !a.resolve(id, field: "kind", choosing: "code"))
+        #expect(try a.conflicts().count == 1)
+    }
+
+    @Test func doubledBlockKeepsTheChosenVersion() throws {
+        let id = UUID()
+        let a = PageDocument(), b = PageDocument()
+        try a.update(to: [BlockSnapshot(id: id, text: "Fassung A")])
+        try b.update(to: [BlockSnapshot(id: id, kindRaw: BlockKind.todo.rawValue, text: "Fassung B")])
+        try Self.exchange(a, b)
+        let conflict = try #require(try a.conflicts().first { $0.field == nil })
+        #expect(Set(conflict.versions.compactMap(\.summary)) == ["Fassung A", "Fassung B"])
+        let chosen = try #require(conflict.versions.first { $0.summary == "Fassung B" })
+        #expect(try a.resolve(id, field: nil, choosing: chosen.value))
+        #expect(try a.conflicts().isEmpty)
+        #expect(try a.blocks().map(\.text) == ["Fassung B"])
+        #expect(try a.blocks().map(\.kindRaw) == [BlockKind.todo.rawValue])
+        try b.apply(changes: a.changes(since: nil))
+        #expect(try b.conflicts().isEmpty)
+        #expect(try b.blocks().map(\.text) == ["Fassung B"])
     }
 
     @Test func removedMarksAreNotReported() throws {

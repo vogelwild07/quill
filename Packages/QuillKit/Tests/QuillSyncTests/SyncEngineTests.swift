@@ -176,6 +176,13 @@ struct SyncEngineTests {
             #expect(result.map(\.text) == ["Bleibt", "Umstritten, bearbeitet"], "\(device.name)")
             #expect(result.map(\.properties.isRestored) == [false, true], "\(device.name)")
         }
+        // „Markierung entfernen“ auf einem Gerät gilt danach auf beiden (11.6).
+        try await a.edit(page, blocks[1]) { $0.properties.isRestored = false }
+        try await a.sync()
+        try await b.sync()
+        for device in [a, b] {
+            #expect(try await device.blocks(of: "Notiz").map(\.properties.isRestored) == [false, false], "\(device.name)")
+        }
     }
 
     @Test func twoValuesForTheSameFieldAreReportedAndKept() async throws {
@@ -207,6 +214,71 @@ struct SyncEngineTests {
                 #expect(Set(again.conflicts[SyncReport.treeID]?.first?.values ?? []) == ["Notiz A", "Notiz B"], "\(device.name)")
             }
         }
+    }
+
+    @Test func choiceIsWrittenAsOwnFileAndResolvesOnBothDevices() async throws {
+        let folder = try TestFolder()
+        let a = try await TestDevice("A", folder: folder.url)
+        let b = try await TestDevice("B", folder: folder.url)
+        let (page, blocks) = try await a.createPage("Notiz", texts: ["Punkt"])
+        try await a.sync()
+        try await b.sync()
+        try await a.edit(page, blocks[0]) { $0.kindRaw = BlockKind.todo.rawValue }
+        try await b.edit(page, blocks[0]) { $0.kindRaw = BlockKind.heading2.rawValue }
+        try await a.store.rename(page, to: "Notiz A")
+        try await b.store.rename(page, to: "Notiz B")
+        try await a.sync()
+        try await b.sync()
+        let report = try await a.sync()
+        // Jede Fassung nennt ihr Gerät, die Namen kommen aus `devices/`.
+        #expect(report.devices == [a.deviceID: "A", b.deviceID: "B"])
+        let kind = try #require(report.conflicts[page]?.first)
+        #expect(kind.versions.map(\.device) == [b.deviceID, a.deviceID])
+        let title = try #require(report.conflicts[SyncReport.treeID]?.first)
+        #expect(title.versions.map(\.device) == [a.deviceID, b.deviceID])
+
+        let filesBefore = try folder.files()
+        await a.engine.choose(ConflictChoice(documentID: page, objectID: blocks[0], field: "kind", value: BlockKind.heading2.rawValue))
+        await a.engine.choose(ConflictChoice(documentID: SyncReport.treeID, objectID: page, field: "title", value: "Notiz A"))
+        let chosen = try await a.sync()
+        #expect(chosen.conflicts.isEmpty)
+        #expect(chosen.changedPages.contains(page))
+        let added = try folder.files().subtracting(filesBefore)
+        #expect(added == [
+            "pages/\(page.uuidString)/\(a.deviceID.uuidString)/000000000003.changes",
+            "tree/\(a.deviceID.uuidString)/000000000003.changes",
+        ])
+        let other = try await b.sync()
+        #expect(other.conflicts.isEmpty)
+        for device in [a, b] {
+            #expect(try await device.blocks(of: "Notiz A").map(\.kindRaw) == [BlockKind.heading2.rawValue], "\(device.name)")
+        }
+        // Die Wahl ist verbraucht: Der nächste Abgleich schreibt nichts mehr.
+        let settled = try folder.files()
+        try await a.sync()
+        #expect(try folder.files() == settled)
+    }
+
+    @Test func choiceIsDroppedWhenAnotherDeviceAlreadyChose() async throws {
+        let folder = try TestFolder()
+        let a = try await TestDevice("A", folder: folder.url)
+        let b = try await TestDevice("B", folder: folder.url)
+        let (page, blocks) = try await a.createPage("Notiz", texts: ["Punkt"])
+        try await a.sync()
+        try await b.sync()
+        try await a.edit(page, blocks[0]) { $0.kindRaw = BlockKind.todo.rawValue }
+        try await b.edit(page, blocks[0]) { $0.kindRaw = BlockKind.heading2.rawValue }
+        try await a.sync()
+        try await b.sync()
+        try await a.sync()
+        await b.engine.choose(ConflictChoice(documentID: page, objectID: blocks[0], field: "kind", value: BlockKind.todo.rawValue))
+        try await b.sync()
+        let filesBefore = try folder.files()
+        await a.engine.choose(ConflictChoice(documentID: page, objectID: blocks[0], field: "kind", value: BlockKind.heading2.rawValue))
+        let report = try await a.sync()
+        #expect(report.conflicts.isEmpty)
+        #expect(try folder.files() == filesBefore)
+        #expect(try await a.blocks(of: "Notiz").map(\.kindRaw) == [BlockKind.todo.rawValue])
     }
 
     @Test func unreadableFileIsQuarantinedAndLeftUntouched() async throws {
@@ -350,6 +422,13 @@ struct SyncEngineTests {
             #expect(try await device.page(titled: "Unberührt").trashedAt != nil, "\(device.name)")
         }
         _ = untouched
+        // „Markierung entfernen“ auf einem Gerät gilt danach auf beiden (11.6).
+        try await b.store.setRestored(edited, false)
+        try await b.sync()
+        try await a.sync()
+        for device in [a, b] {
+            #expect(try await !device.page(titled: "Bearbeitet").isRestored, "\(device.name)")
+        }
     }
 
     // MARK: Pausieren, Abbruch, Bilder

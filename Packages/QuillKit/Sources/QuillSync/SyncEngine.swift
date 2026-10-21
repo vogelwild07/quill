@@ -32,6 +32,8 @@ public actor SyncEngine {
     private var report = SyncReport(folderID: UUID())
     private var assetNames: Set<String> = []
     private var updateDates: [UUID: Date] = [:]
+    /// Wahl des Nutzers je Dokument, bis der nächste Abgleich sie schreibt (`choose(_:)`).
+    private var choices: [UUID: [ConflictChoice]] = [:]
     #if DEBUG || QUILL_SYNCTEST
     /// Nur für Tests (Fall 12 in `docs/synctest.md`, `SyncTwoAppsUITests`): Der Abgleich
     /// hält vor dem Schreiben der n-ten Seite in den Store an, bis die App endet. Dann
@@ -67,6 +69,13 @@ public actor SyncEngine {
         return try await task.value
     }
 
+    /// Merkt die Wahl des Nutzers bei einem Konflikt vor; der nächste Abgleich schreibt
+    /// sie als eigene Änderung, in den Ordner und in den Store. Gibt es den Konflikt
+    /// dann nicht mehr (z. B. auf einem anderen Gerät schon entschieden), entfällt sie.
+    public func choose(_ choice: ConflictChoice) {
+        choices[choice.documentID, default: []].append(choice)
+    }
+
     private func run(connectedFolderID: UUID?, progress: @Sendable (SyncProgress) -> Void) async throws -> SyncReport {
         try gate.checkWritable()
         let folderID = try prepareFolder(connectedFolderID)
@@ -78,6 +87,7 @@ public actor SyncEngine {
         report = SyncReport(folderID: folderID)
         assetNames = Set(try files.contents(of: layout.assets).filter(\.isDownloaded).map(\.name))
         try writeDeviceInfo()
+        report.devices = deviceNames()
 
         var due = try await duePages()
         var done = 0
@@ -138,12 +148,25 @@ public actor SyncEngine {
         try files.replace(url, with: DeviceInfo(id: device, name: deviceName).encoded())
     }
 
+    /// Namen aus `devices/`; nicht geladene oder unlesbare Dateien fehlen einfach.
+    private func deviceNames() -> [UUID: String] {
+        var names: [UUID: String] = [device: deviceName]
+        for entry in (try? files.contents(of: layout.devices)) ?? [] where entry.isDownloaded && !entry.isDirectory {
+            guard let id = UUID(uuidString: (entry.name as NSString).deletingPathExtension), id != device,
+                  let info = try? DeviceInfo.decode(files.read(layout.device(id)))
+            else { continue }
+            names[id] = info.name
+        }
+        return names
+    }
+
     /// Seiten, die seit dem letzten Abgleich lokal geändert wurden oder für die andere
-    /// Geräte neue Dateien haben.
+    /// Geräte neue Dateien haben, und Seiten mit einer Wahl des Nutzers.
     private func duePages() async throws -> [UUID] {
         let dates = try await store.pageUpdateDates()
         updateDates = dates
         var due = Set(dates.filter { cursors.synced[$0.key.uuidString] != $0.value }.map(\.key))
+        due.formUnion(choices.keys.filter { dates[$0] != nil })
         for folder in try files.contents(of: layout.pages) where folder.isDirectory {
             guard let page = UUID(uuidString: folder.name), dates[page] != nil, !due.contains(page) else { continue }
             if try hasNewFiles(in: layout.pages.appending(path: folder.name, directoryHint: .isDirectory), document: folder.name) {
@@ -176,6 +199,7 @@ public actor SyncEngine {
             report.unreadable.append(UnreadableFile(path: "Store: \(key)", reason: String(describing: error)))
             return
         }
+        document.write(as: device)
         let loaded = document.version
         var next = cursors
         let pageFolder = layout.pages.appending(path: key, directoryHint: .isDirectory)
@@ -206,6 +230,9 @@ public actor SyncEngine {
         if !restored.isEmpty {
             report.restoredBlocks += restored
             try append(document.changes(since: imported), in: ownFolder, last: &ownLast)
+            next.setLast(ownLast, key, device: device)
+        }
+        if try applyChoices(pageID, to: document, in: ownFolder, last: &ownLast) {
             next.setLast(ownLast, key, device: device)
         }
         let after = try document.blocks()
@@ -310,6 +337,7 @@ public actor SyncEngine {
             report.unreadable.append(UnreadableFile(path: "Store: \(key)", reason: String(describing: error)))
             return []
         }
+        document.write(as: device)
         let loaded = document.version
         var next = cursors
         let ownFolder = layout.tree(device: device)
@@ -345,6 +373,7 @@ public actor SyncEngine {
         }
         let imported = document.version
         try await keepEditedPages(document, before: before, inStore: inStore, ownFolder: ownFolder, imported: imported, ownLast: &ownLast)
+        _ = try applyChoices(SyncReport.treeID, to: document, in: ownFolder, last: &ownLast)
         next.setLast(ownLast, key, device: device)
 
         var changes: [PageSnapshotChange] = []
@@ -367,6 +396,22 @@ public actor SyncEngine {
         savedCursors = next
         report.changedPages.formUnion(changes.map(\.new.id))
         return created
+    }
+
+    /// Schreibt die vorgemerkte Wahl des Nutzers ins Dokument und als nächste eigene
+    /// Datei, nach den Änderungen der anderen Geräte: So entscheidet der Nutzer über
+    /// das, was er gesehen hat, und eine inzwischen anderswo getroffene Wahl bleibt.
+    /// `true`, wenn eine Datei dazukam.
+    private func applyChoices(_ documentID: UUID, to document: SyncDocument, in folder: URL, last: inout Int) throws -> Bool {
+        guard let chosen = choices.removeValue(forKey: documentID) else { return false }
+        let before = document.version
+        var resolved = false
+        for choice in chosen {
+            resolved = try document.resolve(choice.objectID, field: choice.field, choosing: choice.value) || resolved
+        }
+        guard resolved else { return false }
+        try append(document.changes(since: before), in: folder, last: &last)
+        return true
     }
 
     /// Papierkorb gegen Bearbeiten (ADR-029): Kommt eine Seite von einem anderen Gerät
