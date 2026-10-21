@@ -43,9 +43,11 @@ struct SynctestVariantTests {
     @Test func synctestVariantsGetExactlyOneFolderException() throws {
         let synctest = try Self.entitlements("App/QuillSynctest.entitlements")
         #expect(synctest.keys.sorted() == (Self.realEntitlements + [Self.exceptionKey]).sorted())
+        #if DEBUG
         // Genau der Ordner, den `-QuillSyncSharedFolder` nimmt, im temporären Ordner des Test-Runners.
         #expect(synctest[Self.exceptionKey] as? [String] == ["/\(QuillPersistence.syncSharedFolderRoot)/"])
         #expect(QuillPersistence.syncSharedFolderRoot.hasPrefix("Library/Containers/io.github.vogelwild07.quill.UITests.xctrunner/Data/tmp/"))
+        #endif
     }
 
     @Test func onlyTheScriptSetsTheSynctestCondition() throws {
@@ -60,6 +62,8 @@ struct SynctestVariantTests {
         }
     }
 
+    // Die Test-Schalter gibt es nur im Debug-Build (und in Synctest A und B).
+    #if DEBUG
     @Test func sharedFolderOnlyByNameAndOnlyWithATestStore() throws {
         let home = URL(filePath: "/Users/test", directoryHint: .isDirectory)
         #expect(QuillPersistence.syncSharedFolder("lauf-main", home: home).path(percentEncoded: false)
@@ -97,4 +101,5 @@ struct SynctestVariantTests {
         _ = try QuillPersistence.open(arguments: ["Quill", "-QuillInMemoryStore", "YES", "-QuillSaveDelay", "-1"]) { _, _ in .migrate }
         #expect(EditorPersistenceBridge.testDelay == nil)
     }
+    #endif
 }
