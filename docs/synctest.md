@@ -1,4 +1,4 @@
-# Handtest Sync mit zwei Testvarianten (Phase 11.5)
+# Handtest Sync mit zwei Testvarianten (Phase 11.5, ab 11.6 mit Konflikt-Wahl)
 
 Zwei Macs, nachgestellt mit zwei Testvarianten der App in einem Benutzerkonto und einem gemeinsamen Ordner (ADR-029). Getestet wird nur mit **Quill Synctest A** (Bundle-ID `io.github.vogelwild07.quill.synctest.a`) und **Quill Synctest B** (`io.github.vogelwild07.quill.synctest.b`): Jede hat ihren eigenen Container mit eigenem Store und eigenen Einstellungen, beide laufen gleichzeitig. Die echte App unter `/Applications/Quill.app` und ihr Store bleiben unberührt; sie muss während des Tests nicht laufen. `BundleIdentifierTests` stellt sicher, dass keine Variante die Kennung der echten App hat, und `Scripts/make-synctest.sh` prüft die Kennung jedes Builds.
 
@@ -11,7 +11,7 @@ Scripts/test-synctest-ui.sh                          # alle Fälle, jeder einzel
 Scripts/test-synctest-ui.sh testTypingWithoutPause   # einzelne Fälle
 ```
 
-Vorher Quill und beide Testvarianten beenden; das Skript bricht sonst ab. Automatisch: Fall 1 bis 12 und 14 (Fall 14 zweimal, auch mit ungespeicherten Eingaben). Per Hand bleiben Fall 13 und „Neu beginnen …“ aus Fall 11 (beide in Phase 13) und in Fall 9 der Pfad in der aufgeklappten Gruppe „Unlesbare Dateien“.
+Vorher Quill und beide Testvarianten beenden; das Skript bricht sonst ab. Automatisch: Fall 1 bis 12 und 14 (Fall 14 zweimal, auch mit ungespeicherten Eingaben). Ab 11.6 prüft der Test in Fall 5 das Zeichen „wiederhergestellt“ am Block, in Fall 6 die Wahl mit Gerätenamen (pausiert gesperrt, danach in beiden Apps gleich, Sprung aus den Einstellungen) und in Fall 7 Hinweis und Kontextmenü der Seite; die beiden Apps heißen dort „Gerät A“ und „Gerät B“ (`-QuillSyncDeviceName`). Per Hand bleiben Fall 13 und „Neu beginnen …“ aus Fall 11 (beide in Phase 13) und in Fall 9 der Pfad in der aufgeklappten Gruppe „Unlesbare Dateien“.
 
 ## Per Hand
 
@@ -43,15 +43,15 @@ Erwartet in B: alles gleich, Bild sichtbar.
 Erwartet: in beiden „AAA … BBB“, nichts verloren.
 
 **5 · Löschen gegen Bearbeiten.** Beide pausieren. A löscht einen Absatz, B ändert genau diesen Absatz. Beide fortsetzen.
-Erwartet: Der Absatz ist in beiden wieder da, mit B's Änderung.
+Erwartet: Der Absatz ist in beiden wieder da, mit B's Änderung, und hat am rechten Rand das Zeichen „wiederhergestellt“. Klick darauf › „Markierung entfernen“: Das Zeichen verschwindet, ⌘Z bringt es zurück; nach dem Abgleich ist es auch in der anderen App weg.
 
 **6 · Zwei Werte für dasselbe Feld.** Beide pausieren. Dieselbe Seite in A „Titel A“, in B „Titel B“ nennen. Fortsetzen.
-Erwartet: beide zeigen denselben Titel; Einstellungen › Sync › „Letzter Abgleich“ nennt „Zwei Werte für ein Feld“.
+Erwartet: beide zeigen denselben Titel; Einstellungen › Sync › „Letzter Abgleich“ nennt „Zwei Werte für ein Feld“ und darunter die Seite. Klick auf die Seite: Das Fenster zeigt sie, unter dem Titel ein Hinweis auf eine Stelle mit zwei Fassungen und „Wählen …“. Das Popover nennt beide Titel mit Gerät (im Handtest bei beiden der Name dieses Macs, weil A und B auf einem Mac laufen; der UI-Test gibt ihnen eigene Namen). Pausiert sind die Knöpfe aus. Fortgesetzt: In A „Titel B“ wählen. Erwartet: beide zeigen „Titel B“, Hinweis und Eintrag in den Einstellungen verschwinden in beiden.
 
 **7 · Papierkorb.** A legt eine Seite in den Papierkorb.
 Erwartet: in B im Papierkorb, nicht weg.
 Dann: Beide pausieren, A legt eine weitere Seite in den Papierkorb, B bearbeitet genau diese Seite. Fortsetzen.
-Erwartet: Die Seite bleibt in beiden außerhalb des Papierkorbs.
+Erwartet: Die Seite bleibt in beiden außerhalb des Papierkorbs, mit Symbol „wiederhergestellt“ in der Sidebar und Hinweis unter dem Titel. In A „Markierung entfernen“ (Hinweis oder Kontextmenü der Sidebar): Symbol und Hinweis verschwinden, nach dem Abgleich auch in B.
 Dann: A leert den Papierkorb.
 Erwartet: In B liegt die Seite weiter im Papierkorb, bis B ihn leert; danach kommt sie nirgends zurück.
 
