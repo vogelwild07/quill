@@ -3,7 +3,7 @@
 ## Überblick
 
 - **App-Target `Quill`** (macOS 26+, Apple Silicon): dünn. Scenes, `ModelContainer`, Menüleiste, Ressourcen.
-- **Swift Package `QuillKit`** (macOS + iOS): die gesamte Logik, damit iPhone/iPad später nur ein weiteres dünnes App-Target brauchen.
+- **Swift Package `QuillKit`** (macOS + iOS): die gesamte Logik, damit iPhone/iPad später nur ein weiteres dünnes App-Target brauchen (iPhone-App pausiert, ADR-030).
 
 | Modul | Inhalt | Abhängig von |
 |---|---|---|

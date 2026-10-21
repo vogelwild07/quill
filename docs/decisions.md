@@ -600,3 +600,17 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - **Bericht:** Konflikte einer Seite, die erst dieser Abgleich über den Seitenbaum anlegt, fehlten bis zum nächsten Abgleich, weil der Filter die Seiten vor dem Seitenbaum las (seit #21). Jetzt danach.
 - **Tests:** `SyncStoreBehindFolderTests` (eigene Datei lesbar; noch nicht geladen, mit Warten ohne Schreiben; getippter Text; neue Seite im Seitenbaum; Konflikt auf einer neuen Seite im ersten Bericht). `ownFilesNotYetReadAreNeverCompactedAway` und `firstFileIsNoSnapshotWhileOwnFilesAreMissing` prüfen jetzt eine unlesbare eigene Datei, weil eine noch nicht geladene nichts mehr schreiben lässt.
 - Gegenproben (alle rot): Seite wartet nicht; Seitenbaum wartet nicht; Filter vor dem Seitenbaum.
+
+## ADR-030: Vorerst nur die Mac-App (2026-10-21)
+
+**Kontext:** Phase 13 sollte nach Sync und Zeitreise die iPhone-App bringen. Der Nutzer will den vollen Fokus auf die Mac-App legen.
+
+**Entscheidung:**
+- Die iPhone-App wird vorerst nicht gebaut; Phase 13 ist pausiert und steht am Ende der Roadmap. Offen beim Wiederaufnehmen: Developer Program und die Messung des Abgleichs auf einem echten iPhone (ADR-026).
+- Der Ordner-Sync (ADR-026, ADR-029) bleibt und gilt für mehrere Macs.
+- `QuillKit` baut weiter für iOS (`Scripts/check-ios-build.sh` im vollen Lauf, ADR-028), damit der gemeinsame Code kompilierbar bleibt, solange das wenig kostet. Wird es teuer, wird neu entschieden.
+- Die Reihenfolge der weiteren Mac-Phasen wird nach Phase 12 festgelegt.
+
+**Konsequenzen:**
+- Nur-Mac-Code steht weiter hinter `#if canImport(AppKit)`; neue Logik kommt weiter in `QuillKit`.
+- Das Developer Program wird erst nötig, wenn eine Mac-Phase es braucht (z. B. Teilen-Erweiterung mit App Group).
