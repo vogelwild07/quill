@@ -52,6 +52,13 @@ public final class EditorPersistenceBridge {
     /// übernommen hat (nicht bei markiertem Text, z. B. IME).
     @ObservationIgnored public var onExternalChange: ((EditorDocument) -> Bool)?
 
+    #if DEBUG || QUILL_SYNCTEST
+    /// Nur für Tests (`-QuillSaveDelay <ms>`, Fall 14 in `SyncTwoAppsUITests`): wartet
+    /// so lange vor dem Speichern, damit ein Abgleich sicher in ungespeicherte Eingaben
+    /// fällt und die Bridge zusammenführen muss.
+    public static var testDelay: Duration?
+    #endif
+
     public init(
         pageID: UUID,
         store: PageStore,
@@ -61,7 +68,11 @@ public final class EditorPersistenceBridge {
     ) {
         self.pageID = pageID
         self.store = store
+        #if DEBUG || QUILL_SYNCTEST
+        self.delay = Self.testDelay ?? delay
+        #else
         self.delay = delay
+        #endif
         self.retryDelay = retryDelay
         self.maxRetryDelay = maxRetryDelay
         observeOtherBridges()

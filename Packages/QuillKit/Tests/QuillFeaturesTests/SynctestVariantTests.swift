@@ -1,0 +1,91 @@
+import Foundation
+import QuillEditorCore
+@testable import QuillFeatures
+import Testing
+
+/// Die Testvarianten Synctest A und B für `SyncTwoAppsUITests` (ADR-029): Test-Schalter
+/// nur unter `QUILL_SYNCTEST` aus `Scripts/make-synctest.sh`, eine Ordner-Ausnahme nur
+/// in ihren eigenen Entitlements. Debug, Release und die echte App bleiben, wie sie sind.
+@MainActor
+@Suite("Synctest A und B: nur Testvarianten bekommen Test-Schalter und Ordner-Ausnahme")
+struct SynctestVariantTests {
+    static let root = LocalizationTests.root
+
+    static func entitlements(_ path: String) throws -> [String: Any] {
+        let data = try Data(contentsOf: root.appending(path: path))
+        return try #require(PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any])
+    }
+
+    static func appConfigurations() throws -> [BuildSettings.Configuration] {
+        let project = try String(contentsOf: root.appending(path: "Quill.xcodeproj/project.pbxproj"), encoding: .utf8)
+        return BuildSettings.configurations(in: project).filter { $0.settings["INFOPLIST_KEY_CFBundleDisplayName"] != nil }
+    }
+
+    /// Die echte App: Sandbox, Lesezeichen, vom Nutzer gewählte Ordner, sonst nichts.
+    static let realEntitlements = [
+        "com.apple.security.app-sandbox",
+        "com.apple.security.files.bookmarks.app-scope",
+        "com.apple.security.files.user-selected.read-write",
+    ]
+    static let exceptionKey = "com.apple.security.temporary-exception.files.home-relative-path.read-write"
+
+    @Test func realAppEntitlementsAreUnchanged() throws {
+        let real = try Self.entitlements("App/Quill.entitlements")
+        #expect(real.keys.sorted() == Self.realEntitlements)
+        for key in Self.realEntitlements { #expect(real[key] as? Bool == true, "\(key)") }
+
+        for configuration in try Self.appConfigurations() {
+            let expected = configuration.name.hasPrefix("Synctest") ? "App/QuillSynctest.entitlements" : "App/Quill.entitlements"
+            #expect(configuration.settings["CODE_SIGN_ENTITLEMENTS"] == expected, "\(configuration.name)")
+        }
+    }
+
+    @Test func synctestVariantsGetExactlyOneFolderException() throws {
+        let synctest = try Self.entitlements("App/QuillSynctest.entitlements")
+        #expect(synctest.keys.sorted() == (Self.realEntitlements + [Self.exceptionKey]).sorted())
+        // Genau der Ordner, den `-QuillSyncSharedFolder` nimmt, im temporären Ordner des Test-Runners.
+        #expect(synctest[Self.exceptionKey] as? [String] == ["/\(QuillPersistence.syncSharedFolderRoot)/"])
+        #expect(QuillPersistence.syncSharedFolderRoot.hasPrefix("Library/Containers/io.github.vogelwild07.quill.UITests.xctrunner/Data/tmp/"))
+    }
+
+    @Test func onlyTheScriptSetsTheSynctestCondition() throws {
+        let project = try String(contentsOf: Self.root.appending(path: "Quill.xcodeproj/project.pbxproj"), encoding: .utf8)
+        #expect(!project.contains("QUILL_SYNCTEST"), "QUILL_SYNCTEST in einer Konfiguration der Projektdatei")
+        let script = try String(contentsOf: Self.root.appending(path: "Scripts/make-synctest.sh"), encoding: .utf8)
+        #expect(script.contains("'SWIFT_ACTIVE_COMPILATION_CONDITIONS=QUILL_SYNCTEST $(inherited)'"))
+        // Die Release-Prüfung sucht nach den Namen der Synctest-Schalter.
+        let check = try String(contentsOf: Self.root.appending(path: "Scripts/check-release-binary.sh"), encoding: .utf8)
+        for marker in ["QuillSyncSharedFolder", "QuillSyncHaltBeforePage", "QuillSaveDelay", "QuillSyncTestFolder", "QuillSyncUITests", "temporary-exception"] {
+            #expect(check.contains(marker), "\(marker) fehlt in check-release-binary.sh")
+        }
+    }
+
+    @Test func sharedFolderOnlyByNameAndOnlyWithATestStore() throws {
+        let home = URL(filePath: "/Users/test", directoryHint: .isDirectory)
+        #expect(QuillPersistence.syncSharedFolder("lauf-main", home: home).path(percentEncoded: false)
+            == "/Users/test/Library/Containers/io.github.vogelwild07.quill.UITests.xctrunner/Data/tmp/QuillSyncUITests/lauf-main/")
+        for unsafe in ["../x", "a/b", ".versteckt", ""] {
+            let persistence = try QuillPersistence.open(arguments: ["Quill", "-QuillInMemoryStore", "YES", "-QuillSyncSharedFolder", unsafe]) { _, _ in .migrate }
+            #expect(persistence.syncTestFolder == nil, "\(unsafe)")
+        }
+    }
+
+    @Test func haltOnlyWithAPositiveNumber() throws {
+        func halt(_ value: String) throws -> Int? {
+            try QuillPersistence.open(arguments: ["Quill", "-QuillInMemoryStore", "YES", "-QuillSyncHaltBeforePage", value]) { _, _ in .migrate }
+                .sync.testHaltBeforeStoringPage
+        }
+        #expect(try halt("4") == 4)
+        #expect(try halt("0") == nil)
+        #expect(try halt("x") == nil)
+        #expect(try QuillPersistence.open(arguments: ["Quill", "-QuillInMemoryStore", "YES"]) { _, _ in .migrate }.sync.testHaltBeforeStoringPage == nil)
+    }
+
+    @Test func saveDelayOnlyWithAPositiveNumber() throws {
+        defer { EditorPersistenceBridge.testDelay = nil }
+        _ = try QuillPersistence.open(arguments: ["Quill", "-QuillInMemoryStore", "YES", "-QuillSaveDelay", "3000"]) { _, _ in .migrate }
+        #expect(EditorPersistenceBridge.testDelay == .milliseconds(3000))
+        _ = try QuillPersistence.open(arguments: ["Quill", "-QuillInMemoryStore", "YES", "-QuillSaveDelay", "-1"]) { _, _ in .migrate }
+        #expect(EditorPersistenceBridge.testDelay == nil)
+    }
+}

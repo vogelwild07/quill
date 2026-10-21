@@ -32,6 +32,13 @@ public actor SyncEngine {
     private var report = SyncReport(folderID: UUID())
     private var assetNames: Set<String> = []
     private var updateDates: [UUID: Date] = [:]
+    #if DEBUG || QUILL_SYNCTEST
+    /// Nur für Tests (Fall 12 in `docs/synctest.md`, `SyncTwoAppsUITests`): Der Abgleich
+    /// hält vor dem Schreiben der n-ten Seite in den Store an, bis die App endet. Dann
+    /// stehen die Dateien schon im Ordner, der Store hat die Seite noch nicht.
+    private var haltBeforeStoringPage: Int?
+    private var storedPages = 0
+    #endif
 
     public init(
         store: PageStore, folder: URL, gate: SyncGate, deviceName: String,
@@ -211,6 +218,9 @@ public actor SyncEngine {
             if let date = updateDates[pageID] { cursors.synced[key] = date }
             return
         }
+        #if DEBUG || QUILL_SYNCTEST
+        await haltIfRequested()
+        #endif
         guard let updated = try await store.applySyncPage(
             pageID, expected: state.blocks, edits: edits, document: document.save(), cursors: next.encoded()
         ) else {
@@ -222,6 +232,18 @@ public actor SyncEngine {
         cursors.synced[key] = updated
         if !edits.isEmpty { report.changedPages.insert(pageID) }
     }
+
+    #if DEBUG || QUILL_SYNCTEST
+    public func setHaltBeforeStoringPage(_ number: Int?) {
+        haltBeforeStoringPage = number
+    }
+
+    private func haltIfRequested() async {
+        storedPages += 1
+        guard storedPages == haltBeforeStoringPage else { return }
+        while true { try? await Task.sleep(for: .seconds(60)) }
+    }
+    #endif
 
     /// Holt Bilder aus dem Ordner, die der Store noch nicht hat. `false`, wenn eines
     /// fehlt oder noch nicht geladen ist: Dann wartet die Seite, sonst verlöre der Block

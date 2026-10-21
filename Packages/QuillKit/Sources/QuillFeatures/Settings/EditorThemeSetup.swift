@@ -12,13 +12,13 @@ public enum EditorThemeSetup {
     /// Argument in der Argument-Domain von `UserDefaults` und wirkte auch ohne Test-Store.
     static let focusArgument = "QuillTestFocusMode"
 
-    /// UI-Tests (Debug, `-QuillInMemoryStore` oder `-QuillStoreDirectory`) speichern
+    /// UI-Tests (Debug oder Synctest A/B, `-QuillInMemoryStore` oder `-QuillStoreDirectory`) speichern
     /// keine Wahl und lesen keine: Sie dürfen Theme und Fokus-Modus des Nutzers weder
     /// ändern noch davon abhängen. Sie starten mit Standard ohne Fokus-Modus oder mit
     /// `-QuillEditorTheme <id>` bzw. `-QuillTestFocusMode YES`.
     @MainActor
     public static func configure(arguments: [String] = ProcessInfo.processInfo.arguments) {
-        #if DEBUG
+        #if DEBUG || QUILL_SYNCTEST
         if QuillPersistence.testStore(arguments: arguments) != nil {
             let id = arguments.firstIndex(of: "-\(argument)")
                 .flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil }

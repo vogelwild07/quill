@@ -171,7 +171,7 @@ struct LocalizationTests {
 
     /// Sichtbare Info.plist-Einträge der App (Debug und Release) stehen mit dem
     /// gleichen Wert im `InfoPlist.xcstrings`. In den Schemata „Quill Profiling“ und
-    /// „Quill Synctest“ ist der Katalog ausgenommen, sonst hießen diese Varianten
+    /// „Quill Synctest“ (Varianten A und B) ist der Katalog ausgenommen, sonst hießen diese Varianten
     /// wieder „Quill“.
     @Test func infoPlistIsInCatalog() throws {
         let catalog = try Catalog(path: "App/Resources/InfoPlist.xcstrings")
@@ -180,7 +180,7 @@ struct LocalizationTests {
         let configurations = BuildSettings.configurations(in: project)
         let app = try #require(configurations.filter { $0.settings["INFOPLIST_KEY_CFBundleDisplayName"] != nil }.nilIfEmpty)
         var expected: [String: String] = [:]
-        let variants: Set<String> = ["Profiling", "Synctest"]
+        let variants: Set<String> = ["Profiling", "SynctestA", "SynctestB"]
         for configuration in app where !variants.contains(configuration.name) {
             for (setting, value) in configuration.settings where setting.hasPrefix("INFOPLIST_KEY_") && !value.isEmpty {
                 let key = String(setting.dropFirst("INFOPLIST_KEY_".count))

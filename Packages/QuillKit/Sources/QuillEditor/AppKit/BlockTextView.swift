@@ -407,10 +407,11 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     // MARK: Zwischenablage
 
-    #if DEBUG
+    #if DEBUG || QUILL_SYNCTEST
     /// Startargument `-QuillPasteboardName <Name>`: Kopieren und Einsetzen nutzen eine
     /// eigene Zwischenablage. Für UI-Tests, damit die des Nutzers unberührt bleibt.
-    /// Nur in Debug, damit Release den Namen nicht enthält (`check-release-binary.sh`).
+    /// Nur in Debug und in den Testvarianten Synctest A und B (`QUILL_SYNCTEST`), damit
+    /// Release den Namen nicht enthält (`check-release-binary.sh`).
     public static let pasteboardArgument = "QuillPasteboardName"
     #endif
 
@@ -418,7 +419,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     /// Einstellungen: Ein `defaults write` darf Kopieren und Einsetzen nicht still
     /// umleiten (wie die Store-Argumente, ADR-019). In Release-Builds immer `nil`.
     static func clipboardName(arguments: [String]) -> String? {
-        #if DEBUG
+        #if DEBUG || QUILL_SYNCTEST
         guard let index = arguments.firstIndex(of: "-\(pasteboardArgument)"), arguments.indices.contains(index + 1),
               !arguments[index + 1].isEmpty else { return nil }
         return arguments[index + 1]
@@ -430,7 +431,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     static let defaultClipboard: NSPasteboard = {
         guard let name = clipboardName(arguments: ProcessInfo.processInfo.arguments) else { return .general }
         let pasteboard = NSPasteboard(name: NSPasteboard.Name(name))
-        #if DEBUG
+        #if DEBUG || QUILL_SYNCTEST
         TestImage.put(arguments: ProcessInfo.processInfo.arguments, on: pasteboard)
         #endif
         return pasteboard

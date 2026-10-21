@@ -1,5 +1,6 @@
 import Foundation
 import OSLog
+import QuillEditorCore
 import QuillModel
 import SwiftData
 import SwiftUI
@@ -10,9 +11,10 @@ import AppKit
 /// Öffnet die Datenbank der App samt Backups (ADR-010) und hält Container und Store.
 @MainActor
 public final class QuillPersistence {
-    #if DEBUG
+    #if DEBUG || QUILL_SYNCTEST
     /// Startargument `-QuillInMemoryStore YES`: Daten nur im Arbeitsspeicher, keine
-    /// Backups. Für UI-Tests, damit sie nie die echten Daten berühren. Nur in Debug,
+    /// Backups. Für UI-Tests, damit sie nie die echten Daten berühren. Nur in Debug und
+    /// in den Testvarianten Synctest A und B (`QUILL_SYNCTEST`, `Scripts/make-synctest.sh`),
     /// damit Release den Namen nicht enthält (`check-release-binary.sh`).
     public static let inMemoryArgument = "QuillInMemoryStore"
     /// Startargument `-QuillStoreDirectory <Name>`: Store und Backups in diesem
@@ -28,6 +30,20 @@ public final class QuillPersistence {
     /// Startargument `-QuillSyncTestFolder <Name>`, nur mit einem Test-Store: „Ordner
     /// wählen“ nimmt ohne Dateiauswahl diesen Unterordner des temporären Ordners der App.
     public static let syncTestFolderArgument = "QuillSyncTestFolder"
+    /// Startargument `-QuillSyncSharedFolder <Name>`, nur mit einem Test-Store: „Ordner
+    /// wählen“ nimmt ohne Dateiauswahl `<Benutzerordner>/<syncSharedFolderRoot>/<Name>`.
+    /// Für `SyncTwoAppsUITests`: Synctest A und B teilen sich so einen Wegwerf-Ordner im
+    /// temporären Ordner des UI-Test-Runners, den nur ihre Entitlements freigeben
+    /// (`App/QuillSynctest.entitlements`). Nur ein Name, nie ein Pfad.
+    public static let syncSharedFolderArgument = "QuillSyncSharedFolder"
+    /// Startargument `-QuillSyncHaltBeforePage <n>`, nur mit einem Test-Store: Der Abgleich
+    /// hält vor dem Schreiben der n-ten Seite in den Store an (Fall 12, `SyncEngine`).
+    public static let syncHaltArgument = "QuillSyncHaltBeforePage"
+    /// Startargument `-QuillSaveDelay <ms>`, nur mit einem Test-Store: Editoren warten so
+    /// lange vor dem Speichern (Fall 14, `EditorPersistenceBridge.testDelay`).
+    public static let saveDelayArgument = "QuillSaveDelay"
+    /// Relativ zum Benutzerordner; steht genauso in `App/QuillSynctest.entitlements`.
+    public static let syncSharedFolderRoot = "Library/Containers/io.github.vogelwild07.quill.UITests.xctrunner/Data/tmp/QuillSyncUITests"
     #endif
 
     public enum OpenError: Error, Equatable {
@@ -58,7 +74,7 @@ public final class QuillPersistence {
     /// gespeicherten Einstellungen: Ein `defaults write` darf den echten Store nicht
     /// still durch einen leeren ersetzen. In Release-Builds immer `nil`.
     static func testStore(arguments: [String]) -> TestStore? {
-        #if DEBUG
+        #if DEBUG || QUILL_SYNCTEST
         func value(_ name: String) -> String? {
             guard let index = arguments.firstIndex(of: "-\(name)"), arguments.indices.contains(index + 1) else { return nil }
             return arguments[index + 1]
@@ -77,13 +93,13 @@ public final class QuillPersistence {
     /// nur mit `-QuillAskBeforeMigration YES` (sonst liefen UI-Tests in den Dialog).
     static func asksBeforeMigration(_ testStore: TestStore?, arguments: [String]) -> Bool {
         guard let testStore else { return true }
-        #if DEBUG
+        #if DEBUG || QUILL_SYNCTEST
         if case .directory = testStore, flag(askBeforeMigrationArgument, in: arguments) { return true }
         #endif
         return false
     }
 
-    #if DEBUG
+    #if DEBUG || QUILL_SYNCTEST
     private static func flag(_ name: String, in arguments: [String]) -> Bool {
         guard let index = arguments.firstIndex(of: "-\(name)"), arguments.indices.contains(index + 1) else { return false }
         return ["YES", "1", "true"].contains(arguments[index + 1])
@@ -136,13 +152,15 @@ public final class QuillPersistence {
         confirmMigration: @MainActor (_ from: String?, _ to: String) -> MigrationAnswer
     ) throws -> QuillPersistence {
         let testStore = testStore(arguments: arguments)
-        #if DEBUG
+        #if DEBUG || QUILL_SYNCTEST
         if testStore == .inMemory {
             logger.notice("Store nur im Arbeitsspeicher (\(inMemoryArgument, privacy: .public))")
-            return QuillPersistence(
+            let persistence = QuillPersistence(
                 container: try QuillStore.makeInMemoryContainer(), backup: nil,
                 syncTestFolder: syncTestFolder(arguments: arguments)
             )
+            configureTestHooks(persistence, arguments: arguments)
+            return persistence
         }
         #endif
 
@@ -189,6 +207,9 @@ public final class QuillPersistence {
             container: container, backup: backup, preparation: preparation,
             syncStorage: syncStorage(testStore), syncTestFolder: testStore == nil ? nil : syncTestFolder(arguments: arguments)
         )
+        #if DEBUG || QUILL_SYNCTEST
+        if testStore != nil { configureTestHooks(persistence, arguments: arguments) }
+        #endif
         persistence.removeOrphanedAssets()
         persistence.scheduleTrashAutoEmpty()
         return persistence
@@ -204,7 +225,7 @@ public final class QuillPersistence {
     /// Einstellungen des Sync: beim echten Store in den Einstellungen des Macs, bei
     /// einem Test-Store in dessen Ordner.
     private static func syncStorage(_ testStore: TestStore?) -> any SyncSettingsStorage {
-        #if DEBUG
+        #if DEBUG || QUILL_SYNCTEST
         if case .directory(let name) = testStore {
             return FileSyncSettingsStorage(url: FileManager.default.temporaryDirectory.appending(path: "\(name)/sync-settings.json"))
         }
@@ -213,11 +234,20 @@ public final class QuillPersistence {
     }
 
     private static func syncTestFolder(arguments: [String]) -> URL? {
-        #if DEBUG
-        guard let index = arguments.firstIndex(of: "-\(syncTestFolderArgument)"), arguments.indices.contains(index + 1) else { return nil }
-        let name = arguments[index + 1]
-        guard !name.isEmpty, !name.contains("/"), !name.hasPrefix(".") else { return nil }
-        let folder = FileManager.default.temporaryDirectory.appending(path: name, directoryHint: .isDirectory)
+        #if DEBUG || QUILL_SYNCTEST
+        func name(_ argument: String) -> String? {
+            guard let index = arguments.firstIndex(of: "-\(argument)"), arguments.indices.contains(index + 1) else { return nil }
+            let name = arguments[index + 1]
+            return name.isEmpty || name.contains("/") || name.hasPrefix(".") ? nil : name
+        }
+        let folder: URL
+        if let shared = name(syncSharedFolderArgument) {
+            folder = syncSharedFolder(shared)
+        } else if let local = name(syncTestFolderArgument) {
+            folder = FileManager.default.temporaryDirectory.appending(path: local, directoryHint: .isDirectory)
+        } else {
+            return nil
+        }
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         return folder
         #else
@@ -225,9 +255,33 @@ public final class QuillPersistence {
         #endif
     }
 
+    #if DEBUG || QUILL_SYNCTEST
+    /// Haltepunkt im Abgleich und Wartezeit vor dem Speichern, nur mit einem Test-Store.
+    private static func configureTestHooks(_ persistence: QuillPersistence, arguments: [String]) {
+        func number(_ argument: String) -> Int? {
+            guard let index = arguments.firstIndex(of: "-\(argument)"), arguments.indices.contains(index + 1) else { return nil }
+            return Int(arguments[index + 1]).flatMap { $0 > 0 ? $0 : nil }
+        }
+        persistence.sync.testHaltBeforeStoringPage = number(syncHaltArgument)
+        EditorPersistenceBridge.testDelay = number(saveDelayArgument).map { .milliseconds($0) }
+    }
+
+    /// Der gemeinsame Ordner zu `-QuillSyncSharedFolder <name>`. Der Benutzerordner kommt
+    /// aus der Benutzerdatenbank, nicht aus `NSHomeDirectory()`: Das ist in der Sandbox
+    /// der Container der App.
+    static func syncSharedFolder(_ name: String, home: URL = realHomeDirectory) -> URL {
+        home.appending(path: syncSharedFolderRoot, directoryHint: .isDirectory).appending(path: name, directoryHint: .isDirectory)
+    }
+
+    private static var realHomeDirectory: URL {
+        guard let entry = getpwuid(getuid()), let directory = entry.pointee.pw_dir else { return URL(filePath: NSHomeDirectory()) }
+        return URL(filePath: String(cString: directory), directoryHint: .isDirectory)
+    }
+    #endif
+
     /// Echter Store, oder für UI-Tests einer im temporären Ordner der App.
     private static func makeBackup(_ testStore: TestStore?) -> StoreBackup {
-        #if DEBUG
+        #if DEBUG || QUILL_SYNCTEST
         if case .directory(let name) = testStore {
             let directory = FileManager.default.temporaryDirectory.appending(path: name, directoryHint: .isDirectory)
             logger.notice("Store im temporären Ordner (\(storeDirectoryArgument, privacy: .public))")
