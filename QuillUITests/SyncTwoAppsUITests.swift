@@ -148,13 +148,27 @@ final class SyncTwoAppsUITests: XCTestCase {
         for device in [a!, b!] {
             device.waitForEditor(device.name) { $0.contains("zwei von B\n") && $0.hasPrefix("eins") && $0.hasSuffix("drei\n") }
         }
+        // Der behaltene Absatz trägt das Zeichen „wiederhergestellt“; A entfernt die
+        // Markierung, B übernimmt das (11.6).
+        for device in [a!, b!] { device.waitForMarkers("editor.marker.restored", count: 1) }
+        a.app.activate()
+        a.element("editor.marker.restored").click()
+        let clear = a.app.popovers.buttons["restored.clear"]
+        XCTAssertTrue(clear.waitForExistence(timeout: 5), "A: kein Popover zum Zeichen")
+        clear.click()
+        a.waitForMarkers("editor.marker.restored", count: 0)
+        converge()
+        b.waitForMarkers("editor.marker.restored", count: 0)
+        b.waitForEditor { $0.contains("zwei von B\n") }
     }
 
     /// Fall 6: derselbe Titel unterschiedlich; beide zeigen danach denselben und melden
-    /// „Zwei Werte für ein Feld“.
+    /// „Zwei Werte für ein Feld“, mit Sprung zur Seite aus den Einstellungen. Pausiert
+    /// wird nicht gewählt; danach wählt A die Fassung von B, beide übernehmen sie (11.6).
     func testTwoValuesForOneField() throws {
         try connectBoth()
         a.createPage("Titel")
+        a.createPage("Anderes")
         converge()
         a.setPaused(true)
         b.setPaused(true)
@@ -163,11 +177,40 @@ final class SyncTwoAppsUITests: XCTestCase {
         a.setPaused(false)
         b.setPaused(false)
         converge()
-        let shown = a.titles()
+        let shown = a.titles().filter { $0 != "Anderes" }
         XCTAssertEqual(shown.count, 1)
         XCTAssertTrue(["Titel A", "Titel B"].contains(shown.first ?? ""), "\(shown)")
-        b.assertTitles(shown)
+        let title = try XCTUnwrap(shown.first)
+        b.assertTitles(a.titles(), sorted: true)
         for device in [a!, b!] { device.assertSettingsShow("Zwei Werte für ein Feld") }
+
+        // Einstellungen › Sync: Klick auf die Seite springt dorthin.
+        b.select("Anderes")
+        b.jumpToConflict(on: title)
+
+        // Pausiert: Die Fassungen stehen da, wählen geht nicht.
+        b.setPaused(true)
+        let paused = b.openConflicts(on: title)
+        let pausedButtons = paused.buttons.matching(identifier: "conflict.choose")
+        XCTAssertEqual(pausedButtons.count, 2)
+        XCTAssertTrue(pausedButtons.allElementsBoundByIndex.allSatisfy { !$0.isEnabled }, "B: Wählen trotz Pause")
+        XCTAssertTrue(paused.descendants(matching: .any)["conflict.paused"].exists, "B: kein Hinweis auf die Pause")
+        b.closePopover()
+        b.setPaused(false)
+
+        // Jede Fassung nennt ihr Gerät; A wählt die von B.
+        let popover = a.openConflicts(on: title)
+        let buttons = popover.buttons.matching(identifier: "conflict.choose")
+        XCTAssertEqual(Set(buttons.allElementsBoundByIndex.map(\.label)), ["Titel A von Gerät A wählen", "Titel B von Gerät B wählen"])
+        buttons.matching(NSPredicate(format: "label == %@", "Titel B von Gerät B wählen")).firstMatch.click()
+        a.closePopover()
+        converge()
+        for device in [a!, b!] {
+            device.assertTitles(["Anderes", "Titel B"], sorted: true)
+            device.select("Titel B")
+            device.wait("\(device.name): Hinweis auf Konflikt bleibt") { !device.element("detail.conflicts").exists }
+            device.assertSettingsLack("Zwei Werte für ein Feld")
+        }
     }
 
     /// Fall 7: Papierkorb kommt an, Bearbeiten gewinnt gegen Papierkorb, Leeren nur je Gerät.
@@ -191,6 +234,19 @@ final class SyncTwoAppsUITests: XCTestCase {
         b.setPaused(false)
         converge()
         for device in [a!, b!] { device.assertTitles(["Umstritten"]) }
+        // Die behaltene Seite ist markiert: im Seitenkopf und im Kontextmenü der Sidebar.
+        // A entfernt die Markierung, B übernimmt das (11.6).
+        for device in [a!, b!] {
+            device.select("Umstritten")
+            device.wait("\(device.name): kein Hinweis „Hier behalten“") { device.element("detail.restored.clear").exists }
+        }
+        XCTAssertTrue(b.contextMenuHas("Markierung entfernen", on: "Umstritten"), "B: Kontextmenü ohne „Markierung entfernen“")
+        a.element("detail.restored.clear").click()
+        a.wait("A: Hinweis bleibt") { !self.a.element("detail.restored.clear").exists }
+        converge()
+        b.select("Umstritten")
+        b.wait("B: Hinweis bleibt") { !self.b.element("detail.restored.clear").exists }
+        XCTAssertFalse(b.contextMenuHas("Markierung entfernen", on: "Umstritten"), "B: Markierung noch im Kontextmenü")
 
         a.emptyTrash()
         converge()
@@ -475,6 +531,8 @@ private final class Device {
         app.launchArguments = [
             "-ApplePersistenceIgnoreState", "YES", "-QuillStoreDirectory", store,
             "-QuillSyncSharedFolder", "\(run)-\(folder)", "-QuillPasteboardName", pasteboard.name.rawValue,
+            // Beide laufen auf demselben Mac; sonst hießen beide Geräte gleich (11.6).
+            "-QuillSyncDeviceName", "Gerät \(name)",
         ] + (image.map { ["-QuillTestImage", $0] } ?? []) + extra
         app.launch()
         XCTAssertTrue(window.waitForExistence(timeout: 15), "\(name) ohne Fenster")
@@ -713,6 +771,71 @@ private final class Device {
             .matching(NSPredicate(format: "label CONTAINS %@ OR value CONTAINS %@", text, text)).firstMatch
         wait("\(name): „\(text)“ in den Einstellungen", file: file, line: line) { match.exists }
         closeSettings()
+    }
+
+    /// Text fehlt in den Einstellungen › Sync.
+    func assertSettingsLack(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
+        openSettings()
+        let match = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@ OR value CONTAINS %@", text, text)).firstMatch
+        wait("\(name): „\(text)“ noch in den Einstellungen", file: file, line: line) { !match.exists }
+        closeSettings()
+    }
+
+    // MARK: Konflikte und Markierungen (11.6)
+
+    func element(_ identifier: String) -> XCUIElement {
+        window.descendants(matching: .any)[identifier]
+    }
+
+    /// Klick auf die Seite unter „Zwei Werte für ein Feld“ in den Einstellungen springt
+    /// im Fenster dorthin. Danach ist das Hauptfenster vorn; ⌘W allein träfe es.
+    func jumpToConflict(on title: String) {
+        openSettings()
+        let link = app.descendants(matching: .any).matching(identifier: "sync.conflictPage").firstMatch
+        // Knöpfe im Stil `.link` meldet SwiftUI nicht als Knopf.
+        XCTAssertTrue(link.waitForExistence(timeout: 5), "\(name): keine Seite mit Konflikt in den Einstellungen")
+        link.click()
+        wait("\(name): Sprung zu „\(title)“, Fenster zeigt „\(window.title)“") { self.window.title == title }
+        // ⌘, holt die Einstellungen wieder nach vorn, dann trifft ⌘W sie.
+        openSettings()
+        closeSettings()
+        wait("\(name): Fenster zeigt nach dem Schließen „\(window.title)“") { self.window.title == title }
+    }
+
+    /// „Wählen …“ im Seitenkopf; gibt das Popover zurück.
+    func openConflicts(on title: String) -> XCUIElement {
+        select(title)
+        let button = element("detail.conflicts")
+        wait("\(name): kein Hinweis auf Konflikt") { button.exists }
+        button.click()
+        let list = app.descendants(matching: .any)["conflict.list"]
+        XCTAssertTrue(list.waitForExistence(timeout: 5), "\(name): kein Popover mit Fassungen")
+        return list
+    }
+
+    func closePopover() {
+        app.typeKey(.escape, modifierFlags: [])
+        wait("\(name): Popover bleibt offen") { !self.app.descendants(matching: .any)["conflict.list"].exists }
+    }
+
+    func waitForMarkers(_ identifier: String, count: Int, file: StaticString = #filePath, line: UInt = #line) {
+        let markers = editor.descendants(matching: .any).matching(identifier: identifier)
+        wait("\(name): \(markers.count) statt \(count) Zeichen „\(identifier)“", timeout: 15, file: file, line: line) {
+            markers.count == count
+        }
+    }
+
+    /// Rechtsklick auf die Zeile; `true`, wenn das Menü den Eintrag hat. Escape schließt es.
+    func contextMenuHas(_ item: String, on title: String) -> Bool {
+        app.activate()
+        outline.pageRows.containing(NSPredicate(format: "value == %@", title)).firstMatch.rightClick()
+        let entry = outline.menuItems[item]
+        let menu = outline.menus.firstMatch
+        _ = menu.waitForExistence(timeout: 5)
+        let found = entry.exists
+        app.typeKey(.escape, modifierFlags: [])
+        return found
     }
 
     // MARK: Backup
