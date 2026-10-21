@@ -1,3 +1,4 @@
+#if DEBUG
 import AppKit
 import CryptoKit
 import Foundation
@@ -180,3 +181,4 @@ struct MigrationPromptTests {
         #expect(backupNames().contains { $0.contains("vor-wiederherstellen") })
     }
 }
+#endif
