@@ -57,8 +57,18 @@ Bei Phase 13 (aus dem Review von Phase 11):
 Aus den UI-Läufen von Phase 11 (2026-10-21):
 - Untersuchen, warum die Einsetz-Tests (`ImageBlockUITests`, Fall 3 in `SyncTwoAppsUITests`)
   nach vielen UI-Läufen scheitern, bis der Mac neu startet (zweimal an einem Tag, auch auf
-  `main`, nach Neustart grün). Mögliche Ursachen: übrig gebliebene eigene Zwischenablagen
-  (`-QuillPasteboardName`), übrig gebliebene Prozesse (App, Test-Runner, `pboard`).
+  `main`, nach Neustart grün; zum dritten Mal im roten vollen Lauf vom 2026-10-21 ab 19:40).
+  Mögliche Ursachen: übrig gebliebene eigene Zwischenablagen (`-QuillPasteboardName`),
+  übrig gebliebene Prozesse (App, Test-Runner, `pboard`).
+  - Spuren vom 2026-10-21 vor dem Neustart, nur lokal (nicht im Repo):
+    `dist/synctest-logs/spuren-20261021-205502/` (Übersicht in `LIESMICH.txt`). Keine übrigen
+    Prozesse, `pboard` klein (4,6 MB). Quill meldet gehäuft „Error occurred requesting metadata
+    to refresh cache for pasteboard Apple CFPasteboard general result: -22“ (19 Uhr 53-mal, vor
+    dem grünen Lauf um 13:56 keinmal); Hinweis, kein Beleg.
+  - Als erste Spur prüfen: Geben alle Tests ihre benannten Zwischenablagen immer frei
+    (`releaseGlobally` im Tear Down), auch nach einem Timeout, bei dem der Tear Down nicht
+    läuft? Und räumt `test-synctest-ui.sh` nach einem Abbruch auf (Zwischenablagen, A und B,
+    Arbeitsordner)? Zwei Timeout-Gegenproben vom 2026-10-21 endeten ohne Tear Down.
 
 Aus dem Review von 11.6 und dem Verdichten (2026-10-21), nicht eingeplant:
 - Ist die neueste verdichtete Datei eines Geräts noch nicht geladen, nimmt Quill keine ältere,
