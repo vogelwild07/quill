@@ -281,6 +281,36 @@ struct SyncEngineTests {
         #expect(try await a.blocks(of: "Notiz").map(\.kindRaw) == [BlockKind.todo.rawValue])
     }
 
+    @Test func storedConflictsMatchTheLastSyncWithoutWriting() async throws {
+        let folder = try TestFolder()
+        let a = try await TestDevice("A", folder: folder.url)
+        let b = try await TestDevice("B", folder: folder.url)
+        let (page, blocks) = try await a.createPage("Notiz", texts: ["Punkt"])
+        try await a.sync()
+        try await b.sync()
+        try await a.edit(page, blocks[0]) { $0.kindRaw = BlockKind.todo.rawValue }
+        try await b.edit(page, blocks[0]) { $0.kindRaw = BlockKind.heading2.rawValue }
+        try await a.store.rename(page, to: "Hier")
+        try await b.store.rename(page, to: "Dort")
+        try await a.sync()
+        try await b.sync()
+        let report = try await a.sync()
+        #expect(Set(report.conflicts.keys) == [page, SyncReport.treeID])
+
+        // Wie nach einem Neustart: neue Engine, pausiert, nur der Store.
+        let filesBefore = try folder.files()
+        let gate = SyncGate(paused: true)
+        let restarted = SyncEngine(store: a.store, folder: folder.url, gate: gate, deviceName: "A", files: TestFileAccess())
+        let stored = try #require(try await restarted.storedConflicts(folderID: report.folderID))
+        #expect(stored.conflicts == report.conflicts)
+        #expect(stored.devices == report.devices)
+        #expect(try folder.files() == filesBefore)
+        // Ohne Geräte-ID (Sync nie eingeschaltet) nichts.
+        let fresh = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
+        let never = SyncEngine(store: fresh, folder: folder.url, gate: gate, deviceName: "C", files: TestFileAccess())
+        #expect(try await never.storedConflicts(folderID: report.folderID) == nil)
+    }
+
     @Test func unreadableFileIsQuarantinedAndLeftUntouched() async throws {
         let folder = try TestFolder()
         let a = try await TestDevice("A", folder: folder.url)

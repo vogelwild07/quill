@@ -76,6 +76,27 @@ public actor SyncEngine {
         choices[choice.documentID, default: []].append(choice)
     }
 
+    /// Konflikte aus den Dokumenten im Store, ohne Abgleich und ohne etwas zu schreiben:
+    /// beim Start, auch pausiert. Gerätenamen liest es aus `devices/`, soweit die Dateien
+    /// geladen sind. Unlesbare Dokumente fehlen hier; der Abgleich meldet sie. `nil` ohne
+    /// Geräte-ID (Sync nie eingeschaltet).
+    public func storedConflicts(folderID: UUID) async throws -> SyncReport? {
+        let stored = try await store.storedSyncDocuments()
+        guard let deviceID = stored.deviceID else { return nil }
+        device = deviceID
+        var result = SyncReport(folderID: folderID)
+        result.devices = deviceNames()
+        if let tree = stored.tree, let conflicts = try? TreeDocument(bytes: tree).conflicts(), !conflicts.isEmpty {
+            result.conflicts[SyncReport.treeID] = conflicts
+        }
+        for (pageID, data) in stored.pages {
+            if let conflicts = try? PageDocument(bytes: data).conflicts(), !conflicts.isEmpty {
+                result.conflicts[pageID] = conflicts
+            }
+        }
+        return result
+    }
+
     private func run(connectedFolderID: UUID?, progress: @Sendable (SyncProgress) -> Void) async throws -> SyncReport {
         try gate.checkWritable()
         let folderID = try prepareFolder(connectedFolderID)

@@ -358,7 +358,26 @@ public final class SyncController {
                 await self.syncNow()
             }
         }
+        Task { await loadStoredConflicts() }
         requestSync(after: .zero)
+    }
+
+    /// Konflikte beim Start, nur lesend aus dem Store (`SyncEngine.storedConflicts`), auch
+    /// pausiert: Bis zum ersten Abgleich der Sitzung zeigen Seite und Einstellungen sie
+    /// trotzdem. Ein schon fertiger Abgleich hat Vorrang.
+    func loadStoredConflicts() async {
+        guard lastReport == nil, let connection = settings.connection, let folderID = connection.folderID,
+              let folder = try? SyncFolderBookmark.resolve(connection.bookmark).folder
+        else { return }
+        let engine = engine(for: folder)
+        let accessing = folder.startAccessingSecurityScopedResource()
+        defer { if accessing { folder.stopAccessingSecurityScopedResource() } }
+        do {
+            guard let report = try await engine.storedConflicts(folderID: folderID), lastReport == nil else { return }
+            lastReport = report
+        } catch {
+            Self.logger.error("Konflikte aus dem Store nicht lesbar: \(error, privacy: .public)")
+        }
     }
 
     /// Eigene Schreibvorgänge des Abgleichs lösen keinen weiteren aus; was der Nutzer

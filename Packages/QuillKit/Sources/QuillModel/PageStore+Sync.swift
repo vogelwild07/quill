@@ -68,6 +68,13 @@ public struct PageSnapshotChange: Equatable, Sendable {
     }
 }
 
+/// Sync-Dokumente im Store, gelesen ohne Abgleich (`PageStore.storedSyncDocuments()`).
+public struct StoredSyncDocuments: Sendable {
+    public var deviceID: UUID?
+    public var tree: Data?
+    public var pages: [UUID: Data]
+}
+
 /// Schreibwege der Sync-Schicht (ADR-029). Eingehende Änderungen werden nur
 /// übernommen, wenn der Store noch dem Stand entspricht, von dem der Abgleich ausging;
 /// sonst schreibt die Methode nichts und gibt `false` zurück, und der nächste Abgleich
@@ -78,6 +85,17 @@ extension PageStore {
         let workspace = try primaryWorkspace()
         try save()
         return SyncStoreState(deviceID: workspace.syncDeviceID, tree: workspace.syncTree, cursors: workspace.syncCursors)
+    }
+
+    /// Geräte-ID, Seitenbaum und Sync-Dokumente der Seiten außerhalb des Papierkorbs,
+    /// nur lesend (ohne `save()`): für die Konflikte beim Start, auch pausiert.
+    public func storedSyncDocuments() throws -> StoredSyncDocuments {
+        let workspace = try primaryWorkspace()
+        var pages: [UUID: Data] = [:]
+        for page in try modelContext.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.trashedAt == nil })) {
+            if let document = page.syncDocument { pages[page.id] = document }
+        }
+        return StoredSyncDocuments(deviceID: workspace.syncDeviceID, tree: workspace.syncTree, pages: pages)
     }
 
     /// Neue Geräte-ID; `nil` löscht sie. Gelesene Dateien und Seitenbaum bleiben:
