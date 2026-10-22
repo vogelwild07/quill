@@ -265,10 +265,16 @@
     "Die Seite enthält keinen Text zum Zusammenfassen." : {
 
     },
+    "Die Seite enthält noch keinen Text, zu dem es verwandte Seiten geben könnte." : {
+
+    },
     "Die Seite selbst ist nicht betroffen." : {
 
     },
     "Die Suche nach Aufgaben ist gescheitert." : {
+
+    },
+    "Die Suche nach verwandten Seiten ist gescheitert." : {
 
     },
     "Die Vormerkung ließ sich nicht löschen. Damit das Wiederherstellen nicht bei jedem Start erneut läuft, wurde nichts getauscht." : {
@@ -397,6 +403,9 @@
     "Gelöschte Seiten bleiben hier 30 Tage und lassen sich wiederherstellen." : {
 
     },
+    "Gemeinsam: %@" : {
+
+    },
     "Geschichte nicht lesbar" : {
 
     },
@@ -485,6 +494,9 @@
 
     },
     "Keine offenen Konflikte." : {
+
+    },
+    "Keine verwandten Seiten gefunden." : {
 
     },
     "Kopieren" : {
@@ -737,6 +749,9 @@
     "Suche in deinen Notizen …" : {
 
     },
+    "Suche verwandte Seiten …" : {
+
+    },
     "Suchen" : {
 
     },
@@ -833,6 +848,12 @@
     "Verschieben" : {
 
     },
+    "Verwandte Seiten" : {
+
+    },
+    "Verwandte Seiten …" : {
+
+    },
     "Vor dem Einschalten des Sync" : {
 
     },
@@ -849,6 +870,9 @@
 
     },
     "Vor einer Aktualisierung der Datenbank" : {
+
+    },
+    "Vorgeschlagen vom Sprachmodell auf diesem Mac anhand gemeinsamer Begriffe." : {
 
     },
     "Vorgeschlagen vom Sprachmodell auf diesem Mac. Die markierten Absätze bleiben, die To-dos kommen darunter." : {

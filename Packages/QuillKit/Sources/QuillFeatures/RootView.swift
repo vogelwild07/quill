@@ -28,6 +28,7 @@ public struct RootView: View {
     @State private var isSyncReconnectShown = false
     @State private var summaryRequest: SummaryRequest?
     @State private var todoRequest: TodoRequest?
+    @State private var relatedRequest: RelatedRequest?
     @State private var isAskShown = false
     #endif
 
@@ -151,6 +152,20 @@ public struct RootView: View {
                 )
             }
         }
+        .sheet(item: $relatedRequest) { request in
+            if let store, let ai = persistence?.ai {
+                RelatedView(
+                    request: request,
+                    model: RelatedModel(request: request, store: store, model: ai.model),
+                    open: { pageID in
+                        relatedRequest = nil
+                        isShowingTrash = false
+                        selection = pageID
+                    },
+                    dismiss: { relatedRequest = nil }
+                )
+            }
+        }
         .sheet(isPresented: $isAskShown) {
             if let store, let ai = persistence?.ai {
                 AskView(
@@ -248,6 +263,7 @@ public struct RootView: View {
             exportPage: { if let selection { exportPage(selection) } },
             summarize: { if let selection { summarize(selection) } },
             suggestTodos: { suggestTodos() },
+            relatedPages: { if let selection { relatedPages(selection) } },
             askNotes: { askNotes() }
         )
     }
@@ -269,12 +285,18 @@ public struct RootView: View {
         todoRequest = TodoRequest(focusedIn: window)
     }
 
+    private func relatedPages(_ pageID: UUID) {
+        let title = (try? context.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.id == pageID })).first?.title) ?? ""
+        relatedRequest = RelatedRequest(pageID: pageID, title: title)
+    }
+
     private func askNotes() {
         isAskShown = true
     }
     #else
     private func summarize(_ pageID: UUID) {}
     private func suggestTodos() {}
+    private func relatedPages(_ pageID: UUID) {}
     private func askNotes() {}
     #endif
 

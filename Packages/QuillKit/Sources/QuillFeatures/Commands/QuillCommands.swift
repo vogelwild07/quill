@@ -150,6 +150,8 @@ public struct QuillCommands: Commands {
                     .disabled(actions?.selection == nil)
                 Button(String(localized: "To-dos vorschlagen …", bundle: .module)) { actions?.suggestTodos() }
                     .disabled(actions?.selection == nil)
+                Button(String(localized: "Verwandte Seiten …", bundle: .module)) { actions?.relatedPages() }
+                    .disabled(actions?.selection == nil)
             }
             Divider()
             // ⇧⌘E wie „Exportieren“ in vielen Mac-Apps; ⌘E bleibt „Auswahl für Suche verwenden“.
