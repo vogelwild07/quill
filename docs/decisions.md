@@ -698,3 +698,10 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Fehlermeldungen des Modells teilen sich Zusammenfassen und To-dos (`AIProblem`); die Sätze nennen jetzt „diesen Text“ statt „diese Seite“.
 - Alternativen (nicht gewählt, nicht besprochen): die markierten Absätze durch die To-dos ersetzen („umwandeln“ wörtlich; verliert den Wortlaut, nur mit ⌘Z zurück); Kästchen je Vorschlag zum Abwählen (mehr Bedienung; Löschen nach dem Einfügen geht genauso); Eintrag im Menü „Format“ (dort stehen Befehle ohne Blatt, die sofort wirken); freie Antwort Zeile für Zeile deuten (unzuverlässig, „keine Aufgabe“ nicht eindeutig); Einrückung des letzten markierten Blocks übernehmen.
 
+**Entscheidung (16.4, Frag deine Notizen):**
+- „Ablage › Frag deine Notizen …“ (ohne Kürzel, unter „Schnell öffnen …“, nur mit bereitem Modell und eingeschalteter KI) öffnet ein Blatt mit einem Feld für die Frage. Vorher werden alle offenen Editoren gespeichert.
+- Quellen kommen aus der vorhandenen Suche (`PageStore.search`), kein eigener Index und keine Vektoren: Das Modell zieht aus der Frage bis zu fünf Suchbegriffe (`TextModel.list`); findet keiner etwas, sucht Quill nach den Wörtern der Frage ab vier Buchstaben. Seiten mit den meisten Begriffen zuerst, höchstens fünf; Seiten im Papierkorb nie.
+- Zusammen höchstens 6.000 Zeichen Text der Quellen (wie ein Stück beim Zusammenfassen), gleich verteilt; ist eine Seite länger, kommt der Ausschnitt um die erste Fundstelle. Das Modell soll nur aus diesen Notizen antworten und sagen, wenn die Antwort nicht darin steht.
+- Das Blatt zeigt die Antwort und darunter alle Seiten, die ans Modell gingen; ein Klick öffnet die Seite und schließt das Blatt. Ohne passende Seite fragt Quill das Modell gar nicht und sagt das.
+- Alternativen (nicht gewählt, nicht besprochen): eigener Index mit Einbettungen (mehr Speicher, mehr Code, neue Daten im Store); nur die Wörter der Frage suchen, ohne Modell (Füllwörter wie „wann“ treffen fast jede Seite); vom Modell genannte Quellen statt aller übergebenen (das Modell kann Nummern erfinden); Antwort als neue Seite speichern; eigenes Fenster statt Blatt; Verlauf der Fragen.
+
