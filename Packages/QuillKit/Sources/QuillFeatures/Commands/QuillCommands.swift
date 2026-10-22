@@ -10,6 +10,7 @@ public struct QuillCommands: Commands {
 
     @FocusedValue(\.pageActions) private var actions
     @FocusedValue(\.windowActions) private var windowActions
+    @FocusedValue(\.readOnlyEditor) private var readOnlyEditor
     @Environment(\.openWindow) private var openWindow
 
     public init(persistence: QuillPersistence?) {
@@ -99,6 +100,7 @@ public struct QuillCommands: Commands {
                     let button = Button(command.title) {
                         NSApp.sendAction(#selector(EditorFormattingActions.quillSetBlockKind(_:)), to: nil, from: BlockKindRequest(command.kind))
                     }
+                    .disabled(readOnlyEditor == true)
                     if let digit = BlockConversion.shortcutDigit(for: command.kind) {
                         button.keyboardShortcut(KeyEquivalent(digit), modifiers: [.command, .option])
                     } else {
@@ -160,10 +162,12 @@ public struct QuillCommands: Commands {
         }
     }
 
+    /// Gesperrt im Lesemodus der Zeitreise; dort tun die Aktionen nichts.
     private func formatButton(_ title: String.LocalizationValue, _ action: Selector) -> some View {
         Button(String(localized: title, bundle: .module)) {
             NSApp.sendAction(action, to: nil, from: nil)
         }
+        .disabled(readOnlyEditor == true)
     }
 }
 #endif

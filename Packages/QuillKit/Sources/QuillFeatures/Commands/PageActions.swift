@@ -28,4 +28,6 @@ public struct WindowActions {
 extension FocusedValues {
     @Entry public var pageActions: PageActions?
     @Entry public var windowActions: WindowActions?
+    /// Das Fenster zeigt einen Editor im Lesemodus (Zeitreise): Menü „Format“ gesperrt.
+    @Entry public var readOnlyEditor: Bool?
 }

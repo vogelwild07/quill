@@ -813,6 +813,16 @@ struct ClipboardAndMoveTests {
         let copy = NSMenuItem(title: "", action: #selector(NSText.copy(_:)), keyEquivalent: "")
         #expect(!textView.validateUserInterfaceItem(paste))
         #expect(textView.validateUserInterfaceItem(copy))
+
+        // Format und Blockart über Menü oder Tastenkürzel ändern nichts.
+        #expect(!textView.canEdit)
+        textView.quillToggleBold(nil)
+        textView.quillSetBlockKind(BlockKindRequest(.heading1))
+        textView.quillMoveBlockDown(nil)
+        textView.quillDuplicateBlock(nil)
+        #expect(h.texts == ["Eins", "Zwei", "Drei"])
+        #expect(h.document.blocks.map(\.kind) == [.paragraph, .todo, .paragraph])
+        #expect(changes == 0)
     }
 
     /// „Einsetzen und Stil anpassen“ liest Klartext aus der eigenen Zwischenablage.
