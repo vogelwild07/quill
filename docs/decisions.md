@@ -691,3 +691,10 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Fehler des Modells kommen als `AIError` aus `QuillAI` (zu lang, abgelehnt, Sprache, nicht bereit, sonst), ab macOS 27 aus `LanguageModelError`, davor aus `GenerationError`; das Blatt nennt den Grund.
 - Alternativen (nicht gewählt, nicht besprochen): Zusammenfassung als eigener Block oben auf der Seite (über die Bridge, dann ohne ⌘Z im Editor); als Zitat-Block; immer gespeichert in der Seite (Eigenschaft); Fortschritt je Stück; Seite zu lang ablehnen statt in Stücken.
 
+**Entscheidung (16.3, To-dos vorschlagen):**
+- Seite › „To-dos vorschlagen …“ (ohne Kürzel, neben „Zusammenfassen …“, gleiche Bedingung) nimmt die Blöcke, die die Markierung im Editor berührt. Ohne Markierung oder ohne Editor im Fokus erklärt das Blatt, was zu tun ist.
+- Das Modell gibt eine Liste zurück (geführte Ausgabe, `TextModel.list`), keinen freien Text: So muss Quill keine Zeilen deuten, und „keine Aufgabe“ ist eine leere Liste. Quill entfernt trotzdem Aufzählungszeichen, Nummern und Kästchen, leere und doppelte Einträge und nimmt höchstens 50. Lange Markierungen gehen in denselben Stücken wie beim Zusammenfassen ans Modell, die Listen werden aneinandergehängt.
+- Vorschau im Blatt; „Einfügen“ setzt die To-dos als eigene Blöcke unter den letzten markierten Block und wählt sie aus, ein Schritt für ⌘Z („To-dos einfügen“). Die markierten Absätze bleiben unverändert.
+- Fehlermeldungen des Modells teilen sich Zusammenfassen und To-dos (`AIProblem`); die Sätze nennen jetzt „diesen Text“ statt „diese Seite“.
+- Alternativen (nicht gewählt, nicht besprochen): die markierten Absätze durch die To-dos ersetzen („umwandeln“ wörtlich; verliert den Wortlaut, nur mit ⌘Z zurück); Kästchen je Vorschlag zum Abwählen (mehr Bedienung; Löschen nach dem Einfügen geht genauso); Eintrag im Menü „Format“ (dort stehen Befehle ohne Blatt, die sofort wirken); freie Antwort Zeile für Zeile deuten (unzuverlässig, „keine Aufgabe“ nicht eindeutig); Einrückung des letzten markierten Blocks übernehmen.
+
