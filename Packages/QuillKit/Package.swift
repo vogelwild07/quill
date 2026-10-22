@@ -11,7 +11,7 @@ let package = Package(
     products: [
         .library(
             name: "QuillKit",
-            targets: ["QuillFeatures", "QuillModel", "QuillEditorCore", "QuillEditor", "QuillExport", "QuillSync", "QuillDesign"]
+            targets: ["QuillFeatures", "QuillModel", "QuillEditorCore", "QuillEditor", "QuillExport", "QuillSync", "QuillAI", "QuillDesign"]
         ),
     ],
     dependencies: [
@@ -37,9 +37,12 @@ let package = Package(
             name: "QuillSync",
             dependencies: ["QuillModel", .product(name: "Automerge", package: "automerge-swift")]
         ),
+        // Lokale KI (ADR-032). Einziges Modul mit FoundationModels, nur das Modell auf dem
+        // Gerät; `AIIsolationTests` hält das ein.
+        .target(name: "QuillAI"),
         .target(
             name: "QuillFeatures",
-            dependencies: ["QuillModel", "QuillEditorCore", "QuillEditor", "QuillExport", "QuillSync", "QuillDesign"],
+            dependencies: ["QuillModel", "QuillEditorCore", "QuillEditor", "QuillExport", "QuillSync", "QuillAI", "QuillDesign"],
             resources: [.process("Resources")]
         ),
         // Beispieldokumente für Editor- und Export-Tests; nicht Teil des Produkts.
@@ -54,7 +57,7 @@ let package = Package(
         .testTarget(name: "QuillSyncTests", dependencies: ["QuillSync", "QuillModel", "QuillTestFixtures"]),
         .testTarget(
             name: "QuillFeaturesTests",
-            dependencies: ["QuillFeatures", "QuillModel", "QuillEditorCore", "QuillEditor", "QuillSync", "QuillTestFixtures"]
+            dependencies: ["QuillFeatures", "QuillModel", "QuillEditorCore", "QuillEditor", "QuillSync", "QuillAI", "QuillTestFixtures"]
         ),
         // Messungen gegen Schwellen, nur optimiert sinnvoll (docs/performance.md):
         // swift test -c release -Xswiftc -enable-testing --filter QuillPerformanceTests

@@ -390,6 +390,25 @@ unberührt). `sidebarLoad` liegt auf beiden Ständen über 200 ms: `appstoreagen
 während dieser Messung mit rund 97 % CPU. Eine Messung ohne diese Last steht weiter aus;
 sie ist kein Grund, Phase 12 zurückzuhalten, weil beide Stände gleich schnell sind.
 
+## Grundlage der lokalen KI (22.10.2026, ADR-032)
+
+16.1 fragt die Verfügbarkeit erst beim Öffnen von Einstellungen › KI ab, nicht beim
+Start. Im Wechsel mit `main` (`4aa3ac8`), zwei Runden:
+
+| Messung (ms) | `main` | 16.1 |
+|---|---|---|
+| editorLoad | 13,55 / 13,28 | 13,68 / 13,54 |
+| bridgeLoad | 17,86 / 17,42 | 17,64 / 17,39 |
+| pageTreeBuild | 55,99 / 55,36 | 55,87 / 55,44 |
+| search | 46,40 / 45,14 | 45,95 / 45,93 |
+| historyDays | 93,12 / 92,72 | 93,02 / 95,56 |
+| App: sidebarLoad | 222,5 / 221,6 | 223,1 / 219,2 |
+| App: sidebarReload | 117,6 / 151,6 | 151,6 / 173,7 |
+| App: pageSwitch | 59,8 / 58,8 | 60,3 / 58,7 |
+
+Nicht langsamer. `sidebarReload` streut auf beiden Ständen stark (105 bis 180 ms je
+Einzelwert), `sidebarLoad` liegt wegen `appstoreagent` weiter über 200 ms.
+
 ## Messbedingungen
 
 | | |

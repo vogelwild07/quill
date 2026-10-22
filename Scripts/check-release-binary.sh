@@ -13,6 +13,7 @@
 # Startargumente für den gemeinsamen Ordner, den Testordner, den Haltepunkt, die
 # Wartezeit vor dem Speichern und den Gerätenamen, der
 # Ordnername im Test-Runner, ihre Bundle-ID und jede Ausnahme in den Entitlements.
+# Ebenso das Test-Modell der KI (`TestTextModel`, nur Debug), erkannt an seiner Antwort.
 #
 # Aufruf: Scripts/check-release-binary.sh [zusätzliche xcodebuild-Einstellungen]
 # Die Einstellungen dienen nur der Gegenprobe, z. B.
@@ -68,7 +69,7 @@ found=0
 for marker in QuillSeedPages ProfilingSeed io.github.vogelwild07.quill.profiling \
   "Testbild in eigener Zwischenablage" "Fenstergröße für UI-Tests" QuillWindowsOnMainScreen QuillInMemoryStore QuillStoreDirectory QuillPasteboardName \
   QuillSyncSharedFolder QuillSyncTestFolder QuillSyncHaltBeforePage QuillSaveDelay QuillSyncDeviceName QuillSyncUITests \
-  io.github.vogelwild07.quill.synctest; do
+  "Antwort des Test-Modells" io.github.vogelwild07.quill.synctest; do
   # LC_ALL=C: byteweise; mit UTF-8-Locale findet grep in Binärdaten keine Umlaute.
   hits=$(LC_ALL=C grep -r -l -a -F "$marker" "$copies" 2>/dev/null)
   if [ -n "$hits" ]; then

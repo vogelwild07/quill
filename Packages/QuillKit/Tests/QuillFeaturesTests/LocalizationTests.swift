@@ -32,6 +32,8 @@ struct LocalizationTests {
                 reason: "Vorgabe im eingefrorenen Schema V1 (ADR-011), nirgends angezeigt."),
         Allowed(file: "QuillModel/Schema/SchemaV2.swift", text: "Mein Workspace", occurrences: 2,
                 reason: "Vorgabe im Schema V2, übernommen aus V1 (ADR-011), nirgends angezeigt."),
+        Allowed(file: "QuillAI/TestTextModel.swift", text: "Antwort des Test-Modells: …",
+                reason: "Antwort des Test-Modells, nur im Debug-Build (`-QuillFakeAI`, 16.1)."),
         Allowed(file: "QuillFeatures/TimeTravel/TimeTravelSeed.swift", text: "Erster Absatz",
                 reason: "Testseite für die Zeitreise, nur im Debug-Build (`-QuillSeedTimeTravel`, 12.3)."),
         Allowed(file: "QuillFeatures/TimeTravel/TimeTravelSeed.swift", text: "Alter Absatz",
@@ -101,6 +103,8 @@ struct LocalizationTests {
         Module(name: "QuillExport", sources: "Packages/QuillKit/Sources/QuillExport", catalog: nil, isPackage: true),
         // Sync ohne Oberfläche (11.1); Texte für die Einstellungen kommen mit 11.4 in QuillFeatures.
         Module(name: "QuillSync", sources: "Packages/QuillKit/Sources/QuillSync", catalog: nil, isPackage: true),
+        // Lokale KI ohne Oberfläche (16.1); Texte stehen in QuillFeatures.
+        Module(name: "QuillAI", sources: "Packages/QuillKit/Sources/QuillAI", catalog: nil, isPackage: true),
         Module(name: "QuillDesign", sources: "Packages/QuillKit/Sources/QuillDesign", catalog: nil, isPackage: true),
     ]
 

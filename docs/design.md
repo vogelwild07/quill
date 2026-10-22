@@ -94,6 +94,12 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   aufbewahrt), Rand `QuillDesign.TimeTravel.noticePadding`.
 - Einstellungen › Zeitreise: Frist für gelöschte Bilder als Optionsfelder (vier Werte).
 
+## Lokale KI
+
+- Einstellungen › KI (`sparkles`): mit bereitem Modell ein Schalter „KI-Funktionen
+  verwenden“ mit dem Hinweis, dass nichts ins Netz geht; ohne Modell statt des Schalters
+  eine Erklärung mit `info.circle` (ein ausgegrauter Schalter wäre im Audit zu blass).
+
 ## Leerzustände
 
 Nach HIG: Symbol, Titel, ein Satz Erklärung, wo es passt ein Knopf. Alle Fälle im Katalog

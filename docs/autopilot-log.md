@@ -30,6 +30,11 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   dem Ausschalten des Sync wird bewusst weiter aufgezeichnet (ADR-031, Abschnitt „Review von
   Phase 12“).
 
+- [ ] 16.1: KI standardmäßig an, wenn Apple Intelligence bereit ist (ein Schalter in
+  Einstellungen › KI schaltet alles aus); ohne Apple Intelligence eine Erklärung statt eines
+  ausgegrauten Schalters, kein Knopf zu den Systemeinstellungen (Adresse nicht dokumentiert);
+  FoundationModels nur im neuen Modul `QuillAI` (ADR-032, Abschnitt 16.1).
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -112,3 +117,20 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   (`docs/performance.md`). **Achtung:** `sidebarLoad` weiter über 200 ms auf beiden Ständen,
   `appstoreagent` läuft seit über einem Tag mit rund 97 % CPU.
 - Phase 12 abgeschlossen.
+
+### 16.1 Grundlage der lokalen KI (PR #31, ADR-032)
+
+- Neues Modul `QuillAI`, einziges mit FoundationModels; nur `SystemLanguageModel` auf dem
+  Gerät, Private Cloud Compute nirgends (`AIIsolationTests`).
+- Einstellungen › KI: Schalter, oder eine Erklärung, wenn Apple Intelligence fehlt, aus ist
+  oder das Modell noch lädt. Test-Modell per `-QuillFakeAI` (nur Debug, nur Test-Store);
+  `check-release-binary.sh` prüft, dass es nicht im Release steckt.
+- Tests: Package 681 (131 + 135 + 283 + 30 + 9 + 93), UI 51 (1 übersprungen), Synctest 13
+  Fälle; 7 Gegenproben rot (eine erste griff nicht und wurde wiederholt), dazu 1 im UI-Test
+  und 1 am Release-Check.
+- Im vollen Lauf zweimal rot: `SpikeIsolationTests` fand „automerge“ in `AIIsolationTests`
+  (Aufruf der Helfer von `AutomergeIsolationTests`, Datei mit Begründung in die Ausnahmen),
+  und `AccessibilityUITests` startete nicht („Timed out while enabling automation mode“);
+  die Klasse lief danach grün.
+- Messung: im Wechsel mit `main` nicht langsamer; `sidebarLoad` weiter auf beiden Ständen über
+  200 ms (`appstoreagent`).
