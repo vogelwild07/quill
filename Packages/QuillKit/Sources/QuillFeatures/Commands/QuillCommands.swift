@@ -54,6 +54,12 @@ public struct QuillCommands: Commands {
             }
             .keyboardShortcut("o")
             .disabled(actions == nil)
+
+            // Nur mit bereitem Modell und eingeschalteter KI (ADR-032); ohne Kürzel.
+            if persistence?.ai.isUsable == true {
+                Button(String(localized: "Frag deine Notizen …", bundle: .module)) { actions?.askNotes() }
+                    .disabled(actions == nil)
+            }
         }
 
         // Menü „Darstellung“, unter den Einträgen zur Seitenleiste. ⇧⌘F ist in

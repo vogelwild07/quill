@@ -28,6 +28,7 @@ public struct RootView: View {
     @State private var isSyncReconnectShown = false
     @State private var summaryRequest: SummaryRequest?
     @State private var todoRequest: TodoRequest?
+    @State private var isAskShown = false
     #endif
 
     @Environment(\.pageStore) private var store
@@ -150,6 +151,19 @@ public struct RootView: View {
                 )
             }
         }
+        .sheet(isPresented: $isAskShown) {
+            if let store, let ai = persistence?.ai {
+                AskView(
+                    model: AskModel(store: store, model: ai.model),
+                    open: { pageID in
+                        isAskShown = false
+                        isShowingTrash = false
+                        selection = pageID
+                    },
+                    dismiss: { isAskShown = false }
+                )
+            }
+        }
         // Erst nach der Meldung zum eingespielten Backup fragen, wie der Sync weitergeht.
         .onChange(of: launchNotice == nil) { askToReconnectSync() }
         #endif
@@ -233,7 +247,8 @@ public struct RootView: View {
             openInWindow: { if let selection { open(selection, asTab: false) } },
             exportPage: { if let selection { exportPage(selection) } },
             summarize: { if let selection { summarize(selection) } },
-            suggestTodos: { suggestTodos() }
+            suggestTodos: { suggestTodos() },
+            askNotes: { askNotes() }
         )
     }
 
@@ -253,9 +268,14 @@ public struct RootView: View {
     private func suggestTodos() {
         todoRequest = TodoRequest(focusedIn: window)
     }
+
+    private func askNotes() {
+        isAskShown = true
+    }
     #else
     private func summarize(_ pageID: UUID) {}
     private func suggestTodos() {}
+    private func askNotes() {}
     #endif
 
     #if canImport(AppKit)
