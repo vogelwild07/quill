@@ -225,7 +225,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         app.typeText("Kuchen")
         relatedPages()
-        XCTAssertTrue(app.descendants(matching: .any)["related.empty"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.descendants(matching: .any)["related.empty.title"].waitForExistence(timeout: 10))
         audit("Verwandte Seiten (keine)")
         app.typeKey(.escape, modifierFlags: [])
     }

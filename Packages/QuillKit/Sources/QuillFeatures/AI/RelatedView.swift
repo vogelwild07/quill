@@ -73,7 +73,7 @@ struct RelatedView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Verwandte Seiten", bundle: .module)
                     .font(.headline)
-                Text(Self.title(request.title))
+                Text(PageLabel.title(request.title))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -105,9 +105,7 @@ struct RelatedView: View {
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("related.progress")
         case .done(let pages) where pages.isEmpty:
-            Text("Keine verwandten Seiten gefunden.", bundle: .module)
-                .foregroundStyle(.secondary)
-                .accessibilityIdentifier("related.empty")
+            EmptyStateView(.noRelatedPages, id: "related.empty")
         case .done(let pages):
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
@@ -116,7 +114,7 @@ struct RelatedView: View {
                             Button {
                                 open(page.pageID)
                             } label: {
-                                Label(Self.title(page.title), systemImage: "doc.text")
+                                Label(PageLabel.title(page.title), systemImage: "doc.text")
                             }
                             .buttonStyle(.link)
                             .accessibilityIdentifier("related.page")
@@ -135,10 +133,6 @@ struct RelatedView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("related.problem")
         }
-    }
-
-    static func title(_ title: String) -> String {
-        title.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : title
     }
 }
 #endif
