@@ -6,8 +6,9 @@ import QuillModel
 /// gehen in Stücken an das Modell; die Teilergebnisse werden dann noch einmal
 /// zusammengefasst.
 struct PageSummarizer {
-    /// Zeichen je Anfrage: Das Modell fasst rund 4.000 Token für Anweisung, Text und
-    /// Antwort zusammen; deutscher Text braucht etwa ein Token für drei bis vier Zeichen.
+    /// Zeichen je Anfrage: Anweisung, Text und Antwort teilen sich das Kontextfenster
+    /// (4.096 Token unter macOS 26, 8.192 unter 27); deutscher Text braucht etwa ein Token
+    /// für drei bis fünf Zeichen, 6.000 Zeichen also höchstens rund 2.000 Token.
     static let chunkLimit = 6000
     /// Runden des Zusammenfassens, danach wird gekürzt (das Modell antwortet zu lang).
     static let maxRounds = 3
