@@ -745,4 +745,19 @@ final class SyncControllerTests {
         let unsafe = try QuillPersistence.open(arguments: ["Quill", "-QuillInMemoryStore", "YES", "-QuillSyncTestFolder", "../x"]) { _, _ in .migrate }
         #expect(unsafe.syncTestFolder == nil)
     }
+
+    /// Speichert der Store abseits des Main Threads (Abgleich, `HistoryRecorder`), während
+    /// der Main Thread auf den Store wartet, darf die Meldung den Store nicht anhalten:
+    /// Sonst warten beide aufeinander (ADR-031). Hier blockiert der Test den Main Thread.
+    @Test func storeSavesOffTheMainThreadDoNotWaitForIt() throws {
+        let persistence = try QuillPersistence.open(arguments: ["Quill", "-QuillInMemoryStore", "YES"]) { _, _ in .migrate }
+        let sync = controller(persistence)
+        sync.start()
+        let posted = DispatchSemaphore(value: 0)
+        Thread.detachNewThread {
+            NotificationCenter.default.post(name: ModelContext.didSave, object: nil)
+            posted.signal()
+        }
+        #expect(posted.wait(timeout: .now() + 3) == .success)
+    }
 }
