@@ -648,6 +648,8 @@ final class PageCellView: NSTableCellView {
         symbolView.isHidden = !icon.isEmpty
         restoredView.isHidden = !node.isRestored
         setAccessibilityLabel(PageLabel.title(node.title))
+        // Leeres Feld: Der Platzhalter reicht AX nicht als Beschreibung, sonst liest der Wert.
+        textField?.setAccessibilityLabel(node.title.isEmpty ? PageLabel.title(node.title) : nil)
         textField?.setAccessibilityValueDescription(
             node.isRestored ? String(localized: "Wiederhergestellt nach dem Abgleich", bundle: .module) : nil
         )
