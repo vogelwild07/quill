@@ -257,7 +257,8 @@ QuillFeatures
                     SyncReconnectView, SyncSidebarStatus, ConflictViews/ConflictLabel (Popover, Hinweis im Seitenkopf)
   Window/           PageJumpRouter (Sprung aus Einstellungen › Sync zur Seite im vordersten Fenster)
   TimeTravel/       TimeTravelScene (Fenster je Seite, ⌥⌘Y), TimeTravelModel (Tage, Stand im Lesemodus,
-                    Rückholung über eine eigene EditorPersistenceBridge), TimeTravelSeed (nur Debug)
+                    Rückholung über eine eigene EditorPersistenceBridge), TimeTravelSeed (nur Debug),
+                    ImageRetention (Frist für Bilder ohne Block), TimeTravelSettingsView
 QuillEditor
   BlockLayoutFragment, BlockEditorController+Markers   Zeichen am Blockrand (Konflikt, wiederhergestellt), Popover, Undo
   Settings/         Bereiche Darstellung, Sync, Lizenzen (Resources/ThirdPartyLicenses.txt, Scripts/third-party-licenses.py)
