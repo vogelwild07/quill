@@ -56,13 +56,20 @@ extension BlockEditorController {
     }
 
     private func insertDuplicates(_ blocks: [EditorBlock], after anchorID: UUID) {
-        guard !blocks.isEmpty, let anchor = document.blocks.firstIndex(where: { $0.id == anchorID }) else { return }
+        insertBlocks(blocks.map { $0.withNewID() }, after: anchorID, actionName: UndoAction.duplicate)
+    }
+
+    /// Blöcke unter dem Block `anchorID` einfügen und auswählen, ein Schritt für ⌘Z
+    /// (⌘D, To-dos aus der KI). Fehlt der Block inzwischen, passiert nichts.
+    public func insertBlocks(_ blocks: [EditorBlock], after anchorID: UUID, actionName: String) {
+        guard !blocks.isEmpty, textView.canEdit, !textView.hasMarkedText(),
+              let anchor = document.blocks.firstIndex(where: { $0.id == anchorID }) else { return }
         var newDocument = document
         for (offset, block) in blocks.enumerated() {
-            newDocument.insertBlock(block.withNewID(), at: anchor + 1 + offset)
+            newDocument.insertBlock(block, at: anchor + 1 + offset)
         }
         textView.breakUndoCoalescing()
-        apply(newDocument, cursor: nil, actionName: UndoAction.duplicate)
+        apply(newDocument, cursor: nil, actionName: actionName)
         selectBlocks((anchor + 1)...(anchor + blocks.count))
     }
 

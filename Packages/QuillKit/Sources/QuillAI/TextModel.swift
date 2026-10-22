@@ -6,6 +6,9 @@ public protocol TextModel: Sendable {
     /// Antwort auf `prompt`; `instructions` sagt dem Modell, was es tun soll. Wirft
     /// `AIError` oder `CancellationError`.
     func respond(instructions: String, prompt: String) async throws -> String
+    /// Einträge, die das Modell in `prompt` findet, als Liste; leer, wenn es keine gibt.
+    /// Wirft wie `respond`.
+    func list(instructions: String, prompt: String) async throws -> [String]
 }
 
 /// Warum das Modell nicht geantwortet hat, ohne Typen aus FoundationModels.

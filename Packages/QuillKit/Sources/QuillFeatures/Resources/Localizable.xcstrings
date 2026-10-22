@@ -196,7 +196,7 @@
     "Das Backup stammt von einer neueren Quill-Version und kann hier nicht eingespielt werden." : {
 
     },
-    "Das Sprachmodell hat diese Seite nicht zusammengefasst." : {
+    "Das Sprachmodell hat diesen Text abgelehnt." : {
 
     },
     "Das Sprachmodell steht gerade nicht bereit." : {
@@ -205,7 +205,7 @@
     "Das Sprachmodell steht gerade nicht bereit. Die KI-Funktionen bleiben ausgeblendet." : {
 
     },
-    "Das Sprachmodell unterstützt die Sprache dieser Seite nicht." : {
+    "Das Sprachmodell unterstützt die Sprache dieses Textes nicht." : {
 
     },
     "Das Sprachmodell von Apple Intelligence rechnet auf diesem Mac. Deine Notizen gehen dafür nicht ins Netz." : {
@@ -262,6 +262,9 @@
     "Die Seite selbst ist nicht betroffen." : {
 
     },
+    "Die Suche nach Aufgaben ist gescheitert." : {
+
+    },
     "Die Vormerkung ließ sich nicht löschen. Damit das Wiederherstellen nicht bei jedem Start erneut läuft, wurde nichts getauscht." : {
 
     },
@@ -272,6 +275,9 @@
 
     },
     "Die Zusammenfassung ist gescheitert." : {
+
+    },
+    "Die markierten Absätze enthalten keinen Text." : {
 
     },
     "Diese Version von Quill braucht ein neues Format für deine Daten. Vorher legt Quill ein Backup an. Ältere Versionen von Quill können die Daten danach nicht mehr öffnen." : {
@@ -286,7 +292,7 @@
     "Durchgestrichen" : {
 
     },
-    "Ein Abschnitt der Seite ist zu lang für das Sprachmodell." : {
+    "Ein Abschnitt ist zu lang für das Sprachmodell." : {
 
     },
     "Ein anderes Gerät hat diesen Block gelöscht oder anders geändert, während er hier bearbeitet wurde. Quill hat ihn behalten, damit nichts verloren geht." : {
@@ -427,6 +433,9 @@
     "In den Papierkorb legen" : {
 
     },
+    "In den markierten Absätzen stehen keine Aufgaben." : {
+
+    },
     "In neuem Fenster öffnen" : {
 
     },
@@ -485,6 +494,9 @@
 
     },
     "Löschen fehlgeschlagen" : {
+
+    },
+    "Markiere zuerst die Absätze, in denen Aufgaben stehen." : {
 
     },
     "Markierter Text" : {
@@ -695,6 +707,9 @@
     "Stufe %@" : {
 
     },
+    "Suche Aufgaben …" : {
+
+    },
     "Suchen" : {
 
     },
@@ -738,6 +753,15 @@
 
     },
     "To-do" : {
+
+    },
+    "To-dos einfügen" : {
+
+    },
+    "To-dos vorschlagen" : {
+
+    },
+    "To-dos vorschlagen …" : {
 
     },
     "Trennlinie" : {
@@ -798,6 +822,9 @@
 
     },
     "Vor einer Aktualisierung der Datenbank" : {
+
+    },
+    "Vorgeschlagen vom Sprachmodell auf diesem Mac. Die markierten Absätze bleiben, die To-dos kommen darunter." : {
 
     },
     "Vorschau: %@" : {

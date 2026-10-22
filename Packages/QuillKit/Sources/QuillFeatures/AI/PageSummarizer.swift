@@ -51,8 +51,13 @@ struct PageSummarizer {
 
     /// Text der Seite, ein Absatz je Block; Bilder, Trenner und leere Blöcke fallen weg.
     static func plainText(_ blocks: [BlockSnapshot]) -> String {
+        plainText(blocks.map { (BlockKind(rawValue: $0.kindRaw), $0.text) })
+    }
+
+    /// Wie oben, für Blöcke aus dem Store und aus dem Editor (To-dos, 16.3).
+    static func plainText(_ blocks: [(kind: BlockKind?, text: String)]) -> String {
         blocks.compactMap { block -> String? in
-            switch BlockKind(rawValue: block.kindRaw) {
+            switch block.kind {
             case .image, .divider:
                 return nil
             case .paragraph, .heading1, .heading2, .heading3, .bulleted, .numbered, .todo, .quote, .code, nil:

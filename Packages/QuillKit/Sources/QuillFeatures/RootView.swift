@@ -27,6 +27,7 @@ public struct RootView: View {
     @State private var launchNotice: LaunchNotice?
     @State private var isSyncReconnectShown = false
     @State private var summaryRequest: SummaryRequest?
+    @State private var todoRequest: TodoRequest?
     #endif
 
     @Environment(\.pageStore) private var store
@@ -141,6 +142,14 @@ public struct RootView: View {
                 )
             }
         }
+        .sheet(item: $todoRequest) { request in
+            if let ai = persistence?.ai {
+                TodoView(
+                    request: request, model: TodoModel(blocks: request.blocks, model: ai.model),
+                    dismiss: { todoRequest = nil }
+                )
+            }
+        }
         // Erst nach der Meldung zum eingespielten Backup fragen, wie der Sync weitergeht.
         .onChange(of: launchNotice == nil) { askToReconnectSync() }
         #endif
@@ -223,7 +232,8 @@ public struct RootView: View {
             openInTab: { if let selection { open(selection, asTab: true) } },
             openInWindow: { if let selection { open(selection, asTab: false) } },
             exportPage: { if let selection { exportPage(selection) } },
-            summarize: { if let selection { summarize(selection) } }
+            summarize: { if let selection { summarize(selection) } },
+            suggestTodos: { suggestTodos() }
         )
     }
 
@@ -238,8 +248,14 @@ public struct RootView: View {
             editor: editor
         )
     }
+
+    /// To-dos aus der Markierung im Editor, der den Fokus hat.
+    private func suggestTodos() {
+        todoRequest = TodoRequest(focusedIn: window)
+    }
     #else
     private func summarize(_ pageID: UUID) {}
+    private func suggestTodos() {}
     #endif
 
     #if canImport(AppKit)
