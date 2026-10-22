@@ -152,16 +152,9 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.launchArguments += ["-QuillSeedTimeTravel", "YES"]
         app.launch()
         XCTAssertTrue(window.waitForExistence(timeout: 10))
-        let row = window.outlines["sidebar.pages"].pageRows.firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 10))
-        row.click()
-        app.typeKey("y", modifierFlags: [.command, .option])
-        let travel = app.windows["Zeitreise: Zeitreise-Test"]
-        XCTAssertTrue(travel.waitForExistence(timeout: 10))
-        let days = travel.descendants(matching: .any).matching(identifier: "timeTravel.day")
-        XCTAssertTrue(days.element(boundBy: 2).waitForExistence(timeout: 10))
+        let travel = app.openSeededTimeTravel()
         audit("Zeitreise (heute)")
-        days.element(boundBy: 2).click()
+        travel.timeTravelDays.element(boundBy: 2).click()
         audit("Zeitreise (früherer Tag)")
     }
 

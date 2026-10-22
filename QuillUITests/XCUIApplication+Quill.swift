@@ -29,12 +29,31 @@ extension XCUIApplication {
         }
         return app
     }
+
+    /// Öffnet die Zeitreise der ersten Seite (⌥⌘Y) und gibt das Fenster zurück, sobald
+    /// es die drei Tage aus `-QuillSeedTimeTravel` zeigt (12.3).
+    @MainActor
+    func openSeededTimeTravel(file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
+        let row = windows.firstMatch.outlines["sidebar.pages"].pageRows.firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10), "Testseite fehlt", file: file, line: line)
+        row.click()
+        typeKey("y", modifierFlags: [.command, .option])
+        let window = windows["Zeitreise: Zeitreise-Test"]
+        XCTAssertTrue(window.waitForExistence(timeout: 10), "Fenster „Zeitreise“ fehlt", file: file, line: line)
+        XCTAssertTrue(window.timeTravelDays.element(boundBy: 2).waitForExistence(timeout: 10), "Drei Tage erwartet", file: file, line: line)
+        return window
+    }
 }
 
 extension XCUIElement {
     /// Zeilen des Seitenbaums in der Sidebar, ohne Gruppen und Favoriten (ADR-017).
     var pageRows: XCUIElementQuery {
         outlineRows.containing(.textField, identifier: "sidebar.page")
+    }
+
+    /// Tage im Fenster „Zeitreise“, neuester zuerst.
+    var timeTravelDays: XCUIElementQuery {
+        descendants(matching: .any).matching(identifier: "timeTravel.day")
     }
 
     /// Zeilen im Abschnitt „Favoriten“.
