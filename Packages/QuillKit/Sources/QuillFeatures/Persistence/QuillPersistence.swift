@@ -2,6 +2,7 @@ import Foundation
 import OSLog
 import QuillEditorCore
 import QuillModel
+import QuillSync
 import SwiftData
 import SwiftUI
 #if canImport(AppKit)
@@ -118,6 +119,9 @@ public final class QuillPersistence {
         backupBeforeSync: { [unowned self] in try await self.backupBeforeSync() },
         deviceName: syncDeviceName
     )
+    /// Geschichte der Seiten für die Zeitreise (ADR-031), auch ohne Sync; zeichnet ab
+    /// `history.start()` auf.
+    public private(set) lazy var history = HistoryObserver(recorder: HistoryRecorder(store: store))
     #if DEBUG || QUILL_SYNCTEST
     /// Nur für Tests: Gerätename statt des Mac-Namens (`syncDeviceNameArgument`).
     private var testDeviceName: String?
