@@ -29,6 +29,9 @@ final class TimeTravelModel {
     private(set) var canRestore = false
     /// Letztes Zurückholen ist gescheitert (Hinweis im Fenster).
     private(set) var restoreFailed = false
+    /// Bild-Blöcke, die das letzte Zurückholen ausgelassen hat, weil ihr Bild nicht mehr
+    /// aufbewahrt wird (Frist, 12.4): Ein leerer Bild-Block hülfe niemandem.
+    private(set) var skippedImages = 0
 
     @ObservationIgnored let controller = BlockEditorController(document: EditorDocument())
     @ObservationIgnored private var history: PageHistory?
@@ -92,6 +95,14 @@ final class TimeTravelModel {
     func restore(_ chosen: Set<UUID>) async {
         guard !chosen.isEmpty else { return }
         let old = controller.document.blocks
+        var chosen = chosen
+        skippedImages = 0
+        for block in old where chosen.contains(block.id) {
+            guard let asset = block.properties.assetID, (try? await store.imageData(asset)) == nil else { continue }
+            chosen.remove(block.id)
+            skippedImages += 1
+        }
+        guard !chosen.isEmpty else { return }
         let bridge = EditorPersistenceBridge(pageID: pageID, store: store)
         do {
             // `load()` speichert vorher eine ältere, noch offene Rückholung derselben Seite.
