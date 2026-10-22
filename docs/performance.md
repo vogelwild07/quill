@@ -467,6 +467,27 @@ Nicht langsamer. `search` liegt im Rahmen früherer Messungen (16.3: 45,0–45,3
 Suche ist unverändert. `sidebarLoad` streut wie in 16.2 (erste Runde hoch, zweite im Bereich
 von `main`); der Startpfad ist unverändert.
 
+## Verwandte Seiten (22.10.2026, ADR-032)
+
+16.5 ändert nichts am Start, am Store und an der Suche. Im Wechsel mit `main` (`470c39c`),
+zwei Durchgänge mit je zwei Runden:
+
+| Messung (ms) | `main` | 16.5 |
+|---|---|---|
+| editorLoad | 12,93 / 13,03 · 12,89 / 13,15 | 12,80 / 12,98 · 13,04 / 12,82 |
+| bridgeLoad | 16,86 / 16,79 · 16,64 / 16,81 | 16,66 / 16,94 · 16,61 / 16,82 |
+| applyEditsReverse | 67,84 / 68,94 · 67,08 / 68,82 | 69,29 / 69,85 · 68,55 / 69,00 |
+| pageTreeBuild | 54,59 / 54,60 · 54,51 / 54,85 | 53,95 / 54,08 · 53,87 / 54,11 |
+| search | 45,16 / 43,53 · 43,93 / 45,35 | 44,63 / 44,77 · 44,75 / 44,04 |
+| App: sidebarLoad | 208,4 / 211,1 · 212,1 / 208,4 | 212,0 / 214,5 · 212,0 / 210,4 |
+| App: sidebarReload | 168,4 / 166,3 · 169,2 / 143,7 | 169,8 / 169,4 · 166,8 / 167,2 |
+| App: pageSwitch | 83,4 / 82,2 · 81,9 / 82,0 | 81,3 / 81,7 · 81,2 / 81,3 |
+
+Nicht langsamer. An diesem Abend lag `sidebarLoad` auch auf `main` über der Grenze von
+200 ms (vorher 190 ms, gleicher Code): Der Mac maß insgesamt langsamer. Im ersten Durchgang
+lag 16.5 rund 3 ms höher, im zweiten gleichauf. `applyEditsReverse` überschneidet sich mit
+`main`, der Store ist unverändert.
+
 ## Messbedingungen
 
 | | |

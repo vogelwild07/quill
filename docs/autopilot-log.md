@@ -49,6 +49,11 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   um die erste Fundstelle gekürzt; ohne passende Seite wird das Modell nicht gefragt; alle
   Quellen anklickbar (ADR-032, Abschnitt 16.4).
 
+- [ ] 16.5: „Verwandte Seiten …“ als Blatt aus dem Menü Seite statt Leiste neben dem Editor;
+  bis zu 5 Seiten aus Suchbegriffen des Modells (Titel und Anfang der Seite) und der
+  vorhandenen Suche, gemeinsame Begriffe sichtbar; kein Einfügen von Links, weil es noch
+  keine Links auf Seiten gibt (ADR-032, Abschnitt 16.5).
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -197,3 +202,15 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   (Test geschärft, dann rot), eine weitere zeigte doppelten Code (entfernt, Probe entfällt);
   eine galt fälschlich als „kompiliert nicht“ (Prüfskript), war aber kompiliert und rot.
 - Messung im Wechsel mit `main` (`c7457b8`): nicht langsamer; `sidebarLoad` streut wie in 16.2.
+
+### 16.5 Verwandte Seiten (PR #35, ADR-032)
+
+- Seite › „Verwandte Seiten …“: Blatt mit bis zu 5 Seiten und den gemeinsamen Begriffen,
+  Klick öffnet die Seite. Suche nach Begriffen des Modells jetzt gemeinsam mit 16.4
+  (`TermSearch`).
+- Echtes Modell nur auf dem Mac: „die wichtigsten Namen und Dinge“ lieferte Orte und Namen;
+  zusammengesetzte Wörter zerlegt es auch auf Bitte nicht verlässlich (hingenommen, ADR-032).
+- Tests: Package 706 (135 + 156 + 283 + 30 + 9 + 93), UI 60 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 9 im Package und 3 im UI-Test rot, alle beim ersten Mal.
+- Messung im Wechsel mit `main` (`470c39c`), zweimal: nicht langsamer. An diesem Abend lag
+  `sidebarLoad` auch auf `main` über 200 ms (sonst 190 ms); der Mac maß insgesamt langsamer.
