@@ -75,8 +75,9 @@ struct NoteAnswererTests {
 
     @Test func pagesWithMoreTermsFirstAndAtMostFive() async throws {
         let store = try Self.store()
-        for index in 1...6 { try await Self.page("Liste \(index)", ["Milch"], in: store) }
+        // Zuerst angelegt: Die Suche zeigt sie unter „Milch“ zuletzt.
         let both = try await Self.page("Frühstück", ["Milch und Brot"], in: store)
+        for index in 1...6 { try await Self.page("Liste \(index)", ["Milch"], in: store) }
         let model = RecordingModel(terms: ["Milch", "Brot"])
         let answer = try await NoteAnswerer(model: model, store: store).answer("Was gibt es zum Frühstück?")
         #expect(answer.sources.count == NoteAnswerer.maxSources)
