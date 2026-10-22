@@ -5,9 +5,9 @@ import QuillEditorCore
 import SwiftData
 import SwiftUI
 
-/// Einstellungen (⌘,): Darstellung, Sync, Zeitreise, Lizenzen.
+/// Einstellungen (⌘,): Darstellung, Sync, Zeitreise, KI, Lizenzen.
 public struct SettingsView: View {
-    private enum Pane: Hashable { case appearance, sync, timeTravel, licenses }
+    private enum Pane: Hashable { case appearance, sync, timeTravel, ai, licenses }
 
     private let persistence: QuillPersistence?
     /// Eigene Auswahl: Die Einstellungen öffnen nach jedem Start mit „Darstellung“.
@@ -31,6 +31,9 @@ public struct SettingsView: View {
                 }
                 Tab(String(localized: "Zeitreise", bundle: .module), systemImage: "clock.arrow.circlepath", value: .timeTravel) {
                     TimeTravelSettingsView(retention: persistence.imageRetention)
+                }
+                Tab(String(localized: "KI", bundle: .module), systemImage: "sparkles", value: .ai) {
+                    AISettingsView(ai: persistence.ai)
                 }
             }
             Tab(String(localized: "Lizenzen", bundle: .module), systemImage: "doc.text", value: .licenses) {

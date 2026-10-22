@@ -100,6 +100,9 @@
     "Alte Dateien beiseitegelegt" : {
 
     },
+    "Apple Intelligence ist aus. Schalte es in den Systemeinstellungen unter „Apple Intelligence & Siri“ ein, dann erscheinen die KI-Funktionen." : {
+
+    },
     "Aufzählung" : {
 
     },
@@ -193,6 +196,15 @@
     "Das Backup stammt von einer neueren Quill-Version und kann hier nicht eingespielt werden." : {
 
     },
+    "Das Sprachmodell steht gerade nicht bereit. Die KI-Funktionen bleiben ausgeblendet." : {
+
+    },
+    "Das Sprachmodell von Apple Intelligence rechnet auf diesem Mac. Deine Notizen gehen dafür nicht ins Netz." : {
+
+    },
+    "Das Sprachmodell wird noch geladen. Die KI-Funktionen erscheinen, sobald es bereit ist." : {
+
+    },
     "Das ist der bisherige Ordner. Zum Neubeginnen wähle einen anderen, leeren Ordner; mit dem bisherigen führt Quill zusammen." : {
 
     },
@@ -248,6 +260,9 @@
 
     },
     "Diese Version von Quill braucht ein neues Format für deine Daten. Vorher legt Quill ein Backup an. Ältere Versionen von Quill können die Daten danach nicht mehr öffnen." : {
+
+    },
+    "Dieser Mac unterstützt Apple Intelligence nicht. Die KI-Funktionen bleiben ausgeblendet." : {
 
     },
     "Du wählst einen leeren Ordner; der Stand aus dem Backup kommt dorthin. Der bisherige Ordner bleibt unverändert, andere Macs müssen den neuen Ordner wählen." : {
@@ -395,6 +410,12 @@
 
     },
     "Jetzt abgleichen" : {
+
+    },
+    "KI" : {
+
+    },
+    "KI-Funktionen verwenden" : {
 
     },
     "Kein Seitentitel und kein Text passt zur Suche." : {

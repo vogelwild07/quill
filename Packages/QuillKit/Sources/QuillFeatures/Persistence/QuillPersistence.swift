@@ -1,5 +1,6 @@
 import Foundation
 import OSLog
+import QuillAI
 import QuillEditorCore
 import QuillModel
 import QuillSync
@@ -49,6 +50,9 @@ public final class QuillPersistence {
     /// Startargument `-QuillSeedTimeTravel YES`, nur Debug und nur mit einem Test-Store:
     /// legt eine Seite mit Geschichte über drei Tage an (`TimeTravelSeed`, 12.3).
     public static let seedTimeTravelArgument = "QuillSeedTimeTravel"
+    /// Nur Debug, nur Test-Store: Test-Modell statt Apple Intelligence (ADR-032). Wert
+    /// `available` oder ein anderer Fall von `AIAvailability`, um die Erklärung zu prüfen.
+    public static let fakeAIArgument = "QuillFakeAI"
     /// Relativ zum Benutzerordner; steht genauso in `App/QuillSynctest.entitlements`.
     public static let syncSharedFolderRoot = "Library/Containers/io.github.vogelwild07.quill.UITests.xctrunner/Data/tmp/QuillSyncUITests"
     #endif
@@ -128,6 +132,10 @@ public final class QuillPersistence {
     /// Frist für Bilder ohne Block (12.4, ADR-031); beim echten Store in den Einstellungen
     /// des Macs, bei Test-Stores nur bis zum Beenden.
     public let imageRetention: ImageRetentionSettings
+    /// KI-Funktionen (ADR-032); Wahl wie bei der Frist für Bilder nur beim echten Store
+    /// in den Einstellungen des Macs. Erst beim ersten Zugriff: Die Verfügbarkeit des
+    /// Modells zu prüfen kostet beim ersten Mal einige Millisekunden, nicht beim Start.
+    public private(set) lazy var ai = AISettings(defaults: settingsDefaults)
     #if DEBUG || QUILL_SYNCTEST
     /// Nur für Tests: Gerätename statt des Mac-Namens (`syncDeviceNameArgument`).
     private var testDeviceName: String?
@@ -143,6 +151,7 @@ public final class QuillPersistence {
     /// Nur für UI-Tests: Ordner statt der Dateiauswahl (`syncTestFolderArgument`).
     public let syncTestFolder: URL?
     private let syncStorage: any SyncSettingsStorage
+    private let settingsDefaults: UserDefaults?
     private var syncReconnectPromptClaimed = false
     private let backup: StoreBackup?
     /// Was beim Start vorbereitet wurde (Wiederherstellen, Beiseitelegen), bis es
@@ -158,10 +167,11 @@ public final class QuillPersistence {
     init(
         container: ModelContainer, backup: StoreBackup?, preparation: StorePreparation? = nil,
         syncStorage: any SyncSettingsStorage = MemorySyncSettingsStorage(), syncTestFolder: URL? = nil,
-        retentionDefaults: UserDefaults? = nil
+        settingsDefaults: UserDefaults? = nil
     ) {
         self.container = container
-        self.imageRetention = ImageRetentionSettings(defaults: retentionDefaults)
+        self.imageRetention = ImageRetentionSettings(defaults: settingsDefaults)
+        self.settingsDefaults = settingsDefaults
         self.store = PageStore(modelContainer: container)
         self.syncStorage = syncStorage
         self.syncTestFolder = syncTestFolder
@@ -234,7 +244,7 @@ public final class QuillPersistence {
         let persistence = QuillPersistence(
             container: container, backup: backup, preparation: preparation,
             syncStorage: syncStorage(testStore), syncTestFolder: testStore == nil ? nil : syncTestFolder(arguments: arguments),
-            retentionDefaults: retentionDefaults(testStore)
+            settingsDefaults: settingsDefaults(testStore)
         )
         #if DEBUG || QUILL_SYNCTEST
         if testStore != nil { configureTestHooks(persistence, arguments: arguments) }
@@ -262,9 +272,9 @@ public final class QuillPersistence {
         return UserDefaults.standard
     }
 
-    /// Frist für Bilder: nur der echte Store liest und speichert sie in den Einstellungen
-    /// des Macs. Test-Stores nie, denn Debug-Builds teilen sie mit der echten App.
-    static func retentionDefaults(_ testStore: TestStore?) -> UserDefaults? {
+    /// Frist für Bilder und KI: nur der echte Store liest und speichert sie in den
+    /// Einstellungen des Macs. Test-Stores nie, denn Debug-Builds teilen sie mit der echten App.
+    static func settingsDefaults(_ testStore: TestStore?) -> UserDefaults? {
         testStore == nil ? .standard : nil
     }
 
@@ -305,6 +315,9 @@ public final class QuillPersistence {
         persistence.sync.testHaltBeforeStoringPage = number(syncHaltArgument)
         EditorPersistenceBridge.testDelay = number(saveDelayArgument).map { .milliseconds($0) }
         #if DEBUG
+        if let fake = value(fakeAIArgument).flatMap(AIAvailability.init(rawValue:)) {
+            persistence.ai = AISettings(defaults: nil, model: TestTextModel(), availability: { fake })
+        }
         if flag(seedTimeTravelArgument, in: arguments) {
             let store = persistence.store
             Task {
