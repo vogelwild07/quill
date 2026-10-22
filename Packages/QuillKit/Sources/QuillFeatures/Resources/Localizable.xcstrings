@@ -148,6 +148,9 @@
     "Backups im Finder zeigen" : {
 
     },
+    "Beantwortet vom Sprachmodell auf diesem Mac, nur aus den genannten Seiten. Prüfe die Antwort dort." : {
+
+    },
     "Beenden" : {
 
     },
@@ -248,6 +251,9 @@
 
     },
     "Der vorherige Stand liegt noch in „Application Support/Quill/%@“; Quill legt ihn beim nächsten Start zu den Backups." : {
+
+    },
+    "Die Antwort ist gescheitert." : {
 
     },
     "Die Dateien konnten nicht getauscht werden." : {
@@ -359,6 +365,18 @@
 
     },
     "Fortschritt des Abgleichs" : {
+
+    },
+    "Frag deine Notizen" : {
+
+    },
+    "Frag deine Notizen …" : {
+
+    },
+    "Frage" : {
+
+    },
+    "Fragen" : {
 
     },
     "Frühere Stände einer Seite enthalten keine Bilder, nur Verweise darauf. Ein Bild, das in keiner Seite mehr steht, bleibt so lange, damit die Zeitreise es zurückholen kann. Eine kürzere Frist wirkt ab dem nächsten Start." : {
@@ -592,6 +610,9 @@
     "Pausiert" : {
 
     },
+    "Quellen" : {
+
+    },
     "Quill gleicht deine Seiten über einen Ordner ab, zum Beispiel in iCloud Drive. Jeder Mac schreibt dort nur eigene Dateien, nichts wird überschrieben." : {
 
     },
@@ -704,10 +725,16 @@
     "Status" : {
 
     },
+    "Stell zuerst eine Frage." : {
+
+    },
     "Stufe %@" : {
 
     },
     "Suche Aufgaben …" : {
+
+    },
+    "Suche in deinen Notizen …" : {
 
     },
     "Suchen" : {
@@ -836,6 +863,9 @@
     "Wartet, bis der Ordner geladen ist." : {
 
     },
+    "Was möchtest du wissen?" : {
+
+    },
     "Wenn du Quill jetzt beendest, gehen diese Änderungen verloren. Solange Quill geöffnet bleibt, wird das Speichern weiter versucht.\n\n%@" : {
 
     },
@@ -882,6 +912,9 @@
 
     },
     "Zu Favoriten hinzufügen" : {
+
+    },
+    "Zu deiner Frage habe ich keine passenden Seiten gefunden." : {
 
     },
     "Zu wenig freier Speicher: %@ nötig, %@ frei." : {

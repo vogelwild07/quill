@@ -253,7 +253,10 @@ QuillFeatures/AI
                     Nummern, Kästchen und Doppelte, höchstens 50
   TodoView          Blatt „To-dos vorschlagen …“: Liste ansehen, Einfügen als To-do-Blöcke unter
                     der Markierung (BlockEditorController.insertBlocks, ein Schritt für ⌘Z)
-  AIProblem         ein Satz je AIError, für beide Blätter
+  AIProblem         ein Satz je AIError, für alle Blätter
+  NoteAnswerer      Frage → Suchbegriffe (list) → PageStore.search je Begriff, Seiten mit den
+                    meisten Begriffen, höchstens 5 und 6.000 Zeichen; sonst Wörter der Frage
+  AskView           Blatt „Frag deine Notizen …“: speichert offene Editoren, Antwort + Quellen
 ```
 
 ## Sync (ADR-026, ADR-029, ab Phase 11)

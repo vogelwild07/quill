@@ -21,6 +21,8 @@ public struct PageActions {
     var summarize: @MainActor () -> Void
     /// „To-dos vorschlagen …“ (16.3, ADR-032); im Menü nur mit bereitem Modell.
     var suggestTodos: @MainActor () -> Void
+    /// „Frag deine Notizen …“ (16.4, ADR-032); im Menü nur mit bereitem Modell.
+    var askNotes: @MainActor () -> Void
 }
 
 /// Befehle des fokussierten Fensters, die nicht von einer Seite abhängen.

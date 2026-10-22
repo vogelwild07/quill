@@ -106,6 +106,10 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
 - Seite › „To-dos vorschlagen …“ direkt darunter, gleiche Bedingung. Arbeitet auf den markierten
   Absätzen; ohne Markierung sagt das Blatt, was zu tun ist. Vorschau als Liste mit `square`,
   „Einfügen“ (Standard) legt sie als To-do-Blöcke unter die Markierung, die Absätze bleiben.
+- Ablage › „Frag deine Notizen …“ unter „Schnell öffnen …“, gleiche Bedingung. Blatt mit Feld
+  (Fokus beim Öffnen, ↩ fragt), Fortschritt, Antwort (auswählbar) und darunter „Quellen“ als
+  Links mit `doc.text`; ein Klick öffnet die Seite und schließt das Blatt. Hinweis, dass das
+  Modell auf dem Mac nur aus diesen Seiten antwortet.
 
 ## Leerzustände
 

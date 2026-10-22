@@ -2,7 +2,7 @@ import AppKit
 import XCTest
 
 /// Lokale KI (ADR-032): Einstellungen › KI (16.1), Seite zusammenfassen (16.2), To-dos
-/// vorschlagen (16.3). Statt Apple Intelligence ein Test-Modell (`-QuillFakeAI`, nur Debug
+/// vorschlagen (16.3), Frag deine Notizen (16.4). Statt Apple Intelligence ein Test-Modell (`-QuillFakeAI`, nur Debug
 /// und Test-Store), damit der Test auf jedem Mac gleich läuft; es antwortet mit der ersten
 /// Zeile der Anfrage, Listen mit einem Eintrag je Zeile.
 @MainActor
@@ -49,6 +49,8 @@ final class AIUITests: XCTestCase {
         XCTAssertFalse(summarizeMenuItem.exists, "„Zusammenfassen …“ trotz ausgeschalteter KI")
         XCTAssertFalse(app.menuBars.menuItems["To-dos vorschlagen …"].exists, "„To-dos vorschlagen …“ trotz ausgeschalteter KI")
         app.typeKey(.escape, modifierFlags: [])
+        XCTAssertFalse(askMenuItem.exists, "„Frag deine Notizen …“ trotz ausgeschalteter KI")
+        app.typeKey(.escape, modifierFlags: [])
     }
 
     func testExplainsMissingAppleIntelligence() throws {
@@ -62,6 +64,8 @@ final class AIUITests: XCTestCase {
         app.typeKey("w", modifierFlags: .command)
         XCTAssertFalse(summarizeMenuItem.exists, "„Zusammenfassen …“ ohne Modell")
         XCTAssertFalse(app.menuBars.menuItems["To-dos vorschlagen …"].exists, "„To-dos vorschlagen …“ ohne Modell")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertFalse(askMenuItem.exists, "„Frag deine Notizen …“ ohne Modell")
         app.typeKey(.escape, modifierFlags: [])
     }
 
@@ -135,7 +139,60 @@ final class AIUITests: XCTestCase {
         waitFor(!problem.exists, "Blatt nicht geschlossen")
     }
 
+    // MARK: - Frag deine Notizen
+
+    func testAskNotesAnswersAndOpensTheSource() throws {
+        launch(availability: "available")
+        createPage("Einkauf")
+        app.typeText("\r")
+        waitForFocus(editor)
+        app.typeText("Milch kaufen")
+        createPage("Urlaub")
+
+        askMenuItem.click()
+        let question = app.descendants(matching: .any)["ask.question"]
+        XCTAssertTrue(question.waitForExistence(timeout: 5))
+        waitForFocus(question)
+        app.typeText("Was soll ich kaufen?\r")
+        let answer = app.descendants(matching: .any)["ask.answer"]
+        XCTAssertTrue(answer.waitForExistence(timeout: 10))
+        let text = answer.label + (answer.value as? String ?? "")
+        XCTAssertTrue(text.contains("Antwort des Test-Modells: Frage: Was soll ich kaufen?"), text)
+        // Als Link gestaltet: nicht unbedingt ein Button für die Bedienungshilfen.
+        let sources = app.descendants(matching: .any).matching(identifier: "ask.source")
+        XCTAssertEqual(sources.count, 1)
+        XCTAssertEqual(sources.firstMatch.label, "Einkauf")
+
+        sources.firstMatch.click()
+        waitFor(!question.exists, "Blatt nicht geschlossen")
+        waitFor((self.title.value as? String) == "Einkauf", "Quelle nicht geöffnet")
+    }
+
+    func testAskNotesWithoutMatchingPageExplains() throws {
+        launch(availability: "available")
+        createPage("Einkauf")
+        askMenuItem.click()
+        let question = app.descendants(matching: .any)["ask.question"]
+        XCTAssertTrue(question.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["ask.submit"].isEnabled, "Fragen ohne Frage")
+        waitForFocus(question)
+        app.typeText("Xylophon?\r")
+        let problem = app.descendants(matching: .any)["ask.problem"]
+        XCTAssertTrue(problem.waitForExistence(timeout: 10))
+        let text = problem.label + (problem.value as? String ?? "")
+        XCTAssertTrue(text.contains("keine passenden Seiten"), text)
+        app.typeKey(.escape, modifierFlags: [])
+        waitFor(!problem.exists, "Blatt nicht geschlossen")
+    }
+
     // MARK: - Hilfen
+
+    /// Öffnet das Menü „Ablage“ und gibt den Eintrag zurück (ohne zu klicken).
+    private var askMenuItem: XCUIElement {
+        app.typeKey(.escape, modifierFlags: [])
+        app.menuBars.menuBarItems["Ablage"].click()
+        return app.menuBars.menuItems["Frag deine Notizen …"]
+    }
 
     private var todosMenuItem: XCUIElement {
         app.menuBars.menuBarItems["Seite"].click()

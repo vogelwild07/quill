@@ -44,6 +44,11 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   To-do-Blöcke unter die Markierung, die Absätze bleiben (nicht ersetzen); Liste per Guided
   Generation statt Text zerlegen; höchstens 50 (ADR-032, Abschnitt 16.3).
 
+- [ ] 16.4: „Frag deine Notizen“ als Blatt aus Ablage; Suchbegriffe vom Modell, ohne Treffer
+  die Wörter der Frage ab 4 Buchstaben; höchstens 5 Seiten und 6.000 Zeichen, lange Seiten
+  um die erste Fundstelle gekürzt; ohne passende Seite wird das Modell nicht gefragt; alle
+  Quellen anklickbar (ADR-032, Abschnitt 16.4).
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -176,3 +181,19 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
 - Tests: Package 694 (135 + 144 + 283 + 30 + 9 + 93), UI 56 (1 übersprungen), Synctest 13
   Fälle. Gegenproben: 8 im Package und 3 im UI-Test rot, alle beim ersten Mal.
 - Messung im Wechsel mit `main` (`562c11d`): nicht langsamer.
+
+### 16.4 Frag deine Notizen (PR #34, ADR-032)
+
+- Ablage › „Frag deine Notizen …“: Blatt mit Frage, Antwort und Quellen. Die Seiten findet
+  die vorhandene Suche (`NoteAnswerer`), ans Modell gehen nur sie; Klick auf eine Quelle
+  öffnet die Seite.
+- Echtes Modell nur auf dem Mac: Die ersten Anweisungen lieferten zusammengesetzte
+  Suchbegriffe („Zahnarzttermin“ fand „Zahnarzt am Montag“ nicht) und erfundene Antworten;
+  überarbeitet und je drei Fälle zweimal geprüft (ADR-032).
+- Audit: Das fokussierte Textfeld meldet eine Eltern-Kind-Waise, Ausnahme
+  `.focusedTextField` wie bei den anderen Blättern.
+- Tests: Package 701 (135 + 151 + 283 + 30 + 9 + 93), UI 58 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 8 im Package und 2 im UI-Test rot; eine Gegenprobe blieb erst grün
+  (Test geschärft, dann rot), eine weitere zeigte doppelten Code (entfernt, Probe entfällt);
+  eine galt fälschlich als „kompiliert nicht“ (Prüfskript), war aber kompiliert und rot.
+- Messung im Wechsel mit `main` (`c7457b8`): nicht langsamer; `sidebarLoad` streut wie in 16.2.
