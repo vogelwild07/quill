@@ -17,7 +17,8 @@ public actor HistoryRecorder {
     public static let quietPeriod: Duration = .seconds(2)
     public static let maxDelay: Duration = .seconds(30)
 
-    private let store: PageStore
+    /// Store, dessen Seiten aufgezeichnet werden (`HistoryObserver` nimmt nur dessen Speicherungen).
+    public nonisolated let store: PageStore
     private let quietPeriod: Duration
     private let maxDelay: Duration
     /// Seite → seit wann eine Speicherung auf die Aufzeichnung wartet.
