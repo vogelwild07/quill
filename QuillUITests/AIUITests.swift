@@ -1,9 +1,10 @@
 import AppKit
 import XCTest
 
-/// Lokale KI (ADR-032): Einstellungen › KI (16.1), Seite zusammenfassen (16.2). Statt
-/// Apple Intelligence ein Test-Modell (`-QuillFakeAI`, nur Debug und Test-Store), damit
-/// der Test auf jedem Mac gleich läuft; es antwortet mit der ersten Zeile der Anfrage.
+/// Lokale KI (ADR-032): Einstellungen › KI (16.1), Seite zusammenfassen (16.2), To-dos
+/// vorschlagen (16.3). Statt Apple Intelligence ein Test-Modell (`-QuillFakeAI`, nur Debug
+/// und Test-Store), damit der Test auf jedem Mac gleich läuft; es antwortet mit der ersten
+/// Zeile der Anfrage, Listen mit einem Eintrag je Zeile.
 @MainActor
 final class AIUITests: XCTestCase {
     private var app: XCUIApplication!
@@ -46,6 +47,7 @@ final class AIUITests: XCTestCase {
         waitFor((toggle.value as? Int) == 0, "KI nicht ausgeschaltet")
         app.typeKey("w", modifierFlags: .command)
         XCTAssertFalse(summarizeMenuItem.exists, "„Zusammenfassen …“ trotz ausgeschalteter KI")
+        XCTAssertFalse(app.menuBars.menuItems["To-dos vorschlagen …"].exists, "„To-dos vorschlagen …“ trotz ausgeschalteter KI")
         app.typeKey(.escape, modifierFlags: [])
     }
 
@@ -59,6 +61,7 @@ final class AIUITests: XCTestCase {
         XCTAssertFalse(app.descendants(matching: .any)["settings.aiEnabled"].exists, "Ohne Modell kein Schalter")
         app.typeKey("w", modifierFlags: .command)
         XCTAssertFalse(summarizeMenuItem.exists, "„Zusammenfassen …“ ohne Modell")
+        XCTAssertFalse(app.menuBars.menuItems["To-dos vorschlagen …"].exists, "„To-dos vorschlagen …“ ohne Modell")
         app.typeKey(.escape, modifierFlags: [])
     }
 
@@ -95,7 +98,49 @@ final class AIUITests: XCTestCase {
         waitFor(!problem.exists, "Blatt nicht geschlossen")
     }
 
+    // MARK: - To-dos
+
+    func testSuggestTodosAndInsertBelowSelection() throws {
+        launch(availability: "available")
+        createPage("Woche")
+        app.typeText("\r")
+        waitForFocus(editor)
+        app.typeText("Milch kaufen\rOma anrufen")
+        app.typeKey("a", modifierFlags: .command)
+
+        todosMenuItem.click()
+        XCTAssertTrue(app.descendants(matching: .any)["todos.list"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["To-do: Oma anrufen"].exists)
+        app.buttons["todos.insert"].click()
+        assertEditorText("Milch kaufen\nOma anrufen\nTo-do: Milch kaufen\nTo-do: Oma anrufen\n")
+
+        app.typeKey("z", modifierFlags: .command)
+        assertEditorText("Milch kaufen\nOma anrufen\n")
+    }
+
+    func testSuggestTodosNeedsMarkedParagraphs() throws {
+        launch(availability: "available")
+        createPage("Woche")
+        app.typeText("\r")
+        waitForFocus(editor)
+        app.typeText("Milch kaufen")
+
+        todosMenuItem.click()
+        let problem = app.descendants(matching: .any)["todos.problem"]
+        XCTAssertTrue(problem.waitForExistence(timeout: 10))
+        let text = problem.label + (problem.value as? String ?? "")
+        XCTAssertTrue(text.contains("Markiere zuerst"), text)
+        XCTAssertFalse(app.buttons["todos.insert"].isEnabled)
+        app.typeKey(.escape, modifierFlags: [])
+        waitFor(!problem.exists, "Blatt nicht geschlossen")
+    }
+
     // MARK: - Hilfen
+
+    private var todosMenuItem: XCUIElement {
+        app.menuBars.menuBarItems["Seite"].click()
+        return app.menuBars.menuItems["To-dos vorschlagen …"]
+    }
 
     /// Öffnet das Menü „Seite“ und gibt den Eintrag zurück (ohne zu klicken).
     private var summarizeMenuItem: XCUIElement {
