@@ -663,3 +663,23 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Eine Aufzeichnung löst wie jede Speicherung im Store einen Abgleich aus, wenn der Sync an ist.
 - Beim Beenden zeichnet Quill auf, was noch wartet (nach dem Speichern der Editoren). Wartet nichts, beendet die App sofort, ohne Task: Wer `NSApp.terminate` aus einem Task auf dem Main Actor ruft, blockiert ihn, und ein Task zum Antworten käme nie dran (so hing der Seed der Performance-Tests).
 - `SyncController` nimmt `ModelContext.didSave` ohne Queue entgegen und wechselt erst danach auf den Main Actor. Mit `queue: .main` wartete der speichernde Thread des Stores auf den Main Thread, der seinerseits auf den Store wartete: SwiftData führt Aufrufe auf dem Store synchron aus. Die Lücke gab es schon vorher (Abgleich), die häufigeren Speicherungen der Aufzeichnung haben sie im UI-Test Fall 12 sichtbar gemacht (`SyncControllerTests.storeSavesOffTheMainThreadDoNotWaitForIt`).
+
+## ADR-032: Lokale KI (2026-10-22, entsteht mit Phase 16)
+
+**Kontext:** Phase 16 soll Seiten zusammenfassen, Absätze in To-dos umwandeln, Fragen an die eigenen Notizen mit Quellen beantworten und Links vorschlagen. Vorgabe: nur auf dem Gerät, nichts geht ins Netz. Das SDK (macOS 27) bietet neben dem Modell auf dem Gerät (`SystemLanguageModel`) auch `PrivateCloudComputeLanguageModel`, das Anfragen an Apples Server schickt.
+
+**Entscheidung (Plan):**
+- Ein eigenes Modul `QuillAI` ist das einzige, das `FoundationModels` importiert, und nutzt nur `SystemLanguageModel`. `AIIsolationTests` prüft beides an den eingecheckten Dateien (kein Import außerhalb von `QuillAI`, kein `PrivateCloudCompute` irgendwo).
+- Die Funktionen sprechen das Modell über ein kleines Protokoll an. Unit- und UI-Tests nutzen ein Test-Modell mit festen Antworten (`-QuillFakeAI`, nur Debug), weil das echte Modell nicht auf jedem Mac läuft und nicht immer gleich antwortet.
+- Ohne Apple Intelligence (Gerät ungeeignet, ausgeschaltet, Modell lädt noch) sind die Befehle ausgeblendet; Einstellungen › KI erklärt warum.
+- Nichts aus einer KI-Antwort landet ohne Zutun des Nutzers in einer Seite: Zusammenfassung und To-dos zeigen erst eine Vorschau, Übernehmen geht über `EditorDocument` (⌘Z) und die Bridge (ADR-013).
+- Deployment-Ziel bleibt macOS 26.0: Funktionen ab 26.4 (`tokenCount`) nur hinter `#available`, sonst zählt Quill Zeichen.
+- Jeder Schritt ergänzt hier seine Entscheidungen mit Alternativen.
+
+**Entscheidung (16.1, Grundlage):**
+- Modul `QuillAI` ohne Abhängigkeiten; `QuillFeatures` hängt daran. Schnittstelle nur Quill-Typen (`TextModel`, `AIAvailability`), kein Typ aus FoundationModels nach außen. Je Anfrage eine neue `LanguageModelSession`, damit nichts aus einer früheren Anfrage mitläuft.
+- Einstellungen › KI: „KI-Funktionen verwenden“, Standard an, sobald das Modell bereitsteht. Pro Mac in `UserDefaults` (`QuillAIEnabled`), Test-Stores nie (`QuillPersistence.settingsDefaults`, bisher nur für die Frist der Bilder). Ohne Modell kein Schalter, sondern eine Erklärung je Grund (Mac ungeeignet, Apple Intelligence aus, Modell lädt noch, unbekannt); geprüft beim Öffnen der Einstellungen und wenn ihr Fenster wieder aktiv wird.
+- `AISettings` entsteht erst beim ersten Zugriff: Die erste Abfrage der Verfügbarkeit kostet 3–7 ms auf dem Main Thread, der Start soll das nicht tragen.
+- Test-Modell `-QuillFakeAI <Fall von AIAvailability>` nur im Debug-Build und nur mit Test-Store.
+- Alternativen (nicht gewählt, nicht besprochen): Standard aus bis zum Einschalten (wie der Sync; aber hier verlässt nichts den Mac, und die Befehle erscheinen ohnehin nur auf Wunsch des Nutzers); KI-Code direkt in `QuillFeatures` (einfacher, aber dann prüft kein Test mehr, dass nur das Modell auf dem Gerät verwendet wird); Knopf „Systemeinstellungen öffnen“ (die Adresse des Bereichs „Apple Intelligence & Siri“ ist nicht dokumentiert); ausgegrauter Schalter mit Erklärung darunter (Kontrast im Audit zu gering).
+

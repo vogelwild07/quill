@@ -11,6 +11,7 @@
 | `QuillModel` | SwiftData-Modelle, `SchemaV1`, Migrationen, `PageStore`, `FractionalIndex` | – |
 | `QuillEditor` | `EditorDocument`, TextKit-2-Editor (AppKit/UIKit hinter `#if`) | Model, Design |
 | `QuillExport` | Markdown-Export: Dateinamen, Aufbau (`ExportPlan`), Schreiben (ADR-018) | Model, Editor (nur `Document`-Schicht: `MarkdownSerializer`, `EditorBlock`) |
+| `QuillAI` | Lokale KI: `TextModel`, `OnDeviceModel` (nur `SystemLanguageModel`), Verfügbarkeit (ADR-032) | – |
 | `QuillFeatures` | Sidebar, Suche, Papierkorb, Favoriten (SwiftUI) | alle oben |
 
 Swift 6 Language Mode, strikte Concurrency. UI auf `@MainActor`, Schreibzugriffe über `@ModelActor`.
@@ -26,7 +27,7 @@ quill/
 │  ├─ Resources/                Assets.xcassets, Localizable.xcstrings
 │  └─ Quill.entitlements        App Sandbox, user-selected files r/w, Lesezeichen (app-scope) für den Sync-Ordner
 ├─ Packages/QuillKit/
-│  ├─ Sources/{QuillModel,QuillEditor,QuillFeatures,QuillExport,QuillDesign}
+│  ├─ Sources/{QuillModel,QuillEditor,QuillFeatures,QuillExport,QuillAI,QuillDesign}
 │  └─ Tests/                    Swift Testing; `QuillTestFixtures` = gemeinsame `SampleDocuments`
 ├─ QuillUITests/                XCUITest
 └─ docs/                        architecture, decisions, data-model, design, performance, roadmap, product-brief, releases/, images/
@@ -225,6 +226,24 @@ QuillEditor       AppKit oder UIKit
   Document/        SlashCommand, BlockConversion (lokalisierte Menütitel)
   AppKit/          BlockEditorController (Lesemodus isReadOnly, selectedBlockIDs), BlockTextView,
                    Slash-Menü (nur Mac)
+```
+
+## Lokale KI (ADR-032, ab Phase 16)
+
+`QuillAI` ist das einzige Modul mit FoundationModels und nutzt nur das Modell auf dem Gerät
+(`AIIsolationTests`: kein Import anderswo, nirgends Private Cloud Compute). Die Funktionen
+sprechen das Modell über `TextModel` an; Tests geben ein eigenes Modell mit festen Antworten
+hinein, die App im Debug-Build mit `-QuillFakeAI` (`TestTextModel`).
+
+```text
+QuillAI
+  TextModel         respond(instructions:prompt:), AIAvailability
+  OnDeviceModel     SystemLanguageModel.default, je Anfrage eine neue Sitzung
+  TestTextModel     nur Debug: sofortige, feste Antwort
+QuillFeatures/AI
+  AISettings        Verfügbarkeit + Wahl pro Mac (QuillAIEnabled), isUsable; in QuillPersistence
+                    erst beim ersten Zugriff angelegt (Prüfen kostet beim ersten Mal 3–7 ms)
+  AISettingsView    Einstellungen › KI: Schalter oder Erklärung
 ```
 
 ## Sync (ADR-026, ADR-029, ab Phase 11)
