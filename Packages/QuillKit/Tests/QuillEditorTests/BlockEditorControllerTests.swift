@@ -752,6 +752,24 @@ struct ClipboardAndMoveTests {
         #expect(h.texts == ["Hallo"])
     }
 
+    /// Mit eigener Zwischenablage gibt ihr Inhalt „Einsetzen“ frei, nicht der der
+    /// allgemeinen (die bleibt unberührt und kann leer sein).
+    @Test func ownClipboardDecidesWhetherPasteIsEnabled() throws {
+        let h = Harness([EditorBlock(text: "Hallo")])
+        let textView = try #require(h.textView as? BlockTextView)
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        textView.clipboard = board
+        let items = [#selector(NSText.paste(_:)), #selector(NSTextView.pasteAsPlainText(_:)), #selector(NSTextView.pasteAsRichText(_:))]
+            .map { NSMenuItem(title: "", action: $0, keyEquivalent: "") }
+        board.clearContents()
+        #expect(items.allSatisfy { !textView.validateUserInterfaceItem($0) })
+        board.setString("Text", forType: .string)
+        #expect(items.allSatisfy { textView.validateUserInterfaceItem($0) })
+        textView.isEditable = false
+        #expect(items.allSatisfy { !textView.validateUserInterfaceItem($0) })
+    }
+
     /// „Einsetzen und Stil anpassen“ liest Klartext aus der eigenen Zwischenablage.
     @Test func pasteAsPlainTextUsesOwnClipboard() throws {
         let h = Harness([EditorBlock(text: "Hallo")])
