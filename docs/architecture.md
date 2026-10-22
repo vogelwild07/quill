@@ -240,10 +240,15 @@ QuillSync
   SyncFileAccess    Lesen/Schreiben per NSFileCoordinator, nie überschreiben, nicht geladene Dateien,
                     Löschen nur eigener Dateien nach dem Verdichten
   ChunkCheck        Automerge-Daten prüfen, bevor sie übernommen werden
-  SyncState         SyncGate („Sync pausieren“), SyncFailure, SyncReport, gelesene Dateien
+  SyncState         SyncGate („Sync pausieren“), SyncFailure, SyncReport, gelesene Dateien,
+                    Sperre je Dokument zwischen Abgleich und Aufzeichnung (DocumentLocks)
+  HistoryRecorder   Geschichte jeder Seite im Sync-Dokument, auch ohne Sync (Actor, ADR-031)
 QuillModel
-  PageStore+Sync    Schreibwege des Abgleichs: nur vom erwarteten Stand aus, Seiten nie löschen
+  PageStore+Sync    Schreibwege des Abgleichs: nur vom erwarteten Stand aus, Seiten nie löschen;
+                    saveHistory (nur das Sync-Dokument, für HistoryRecorder)
 QuillFeatures
+  Persistence/      HistoryObserver (Speichern im Editor → HistoryRecorder; QuillPersistence.history,
+                    Start und Aufzeichnen vor dem Beenden im AppDelegate)
   Sync/             SyncSettings (Einstellungen, Lesezeichen), SyncController (ein/aus, Backup vorher,
                     Pause, Wiederverbinden, Zeitpunkte, Konflikte je Seite und Wahl), SyncSettingsView,
                     SyncReconnectView, SyncSidebarStatus, ConflictViews/ConflictLabel (Popover, Hinweis im Seitenkopf)
@@ -253,7 +258,7 @@ QuillEditor
   Settings/         Bereiche Darstellung, Sync, Lizenzen (Resources/ThirdPartyLicenses.txt, Scripts/third-party-licenses.py)
 ```
 
-Ein Abgleich (`SyncEngine.sync`) je Dokument: aus dem Store laden, eigene Dateien nachlesen, die der Store noch nicht kennt, den Stand des Stores als nächste eigene Datei anhängen, dann neue Dateien der anderen Geräte übernehmen und das Ergebnis in den Store schreiben. Hat der Nutzer während des Abgleichs gespeichert, schreibt der Store nichts, und der nächste Abgleich nimmt die Eingabe mit. Ab 50 eigenen Dateien je Dokument verdichtet der Abgleich sie zu `<Nr>.snapshot` (ganzer Stand samt Geschichte) und löscht danach die eigenen Dateien darunter; Lücken ohne verdichtete Datei meldet er nach einer Stunde (ADR-029). Beim Start liest `SyncEngine.storedConflicts` die Konflikte nur aus den Dokumenten im Store, auch pausiert. Eine Wahl bei einem Konflikt (`SyncEngine.choose`) wartet bis zum nächsten Abgleich der Seite und wird nach den Dateien der anderen Geräte als eigene Datei geschrieben.
+Ein Abgleich (`SyncEngine.sync`) je Dokument: aus dem Store laden, eigene Dateien nachlesen, die der Store noch nicht kennt, den Stand des Stores als nächste eigene Datei anhängen, dann neue Dateien der anderen Geräte übernehmen und das Ergebnis in den Store schreiben. Hat der Nutzer während des Abgleichs gespeichert, schreibt der Store nichts, und der nächste Abgleich nimmt die Eingabe mit. Ab 50 eigenen Dateien je Dokument verdichtet der Abgleich sie zu `<Nr>.snapshot` (ganzer Stand samt Geschichte) und löscht danach die eigenen Dateien darunter; Lücken ohne verdichtete Datei meldet er nach einer Stunde (ADR-029). Was `HistoryRecorder` zwischen zwei Abgleichen ins Dokument geschrieben hat, geht mit der nächsten eigenen Datei hinaus: Der Abgleich hängt alles seit dem Stand seines letzten erfolgreichen Abgleichs an (`SyncCursors.exported`); Seiten, deren eigene Datei schon im Ordner steht, aber deren Dokument noch nicht im Store, zeichnet `HistoryRecorder` bis dahin nicht auf (`SyncCursors.pending`, ADR-031). Beim Start liest `SyncEngine.storedConflicts` die Konflikte nur aus den Dokumenten im Store, auch pausiert. Eine Wahl bei einem Konflikt (`SyncEngine.choose`) wartet bis zum nächsten Abgleich der Seite und wird nach den Dateien der anderen Geräte als eigene Datei geschrieben.
 
 `QuillPersistence.sync` hält den einen `SyncController` der App; `AppDelegate` startet nach dem Öffnen die Zeitpunkte (`SyncSchedule`): beim Start, wenn Quill aktiv wird, 2 s nach einer Änderung im Store (`ModelContext.didSave`) und alle 60 s. Ohne eingeschalteten Sync oder pausiert läuft nichts. Ein Abgleich blockiert die App nie; die Sidebar zeigt ab 5 Seiten den Fortschritt und Probleme an. Die Einstellungen des Sync liegen beim echten Store in den Einstellungen des Macs, bei Test-Stores im Arbeitsspeicher oder im Testordner (`SyncSettingsStorage`), weil ein Debug-Build dieselbe Bundle-ID hat. UI-Tests ersetzen die Dateiauswahl durch `-QuillSyncTestFolder <Name>` und den Gerätenamen durch `-QuillSyncDeviceName <Name>` (nur Debug oder Testvariante, nur mit Test-Store).
 

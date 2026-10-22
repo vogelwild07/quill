@@ -265,6 +265,32 @@ Alle Unterschiede im Rauschen (Package bis 3,6 %, App eher schneller), alle Schw
 eingehalten. Ein Theme-Wechsel verwirft die Layout-Fragmente des Editors einmal; das
 ist kein Pfad beim Tippen und wird nicht gemessen.
 
+## Geschichte aufzeichnen vorher und nachher (21./22.10.2026, ADR-031)
+
+Gleiche Messung vor 12.1 (Stand `9bd40ff`) und danach (Branch
+`phase-12/geschichte-aufzeichnen`). `HistoryRecorder` läuft erst 2 s nach dem Speichern
+und nicht auf dem Main Thread; Tippen und Seitenwechsel sollen davon nichts merken.
+
+| Messung (Median, ms) | vorher | nachher |
+|---|---|---|
+| editorLoad | 12,86 | 12,70 |
+| editorTyping | 1,20 | 1,17 |
+| editorEnter | 1,07 | 1,04 |
+| bridgeLoad | 17,08 | 16,81 |
+| applyEditsMove | 16,03 | 15,15 |
+| applyEditsReverse | 69,93 | 67,59 |
+| pageTreeBuild | 54,46 | 54,97 |
+| search | 44,81 | 44,29 |
+| exportPlan | 981,42 | 959,64 |
+| App: ApplicationLaunch | 567,6 | 564,1 |
+| App: launch | 389,9 | 368,0 |
+| App: sidebarLoad | 188,2 | 174,6 |
+| App: sidebarReload | 147,8 | 150,4 |
+| App: pageSwitch | 75,4 | 73,3 |
+
+Keine Verschlechterung über das Rauschen hinaus (`sidebarReload` schwankt zwischen
+etwa 95 und 170 ms), alle Schwellen eingehalten.
+
 ## Messbedingungen
 
 | | |

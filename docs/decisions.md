@@ -614,3 +614,21 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 **Konsequenzen:**
 - Nur-Mac-Code steht weiter hinter `#if canImport(AppKit)`; neue Logik kommt weiter in `QuillKit`.
 - Das Developer Program wird erst nötig, wenn eine Mac-Phase es braucht (z. B. Teilen-Erweiterung mit App Group).
+
+## ADR-031: Zeitreise (2026-10-21, entsteht mit Phase 12)
+
+**Kontext:** Phase 12 soll frühere Stände jeder Seite zeigen und Absätze daraus zurückholen. Die Seiten-Dokumente des Sync (ADR-026) enthalten schon eine Geschichte, aber nur mit einem Stand je Abgleich und nur bei eingeschaltetem Sync.
+
+**Entscheidung (12.1, Geschichte aufzeichnen):**
+- Quill zeichnet die Geschichte jeder Seite immer auf, auch ohne Sync, im Sync-Dokument der Seite (`Page.syncDocument`, kein neues Schema). `HistoryRecorder` (in `QuillSync`, ein Actor) übernimmt nach jedem Speichern im Editor die Blöcke aus dem Store als Änderung, entprellt (2 s Pause, spätestens nach 30 s) und vor dem Beenden sofort. Auf dem Main Thread kommt nur die Meldung an (`HistoryObserver`, nur Speicherungen einer `EditorPersistenceBridge`, nicht das Neuladen nach einem Abgleich).
+- Je Seite und App-Sitzung schreibt eine Akteurs-ID: Gerät + Sitzung wie beim Abgleich, ohne eingeschalteten Sync nur die Sitzung (die Änderungen nennen dann kein Gerät). Scheitert das Speichern, beginnt eine neue Sitzung.
+- Der Abgleich schreibt die Aufzeichnung mit hinaus: Er merkt sich je Seite den Stand des Dokuments beim letzten erfolgreichen Abgleich (`SyncCursors.exported`) und hängt alles danach als nächste eigene Datei an, nicht nur, was er selbst gerade übernommen hat.
+- Stehen lokale Änderungen schon in einer eigenen Datei, aber das Dokument noch nicht im Store (Abgleich verschoben oder abgebrochen), zeichnet `HistoryRecorder` dort nichts auf (`SyncCursors.pending`, gespeichert vor dem Schreiben in den Ordner). Sonst enthielte die Aufzeichnung auf dem alten Dokument dieselben Blöcke ein zweites Mal. Das Gleiche gilt für Seiten, die vor 12.1 abgeglichen wurden, bis zu ihrem nächsten Abgleich.
+- Abgleich und Aufzeichnung einer Seite sperren einander (`DocumentLocks`), weil beide das Dokument lesen, ändern und zurückschreiben.
+
+**Konsequenzen:**
+- Die Dokumente wachsen mit jeder Aufzeichnung. Die Messung (`docs/performance.md`) zeigt, ob das stört.
+- Seiten ohne Speicherung im Editor (z. B. dupliziert, aus einem Backup) haben bis zur ersten Bearbeitung keine eigene Geschichte.
+- Eine Aufzeichnung löst wie jede Speicherung im Store einen Abgleich aus, wenn der Sync an ist.
+- Beim Beenden zeichnet Quill auf, was noch wartet (nach dem Speichern der Editoren). Wartet nichts, beendet die App sofort, ohne Task: Wer `NSApp.terminate` aus einem Task auf dem Main Actor ruft, blockiert ihn, und ein Task zum Antworten käme nie dran (so hing der Seed der Performance-Tests).
+- `SyncController` nimmt `ModelContext.didSave` ohne Queue entgegen und wechselt erst danach auf den Main Actor. Mit `queue: .main` wartete der speichernde Thread des Stores auf den Main Thread, der seinerseits auf den Store wartete: SwiftData führt Aufrufe auf dem Store synchron aus. Die Lücke gab es schon vorher (Abgleich), die häufigeren Speicherungen der Aufzeichnung haben sie im UI-Test Fall 12 sichtbar gemacht (`SyncControllerTests.storeSavesOffTheMainThreadDoNotWaitForIt`).
