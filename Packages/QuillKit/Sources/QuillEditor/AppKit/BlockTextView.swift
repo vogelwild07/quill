@@ -475,6 +475,21 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         guard clipboard.name != .general else { return super.pasteAsRichText(sender) }
         paste(sender)
     }
+
+    /// `NSTextView` gibt „Einsetzen“ nur frei, wenn die allgemeine Zwischenablage etwas
+    /// Lesbares enthält. Mit eigener Zwischenablage zählt deren Inhalt: Sonst sperrte eine
+    /// leere allgemeine Zwischenablage ⌘V, und Einsetz-Tests hingen davon ab, was der
+    /// Nutzer zuletzt kopiert hat.
+    override func validateUserInterfaceItem(_ item: any NSValidatedUserInterfaceItem) -> Bool {
+        if clipboard.name != .general, Self.pasteActions.contains(item.action) {
+            return isEditable && !(clipboard.types ?? []).isEmpty
+        }
+        return super.validateUserInterfaceItem(item)
+    }
+
+    private static let pasteActions: Set<Selector?> = [
+        #selector(paste(_:)), #selector(pasteAsPlainText(_:)), #selector(pasteAsRichText(_:)),
+    ]
 }
 
 /// Griff ⋮⋮ links neben einem Block: Ziehen verschiebt, Klick wählt den Block aus,

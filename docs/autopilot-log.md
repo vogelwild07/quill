@@ -9,7 +9,8 @@ Neueste Einträge unten.
 
 Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
 
-- (noch keine)
+- [ ] Regel „Fehlersuche“ in `CLAUDE.md` geändert, nachdem die Ursache der roten Einsetz-Tests
+  gefunden war (siehe PR #26).
 
 ## Gemergt
 
@@ -28,3 +29,13 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Ständen inzwischen bei 188–197 ms, nahe der Schwelle 200 ms.
 - Nicht getestet: neue Sitzung nach gescheitertem Speichern (Store lässt sich im Test nicht
   zum Scheitern bringen).
+
+### Einsetz-Tests unabhängig von der allgemeinen Zwischenablage (PR #26)
+
+- Ursache der roten Einsetz-Tests gefunden (Roadmap „Später“): `NSTextView` sperrte ⌘V bei
+  leerer allgemeiner Zwischenablage, auch mit eigener Test-Zwischenablage. `BlockTextView`
+  prüft „Einsetzen“ jetzt gegen die eigene; nur Debug- und Synctest-Builds nutzen eine eigene.
+- Beleg: `ImageBlockUITests` bei leerer allgemeiner Zwischenablage auf `main` 3 von 4 rot,
+  mit Fix 4 von 4 grün; neuer Unit-Test mit Gegenprobe.
+- Regel in `CLAUDE.md` („Fehlersuche“) angepasst: `killall pboard` nur noch, wenn Einsetz-Tests
+  trotzdem rot sind.
