@@ -77,6 +77,8 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.launchArguments += [
             "-QuillPasteboardName", pasteboard.name.rawValue, "-QuillEditorTheme", "lagune",
             "-QuillSyncTestFolder", "uitest-audit-sync-\(UUID().uuidString)",
+            // Mit Erklärung: mehr Elemente im Reiter „KI“ als mit bereitem Modell.
+            "-QuillFakeAI", "appleIntelligenceNotEnabled",
         ]
         app.launch()
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
@@ -102,6 +104,9 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.toolbars.buttons["Zeitreise"].click()
         XCTAssertTrue(app.descendants(matching: .any)["settings.imageRetention"].waitForExistence(timeout: 5))
         audit("Einstellungen › Zeitreise")
+        app.toolbars.buttons["KI"].click()
+        XCTAssertTrue(app.descendants(matching: .any)["settings.aiUnavailable"].waitForExistence(timeout: 5))
+        audit("Einstellungen › KI")
         app.toolbars.buttons["Lizenzen"].click()
         XCTAssertTrue(app.descendants(matching: .any)["settings.licenses"].waitForExistence(timeout: 5))
         audit("Einstellungen › Lizenzen")

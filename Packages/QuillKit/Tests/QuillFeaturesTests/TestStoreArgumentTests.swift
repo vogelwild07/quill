@@ -13,12 +13,12 @@ import Testing
         #expect(QuillPersistence.testStore(arguments: ["Quill"]) == nil)
     }
 
-    /// Test-Stores lesen und speichern die Frist für Bilder nie in den Einstellungen des
-    /// Macs; Debug-Builds teilen sie mit der echten App (12.4).
-    @Test func onlyTheRealStoreKeepsTheImageRetention() {
-        #expect(QuillPersistence.retentionDefaults(nil) === UserDefaults.standard)
-        #expect(QuillPersistence.retentionDefaults(.inMemory) == nil)
-        #expect(QuillPersistence.retentionDefaults(.directory("uitest-1")) == nil)
+    /// Test-Stores lesen und speichern die Frist für Bilder und die Wahl der KI nie in den
+    /// Einstellungen des Macs; Debug-Builds teilen sie mit der echten App (12.4, 16.1).
+    @Test func onlyTheRealStoreKeepsItsSettings() {
+        #expect(QuillPersistence.settingsDefaults(nil) === UserDefaults.standard)
+        #expect(QuillPersistence.settingsDefaults(.inMemory) == nil)
+        #expect(QuillPersistence.settingsDefaults(.directory("uitest-1")) == nil)
     }
 
     @Test func rejectsUnsafeDirectoryNames() {
