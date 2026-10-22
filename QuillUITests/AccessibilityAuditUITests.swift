@@ -163,7 +163,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         audit("Zeitreise (früherer Tag)")
     }
 
-    /// Blatt „Zusammenfassung“ mit Ergebnis und mit Hinweis (16.2, ADR-032), Test-Modell
+    /// Blätter der lokalen KI (16.2–16.5, ADR-032) mit Ergebnis und mit Hinweis, Test-Modell
     /// statt Apple Intelligence.
     func testAuditSummary() throws {
         app.terminate()
@@ -195,7 +195,8 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.menuBars.menuItems["To-dos vorschlagen …"].click()
         XCTAssertTrue(app.descendants(matching: .any)["todos.list"].waitForExistence(timeout: 10))
         audit("To-dos vorschlagen")
-        app.typeKey(.escape, modifierFlags: [])
+        // Eingefügt findet „Verwandte Seiten“ unten diese Seite.
+        app.buttons["todos.insert"].click()
 
         // Frag deine Notizen (16.4): Antwort mit Quelle, dann ohne passende Seite.
         app.menuBars.menuBarItems["Ablage"].click()
@@ -211,6 +212,27 @@ final class AccessibilityAuditUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["ask.problem"].waitForExistence(timeout: 10))
         audit("Frag deine Notizen (ohne Quelle)", orphans: .focusedTextField)
         app.typeKey(.escape, modifierFlags: [])
+
+        // Verwandte Seiten (16.5): mit Treffer, dann ohne.
+        app.typeKey("n", modifierFlags: .command)
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        app.typeText("Einkauf\rMilch kaufen")
+        relatedPages()
+        XCTAssertTrue(app.descendants(matching: .any)["related.terms"].waitForExistence(timeout: 10))
+        audit("Verwandte Seiten")
+        app.typeKey(.escape, modifierFlags: [])
+        app.typeKey("n", modifierFlags: .command)
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        app.typeText("Kuchen")
+        relatedPages()
+        XCTAssertTrue(app.descendants(matching: .any)["related.empty"].waitForExistence(timeout: 10))
+        audit("Verwandte Seiten (keine)")
+        app.typeKey(.escape, modifierFlags: [])
+    }
+
+    private func relatedPages() {
+        app.menuBars.menuBarItems["Seite"].click()
+        app.menuBars.menuItems["Verwandte Seiten …"].click()
     }
 
     private func summarize() {
