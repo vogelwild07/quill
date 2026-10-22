@@ -232,6 +232,9 @@
     "Datenbank umstellen?" : {
 
     },
+    "Deine Frage ist zu lang. Stell sie kürzer." : {
+
+    },
     "Den bisherigen Ordner gibt es nicht mehr oder Quill darf ihn nicht öffnen." : {
 
     },
@@ -493,10 +496,13 @@
     "Keine Treffer" : {
 
     },
+    "Keine andere Seite enthält die Begriffe, die das Sprachmodell in dieser Seite gefunden hat." : {
+
+    },
     "Keine offenen Konflikte." : {
 
     },
-    "Keine verwandten Seiten gefunden." : {
+    "Keine verwandten Seiten" : {
 
     },
     "Kopieren" : {
