@@ -21,6 +21,10 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Rückholung lässt sich nur über eine weitere Rückholung rückgängig machen, nicht mit ⌘Z
   (ADR-031, Abschnitt 12.3).
 
+- [ ] 12.4: Frist für gelöschte Bilder pro Mac in den Einstellungen (nicht im Store oder Sync),
+  Standard 90 statt bisher 30 Tage, „Immer“ löscht nie; kürzere Frist wirkt erst beim
+  nächsten Start; Optionsfelder statt Klappmenü (ADR-031, Abschnitt 12.4).
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -74,3 +78,15 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   grün.
 - Messung: im Wechsel mit `main` nicht langsamer. **Achtung:** `sidebarLoad` über 200 ms auf
   allen Ständen, auch 12.1, wegen `appstoreagent` mit 93 % CPU; Nachmessung ohne Last in 12.5.
+
+### 12.4 Frist für gelöschte Bilder (PR #29, ADR-031)
+
+- Einstellungen › Zeitreise › „Gelöschte Bilder aufbewahren“: 30 Tage, 90 Tage (Standard),
+  1 Jahr, Immer. Ein zurückgeholter Bild-Block bekommt sein Bild, solange es aufbewahrt wird.
+- Test-Stores schreiben die Wahl nie in die Einstellungen des Macs (Debug teilt sie mit der
+  echten App; eigener Test mit Gegenprobe).
+- Tests: Package 673 (124 + 134 + 283 + 30 + 9 + 93), UI 49 (1 übersprungen), Synctest 13 Fälle;
+  6 Gegenproben rot, dazu 1 im UI-Test. Das Klappmenü meldete im Audit eine fehlende Aktion;
+  ersetzt durch Optionsfelder statt einer Ausnahme.
+- Messung: im Wechsel mit `main` nicht langsamer; `sidebarLoad` weiter über 200 ms auf beiden
+  Ständen (`appstoreagent`).

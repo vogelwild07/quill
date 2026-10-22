@@ -483,9 +483,9 @@ extension PageStore {
     }
 
     /// Löscht Assets ohne Block, die seit `age` nicht mehr verknüpft waren.
-    /// Beim Start aufgerufen; 30 Tage wie der Papierkorb (ADR-015).
+    /// Beim Start aufgerufen, mit der Frist aus den Einstellungen (ADR-015, ADR-031).
     @discardableResult
-    public func removeOrphanedAssets(olderThan age: TimeInterval = 30 * 24 * 3600, now: Date = .now) throws -> Int {
+    public func removeOrphanedAssets(olderThan age: TimeInterval, now: Date = .now) throws -> Int {
         let cutoff = now.addingTimeInterval(-age)
         let orphans = try modelContext.fetch(FetchDescriptor<Asset>(predicate: #Predicate { $0.block == nil && $0.updatedAt < cutoff }))
         for asset in orphans { modelContext.delete(asset) }

@@ -82,7 +82,7 @@ DatabaseView         (später)  id, name, layoutRaw (table|board|calendar), conf
 ### Blöcke schreiben: `PageStore.applyEdits`
 
 - Einfache Felder (`indent`, `isChecked`, `codeLanguage`, `assetID`) reisen als `BlockProperties`; `Block.properties` ist die einzige Abbildung auf Spalten und die Beziehung `asset` (ADR-014, ADR-015).
-- Bilder: `PageStore.importImage` legt ein `Asset` ohne Block an (GPS entfernt, über 20 MB auf 4096 px verkleinert), das Speichern des Blocks verknüpft es. Beim Löschen eines Blocks wird sein Asset gelöst statt mitgelöscht (Undo); `removeOrphanedAssets` löscht beim Start Assets, die seit 30 Tagen keinem Block gehören.
+- Bilder: `PageStore.importImage` legt ein `Asset` ohne Block an (GPS entfernt, über 20 MB auf 4096 px verkleinert), das Speichern des Blocks verknüpft es. Beim Löschen eines Blocks wird sein Asset gelöst statt mitgelöscht (Undo); `removeOrphanedAssets` löscht beim Start Assets, die seit der gewählten Frist keinem Block gehören (Einstellungen › Zeitreise, Standard 90 Tage, „Immer“ löscht nie; ADR-031).
 
 - Eingabe `BlockEdits`: `upserts` (neue oder geänderte `BlockSnapshot`s: `id`, `kindRaw`, `text`, `richText`, `properties`), `deletions` und optional `order` (IDs in gewünschter Reihenfolge). Die `EditorPersistenceBridge` schickt nur Blöcke, die sich gegenüber dem zuletzt gespeicherten Stand geändert haben, und zwar über `applyEdits(_:_:expected:)`: geschrieben wird nur, wenn die Seite noch dem Stand entspricht, von dem der Editor ausging; sonst `nil`, und die Bridge führt zusammen (`BlockMerge`, ADR-029 Review).
 - `updatedAt` ändert sich nur bei Blöcken mit echten Änderungen, `Page.updatedAt` nur, wenn sich überhaupt etwas geändert hat.

@@ -51,6 +51,15 @@
         }
       }
     },
+    "1 Jahr" : {
+
+    },
+    "30 Tage" : {
+
+    },
+    "90 Tage" : {
+
+    },
     "Ab der ersten Bearbeitung hält Quill fest, wie die Seite am Ende jedes Tages aussah." : {
 
     },
@@ -282,6 +291,9 @@
     "Fortschritt des Abgleichs" : {
 
     },
+    "Frühere Stände einer Seite enthalten keine Bilder, nur Verweise darauf. Ein Bild, das in keiner Seite mehr steht, bleibt so lange, damit die Zeitreise es zurückholen kann. Eine kürzere Frist wirkt ab dem nächsten Start." : {
+
+    },
     "Für das Backup hat Quill den Sync ausgeschaltet. Wie soll es weitergehen?" : {
 
     },
@@ -289,6 +301,9 @@
 
     },
     "Ganzer Block" : {
+
+    },
+    "Gelöschte Bilder aufbewahren" : {
 
     },
     "Gelöschte Seiten bleiben hier 30 Tage und lassen sich wiederherstellen." : {
@@ -337,6 +352,9 @@
 
     },
     "Im gewählten Ordner liegen schon Quill-Daten. Zum Neubeginnen braucht Quill einen leeren Ordner." : {
+
+    },
+    "Immer" : {
 
     },
     "In den Papierkorb" : {

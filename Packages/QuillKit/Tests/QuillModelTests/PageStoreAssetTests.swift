@@ -148,7 +148,7 @@ struct PageStoreAssetTests {
         }
         try context.save()
 
-        let removed = try await store.removeOrphanedAssets(now: now)
+        let removed = try await store.removeOrphanedAssets(olderThan: 30 * 24 * 3600, now: now)
         #expect(removed == 1)
         #expect(Set(try assets().map(\.id)) == [linked.assetID, fresh.assetID])
         #expect(try await store.imageData(old.assetID) == nil)

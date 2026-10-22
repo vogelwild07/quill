@@ -64,6 +64,20 @@ final class TimeTravelUITests: XCTestCase {
         waitFor(self.editorText(old).contains("Alter Absatz"), "„Heute“ ohne Rückholung")
     }
 
+    /// Einstellungen › Zeitreise: Frist für gelöschte Bilder, Standard 90 Tage (12.4).
+    func testChooseImageRetention() throws {
+        app.typeKey(",", modifierFlags: .command)
+        app.toolbars.buttons["Zeitreise"].click()
+        let standard = app.radioButtons["90 Tage"]
+        XCTAssertTrue(standard.waitForExistence(timeout: 5))
+        XCTAssertEqual(standard.value as? Int, 1, "Standard 90 Tage")
+        let forever = app.radioButtons["Immer"]
+        forever.click()
+        waitFor((forever.value as? Int) == 1, "„Immer“ nicht gewählt")
+        XCTAssertEqual(standard.value as? Int, 0)
+        app.typeKey("w", modifierFlags: .command)
+    }
+
     // MARK: - Hilfen
 
     /// Text einer Zeile: unter macOS im Wert, nicht in der Beschriftung.

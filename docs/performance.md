@@ -347,6 +347,24 @@ der Schwelle von 200 ms, auch auf dem Stand nach 12.1 (`b9955df`: 217,7 / 220,4,
 noch 188–197 ms). Ursache war Last von außen: `appstoreagent` lief die ganze Zeit mit rund
 93 % CPU, zeitweise auch `mds`. Die Messung ohne diese Last steht noch aus (Phase 12.5).
 
+## Frist für gelöschte Bilder (22.10.2026, ADR-031)
+
+12.4 ändert nur, ob und mit welcher Frist beim Start aufgeräumt wird (außerhalb des Main
+Threads). Im Wechsel mit `main` (`4eb2f40`), zwei Runden:
+
+| Messung (ms) | `main` | 12.4 |
+|---|---|---|
+| editorLoad | 13,31 / 13,14 | 13,25 / 13,34 |
+| bridgeLoad | 17,24 / 17,43 | 17,26 / 17,43 |
+| pageTreeBuild | 58,24 / 58,08 | 55,25 / 55,41 |
+| historyDays | 92,16 / 91,93 | 94,57 / 92,62 |
+| App: sidebarLoad | 219,4 / 213,6 | 212,1 / 214,8 |
+| App: sidebarReload | 171,7 / 171,5 | 170,6 / 171,5 |
+| App: pageSwitch | 58,5 / 58,8 | 58,8 / 58,4 |
+
+Nicht langsamer (`historyDays` +1 % auf einem Pfad, den 12.4 nicht berührt). `sidebarLoad`
+weiter auf beiden Ständen über 200 ms, `appstoreagent` lief weiter mit rund 93 % CPU.
+
 ## Messbedingungen
 
 | | |
