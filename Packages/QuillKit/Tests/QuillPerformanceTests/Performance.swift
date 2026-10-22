@@ -27,6 +27,8 @@ enum Performance {
         "editorEnter": 16,
         "search": 100,
         "exportPlan": 2000,
+        "historyDays": 250, // Zeitreise öffnen, ADR-031
+        "historyDayBlocks": 300, // wie Laden im Editor
         // Baseline 19.10.2026 × 3, gerundet nach oben
         "applyEditsMove": 178,
         "applyEditsReverse": 309,

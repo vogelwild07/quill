@@ -57,7 +57,7 @@ public final class PageDocument: SyncDocument {
                 changed = true
             }
         }
-        if changed { document.commitWith() }
+        if changed { commit() }
         return changed
     }
 
@@ -87,7 +87,7 @@ public final class PageDocument: SyncDocument {
             try insert(block, order: mine.order, assetFile: mine.assetFile)
             restored.append(block.id)
         }
-        if !restored.isEmpty { document.commitWith() }
+        if !restored.isEmpty { commit() }
         return restored
     }
 

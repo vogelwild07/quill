@@ -134,7 +134,7 @@ public final class TreeDocument: SyncDocument {
             }
             changed = try write(record, to: map, fields: fields(of: map)) || changed
         }
-        if changed { document.commitWith() }
+        if changed { commit() }
         return changed
     }
 
