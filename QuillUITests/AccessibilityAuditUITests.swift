@@ -163,6 +163,36 @@ final class AccessibilityAuditUITests: XCTestCase {
         audit("Zeitreise (früherer Tag)")
     }
 
+    /// Blatt „Zusammenfassung“ mit Ergebnis und mit Hinweis (16.2, ADR-032), Test-Modell
+    /// statt Apple Intelligence.
+    func testAuditSummary() throws {
+        app.terminate()
+        app = XCUIApplication.quill(storeDirectory: storeDirectory)
+        app.launchArguments += ["-QuillPasteboardName", pasteboard.name.rawValue, "-QuillFakeAI", "available"]
+        app.launch()
+        XCTAssertTrue(window.waitForExistence(timeout: 10))
+        window.click()
+        app.typeKey("n", modifierFlags: .command)
+        let title = window.descendants(matching: .any)["detail.title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        app.typeText("Ausflug\rWir fahren an den See.")
+        summarize()
+        XCTAssertTrue(app.descendants(matching: .any)["summary.text"].waitForExistence(timeout: 10))
+        audit("Zusammenfassung")
+        app.typeKey(.escape, modifierFlags: [])
+
+        app.typeKey("n", modifierFlags: .command)
+        summarize()
+        XCTAssertTrue(app.descendants(matching: .any)["summary.problem"].waitForExistence(timeout: 10))
+        audit("Zusammenfassung (leere Seite)")
+        app.typeKey(.escape, modifierFlags: [])
+    }
+
+    private func summarize() {
+        app.menuBars.menuBarItems["Seite"].click()
+        app.menuBars.menuItems["Zusammenfassen …"].click()
+    }
+
     // MARK: - Audit
 
     private var window: XCUIElement { app.windows.firstMatch }
