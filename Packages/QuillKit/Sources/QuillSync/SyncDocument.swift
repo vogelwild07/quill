@@ -76,6 +76,9 @@ public class SyncDocument {
     let itemsID: ObjId
     class var formatVersion: Int { 1 }
     class var itemsKey: String { fatalError("Unterklasse") }
+    /// Zeit jeder neuen Änderung; die Zeitreise ordnet Änderungen danach Tagen zu
+    /// (ADR-031). Tests setzen eine feste Zeit.
+    var clock: () -> Date = Date.init
 
     /// Neues, leeres Dokument.
     public required init() {
@@ -306,8 +309,13 @@ public class SyncDocument {
             }
             try rewrite(key, from: chosen)
         }
-        document.commitWith()
+        commit()
         return true
+    }
+
+    /// Hält alle offenen Änderungen als eine Änderung mit der Zeit von `clock` fest.
+    func commit() {
+        document.commitWith(timestamp: clock())
     }
 
     /// Legt das Objekt unter `key` neu an, mit dem Inhalt der Fassung `map`.

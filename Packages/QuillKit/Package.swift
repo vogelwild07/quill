@@ -60,7 +60,7 @@ let package = Package(
         // swift test -c release -Xswiftc -enable-testing --filter QuillPerformanceTests
         .testTarget(
             name: "QuillPerformanceTests",
-            dependencies: ["QuillModel", "QuillEditorCore", "QuillEditor", "QuillExport", "QuillFeatures", "QuillTestFixtures"]
+            dependencies: ["QuillModel", "QuillEditorCore", "QuillEditor", "QuillExport", "QuillFeatures", "QuillSync", "QuillTestFixtures"]
         ),
     ],
     swiftLanguageModes: [.v6]

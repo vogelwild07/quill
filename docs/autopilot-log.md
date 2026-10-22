@@ -11,6 +11,9 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
 
 - [ ] Regel „Fehlersuche“ in `CLAUDE.md` geändert, nachdem die Ursache der roten Einsetz-Tests
   gefunden war (siehe PR #26).
+- [ ] 12.2: Tage aus den Zeitstempeln der Änderungen, im Kalender des Macs, der die Zeitreise
+  zeigt; ein Tagesstand enthält alles, worauf seine Änderungen aufbauen; Tage werden beim
+  Öffnen gebildet, nicht gespeichert (ADR-031, Abschnitt 12.2).
 
 ## Gemergt
 
@@ -39,3 +42,12 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   mit Fix 4 von 4 grün; neuer Unit-Test mit Gegenprobe.
 - Regel in `CLAUDE.md` („Fehlersuche“) angepasst: `killall pboard` nur noch, wenn Einsetz-Tests
   trotzdem rot sind.
+
+### 12.2 Stand am Ende eines Tages (PR #27, ADR-031)
+
+- `PageHistory` bildet aus dem Sync-Dokument die Tage mit dem Stand an ihrem Ende; falsche
+  Uhren ergeben nie einen Stand, den es nicht gab.
+- Tests: Package 658 (93 + 9 + 134 + 115 + 30 + 277), UI 46 (1 übersprungen), Synctest 13 Fälle;
+  5 Gegenproben rot (eine erst nach einem zusätzlichen Testfall, Kette über drei Tage).
+- Messung: neu `historyDays` 93 ms (Schwelle 250), `historyDayBlocks` 15,5 ms (Schwelle 300);
+  bestehende Werte im Wechsel mit `main` gleich oder besser (`docs/performance.md`).
