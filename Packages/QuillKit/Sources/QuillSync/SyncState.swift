@@ -62,10 +62,20 @@ struct SyncCursors: Codable, Equatable {
     /// Dokument → Geräte-ID → seit wann eine Lücke ohne verdichtete Datei besteht
     /// (`SyncGap`). Verschwindet, sobald es weitergeht.
     var gaps: [String: [String: Date]] = [:]
+    /// Seiten-ID → Stand des Dokuments beim letzten Abgleich, der es in den Store
+    /// geschrieben hat (`DocumentVersion.data`). Was danach ins Dokument kam (die
+    /// aufgezeichnete Geschichte, `HistoryRecorder`), steht noch nicht im Ordner und geht
+    /// mit der nächsten eigenen Datei hinaus (ADR-031).
+    var exported: [String: Data] = [:]
+    /// Seiten, deren lokale Änderungen schon in einer eigenen Datei stehen, deren
+    /// Dokument der Store aber noch nicht hat (Abgleich verschoben oder abgebrochen). Bis
+    /// zum nächsten erfolgreichen Abgleich zeichnet `HistoryRecorder` dort nichts auf:
+    /// Seine Änderung auf dem alten Dokument enthielte dieselben Blöcke ein zweites Mal.
+    var pending: Set<String> = []
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case read, synced, inFolder, gaps }
+    private enum CodingKeys: String, CodingKey { case read, synced, inFolder, gaps, exported, pending }
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -73,6 +83,8 @@ struct SyncCursors: Codable, Equatable {
         synced = try container.decodeIfPresent([String: Date].self, forKey: .synced) ?? [:]
         inFolder = try container.decodeIfPresent(Set<String>.self, forKey: .inFolder) ?? []
         gaps = try container.decodeIfPresent([String: [String: Date]].self, forKey: .gaps) ?? [:]
+        exported = try container.decodeIfPresent([String: Data].self, forKey: .exported) ?? [:]
+        pending = try container.decodeIfPresent(Set<String>.self, forKey: .pending) ?? []
     }
 
     /// Zeitpunkte als Zahl, ohne Rundung: `synced` muss `updatedAt` genau treffen, sonst
@@ -94,6 +106,22 @@ struct SyncCursors: Codable, Equatable {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .deferredToDate
         return decoder
+    }
+
+    /// Ab hier fehlen lokale Änderungen im Ordner; `nil`, wenn das unbekannt ist (noch
+    /// kein Abgleich seit 12.1, verschoben, oder das Dokument kennt den Stand nicht).
+    func exportedVersion(_ key: String, in document: SyncDocument) -> DocumentVersion? {
+        guard !pending.contains(key), let data = exported[key], let version = DocumentVersion(data: data),
+              document.contains(version)
+        else { return nil }
+        return version
+    }
+
+    /// Darf `HistoryRecorder` jetzt in das Dokument der Seite schreiben? Nicht, solange
+    /// sie verschoben ist, und nicht, wenn sie schon im Ordner steht, aber ohne bekannten
+    /// Stand: Dann ginge die Aufzeichnung beim nächsten Abgleich nicht mit hinaus.
+    func allowsRecording(_ key: String) -> Bool {
+        !pending.contains(key) && (!inFolder.contains(key) || exported[key] != nil)
     }
 
     func last(_ document: String, device: UUID) -> Int {
@@ -191,5 +219,33 @@ public struct SyncProgress: Equatable, Sendable {
     public init(done: Int, total: Int) {
         self.done = done
         self.total = total
+    }
+}
+
+/// Sperre je Dokument zwischen Abgleich (`SyncEngine`) und Aufzeichnung
+/// (`HistoryRecorder`): Beide lesen das Dokument aus dem Store, ändern es und schreiben
+/// es zurück. Ohne Sperre überschriebe der Spätere die Änderungen des Früheren, und der
+/// nächste Abgleich schriebe sie ein zweites Mal ins Dokument.
+actor DocumentLocks {
+    static let shared = DocumentLocks()
+    private var busy: Set<UUID> = []
+    private var waiting: [UUID: [CheckedContinuation<Void, Never>]] = [:]
+
+    func lock(_ id: UUID) async {
+        guard busy.contains(id) else {
+            busy.insert(id)
+            return
+        }
+        await withCheckedContinuation { waiting[id, default: []].append($0) }
+    }
+
+    func unlock(_ id: UUID) {
+        guard var queue = waiting[id], !queue.isEmpty else {
+            busy.remove(id)
+            return
+        }
+        let next = queue.removeFirst()
+        waiting[id] = queue.isEmpty ? nil : queue
+        next.resume()
     }
 }

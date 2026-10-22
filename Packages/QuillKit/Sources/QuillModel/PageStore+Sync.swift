@@ -201,6 +201,17 @@ extension PageStore {
         return page.updatedAt
     }
 
+    /// Speichert nur das Sync-Dokument einer Seite, mit der aufgezeichneten Geschichte
+    /// (ADR-031). Blöcke und `updatedAt` bleiben; die Änderung des Nutzers hat die Seite
+    /// schon für den nächsten Abgleich fällig gemacht. `false`, wenn es die Seite nicht
+    /// (mehr) gibt.
+    public func saveHistory(_ pageID: UUID, document: Data) throws -> Bool {
+        guard let page = try? fetchPage(pageID) else { return false }
+        page.syncDocument = document
+        try save()
+        return true
+    }
+
     public func hasAsset(_ id: UUID) throws -> Bool {
         var descriptor = FetchDescriptor<Asset>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
