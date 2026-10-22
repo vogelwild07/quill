@@ -196,6 +196,21 @@ final class AccessibilityAuditUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["todos.list"].waitForExistence(timeout: 10))
         audit("To-dos vorschlagen")
         app.typeKey(.escape, modifierFlags: [])
+
+        // Frag deine Notizen (16.4): Antwort mit Quelle, dann ohne passende Seite.
+        app.menuBars.menuBarItems["Ablage"].click()
+        app.menuBars.menuItems["Frag deine Notizen …"].click()
+        let question = app.descendants(matching: .any)["ask.question"]
+        XCTAssertTrue(question.waitForExistence(timeout: 5))
+        app.typeText("Wohin fahren wir?\r")
+        XCTAssertTrue(app.descendants(matching: .any)["ask.answer"].waitForExistence(timeout: 10))
+        audit("Frag deine Notizen", orphans: .focusedTextField)
+        question.doubleClick()
+        app.typeKey("a", modifierFlags: .command)
+        app.typeText("Xylophon?\r")
+        XCTAssertTrue(app.descendants(matching: .any)["ask.problem"].waitForExistence(timeout: 10))
+        audit("Frag deine Notizen (ohne Quelle)", orphans: .focusedTextField)
+        app.typeKey(.escape, modifierFlags: [])
     }
 
     private func summarize() {
