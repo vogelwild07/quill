@@ -63,6 +63,21 @@ struct NoteAnswererTests {
         #expect(await model.prompts.isEmpty)
     }
 
+    @Test func tooLongQuestionAsksNothing() async throws {
+        let store = try Self.store()
+        try await Self.page("Einkauf", ["Milch kaufen"], in: store)
+        let model = RecordingModel(terms: ["Milch"])
+        let question = String(repeating: "Milch ", count: 100)
+        await #expect(throws: NoteAnswerer.Failure.questionTooLong) {
+            try await NoteAnswerer(model: model, store: store).answer(question)
+        }
+        #expect(await model.prompts.isEmpty)
+        // Genau an der Grenze geht es noch.
+        _ = try await NoteAnswerer(model: model, store: store)
+            .answer(String(repeating: "x", count: NoteAnswerer.maxQuestionLength - 5) + "Milch")
+        #expect(await model.prompts.count == 1)
+    }
+
     @Test func withoutSourcesTheModelIsNotAsked() async throws {
         let store = try Self.store()
         try await Self.page("Einkauf", ["Milch kaufen"], in: store)
