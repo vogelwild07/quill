@@ -237,7 +237,8 @@ hinein, die App im Debug-Build mit `-QuillFakeAI` (`TestTextModel`).
 
 ```text
 QuillAI
-  TextModel         respond(instructions:prompt:), AIAvailability, AIError
+  TextModel         respond(instructions:prompt:), list(…) als Liste (Guided Generation),
+                    AIAvailability, AIError
   OnDeviceModel     SystemLanguageModel.default, je Anfrage eine neue Sitzung; Fehler → AIError
   TestTextModel     nur Debug: sofortige, feste Antwort
 QuillFeatures/AI
@@ -248,6 +249,11 @@ QuillFeatures/AI
                     höchstens 3 Runden, Antwort als ein Absatz
   SummaryView       Blatt „Zusammenfassen …“: speichert offene Editoren (flushAll), fasst
                     zusammen, Kopieren oder Einfügen an der Einfügemarke (eigener Schritt für ⌘Z)
+  TodoSuggester     markierte Blöcke → Liste (Stücke wie oben), ohne Aufzählungszeichen,
+                    Nummern, Kästchen und Doppelte, höchstens 50
+  TodoView          Blatt „To-dos vorschlagen …“: Liste ansehen, Einfügen als To-do-Blöcke unter
+                    der Markierung (BlockEditorController.insertBlocks, ein Schritt für ⌘Z)
+  AIProblem         ein Satz je AIError, für beide Blätter
 ```
 
 ## Sync (ADR-026, ADR-029, ab Phase 11)

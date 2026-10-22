@@ -103,6 +103,9 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   Fortschritt, dann dem Text (auswählbar) und dem Hinweis, dass das Modell auf dem Mac ihn
   erstellt hat und er geprüft werden soll; Knöpfe „Kopieren“ und „Einfügen“ (Standard, nur
   wenn der Editor den Fokus hatte), „Schließen“ mit Escape. Fehler nennen den Grund in einem Satz.
+- Seite › „To-dos vorschlagen …“ direkt darunter, gleiche Bedingung. Arbeitet auf den markierten
+  Absätzen; ohne Markierung sagt das Blatt, was zu tun ist. Vorschau als Liste mit `square`,
+  „Einfügen“ (Standard) legt sie als To-do-Blöcke unter die Markierung, die Absätze bleiben.
 
 ## Leerzustände
 
