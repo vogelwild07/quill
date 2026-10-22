@@ -5,8 +5,6 @@ import QuillModel
 /// Beantwortet eine Frage aus den Notizen (16.4, ADR-032). Die Quellen findet die
 /// vorhandene Suche; ans Modell gehen nur diese Seiten, höchstens `textLimit` Zeichen.
 struct NoteAnswerer {
-    /// Suchbegriffe aus der Frage, höchstens so viele.
-    static let maxTerms = 5
     /// Seiten, die ans Modell gehen.
     static let maxSources = 5
     /// Text aller Quellen zusammen: wie ein Stück beim Zusammenfassen.
@@ -54,8 +52,7 @@ struct NoteAnswerer {
     func answer(_ question: String) async throws -> Answer {
         let question = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !question.isEmpty else { throw Failure.emptyQuestion }
-        let modelTerms = Self.cleanedTerms(try await model.list(instructions: Self.termInstructions, prompt: question))
-        var terms = modelTerms
+        var terms = TermSearch.cleaned(try await model.list(instructions: Self.termInstructions, prompt: question))
         var pages = try await sources(for: terms)
         if pages.isEmpty {
             terms = Self.words(of: question)
@@ -75,44 +72,14 @@ struct NoteAnswerer {
         return Answer(text: text.trimmingCharacters(in: .whitespacesAndNewlines), sources: pages)
     }
 
-    /// Seiten mit den meisten Begriffen zuerst, bei Gleichstand in der Reihenfolge der Suche.
     private func sources(for terms: [String]) async throws -> [Source] {
-        var order: [UUID] = []
-        var counts: [UUID: Int] = [:]
-        var titles: [UUID: String] = [:]
-        for term in terms {
-            try Task.checkCancellation()
-            // Die Suche liefert höchstens einen Treffer je Seite.
-            for hit in try await store.search(term) {
-                if counts[hit.pageID] == nil {
-                    order.append(hit.pageID)
-                    titles[hit.pageID] = hit.title
-                }
-                counts[hit.pageID, default: 0] += 1
-            }
-        }
-        return order.enumerated()
-            .sorted { (counts[$0.element] ?? 0, -$0.offset) > (counts[$1.element] ?? 0, -$1.offset) }
-            .prefix(Self.maxSources)
-            .map { Source(pageID: $0.element, title: titles[$0.element] ?? "") }
-    }
-
-    /// Ohne leere und doppelte Begriffe, ohne Groß/klein-Doppel, höchstens `maxTerms`.
-    static func cleanedTerms(_ terms: [String]) -> [String] {
-        var seen = Set<String>()
-        var result: [String] = []
-        for term in terms {
-            let term = term.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
-            guard !term.isEmpty, seen.insert(term.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)).inserted else { continue }
-            result.append(term)
-            if result.count == maxTerms { break }
-        }
-        return result
+        try await TermSearch(store: store).pages(for: terms, limit: Self.maxSources)
+            .map { Source(pageID: $0.pageID, title: $0.title) }
     }
 
     /// Wörter der Frage ab `minWordLength` Buchstaben.
     static func words(of question: String) -> [String] {
-        cleanedTerms(
+        TermSearch.cleaned(
             question.split(whereSeparator: { !$0.isLetter && !$0.isNumber })
                 .map(String.init)
                 .filter { $0.count >= minWordLength }

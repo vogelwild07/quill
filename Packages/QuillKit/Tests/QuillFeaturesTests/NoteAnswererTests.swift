@@ -98,7 +98,7 @@ struct NoteAnswererTests {
     }
 
     @Test func termsWithoutEmptyDuplicatesAndPunctuation() {
-        #expect(NoteAnswerer.cleanedTerms(["Milch.", " milch", "", "Brot", "Käse", "Äpfel", "Tee", "Saft"])
+        #expect(TermSearch.cleaned(["Milch.", " milch", "", "Brot", "Käse", "Äpfel", "Tee", "Saft"])
             == ["Milch", "Brot", "Käse", "Äpfel", "Tee"])
         #expect(NoteAnswerer.words(of: "Wann rufe ich Oma an?") == ["Wann", "rufe"])
     }
