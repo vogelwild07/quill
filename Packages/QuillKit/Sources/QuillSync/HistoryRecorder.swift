@@ -79,15 +79,7 @@ public actor HistoryRecorder {
     /// Änderung dazukam.
     @discardableResult
     func record(_ pageID: UUID) async throws -> Bool {
-        await DocumentLocks.shared.lock(pageID)
-        do {
-            let recorded = try await recordLocked(pageID)
-            await DocumentLocks.shared.unlock(pageID)
-            return recorded
-        } catch {
-            await DocumentLocks.shared.unlock(pageID)
-            throw error
-        }
+        try await DocumentLocks.withLock(pageID) { try await recordLocked(pageID) }
     }
 
     private func recordLocked(_ pageID: UUID) async throws -> Bool {

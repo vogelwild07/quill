@@ -17,7 +17,7 @@ struct HistoryObserverTests {
 
         // Neuladen nach einem Abgleich: ohne Absender, keine Änderung des Nutzers.
         try await store.applyEdits(page, BlockEdits(upserts: [BlockSnapshot(id: UUID(), text: "Vom Abgleich")]))
-        NotificationCenter.default.post(name: EditorPersistenceBridge.didSave, object: nil, userInfo: ["pageID": page])
+        NotificationCenter.default.post(name: EditorPersistenceBridge.didSave, object: nil, userInfo: [EditorPersistenceBridge.pageIDKey: page])
         await observer.flush()
         #expect(try await store.syncPage(page)?.document == nil)
 
