@@ -237,13 +237,17 @@ hinein, die App im Debug-Build mit `-QuillFakeAI` (`TestTextModel`).
 
 ```text
 QuillAI
-  TextModel         respond(instructions:prompt:), AIAvailability
-  OnDeviceModel     SystemLanguageModel.default, je Anfrage eine neue Sitzung
+  TextModel         respond(instructions:prompt:), AIAvailability, AIError
+  OnDeviceModel     SystemLanguageModel.default, je Anfrage eine neue Sitzung; Fehler → AIError
   TestTextModel     nur Debug: sofortige, feste Antwort
 QuillFeatures/AI
-  AISettings        Verfügbarkeit + Wahl pro Mac (QuillAIEnabled), isUsable; in QuillPersistence
-                    erst beim ersten Zugriff angelegt (Prüfen kostet beim ersten Mal 3–7 ms)
+  AISettings        Verfügbarkeit + Wahl pro Mac (QuillAIEnabled), isUsable; Verfügbarkeit
+                    außerhalb des Main Threads geprüft (erstes Mal 3–7 ms), bis dahin nil
   AISettingsView    Einstellungen › KI: Schalter oder Erklärung
+  PageSummarizer    Blöcke → Text (ohne Bilder, Trenner, leere), Stücke bis 6.000 Zeichen,
+                    höchstens 3 Runden, Antwort als ein Absatz
+  SummaryView       Blatt „Zusammenfassen …“: speichert offene Editoren (flushAll), fasst
+                    zusammen, Kopieren oder Einfügen an der Einfügemarke (eigener Schritt für ⌘Z)
 ```
 
 ## Sync (ADR-026, ADR-029, ab Phase 11)
