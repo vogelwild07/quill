@@ -2,7 +2,7 @@ import AppKit
 import XCTest
 
 /// Lokale KI (ADR-032): Einstellungen › KI (16.1), Seite zusammenfassen (16.2), To-dos
-/// vorschlagen (16.3), Frag deine Notizen (16.4). Statt Apple Intelligence ein Test-Modell (`-QuillFakeAI`, nur Debug
+/// vorschlagen (16.3), Frag deine Notizen (16.4), verwandte Seiten (16.5). Statt Apple Intelligence ein Test-Modell (`-QuillFakeAI`, nur Debug
 /// und Test-Store), damit der Test auf jedem Mac gleich läuft; es antwortet mit der ersten
 /// Zeile der Anfrage, Listen mit einem Eintrag je Zeile.
 @MainActor
@@ -48,6 +48,7 @@ final class AIUITests: XCTestCase {
         app.typeKey("w", modifierFlags: .command)
         XCTAssertFalse(summarizeMenuItem.exists, "„Zusammenfassen …“ trotz ausgeschalteter KI")
         XCTAssertFalse(app.menuBars.menuItems["To-dos vorschlagen …"].exists, "„To-dos vorschlagen …“ trotz ausgeschalteter KI")
+        XCTAssertFalse(app.menuBars.menuItems["Verwandte Seiten …"].exists, "„Verwandte Seiten …“ trotz ausgeschalteter KI")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertFalse(askMenuItem.exists, "„Frag deine Notizen …“ trotz ausgeschalteter KI")
         app.typeKey(.escape, modifierFlags: [])
@@ -64,6 +65,7 @@ final class AIUITests: XCTestCase {
         app.typeKey("w", modifierFlags: .command)
         XCTAssertFalse(summarizeMenuItem.exists, "„Zusammenfassen …“ ohne Modell")
         XCTAssertFalse(app.menuBars.menuItems["To-dos vorschlagen …"].exists, "„To-dos vorschlagen …“ ohne Modell")
+        XCTAssertFalse(app.menuBars.menuItems["Verwandte Seiten …"].exists, "„Verwandte Seiten …“ ohne Modell")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertFalse(askMenuItem.exists, "„Frag deine Notizen …“ ohne Modell")
         app.typeKey(.escape, modifierFlags: [])
@@ -185,6 +187,47 @@ final class AIUITests: XCTestCase {
         waitFor(!problem.exists, "Blatt nicht geschlossen")
     }
 
+    // MARK: - Verwandte Seiten
+
+    func testRelatedPagesShowSharedTermsAndOpenThePage() throws {
+        launch(availability: "available")
+        // Das Test-Modell macht aus jeder Zeile „To-do: <Zeile>“; die Suche findet das wörtlich.
+        createPage("Liste")
+        app.typeText("\r")
+        waitForFocus(editor)
+        app.typeText("To-do: Milch kaufen und Brot")
+        createPage("Urlaub")
+        createPage("Einkauf")
+        app.typeText("\r")
+        waitForFocus(editor)
+        app.typeText("Milch kaufen")
+
+        relatedMenuItem.click()
+        let pages = app.descendants(matching: .any).matching(identifier: "related.page")
+        XCTAssertTrue(pages.firstMatch.waitForExistence(timeout: 10))
+        XCTAssertEqual(pages.count, 1)
+        XCTAssertEqual(pages.firstMatch.label, "Liste")
+        let terms = app.descendants(matching: .any)["related.terms"]
+        let text = terms.label + (terms.value as? String ?? "")
+        XCTAssertTrue(text.contains("Gemeinsam: To-do: Milch kaufen"), text)
+
+        pages.firstMatch.click()
+        waitFor(!terms.exists, "Blatt nicht geschlossen")
+        waitFor((self.title.value as? String) == "Liste", "Seite nicht geöffnet")
+    }
+
+    func testRelatedPagesWithoutMatchSayNone() throws {
+        launch(availability: "available")
+        createPage("Einkauf")
+        createPage("Kuchen")
+        relatedMenuItem.click()
+        let empty = app.descendants(matching: .any)["related.empty"]
+        XCTAssertTrue(empty.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.descendants(matching: .any)["related.page"].exists)
+        app.typeKey(.escape, modifierFlags: [])
+        waitFor(!empty.exists, "Blatt nicht geschlossen")
+    }
+
     // MARK: - Hilfen
 
     /// Öffnet das Menü „Ablage“ und gibt den Eintrag zurück (ohne zu klicken).
@@ -197,6 +240,11 @@ final class AIUITests: XCTestCase {
     private var todosMenuItem: XCUIElement {
         app.menuBars.menuBarItems["Seite"].click()
         return app.menuBars.menuItems["To-dos vorschlagen …"]
+    }
+
+    private var relatedMenuItem: XCUIElement {
+        app.menuBars.menuBarItems["Seite"].click()
+        return app.menuBars.menuItems["Verwandte Seiten …"]
     }
 
     /// Öffnet das Menü „Seite“ und gibt den Eintrag zurück (ohne zu klicken).

@@ -110,6 +110,11 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   (Fokus beim Öffnen, ↩ fragt), Fortschritt, Antwort (auswählbar) und darunter „Quellen“ als
   Links mit `doc.text`; ein Klick öffnet die Seite und schließt das Blatt. Hinweis, dass das
   Modell auf dem Mac nur aus diesen Seiten antwortet.
+- Seite › „Verwandte Seiten …“ unter „To-dos vorschlagen …“, gleiche Bedingung. Blatt mit
+  Titel der Seite, Fortschritt, dann bis zu fünf Seiten als Links mit `doc.text`, darunter
+  in Sekundärfarbe „Gemeinsam: …“ mit den gemeinsamen Begriffen; ein Klick öffnet die Seite
+  und schließt das Blatt. Ohne Treffer ein Satz statt der Liste; Hinweis, dass das Modell auf
+  dem Mac die Seiten anhand gemeinsamer Begriffe vorschlägt.
 
 ## Leerzustände
 

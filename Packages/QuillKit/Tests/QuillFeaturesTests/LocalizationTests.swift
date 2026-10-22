@@ -46,6 +46,8 @@ struct LocalizationTests {
                 reason: "Anweisung an das Sprachmodell, nie angezeigt; es antwortet in der Sprache der Frage (16.4)."),
         Allowed(file: "QuillFeatures/AI/NoteAnswerer.swift", text: "Du beantwortest Fragen", isPrefix: true,
                 reason: "Anweisung an das Sprachmodell, nie angezeigt; es antwortet in der Sprache der Frage (16.4)."),
+        Allowed(file: "QuillFeatures/AI/RelatedPageFinder.swift", text: "Du suchst Notizen zum selben Thema.", isPrefix: true,
+                reason: "Anweisung an das Sprachmodell, nie angezeigt; es antwortet in der Sprache der Notiz (16.5)."),
         Allowed(file: "QuillFeatures/AI/NoteAnswerer.swift", text: "Frage: …", isPrefix: true,
                 reason: "Aufbau der Anfrage an das Sprachmodell (Frage und Notizen), nie angezeigt (16.4)."),
         Allowed(file: "QuillFeatures/TimeTravel/TimeTravelSeed.swift", text: "Erster Absatz",

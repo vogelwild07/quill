@@ -254,9 +254,15 @@ QuillFeatures/AI
   TodoView          Blatt „To-dos vorschlagen …“: Liste ansehen, Einfügen als To-do-Blöcke unter
                     der Markierung (BlockEditorController.insertBlocks, ein Schritt für ⌘Z)
   AIProblem         ein Satz je AIError, für alle Blätter
-  NoteAnswerer      Frage → Suchbegriffe (list) → PageStore.search je Begriff, Seiten mit den
-                    meisten Begriffen, höchstens 5 und 6.000 Zeichen; sonst Wörter der Frage
+  TermSearch        Suchbegriffe bereinigen (höchstens 5), PageStore.search je Begriff, Seiten
+                    mit den meisten Begriffen zuerst, ohne Papierkorb, auf Wunsch ohne eine Seite
+  NoteAnswerer      Frage → Suchbegriffe (list) → TermSearch, höchstens 5 Seiten und 6.000
+                    Zeichen; sonst Wörter der Frage
   AskView           Blatt „Frag deine Notizen …“: speichert offene Editoren, Antwort + Quellen
+  RelatedPageFinder Titel + Text der Seite (Anfang, 6.000 Zeichen) → Suchbegriffe (list) →
+                    TermSearch ohne die Seite selbst, höchstens 5
+  RelatedView       Blatt „Verwandte Seiten …“: speichert Editoren der Seite, Seiten mit
+                    gemeinsamen Begriffen, Klick öffnet
 ```
 
 ## Sync (ADR-026, ADR-029, ab Phase 11)
