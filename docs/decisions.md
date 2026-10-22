@@ -626,6 +626,13 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Stehen lokale Änderungen schon in einer eigenen Datei, aber das Dokument noch nicht im Store (Abgleich verschoben oder abgebrochen), zeichnet `HistoryRecorder` dort nichts auf (`SyncCursors.pending`, gespeichert vor dem Schreiben in den Ordner). Sonst enthielte die Aufzeichnung auf dem alten Dokument dieselben Blöcke ein zweites Mal. Das Gleiche gilt für Seiten, die vor 12.1 abgeglichen wurden, bis zu ihrem nächsten Abgleich.
 - Abgleich und Aufzeichnung einer Seite sperren einander (`DocumentLocks`), weil beide das Dokument lesen, ändern und zurückschreiben.
 
+**Entscheidung (12.2, Stand am Ende eines Tages):**
+- `PageHistory` (in `QuillSync`) bildet aus dem Sync-Dokument der Seite die Tage mit mindestens einer Änderung, je mit dem Stand an ihrem Ende. Kein neues Schema, nichts wird zusätzlich gespeichert: Die Tage entstehen beim Öffnen aus der Geschichte.
+- Eine Änderung zählt zu dem Tag, den die Uhr des schreibenden Geräts nennt (Zeitstempel der Automerge-Änderung), im Kalender und in der Zeitzone des Macs, der die Zeitreise zeigt.
+- Der Stand eines Tages enthält alle Änderungen bis zu seinem Ende und alles, worauf sie aufbauen. Geht die Uhr eines Geräts falsch, steht dessen Änderung früher oder später da, aber nie ein Stand, den es so nicht gab. Ein Tag ohne neuen Stand fällt weg.
+- Alternativen (nicht gewählt, nicht besprochen): Tage aus der Reihenfolge der Geschichte statt aus den Zeitstempeln (robust gegen falsche Uhren, aber ohne Datum nicht als Tage darstellbar); Tagesstände beim Aufzeichnen als eigene Einträge speichern (schnelleres Öffnen, aber neues Schema und doppelte Daten); Zeitzone des schreibenden Geräts (Automerge speichert sie nicht).
+- Messung: `historyDays` (Seite mit 100 Blöcken und einem Jahr Geschichte, dreimal am Tag aufgezeichnet) und `historyDayBlocks` (Blöcke eines Tages), Schwellen 250 und 300 ms (`docs/performance.md`).
+
 **Konsequenzen:**
 - Die Dokumente wachsen mit jeder Aufzeichnung. Die Messung (`docs/performance.md`) zeigt, ob das stört.
 - Seiten ohne Speicherung im Editor (z. B. dupliziert, aus einem Backup) haben bis zur ersten Bearbeitung keine eigene Geschichte.

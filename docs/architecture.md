@@ -243,6 +243,7 @@ QuillSync
   SyncState         SyncGate („Sync pausieren“), SyncFailure, SyncReport, gelesene Dateien,
                     Sperre je Dokument zwischen Abgleich und Aufzeichnung (DocumentLocks)
   HistoryRecorder   Geschichte jeder Seite im Sync-Dokument, auch ohne Sync (Actor, ADR-031)
+  PageHistory       Tage einer Seite mit dem Stand an ihrem Ende, aus der Geschichte (ADR-031)
 QuillModel
   PageStore+Sync    Schreibwege des Abgleichs: nur vom erwarteten Stand aus, Seiten nie löschen;
                     saveHistory (nur das Sync-Dokument, für HistoryRecorder)

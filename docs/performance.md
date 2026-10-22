@@ -297,6 +297,34 @@ der Start liegen 1–2 % höher, innerhalb der Streuung der Einzelwerte (Start a
 neu 377–403 ms). Am selben Vormittag lag `sidebarLoad` auch auf dem alten Stand bei 197 ms,
 nahe der Schwelle von 200 ms. Alle Schwellen eingehalten.
 
+## Tagesstände der Zeitreise (22.10.2026, ADR-031)
+
+12.2 bildet die Tage einer Seite beim Öffnen aus der Geschichte. Zwei neue Messungen mit
+Produktziel (Schwelle), Seite mit 100 Blöcken, ein Jahr lang dreimal am Tag aufgezeichnet:
+
+| Messung | Was | Median (ms) | Schwelle |
+|---|---|---|---|
+| `historyDays` | Dokument laden und 365 Tage bilden | 93,81 / 92,08 | 250 (Zeitreise öffnen) |
+| `historyDayBlocks` | Blöcke eines Tages lesen | 15,49 / 15,54 | 300 (wie Laden im Editor) |
+
+Bestehende Messungen abwechselnd auf `main` (`b9955df`) und 12.2, je drei Läufe, zwei
+Runden (Runde 1 / Runde 2); 12.2 berührt diese Wege nicht:
+
+| Messung (Median, ms) | `main` | 12.2 |
+|---|---|---|
+| editorLoad | 13,40 / 13,25 | 13,37 / 13,09 |
+| editorTyping | 1,23 / 1,22 | 1,23 / 1,22 |
+| editorEnter | 1,09 / 1,08 | 1,07 / 1,08 |
+| bridgeLoad | 17,30 / 17,40 | 17,37 / 17,28 |
+| applyEditsMove | 16,62 / 15,77 | 15,80 / 15,67 |
+| applyEditsReverse | 71,39 / 73,05 | 70,66 / 70,57 |
+| pageTreeBuild | 56,49 / 56,26 | 56,24 / 56,12 |
+| search | 45,64 / 46,16 | 45,67 / 45,41 |
+| exportPlan | 1006,16 / 1004,84 | 992,67 / 991,69 |
+
+Ein Lauf direkt nach dem App-Build lag 3–6 % über der ruhigen Messung vom Morgen, auf
+beiden Ständen: Vergleiche deshalb nur im Wechsel.
+
 ## Messbedingungen
 
 | | |
