@@ -14,6 +14,10 @@ enum EmptyState: CaseIterable {
     case noBackups
     /// „Schnell öffnen“ ohne Treffer.
     case noResults
+    /// Zeitreise einer Seite ohne aufgezeichnete Geschichte (ADR-031).
+    case noHistory
+    /// Zeitreise: Geschichte der Seite nicht lesbar.
+    case historyUnreadable
 
     var title: String {
         switch self {
@@ -23,6 +27,8 @@ enum EmptyState: CaseIterable {
         case .emptyTrash: String(localized: "Der Papierkorb ist leer", bundle: .module)
         case .noBackups: String(localized: "Noch keine Backups", bundle: .module)
         case .noResults: String(localized: "Keine Treffer", bundle: .module)
+        case .noHistory: String(localized: "Noch keine Geschichte", bundle: .module)
+        case .historyUnreadable: String(localized: "Geschichte nicht lesbar", bundle: .module)
         }
     }
 
@@ -34,6 +40,8 @@ enum EmptyState: CaseIterable {
         case .emptyTrash: String(localized: "Gelöschte Seiten bleiben hier 30 Tage und lassen sich wiederherstellen.", bundle: .module)
         case .noBackups: String(localized: "Quill sichert die Daten beim Start und beim Beenden.", bundle: .module)
         case .noResults: String(localized: "Kein Seitentitel und kein Text passt zur Suche.", bundle: .module)
+        case .noHistory: String(localized: "Ab der ersten Bearbeitung hält Quill fest, wie die Seite am Ende jedes Tages aussah.", bundle: .module)
+        case .historyUnreadable: String(localized: "Die Seite selbst ist nicht betroffen.", bundle: .module)
         }
     }
 
@@ -45,6 +53,8 @@ enum EmptyState: CaseIterable {
         case .emptyTrash: "trash"
         case .noBackups: "clock.arrow.circlepath"
         case .noResults: "magnifyingglass"
+        case .noHistory: "calendar.badge.clock"
+        case .historyUnreadable: "exclamationmark.triangle"
         }
     }
 }

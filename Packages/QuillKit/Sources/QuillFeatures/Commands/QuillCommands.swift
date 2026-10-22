@@ -130,6 +130,13 @@ public struct QuillCommands: Commands {
             Button(String(localized: "In neuem Fenster öffnen", bundle: .module)) { actions?.openInWindow() }
                 .disabled(actions?.selection == nil)
             Divider()
+            // ⌥⌘Y: frei in Textfeldern und im System (ADR-031).
+            Button(String(localized: "Zeitreise …", bundle: .module)) {
+                if let selection = actions?.selection { openWindow(id: TimeTravelScene.windowID, value: selection) }
+            }
+            .keyboardShortcut("y", modifiers: [.command, .option])
+            .disabled(actions?.selection == nil)
+            Divider()
             // ⇧⌘E wie „Exportieren“ in vielen Mac-Apps; ⌘E bleibt „Auswahl für Suche verwenden“.
             Button(String(localized: "Exportieren …", bundle: .module)) { actions?.exportPage() }
                 .keyboardShortcut("e", modifiers: [.command, .shift])

@@ -26,6 +26,8 @@ struct QuillApp: App {
             QuillCommands(persistence: try? appDelegate.persistence?.get())
         }
 
+        TimeTravelScene(persistence: try? appDelegate.persistence?.get())
+
         Settings {
             SettingsView(persistence: try? appDelegate.persistence?.get())
         }
