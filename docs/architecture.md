@@ -211,7 +211,8 @@ Editor in zwei Schichten (10.3):
 
 ```text
 QuillEditorCore   Foundation, Observation, Synchronization, QuillModel
-  Document/        EditorDocument, EditorBlock, InlineText, Markdown, BlockClipboard, BlockMerge
+  Document/        EditorDocument (+Restore: Absätze aus einem früheren Stand), EditorBlock, InlineText,
+                   Markdown, BlockClipboard, BlockMerge
   Text/            Block-Attribute im Textspeicher
   Persistence/     EditorPersistenceBridge
   Theme/           Katalog, Paletten, PaletteSpec (Kontrast, Fokus-Modus), EditorFocusSettings
@@ -222,7 +223,8 @@ QuillEditor       AppKit oder UIKit
   Theme/           ResolvedPalette (NSColor/UIColor), EditorThemeState, EditorThemeSettings,
                    EditorTheme+Platform (Name, erzwungene Darstellung auf dem Mac)
   Document/        SlashCommand, BlockConversion (lokalisierte Menütitel)
-  AppKit/          BlockEditorController, BlockTextView, Slash-Menü (nur Mac)
+  AppKit/          BlockEditorController (Lesemodus isReadOnly, selectedBlockIDs), BlockTextView,
+                   Slash-Menü (nur Mac)
 ```
 
 ## Sync (ADR-026, ADR-029, ab Phase 11)
@@ -254,6 +256,8 @@ QuillFeatures
                     Pause, Wiederverbinden, Zeitpunkte, Konflikte je Seite und Wahl), SyncSettingsView,
                     SyncReconnectView, SyncSidebarStatus, ConflictViews/ConflictLabel (Popover, Hinweis im Seitenkopf)
   Window/           PageJumpRouter (Sprung aus Einstellungen › Sync zur Seite im vordersten Fenster)
+  TimeTravel/       TimeTravelScene (Fenster je Seite, ⌥⌘Y), TimeTravelModel (Tage, Stand im Lesemodus,
+                    Rückholung über eine eigene EditorPersistenceBridge), TimeTravelSeed (nur Debug)
 QuillEditor
   BlockLayoutFragment, BlockEditorController+Markers   Zeichen am Blockrand (Konflikt, wiederhergestellt), Popover, Undo
   Settings/         Bereiche Darstellung, Sync, Lizenzen (Resources/ThirdPartyLicenses.txt, Scripts/third-party-licenses.py)

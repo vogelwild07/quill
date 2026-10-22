@@ -325,6 +325,28 @@ Runden (Runde 1 / Runde 2); 12.2 berührt diese Wege nicht:
 Ein Lauf direkt nach dem App-Build lag 3–6 % über der ruhigen Messung vom Morgen, auf
 beiden Ständen: Vergleiche deshalb nur im Wechsel.
 
+## Fenster „Zeitreise“ (22.10.2026, ADR-031)
+
+12.3 ändert Szenen und Menü der App und den Editor (Lesemodus). Gemessen im Wechsel mit
+`main` (`ffd3ee7`), zwei Runden (Runde 1 / Runde 2), Median je Lauf:
+
+| Messung (ms) | `main` | 12.3 |
+|---|---|---|
+| editorLoad | 13,52 / 13,37 | 13,41 / 13,41 |
+| editorTyping | 1,22 / 1,23 | 1,22 / 1,22 |
+| bridgeLoad | 17,25 / 17,38 | 17,28 / 17,47 |
+| pageTreeBuild | 57,99 / 57,58 | 58,64 / 59,38 |
+| search | 45,65 / 47,07 | 46,18 / 45,96 |
+| historyDays | 92,01 / 92,07 | 92,22 / 92,45 |
+| App: sidebarLoad | 220,0 / 215,6 | 217,1 / 212,2 |
+| App: sidebarReload | 152,0 / 173,1 | 173,7 / 173,1 |
+| App: pageSwitch | 58,7 / 58,2 | 59,0 / 58,0 |
+
+12.3 ist nicht langsamer. `sidebarLoad` lag während der ganzen Messung auf allen Ständen über
+der Schwelle von 200 ms, auch auf dem Stand nach 12.1 (`b9955df`: 217,7 / 220,4, am Morgen
+noch 188–197 ms). Ursache war Last von außen: `appstoreagent` lief die ganze Zeit mit rund
+93 % CPU, zeitweise auch `mds`. Die Messung ohne diese Last steht noch aus (Phase 12.5).
+
 ## Messbedingungen
 
 | | |
