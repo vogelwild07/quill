@@ -8,5 +8,10 @@ public struct TestTextModel: TextModel {
         let firstLine = prompt.split(separator: "\n", omittingEmptySubsequences: true).first ?? ""
         return "Antwort des Test-Modells: \(firstLine)"
     }
+
+    /// Ein Eintrag je Zeile des Textes.
+    public func list(instructions: String, prompt: String) async throws -> [String] {
+        prompt.split(separator: "\n", omittingEmptySubsequences: true).map { "To-do: \($0)" }
+    }
 }
 #endif

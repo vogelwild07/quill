@@ -18,6 +18,8 @@ struct PageSummarizerTests {
             prompts.append(prompt)
             return answer(prompts.count)
         }
+
+        func list(instructions: String, prompt: String) async throws -> [String] { [] }
     }
 
     static func block(_ text: String, _ kind: BlockKind = .paragraph) -> BlockSnapshot {

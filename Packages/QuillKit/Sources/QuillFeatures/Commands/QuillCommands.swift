@@ -142,6 +142,8 @@ public struct QuillCommands: Commands {
             if persistence?.ai.isUsable == true {
                 Button(String(localized: "Zusammenfassen …", bundle: .module)) { actions?.summarize() }
                     .disabled(actions?.selection == nil)
+                Button(String(localized: "To-dos vorschlagen …", bundle: .module)) { actions?.suggestTodos() }
+                    .disabled(actions?.selection == nil)
             }
             Divider()
             // ⇧⌘E wie „Exportieren“ in vielen Mac-Apps; ⌘E bleibt „Auswahl für Suche verwenden“.

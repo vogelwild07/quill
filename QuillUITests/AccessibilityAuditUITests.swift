@@ -186,6 +186,16 @@ final class AccessibilityAuditUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["summary.problem"].waitForExistence(timeout: 10))
         audit("Zusammenfassung (leere Seite)")
         app.typeKey(.escape, modifierFlags: [])
+
+        // To-dos (16.3): Liste der Vorschläge.
+        app.windows.firstMatch.textViews["editor.text"].click()
+        app.typeText("Milch kaufen")
+        app.typeKey("a", modifierFlags: .command)
+        app.menuBars.menuBarItems["Seite"].click()
+        app.menuBars.menuItems["To-dos vorschlagen …"].click()
+        XCTAssertTrue(app.descendants(matching: .any)["todos.list"].waitForExistence(timeout: 10))
+        audit("To-dos vorschlagen")
+        app.typeKey(.escape, modifierFlags: [])
     }
 
     private func summarize() {

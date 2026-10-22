@@ -40,6 +40,10 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   je Anfrage, längere Seiten in Stücken; Verfügbarkeit im Hintergrund geprüft (ADR-032,
   Abschnitt 16.2).
 
+- [ ] 16.3: To-dos nur aus markierten Absätzen, als Vorschau-Liste; „Einfügen“ legt sie als
+  To-do-Blöcke unter die Markierung, die Absätze bleiben (nicht ersetzen); Liste per Guided
+  Generation statt Text zerlegen; höchstens 50 (ADR-032, Abschnitt 16.3).
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -148,7 +152,8 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Kontext, Antwort auf Deutsch; Kommentar „rund 4.000 Token“ korrigiert.
 - Das Audit fand eine echte Lücke: Seite ohne Titel hatte in der Sidebar keine Beschreibung
   für VoiceOver (behoben, eigener Commit).
-- Tests: Package 688 (135 + 138 + 283 + 30 + 9 + 93), UI 55 (1 übersprungen), Synctest 13
+- Tests: Package 688 (135 + 138 + 283 + 30 + 9 + 93), UI 54 (1 übersprungen; zuerst als 55
+  gemeldet, verzählt), Synctest 13
   Fälle. Gegenproben: 6 im Package und 1 im UI-Test rot; g1 griff zuerst nicht (Test
   geschärft), g2 kompilierte zuerst nicht (wiederholt). Ohne `breakUndoCoalescing()` vor dem
   Einfügen bleibt der UI-Test grün: Das Blatt nimmt dem Editor schon den Fokus, die Zeile
@@ -157,3 +162,17 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   189,1 / 191,6 auf `main`; derselbe Stand ohne Prüfung der Verfügbarkeit danach gleichauf
   (189,2 / 189,8 mit, 191,0 / 190,3 ohne), Wiederholung im Wechsel mit `main` 191,4 / 192,5
   gegen 191,9 / 185,3. Gewertet als Streuung, nicht als Verschlechterung.
+
+### 16.3 To-dos vorschlagen (PR #33, ADR-032)
+
+- Seite › „To-dos vorschlagen …“: markierte Absätze ans Modell (Guided Generation, Liste),
+  Vorschau im Blatt, „Einfügen“ als To-do-Blöcke unter der Markierung, ein Schritt für ⌘Z
+  (`BlockEditorController.insertBlocks`, auch von „Duplizieren“ genutzt). Fehlertexte beider
+  Blätter jetzt aus `AIProblem`.
+- Erster Lauf der Package-Tests rot: Ein Eintrag nur aus „-“ blieb stehen (Zeichen am Ende
+  ohne Leerzeichen danach); Regel angepasst.
+- Echtes Modell nur auf dem Mac: Notiz mit drei Aufgaben ergab vier deutsche Einträge (der
+  Termin zählte mit), Notiz ohne Aufgabe eine leere Liste.
+- Tests: Package 694 (135 + 144 + 283 + 30 + 9 + 93), UI 56 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 8 im Package und 3 im UI-Test rot, alle beim ersten Mal.
+- Messung im Wechsel mit `main` (`562c11d`): nicht langsamer.

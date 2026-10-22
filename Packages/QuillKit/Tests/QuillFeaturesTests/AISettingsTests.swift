@@ -9,6 +9,7 @@ import Testing
 struct AISettingsTests {
     struct SilentModel: TextModel {
         func respond(instructions: String, prompt: String) async throws -> String { "" }
+        func list(instructions: String, prompt: String) async throws -> [String] { [] }
     }
 
     static func defaults() throws -> UserDefaults {

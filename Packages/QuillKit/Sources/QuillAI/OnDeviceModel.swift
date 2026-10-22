@@ -22,10 +22,27 @@ public struct OnDeviceModel: TextModel {
     }
 
     public func respond(instructions: String, prompt: String) async throws -> String {
+        try await run(instructions) { try await $0.respond(to: prompt).content }
+    }
+
+    public func list(instructions: String, prompt: String) async throws -> [String] {
+        // Geführte Ausgabe: Das Modell füllt die Liste, statt Zeilen frei zu formatieren.
+        try await run(instructions) { try await $0.respond(to: prompt, generating: ItemList.self).content.items }
+    }
+
+    @Generable
+    struct ItemList {
+        @Guide(description: "Die gefundenen Einträge, je einer kurz und ohne Aufzählungszeichen; leer, wenn es keine gibt")
+        var items: [String]
+    }
+
+    private func run<Value>(
+        _ instructions: String, _ request: (LanguageModelSession) async throws -> Value
+    ) async throws -> Value {
         // Je Anfrage eine neue Sitzung: Nichts aus früheren Anfragen fließt mit ein.
         let session = LanguageModelSession(model: .default, instructions: instructions)
         do {
-            return try await session.respond(to: prompt).content
+            return try await request(session)
         } catch is CancellationError {
             throw CancellationError()
         } catch {

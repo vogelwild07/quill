@@ -55,20 +55,10 @@ final class SummaryModel {
     }
 
     static func message(_ error: any Error) -> String {
-        switch error {
-        case PageSummarizer.Failure.empty:
-            String(localized: "Die Seite enthält keinen Text zum Zusammenfassen.", bundle: .module)
-        case AIError.tooLong:
-            String(localized: "Ein Abschnitt der Seite ist zu lang für das Sprachmodell.", bundle: .module)
-        case AIError.refused:
-            String(localized: "Das Sprachmodell hat diese Seite nicht zusammengefasst.", bundle: .module)
-        case AIError.unsupportedLanguage:
-            String(localized: "Das Sprachmodell unterstützt die Sprache dieser Seite nicht.", bundle: .module)
-        case AIError.unavailable:
-            String(localized: "Das Sprachmodell steht gerade nicht bereit.", bundle: .module)
-        default:
-            String(localized: "Die Zusammenfassung ist gescheitert.", bundle: .module)
+        if case PageSummarizer.Failure.empty = error {
+            return String(localized: "Die Seite enthält keinen Text zum Zusammenfassen.", bundle: .module)
         }
+        return AIProblem.message(error, fallback: String(localized: "Die Zusammenfassung ist gescheitert.", bundle: .module))
     }
 }
 
