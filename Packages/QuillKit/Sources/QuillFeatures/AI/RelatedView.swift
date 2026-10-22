@@ -105,7 +105,7 @@ struct RelatedView: View {
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("related.progress")
         case .done(let pages) where pages.isEmpty:
-            EmptyStateView(.noRelatedPages, id: "related.empty")
+            EmptyStateView(.noRelatedPages, id: "related.emptyState")
         case .done(let pages):
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
