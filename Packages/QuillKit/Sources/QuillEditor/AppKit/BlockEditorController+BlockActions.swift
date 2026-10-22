@@ -59,6 +59,27 @@ extension BlockEditorController {
         insertBlocks(blocks.map { $0.withNewID() }, after: anchorID, actionName: UndoAction.duplicate)
     }
 
+    /// Editor einer Seite, der in `window` den Fokus hat.
+    public static func focused(in window: NSWindow?) -> BlockEditorController? {
+        (window?.firstResponder as? BlockTextView)?.editor
+    }
+
+    /// Bearbeitbar und nicht im Lesemodus (Papierkorb, Zeitreise).
+    public var allowsEditing: Bool { textView.canEdit }
+
+    /// Ob jetzt eingefügt werden darf: bearbeitbar und kein markierter Text (IME, tote Tasten).
+    public var acceptsInsertion: Bool { textView.canEdit && !textView.hasMarkedText() }
+
+    /// Text wie getippt an der Einfügemarke, ein eigener Schritt für ⌘Z (Zusammenfassung aus
+    /// der KI). Ohne `acceptsInsertion` passiert nichts.
+    public func insertTyped(_ text: String) {
+        guard acceptsInsertion else { return }
+        focus()
+        // Nicht mit dem zuletzt Getippten zusammen zurücknehmen.
+        textView.breakUndoCoalescing()
+        textView.insertText(text, replacementRange: textView.selectedRange())
+    }
+
     /// Blöcke unter dem Block `anchorID` einfügen und auswählen, ein Schritt für ⌘Z
     /// (⌘D, To-dos aus der KI). Fehlt der Block inzwischen, passiert nichts.
     public func insertBlocks(_ blocks: [EditorBlock], after anchorID: UUID, actionName: String) {

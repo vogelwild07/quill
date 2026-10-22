@@ -172,6 +172,32 @@ struct TypingTests {
         h.expectConsistent()
     }
 
+    /// Zusammenfassung der KI einfügen (ADR-032): wie getippt an der Einfügemarke, ein Schritt
+    /// für ⌘Z; nie während einer IME-Eingabe und nie im Lesemodus.
+    @Test func insertTypedLikeTypingButNeverDuringCompositionOrReadOnly() {
+        let h = Harness([EditorBlock(text: "Ausflug")])
+        h.caret(at: 0, 7)
+        h.type(" am See")
+        #expect(h.editor.acceptsInsertion)
+        h.editor.insertTyped(" Zusammenfassung")
+        #expect(h.texts == ["Ausflug am See Zusammenfassung"])
+        h.undo()
+        #expect(h.texts == ["Ausflug am See"])
+
+        h.textView.setMarkedText("か", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: NSNotFound, length: 0))
+        #expect(!h.editor.acceptsInsertion)
+        h.editor.insertTyped("fremd")
+        #expect(!h.storage.contains("fremd"))
+        h.textView.insertText("漢", replacementRange: NSRange(location: NSNotFound, length: 0))
+
+        h.editor.isReadOnly = true
+        #expect(!h.editor.allowsEditing)
+        #expect(!h.editor.acceptsInsertion)
+        h.editor.insertTyped("fremd")
+        #expect(!h.storage.contains("fremd"))
+        h.expectConsistent()
+    }
+
     /// Neuladen aus einem anderen Fenster greift nie in eine laufende IME-Eingabe ein.
     @Test func reloadIsRejectedDuringComposition() {
         let h = Harness([EditorBlock(text: "")])
