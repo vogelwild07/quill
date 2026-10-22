@@ -448,6 +448,25 @@ Wiederholung gegen `main` liegt in der Streuung. `sidebarReload` streut weiter s
 
 Nicht langsamer; `applyEditsReverse` liegt 1 ms höher, ohne Änderung am Store (Streuung).
 
+## Frag deine Notizen (22.10.2026, ADR-032)
+
+16.4 ändert nichts am Start, am Store und an der Suche. Im Wechsel mit `main` (`c7457b8`), zwei Runden:
+
+| Messung (ms) | `main` | 16.4 |
+|---|---|---|
+| editorLoad | 13,14 / 12,92 | 12,98 / 13,21 |
+| bridgeLoad | 16,74 / 16,64 | 16,93 / 16,83 |
+| applyEditsReverse | 68,99 / 68,28 | 68,31 / 68,09 |
+| pageTreeBuild | 54,66 / 54,82 | 53,89 / 54,14 |
+| search | 43,75 / 44,64 | 45,06 / 45,28 |
+| App: sidebarLoad | 189,9 / 191,8 | 198,4 / 192,7 |
+| App: sidebarReload | 150,1 / 169,7 | 148,6 / 144,2 |
+| App: pageSwitch | 79,0 / 82,2 | 82,1 / 81,6 |
+
+Nicht langsamer. `search` liegt im Rahmen früherer Messungen (16.3: 45,0–45,3), der Code der
+Suche ist unverändert. `sidebarLoad` streut wie in 16.2 (erste Runde hoch, zweite im Bereich
+von `main`); der Startpfad ist unverändert.
+
 ## Messbedingungen
 
 | | |
