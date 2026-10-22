@@ -431,6 +431,23 @@ Verfügbarkeit maß danach gleich (191,0 / 190,3 gegen 189,2 / 189,8 mit Prüfun
 Wiederholung gegen `main` liegt in der Streuung. `sidebarReload` streut weiter stark (96 bis
 180 ms je Einzelwert). Zeilen ab `sidebarReload` aus der Wiederholung.
 
+## To-dos vorschlagen (22.10.2026, ADR-032)
+
+16.3 ändert nichts am Start und am Store. Im Wechsel mit `main` (`562c11d`), zwei Runden:
+
+| Messung (ms) | `main` | 16.3 |
+|---|---|---|
+| editorLoad | 12,94 / 12,87 | 13,06 / 12,89 |
+| bridgeLoad | 16,51 / 16,57 | 16,75 / 16,85 |
+| applyEditsReverse | 67,51 / 67,76 | 68,46 / 69,21 |
+| pageTreeBuild | 53,87 / 53,80 | 53,82 / 53,85 |
+| search | 45,09 / 44,89 | 45,04 / 45,26 |
+| App: sidebarLoad | 191,8 / 192,7 | 196,1 / 187,1 |
+| App: sidebarReload | 143,1 / 143,9 | 144,0 / 142,6 |
+| App: pageSwitch | 80,4 / 81,4 | 82,4 / 80,5 |
+
+Nicht langsamer; `applyEditsReverse` liegt 1 ms höher, ohne Änderung am Store (Streuung).
+
 ## Messbedingungen
 
 | | |
