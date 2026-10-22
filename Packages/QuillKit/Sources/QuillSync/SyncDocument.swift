@@ -118,10 +118,24 @@ public class SyncDocument {
         document.actor = Self.actor(device: device)
     }
 
-    static func actor(device: UUID) -> ActorId {
-        let bytes = withUnsafeBytes(of: device.uuid) { Data($0) } + withUnsafeBytes(of: UUID().uuid) { Data($0) }
+    /// Schreibt ab jetzt in der Sitzung `session`, mit Gerät wie `write(as:)`; ohne Gerät
+    /// (Sync nie eingeschaltet) nennen die Änderungen keins. Dieselbe Sitzung nach erneutem
+    /// Laden zählt die Nummern ihrer Änderungen weiter, solange das geladene Dokument alle
+    /// bisherigen Änderungen der Sitzung enthält (`HistoryRecorder`): So kommt nicht bei
+    /// jeder Aufzeichnung eine neue Akteurs-ID ins Dokument.
+    public func write(as device: UUID?, session: UUID) {
+        document.actor = Self.actor(device: device, session: session)
+    }
+
+    static func actor(device: UUID, session: UUID = UUID()) -> ActorId {
+        let bytes = withUnsafeBytes(of: device.uuid) { Data($0) } + withUnsafeBytes(of: session.uuid) { Data($0) }
         // 32 Byte, unter der Grenze von 128.
         return ActorId(data: bytes)!
+    }
+
+    static func actor(device: UUID?, session: UUID) -> ActorId {
+        guard let device else { return ActorId(uuid: session) }
+        return actor(device: device, session: session)
     }
 
     /// Geräte-ID aus einer Akteurs-ID von `actor(device:)`; `nil` für andere.
@@ -134,6 +148,11 @@ public class SyncDocument {
             bytes.append(byte)
         }
         return bytes.withUnsafeBufferPointer { NSUUID(uuidBytes: $0.baseAddress) as UUID }
+    }
+
+    /// Akteur und Gerät jeder Änderung nach der gemeinsamen ersten, in der Reihenfolge der Geschichte.
+    var changeAuthors: [(actor: String, device: UUID?)] {
+        document.getHistory().dropFirst().compactMap { document.change(hash: $0) }.map { ($0.actorId.description, Self.device(of: $0.actorId)) }
     }
 
     /// Vollständiger Stand samt Geschichte, z. B. für den Store oder als erste eigene

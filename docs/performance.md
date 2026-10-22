@@ -265,6 +265,38 @@ Alle Unterschiede im Rauschen (Package bis 3,6 %, App eher schneller), alle Schw
 eingehalten. Ein Theme-Wechsel verwirft die Layout-Fragmente des Editors einmal; das
 ist kein Pfad beim Tippen und wird nicht gemessen.
 
+## Geschichte aufzeichnen vorher und nachher (21./22.10.2026, ADR-031)
+
+Gleiche Messung vor 12.1 (Stand `9bd40ff`) und danach (Branch
+`phase-12/geschichte-aufzeichnen`). `HistoryRecorder` läuft erst 2 s nach dem Speichern
+und nicht auf dem Main Thread; Tippen und Seitenwechsel sollen davon nichts merken.
+
+| Messung (Median, ms) | vorher | nachher |
+|---|---|---|
+| editorLoad | 12,86 | 12,70 |
+| editorTyping | 1,20 | 1,17 |
+| editorEnter | 1,07 | 1,04 |
+| bridgeLoad | 17,08 | 16,81 |
+| applyEditsMove | 16,03 | 15,15 |
+| applyEditsReverse | 69,93 | 67,59 |
+| pageTreeBuild | 54,46 | 54,97 |
+| search | 44,81 | 44,29 |
+| exportPlan | 981,42 | 959,64 |
+| App: ApplicationLaunch | 560,7 / 555,8 | 569,2 / 563,0 |
+| App: launch | 395,2 / 389,5 | 397,8 / 397,1 |
+| App: sidebarLoad | 197,3 / 188,4 | 197,4 / 196,8 |
+| App: sidebarReload | 174,2 / 153,3 | 152,4 / 153,2 |
+| App: pageSwitch | 59,8 / 57,2 | 59,1 / 57,6 |
+
+Package: drei Läufe je Stand. App: zwei Runden, abwechselnd alter Stand (eigener Worktree)
+und neuer Stand, Median je Lauf (Runde 1 / Runde 2). Ein einzelner Lauf allein reichte
+nicht: Der erste Lauf auf dem Endstand ergab `sidebarReload` 176,7 ms, weil nur einer von
+fünf Werten in der schnellen Gruppe um 105 ms lag (die Werte zerfallen in zwei Gruppen, um
+105 und um 150–184 ms). Im Wechsel ist der neue Stand nicht langsamer; `sidebarLoad` und
+der Start liegen 1–2 % höher, innerhalb der Streuung der Einzelwerte (Start alt 383–402 ms,
+neu 377–403 ms). Am selben Vormittag lag `sidebarLoad` auch auf dem alten Stand bei 197 ms,
+nahe der Schwelle von 200 ms. Alle Schwellen eingehalten.
+
 ## Messbedingungen
 
 | | |

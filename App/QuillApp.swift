@@ -72,6 +72,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ProfilingSeed.seedAndQuit(persistence)
         }
         #endif
+        // Geschichte für die Zeitreise, auch ohne Sync (ADR-031).
+        try? persistence?.get().history.start()
         // Gleicht nur ab, wenn der Nutzer den Sync eingeschaltet hat (ADR-029).
         try? persistence?.get().sync.start()
         #if DEBUG
@@ -80,13 +82,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #endif
     }
 
-    /// Speichert offene Änderungen aller Editoren, bevor die App endet (und vor dem Backup).
+    /// Speichert offene Änderungen aller Editoren, bevor die App endet (und vor dem Backup),
+    /// und zeichnet danach die Geschichte auf, die noch wartet (ADR-031).
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard EditorPersistenceBridge.hasAnyUnsavedChanges else { return .terminateNow }
+        let history = try? persistence?.get().history
+        guard EditorPersistenceBridge.hasAnyUnsavedChanges || history?.hasUnrecordedSaves == true else { return .terminateNow }
         Task {
             let terminate = await QuitGuard.shouldTerminate()
             // Abgebrochen: Ein vorgemerktes Backup nicht unbemerkt beim nächsten Start einspielen.
             if !terminate { try? persistence?.get().quitWasCancelled() }
+            if terminate { await history?.flush() }
             sender.reply(toApplicationShouldTerminate: terminate)
         }
         return .terminateLater

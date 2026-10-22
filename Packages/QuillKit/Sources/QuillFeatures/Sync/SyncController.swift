@@ -356,8 +356,12 @@ public final class SyncController {
     /// aufrufen schadet nicht.
     public func start() {
         guard timer == nil else { return }
-        observations.append(NotificationObservation(ModelContext.didSave, object: nil) { [weak self] _ in
-            MainActor.assumeIsolated { self?.storeDidChange() }
+        // Ohne Queue und ohne Warten: Mit `queue: .main` hielte NotificationCenter den
+        // Thread des Stores an, bis der Main Thread die Meldung nimmt. Wartet der Main
+        // Thread gerade selbst auf den Store (SwiftData führt Aufrufe dort synchron aus),
+        // stünden beide (ADR-031, Aufzeichnung der Geschichte im Hintergrund).
+        observations.append(NotificationObservation(ModelContext.didSave, object: nil, queue: nil) { [weak self] _ in
+            Task { @MainActor in self?.storeDidChange() }
         })
         #if canImport(AppKit)
         observations.append(NotificationObservation(NSApplication.didBecomeActiveNotification, object: nil) { [weak self] _ in

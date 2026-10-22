@@ -233,7 +233,19 @@ public actor SyncEngine {
 
     // MARK: Seiten
 
+    /// Unter der Sperre der Seite: `HistoryRecorder` schreibt sonst dazwischen.
     private func syncPage(_ pageID: UUID) async throws {
+        await DocumentLocks.shared.lock(pageID)
+        do {
+            try await syncLockedPage(pageID)
+        } catch {
+            await DocumentLocks.shared.unlock(pageID)
+            throw error
+        }
+        await DocumentLocks.shared.unlock(pageID)
+    }
+
+    private func syncLockedPage(_ pageID: UUID) async throws {
         guard let state = try await store.syncPage(pageID) else { return }
         let key = pageID.uuidString
         let document: PageDocument
@@ -268,8 +280,13 @@ public actor SyncEngine {
             else { continue }
             assetFiles[asset] = try writeAsset(image.data, uti: image.uti)
         }
-        let changed = try document.update(to: state.blocks, assetFiles: assetFiles)
-        try appendLocal(document, changed: changed, since: beforeExport, key: key, in: ownFolder, complete: ownComplete, last: &ownLast, cursors: &next)
+        try document.update(to: state.blocks, assetFiles: assetFiles)
+        // Auch, was `HistoryRecorder` seit dem letzten Abgleich aufgezeichnet hat.
+        let exportBase = next.exportedVersion(key, in: document) ?? beforeExport
+        if next.inFolder.contains(key) ? document.version != exportBase : !document.isEmpty {
+            try await markPending(key, &next)
+        }
+        try appendLocal(document, since: exportBase, key: key, in: ownFolder, complete: ownComplete, last: &ownLast, cursors: &next)
         if ownComplete { next.setLast(ownLast, key, device: device) }
 
         // Änderungen anderer Geräte
@@ -297,6 +314,8 @@ public actor SyncEngine {
         knownConflicts?[pageID] = conflicts.isEmpty ? nil : conflicts
 
         let edits = Self.edits(from: before, to: after)
+        next.pending.remove(key)
+        next.exported[key] = document.version.data
         guard document.version != loaded || next != cursors || !edits.isEmpty else {
             if let date = updateDates[pageID] { cursors.synced[key] = date }
             return
@@ -314,6 +333,18 @@ public actor SyncEngine {
         savedCursors = next
         cursors.synced[key] = updated
         if !edits.isEmpty { report.changedPages.insert(pageID) }
+    }
+
+    /// Vor der ersten eigenen Datei mit lokalen Änderungen einer Seite, gespeichert vor
+    /// dem Schreiben in den Ordner: Endet der Abgleich, bevor der Store das Dokument hat,
+    /// zeichnet `HistoryRecorder` dort bis zum nächsten erfolgreichen Abgleich nichts auf
+    /// (`SyncCursors.pending`).
+    private func markPending(_ key: String, _ next: inout SyncCursors) async throws {
+        next.pending.insert(key)
+        guard !cursors.pending.contains(key) else { return }
+        cursors.pending.insert(key)
+        try await store.saveSyncCursors(cursors.encoded())
+        savedCursors = cursors
     }
 
     #if DEBUG || QUILL_SYNCTEST
@@ -422,12 +453,12 @@ public actor SyncEngine {
             }
             records.append(record)
         }
-        var changed = try document.update(records)
+        try document.update(records)
         for record in known.values where record.deletedAt == nil && inStore[record.id] == nil {
             let version = record.trashedAt == nil ? folderPageVersion(record.id) : nil
-            changed = try document.markDeleted(record.id, trashedVersion: version) || changed
+            try document.markDeleted(record.id, trashedVersion: version)
         }
-        try appendLocal(document, changed: changed, since: beforeExport, key: key, in: ownFolder, complete: ownComplete, last: &ownLast, cursors: &next)
+        try appendLocal(document, since: beforeExport, key: key, in: ownFolder, complete: ownComplete, last: &ownLast, cursors: &next)
         if ownComplete { next.setLast(ownLast, key, device: device) }
 
         // Änderungen anderer Geräte
@@ -606,7 +637,7 @@ public actor SyncEngine {
         return max(last, numbered.highest)
     }
 
-    /// Lokale Änderungen als nächste eigene Datei. Steht das Dokument noch nicht in
+    /// Lokale Änderungen seit `version` als nächste eigene Datei. Steht das Dokument noch nicht in
     /// diesem Ordner, ist die erste Datei eine verdichtete (`<Nr>.snapshot`) mit dem
     /// ganzen Stand samt Geschichte, auch was andere Geräte im vorherigen Ordner
     /// beigetragen haben: Ein Gerät hier soll auch ältere Stände abrufen können
@@ -614,11 +645,11 @@ public actor SyncEngine {
     /// gewöhnliche Datei mit dem ganzen Stand: Eine verdichtete Datei ersetzt alle eigenen
     /// Dateien darunter und darf deshalb nur entstehen, wenn sie alle enthält.
     private func appendLocal(
-        _ document: SyncDocument, changed: Bool, since version: DocumentVersion, key: String,
+        _ document: SyncDocument, since version: DocumentVersion, key: String,
         in folder: URL, complete: Bool, last: inout Int, cursors next: inout SyncCursors
     ) throws {
         if next.inFolder.contains(key) {
-            if changed { try append(document.changes(since: version), in: folder, last: &last) }
+            if document.version != version { try append(document.changes(since: version), in: folder, last: &last) }
             return
         }
         if !document.isEmpty {
