@@ -35,6 +35,11 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   ausgegrauten Schalters, kein Knopf zu den Systemeinstellungen (Adresse nicht dokumentiert);
   FoundationModels nur im neuen Modul `QuillAI` (ADR-032, Abschnitt 16.1).
 
+- [ ] 16.2: Zusammenfassung in einem Blatt mit „Kopieren“ und „Einfügen“ (an der
+  Einfügemarke, ein Schritt für ⌘Z), nicht als eigener Block in der Seite; bis 6.000 Zeichen
+  je Anfrage, längere Seiten in Stücken; Verfügbarkeit im Hintergrund geprüft (ADR-032,
+  Abschnitt 16.2).
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -134,3 +139,21 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   die Klasse lief danach grün.
 - Messung: im Wechsel mit `main` nicht langsamer; `sidebarLoad` weiter auf beiden Ständen über
   200 ms (`appstoreagent`).
+
+### 16.2 Seite zusammenfassen (PR #32, ADR-032)
+
+- Seite › „Zusammenfassen …“ nur mit bereitem Modell; Blatt mit Kopieren und Einfügen,
+  lange Seiten in Stücken. Fehler des Modells als `AIError`, das Blatt nennt den Grund.
+- Echtes Modell nur auf dem Mac geprüft: 5.891 Zeichen = 1.334 Token bei 8.192 Token
+  Kontext, Antwort auf Deutsch; Kommentar „rund 4.000 Token“ korrigiert.
+- Das Audit fand eine echte Lücke: Seite ohne Titel hatte in der Sidebar keine Beschreibung
+  für VoiceOver (behoben, eigener Commit).
+- Tests: Package 688 (135 + 138 + 283 + 30 + 9 + 93), UI 55 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 6 im Package und 1 im UI-Test rot; g1 griff zuerst nicht (Test
+  geschärft), g2 kompilierte zuerst nicht (wiederholt). Ohne `breakUndoCoalescing()` vor dem
+  Einfügen bleibt der UI-Test grün: Das Blatt nimmt dem Editor schon den Fokus, die Zeile
+  bleibt als Absicherung.
+- Messung: Package nicht langsamer. `sidebarLoad` im vollen Lauf 200,5 / 202,5 ms gegen
+  189,1 / 191,6 auf `main`; derselbe Stand ohne Prüfung der Verfügbarkeit danach gleichauf
+  (189,2 / 189,8 mit, 191,0 / 190,3 ohne), Wiederholung im Wechsel mit `main` 191,4 / 192,5
+  gegen 191,9 / 185,3. Gewertet als Streuung, nicht als Verschlechterung.

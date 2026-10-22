@@ -409,6 +409,28 @@ Start. Im Wechsel mit `main` (`4aa3ac8`), zwei Runden:
 Nicht langsamer. `sidebarReload` streut auf beiden Ständen stark (105 bis 180 ms je
 Einzelwert), `sidebarLoad` liegt wegen `appstoreagent` weiter über 200 ms.
 
+## Seite zusammenfassen (22.10.2026, ADR-032)
+
+16.2 prüft die Verfügbarkeit des Modells beim Start im Hintergrund (das Menü fragt
+sofort). Im Wechsel mit `main` (`5b6a898`), zwei Runden:
+
+| Messung (ms) | `main` | 16.2 |
+|---|---|---|
+| editorLoad | 13,54 / 13,07 | 13,44 / 13,06 |
+| bridgeLoad | 17,20 / 16,86 | 17,27 / 16,64 |
+| pageTreeBuild | 56,00 / 54,93 | 55,42 / 54,65 |
+| search | 45,15 / 45,52 | 45,74 / 43,80 |
+| historyDays | 91,46 / 91,31 | 90,62 / 90,00 |
+| App: sidebarLoad | 189,1 / 191,6 | 200,5 / 202,5 |
+| App: sidebarLoad, Wiederholung | 191,9 / 185,3 | 191,4 / 192,5 |
+| App: sidebarReload | 143,6 / 96,9 | 142,9 / 143,2 |
+| App: pageSwitch | 81,3 / 82,3 | 82,6 / 82,6 |
+
+Im ersten Durchgang lag `sidebarLoad` 11 ms höher. Derselbe Stand ohne die Prüfung der
+Verfügbarkeit maß danach gleich (191,0 / 190,3 gegen 189,2 / 189,8 mit Prüfung), die
+Wiederholung gegen `main` liegt in der Streuung. `sidebarReload` streut weiter stark (96 bis
+180 ms je Einzelwert). Zeilen ab `sidebarReload` aus der Wiederholung.
+
 ## Messbedingungen
 
 | | |
