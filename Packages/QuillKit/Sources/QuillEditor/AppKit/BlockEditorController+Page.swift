@@ -22,6 +22,24 @@ extension BlockEditorController {
         set { textView.isEditable = newValue }
     }
 
+    /// Lesemodus, z. B. für frühere Stände in der Zeitreise: Markieren, Kopieren und die
+    /// Schreibmarke gehen wie sonst (auch per Tastatur, ⇧↓), jede Änderung wird abgelehnt.
+    /// Anders als `isEditable = false`: Ohne Schreibmarke scrollen Pfeiltasten nur.
+    public var isReadOnly: Bool {
+        get { textView.isReadOnly }
+        set { textView.isReadOnly = newValue }
+    }
+
+    /// IDs der Blöcke, die die Markierung berührt, in Dokument-Reihenfolge; leer ohne
+    /// markierten Text (nur Cursor), z. B. für „Auswahl zurückholen“ in der Zeitreise.
+    public var selectedBlockIDs: [UUID] {
+        let selection = textView.selectedRange()
+        guard selection.length > 0 else { return [] }
+        let first = blockIndex(atCharacter: selection.location)
+        let last = blockIndex(atCharacter: NSMaxRange(selection) - 1)
+        return document.blocks[first...last].map(\.id)
+    }
+
     /// Setzt den Cursor an den Anfang des ersten Blocks und fokussiert den Editor
     /// (↩ im Titel).
     public func focusStart() {

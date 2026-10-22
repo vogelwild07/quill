@@ -256,7 +256,8 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     }
 
     func updateHandle(for point: NSPoint) {
-        guard let fragment = fragment(atViewPoint: CGPoint(x: textContainerOrigin.x + 1, y: point.y)),
+        // Schreibgeschützt oder Lesemodus: kein Griff, kein ＋.
+        guard isEditable, !isReadOnly, let fragment = fragment(atViewPoint: CGPoint(x: textContainerOrigin.x + 1, y: point.y)),
               let offset = characterOffset(of: fragment) else {
             setHoverControlsHidden(true)
             return
@@ -481,6 +482,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     /// leere allgemeine Zwischenablage ⌘V, und Einsetz-Tests hingen davon ab, was der
     /// Nutzer zuletzt kopiert hat.
     override func validateUserInterfaceItem(_ item: any NSValidatedUserInterfaceItem) -> Bool {
+        if isReadOnly, Self.changingActions.contains(item.action) { return false }
         if clipboard.name != .general, Self.pasteActions.contains(item.action) {
             return isEditable && !(clipboard.types ?? []).isEmpty
         }
@@ -490,6 +492,16 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     private static let pasteActions: Set<Selector?> = [
         #selector(paste(_:)), #selector(pasteAsPlainText(_:)), #selector(pasteAsRichText(_:)),
     ]
+
+    /// Im Lesemodus gesperrt; Kopieren und Alles auswählen bleiben.
+    private static let changingActions: Set<Selector?> = pasteActions.union([
+        #selector(cut(_:)), #selector(delete(_:)), Selector(("undo:")), Selector(("redo:")),
+    ])
+
+    /// Lesemodus (`BlockEditorController.isReadOnly`).
+    var isReadOnly = false {
+        didSet { if isReadOnly { editor?.slashMenu.close() } }
+    }
 }
 
 /// Griff ⋮⋮ links neben einem Block: Ziehen verschiebt, Klick wählt den Block aus,
