@@ -28,6 +28,13 @@ struct PageStoreSyncTests {
         #expect(try await store.syncState().cursors == Data("c".utf8))
     }
 
+    /// Geschichte einer Seite, die es nicht (mehr) gibt: `false`, kein Fehler (ADR-031).
+    @Test func historyOfAMissingPageIsNotSaved() async throws {
+        #expect(try await store.saveHistory(UUID(), document: Data([1])) == false)
+        let page = try await store.createPage(title: "Da")
+        #expect(try await store.saveHistory(page, document: Data([1])))
+    }
+
     @Test func restoredMarkIsSetAndClearedAsAChange() async throws {
         let page = try await store.createPage(title: "Notiz")
         let dates = try await store.pageUpdateDates()

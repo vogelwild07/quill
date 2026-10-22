@@ -206,7 +206,12 @@ extension PageStore {
     /// schon für den nächsten Abgleich fällig gemacht. `false`, wenn es die Seite nicht
     /// (mehr) gibt.
     public func saveHistory(_ pageID: UUID, document: Data) throws -> Bool {
-        guard let page = try? fetchPage(pageID) else { return false }
+        let page: Page
+        do {
+            page = try fetchPage(pageID)
+        } catch PageStoreError.pageNotFound {
+            return false
+        }
         page.syncDocument = document
         try save()
         return true
