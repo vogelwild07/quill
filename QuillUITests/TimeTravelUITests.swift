@@ -21,19 +21,13 @@ final class TimeTravelUITests: XCTestCase {
     }
 
     func testOpenEarlierDayAndRestoreParagraph() throws {
-        let main = app.windows.firstMatch
-        let row = main.outlines["sidebar.pages"].pageRows.firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 10), "Testseite fehlt")
-        row.click()
+        let window = app.openSeededTimeTravel()
+        // Nicht `windows.firstMatch`: Das ist jetzt das Zeitreise-Fenster.
+        let main = app.windows.matching(NSPredicate(format: "NOT (title BEGINSWITH %@)", "Zeitreise:")).firstMatch
         let editor = main.textViews["editor.text"]
         XCTAssertTrue(editor.waitForExistence(timeout: 5))
         XCTAssertFalse(editorText(editor).contains("Alter Absatz"))
-
-        app.typeKey("y", modifierFlags: [.command, .option])
-        let window = app.windows["Zeitreise: Zeitreise-Test"]
-        XCTAssertTrue(window.waitForExistence(timeout: 10), "Fenster „Zeitreise“ fehlt")
-        let days = window.descendants(matching: .any).matching(identifier: "timeTravel.day")
-        XCTAssertTrue(days.element(boundBy: 2).waitForExistence(timeout: 10), "Drei Tage erwartet")
+        let days = window.timeTravelDays
         XCTAssertEqual(days.count, 3)
         XCTAssertEqual(text(of: days.element(boundBy: 0)), "Heute")
         XCTAssertEqual(text(of: days.element(boundBy: 1)), "Gestern")
@@ -49,6 +43,9 @@ final class TimeTravelUITests: XCTestCase {
         old.click()
         app.typeText("x")
         XCTAssertFalse(editorText(old).contains("x"))
+        app.menuBars.menuBarItems["Format"].click()
+        XCTAssertFalse(app.menuBars.menuItems["Fett"].isEnabled, "Format im Lesemodus gesperrt")
+        app.typeKey(.escape, modifierFlags: [])
 
         // Nur den zweiten Absatz per Tastatur markieren (Lesemodus mit Schreibmarke).
         app.typeKey(.upArrow, modifierFlags: [.command])

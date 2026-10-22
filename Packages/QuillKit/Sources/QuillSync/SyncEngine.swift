@@ -235,14 +235,7 @@ public actor SyncEngine {
 
     /// Unter der Sperre der Seite: `HistoryRecorder` schreibt sonst dazwischen.
     private func syncPage(_ pageID: UUID) async throws {
-        await DocumentLocks.shared.lock(pageID)
-        do {
-            try await syncLockedPage(pageID)
-        } catch {
-            await DocumentLocks.shared.unlock(pageID)
-            throw error
-        }
-        await DocumentLocks.shared.unlock(pageID)
+        try await DocumentLocks.withLock(pageID) { try await syncLockedPage(pageID) }
     }
 
     private func syncLockedPage(_ pageID: UUID) async throws {

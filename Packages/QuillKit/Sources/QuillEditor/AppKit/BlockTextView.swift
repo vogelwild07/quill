@@ -257,7 +257,7 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     func updateHandle(for point: NSPoint) {
         // Schreibgeschützt oder Lesemodus: kein Griff, kein ＋.
-        guard isEditable, !isReadOnly, let fragment = fragment(atViewPoint: CGPoint(x: textContainerOrigin.x + 1, y: point.y)),
+        guard canEdit, let fragment = fragment(atViewPoint: CGPoint(x: textContainerOrigin.x + 1, y: point.y)),
               let offset = characterOffset(of: fragment) else {
             setHoverControlsHidden(true)
             return
@@ -315,11 +315,15 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         return point.y < frame.midY ? (block, frame.minY) : (block + 1, frame.maxY)
     }
 
+    // Im Lesemodus nimmt der Editor nichts an, weder Bilder noch Blöcke noch Text: Ein
+    // Bild würde sonst schon beim Ablegen in den Store importiert.
     override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
-        handlesDrop(sender) ? draggingUpdated(sender) : super.draggingEntered(sender)
+        guard !isReadOnly else { return [] }
+        return handlesDrop(sender) ? draggingUpdated(sender) : super.draggingEntered(sender)
     }
 
     override func draggingUpdated(_ sender: any NSDraggingInfo) -> NSDragOperation {
+        guard !isReadOnly else { return [] }
         guard handlesDrop(sender) else { return super.draggingUpdated(sender) }
         guard let target = dropTarget(for: sender) else { return [] }
         autoscrollForDrag(at: convert(sender.draggingLocation, from: nil))
@@ -360,10 +364,12 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     /// `NSTextView` lehnt unbekannte Typen hier ab; Block-Drags erledigt `performDragOperation`.
     override func prepareForDragOperation(_ sender: any NSDraggingInfo) -> Bool {
-        handlesDrop(sender) ? true : super.prepareForDragOperation(sender)
+        guard !isReadOnly else { return false }
+        return handlesDrop(sender) ? true : super.prepareForDragOperation(sender)
     }
 
     override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
+        guard !isReadOnly else { return false }
         if isImageDrop(sender) {
             dropIndicator.isHidden = true
             guard let editor, let target = dropTarget(for: sender) else { return false }
@@ -396,19 +402,27 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
 
     // MARK: Format
 
-    @objc func quillToggleBold(_ sender: Any?) { editor?.toggleMark(.bold) }
-    @objc func quillToggleItalic(_ sender: Any?) { editor?.toggleMark(.italic) }
-    @objc func quillToggleInlineCode(_ sender: Any?) { editor?.toggleMark(.code) }
-    @objc func quillToggleStrikethrough(_ sender: Any?) { editor?.toggleMark(.strikethrough) }
-    @objc func quillEditLink(_ sender: Any?) { editor?.editLink() }
+    @objc func quillToggleBold(_ sender: Any?) { formatting { $0.toggleMark(.bold) } }
+    @objc func quillToggleItalic(_ sender: Any?) { formatting { $0.toggleMark(.italic) } }
+    @objc func quillToggleInlineCode(_ sender: Any?) { formatting { $0.toggleMark(.code) } }
+    @objc func quillToggleStrikethrough(_ sender: Any?) { formatting { $0.toggleMark(.strikethrough) } }
+    @objc func quillEditLink(_ sender: Any?) { formatting { $0.editLink() } }
     @objc func quillSetBlockKind(_ sender: Any?) {
         guard let request = sender as? BlockKindRequest else { return }
-        editor?.convertSelectedBlocks(to: request.kind)
+        formatting { $0.convertSelectedBlocks(to: request.kind) }
     }
-    @objc func quillToggleChecked(_ sender: Any?) { editor?.toggleCheckedInSelection() }
-    @objc func quillMoveBlockUp(_ sender: Any?) { editor?.moveSelectedBlocks(by: -1) }
-    @objc func quillMoveBlockDown(_ sender: Any?) { editor?.moveSelectedBlocks(by: 1) }
-    @objc func quillDuplicateBlock(_ sender: Any?) { editor?.duplicateSelectedBlocks() }
+    @objc func quillToggleChecked(_ sender: Any?) { formatting { $0.toggleCheckedInSelection() } }
+    @objc func quillMoveBlockUp(_ sender: Any?) { formatting { $0.moveSelectedBlocks(by: -1) } }
+    @objc func quillMoveBlockDown(_ sender: Any?) { formatting { $0.moveSelectedBlocks(by: 1) } }
+    @objc func quillDuplicateBlock(_ sender: Any?) { formatting { $0.duplicateSelectedBlocks() } }
+
+    /// Im Lesemodus nur ein Ton statt still nichts (das Menü sperrt `QuillCommands`,
+    /// Tastenkürzel ohne Menü kommen trotzdem hier an).
+    private func formatting(_ action: (BlockEditorController) -> Void) {
+        guard let editor else { return }
+        guard canEdit else { return NSSound.beep() }
+        action(editor)
+    }
 
     // MARK: Zwischenablage
 
@@ -477,6 +491,8 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
         paste(sender)
     }
 
+    /// Im Lesemodus sind alle ändernden Aktionen gesperrt (`changingActions`).
+    ///
     /// `NSTextView` gibt „Einsetzen“ nur frei, wenn die allgemeine Zwischenablage etwas
     /// Lesbares enthält. Mit eigener Zwischenablage zählt deren Inhalt: Sonst sperrte eine
     /// leere allgemeine Zwischenablage ⌘V, und Einsetz-Tests hingen davon ab, was der
@@ -502,6 +518,9 @@ final class BlockTextView: NSTextView, EditorFormattingActions {
     var isReadOnly = false {
         didSet { if isReadOnly { editor?.slashMenu.close() } }
     }
+
+    /// Darf der Text sich ändern: weder schreibgeschützt (beim Laden) noch Lesemodus.
+    var canEdit: Bool { isEditable && !isReadOnly }
 }
 
 /// Griff ⋮⋮ links neben einem Block: Ziehen verschiebt, Klick wählt den Block aus,

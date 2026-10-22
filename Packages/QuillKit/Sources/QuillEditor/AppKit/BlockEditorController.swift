@@ -200,7 +200,7 @@ public final class BlockEditorController: NSObject {
     func apply(_ newDocument: EditorDocument, cursor: BlockPosition?, actionName: String? = nil) {
         // Schreibgeschützt (beim Laden) oder Lesemodus (Zeitreise): Der Text ändert sich
         // nicht, das Dokument darf dann auch nicht wechseln, sonst passt es nicht mehr.
-        guard textView.isEditable, !isReadOnly else { return }
+        guard textView.canEdit else { return }
         let old = document.blocks
         let new = newDocument.blocks
         var prefix = 0

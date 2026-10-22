@@ -1,4 +1,5 @@
 #if DEBUG
+import AppKit
 import Foundation
 import QuillEditorCore
 @testable import QuillFeatures
@@ -65,6 +66,32 @@ struct TimeTravelModelTests {
         #expect(model.canRestore == false)
     }
 
+    /// Ein Bild-Block kommt nur mit Bild zurück (Frist, 12.4); sonst ein Hinweis.
+    @Test func imageBlocksComeBackOnlyWithTheirImage() async throws {
+        let store = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
+        let kept = try await store.importImage(Self.png())
+        let first = BlockSnapshot(id: UUID(), text: "Erster Absatz")
+        let keptBlock = BlockSnapshot(id: UUID(), kindRaw: BlockKind.image.rawValue, properties: BlockProperties(assetID: kept.assetID))
+        let goneBlock = BlockSnapshot(id: UUID(), kindRaw: BlockKind.image.rawValue, properties: BlockProperties(assetID: UUID()))
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: .now)!
+        let document = try PageHistory.testDocument([(yesterday, [first, keptBlock, goneBlock]), (.now, [first])])
+        let page = try await store.createPage(title: "Bilder")
+        try await store.applyEdits(page, BlockEdits(upserts: [first], order: [first.id]))
+        _ = try await store.saveHistory(page, document: document)
+
+        let model = TimeTravelModel(pageID: page, store: store) {}
+        await model.load()
+        model.selectedDay = model.days[1]
+        await model.restore([goneBlock.id])
+        #expect(model.skippedImages == 1)
+        #expect(try await store.blocks(of: page).map(\.id) == [first.id])
+
+        await model.restore([keptBlock.id, goneBlock.id])
+        #expect(model.skippedImages == 1)
+        #expect(try await store.blocks(of: page).map(\.id) == [first.id, keptBlock.id])
+        #expect(try await store.imageData(kept.assetID) != nil)
+    }
+
     @Test func pageWithoutHistoryShowsNoDays() async throws {
         let store = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
         let page = try await store.createPage(title: "Neu")
@@ -72,6 +99,15 @@ struct TimeTravelModelTests {
         await model.load()
         #expect(model.phase == .ready)
         #expect(model.days.isEmpty)
+    }
+
+    private static func png() -> Data {
+        let context = CGContext(
+            data: nil, width: 4, height: 4, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+        )!
+        context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+        return NSBitmapImageRep(cgImage: context.makeImage()!).representation(using: .png, properties: [:])!
     }
 }
 #endif

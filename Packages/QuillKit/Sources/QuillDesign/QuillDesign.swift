@@ -75,6 +75,17 @@ public enum QuillDesign {
         public static let noticeFillOpacity: Double = 0.5
     }
 
+    /// Fenster „Zeitreise“ (ADR-031), siehe `docs/design.md`.
+    public enum TimeTravel {
+        public static let windowWidth: CGFloat = 900
+        public static let windowHeight: CGFloat = 640
+        /// Spalte der Tage.
+        public static let daysMinWidth: CGFloat = 180
+        public static let daysIdealWidth: CGFloat = 220
+        /// Rand der Hinweise über dem früheren Stand.
+        public static let noticePadding: CGFloat = 8
+    }
+
     /// Eckenradien.
     public enum Radius {
         /// Inline-Code, Checkbox, Bild, Hover-Fläche des ＋.

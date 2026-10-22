@@ -22,6 +22,9 @@ import QuillModel
 @Observable
 public final class EditorPersistenceBridge {
     public static let didSave = Notification.Name("io.github.vogelwild07.quill.editorDidSave")
+    /// Schlüssel in `userInfo` von `didSave`: Seite (`UUID`) und Store (`PageStore`).
+    public nonisolated static let pageIDKey = "pageID"
+    public nonisolated static let storeKey = "store"
 
     public let pageID: UUID
     @ObservationIgnored private let store: PageStore
@@ -212,7 +215,7 @@ public final class EditorPersistenceBridge {
                 if let saved = try await store.applyEdits(pageID, edits, expected: stored) {
                     lastError = nil
                     setBaseline(document.blocks, stored: saved)
-                    NotificationCenter.default.post(name: Self.didSave, object: self, userInfo: ["pageID": pageID, "store": store])
+                    NotificationCenter.default.post(name: Self.didSave, object: self, userInfo: [Self.pageIDKey: pageID, Self.storeKey: store])
                     return true
                 }
                 // Inzwischen hat jemand anderes geschrieben: zusammenführen, dann erneut.
@@ -254,7 +257,7 @@ public final class EditorPersistenceBridge {
         let pageID = pageID
         observer = Task { [weak self] in
             for await note in NotificationCenter.default.notifications(named: Self.didSave) {
-                guard note.userInfo?["pageID"] as? UUID == pageID else { continue }
+                guard note.userInfo?[Self.pageIDKey] as? UUID == pageID else { continue }
                 let sender = note.object as AnyObject?
                 guard let self, sender !== self else { continue }
                 await self.reloadIfUnchanged()

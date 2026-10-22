@@ -7,6 +7,28 @@
     "%@ · „%@“" : {
 
     },
+    "%lld Bilder nicht zurückgeholt: Sie werden nicht mehr aufbewahrt." : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Bild nicht zurückgeholt: Es wird nicht mehr aufbewahrt."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Bilder nicht zurückgeholt: Sie werden nicht mehr aufbewahrt."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld Seiten endgültig löschen?" : {
       "localizations" : {
         "de" : {

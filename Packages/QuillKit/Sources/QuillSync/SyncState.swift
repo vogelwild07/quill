@@ -248,4 +248,20 @@ actor DocumentLocks {
         waiting[id] = queue.isEmpty ? nil : queue
         next.resume()
     }
+
+    /// Führt `body` unter der Sperre von `id` aus (`shared`), in der Isolation des
+    /// Aufrufers, und gibt sie danach immer frei, auch nach einem Fehler.
+    static func withLock<T>(
+        _ id: UUID, isolation: isolated (any Actor)? = #isolation, _ body: () async throws -> T
+    ) async rethrows -> T {
+        await shared.lock(id)
+        do {
+            let result = try await body()
+            await shared.unlock(id)
+            return result
+        } catch {
+            await shared.unlock(id)
+            throw error
+        }
+    }
 }

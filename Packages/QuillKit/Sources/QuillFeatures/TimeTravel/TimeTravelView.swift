@@ -1,4 +1,5 @@
 #if canImport(AppKit)
+import QuillDesign
 import QuillEditor
 import QuillEditorCore
 import QuillModel
@@ -24,7 +25,7 @@ public struct TimeTravelScene: Scene {
                     .environment(\.pageStore, persistence.store)
             }
         }
-        .defaultSize(width: 900, height: 640)
+        .defaultSize(width: QuillDesign.TimeTravel.windowWidth, height: QuillDesign.TimeTravel.windowHeight)
     }
 }
 
@@ -34,6 +35,9 @@ struct TimeTravelView: View {
 
     @Query private var pages: [Page]
     @State private var model: TimeTravelModel
+    /// Beim Zurückkehren ins Fenster neu laden: „Heute“ zeigt dann den jetzigen Stand,
+    /// nach Mitternacht kommt der neue Tag dazu.
+    @Environment(\.appearsActive) private var appearsActive
 
     init(pageID: UUID, persistence: QuillPersistence) {
         self.pageID = pageID
@@ -51,7 +55,7 @@ struct TimeTravelView: View {
                     .accessibilityIdentifier("timeTravel.day")
             }
             .accessibilityIdentifier("timeTravel.days")
-            .navigationSplitViewColumnWidth(min: 180, ideal: 220)
+            .navigationSplitViewColumnWidth(min: QuillDesign.TimeTravel.daysMinWidth, ideal: QuillDesign.TimeTravel.daysIdealWidth)
         } detail: {
             detail
         }
@@ -62,16 +66,20 @@ struct TimeTravelView: View {
                     Task { await model.restoreSelection() }
                 }
                 .help(String(localized: "Holt die markierten Absätze dieses Tages in die Seite zurück.", bundle: .module))
-                .disabled(!model.canRestore)
+                .disabled(!model.canRestore || !pageExists)
                 .accessibilityIdentifier("timeTravel.restore")
             }
         }
+        .focusedSceneValue(\.readOnlyEditor, true)
         .task { await model.load() }
+        .onChange(of: appearsActive) { _, active in
+            if active { Task { await model.load() } }
+        }
     }
 
     @ViewBuilder
     private var detail: some View {
-        if pages.first == nil || pages.first?.trashedAt != nil {
+        if !pageExists {
             EmptyStateView(.pageNotFound, id: "timeTravel.notFound")
         } else {
             switch model.phase {
@@ -85,12 +93,21 @@ struct TimeTravelView: View {
                 VStack(spacing: 0) {
                     if model.restoreFailed {
                         ProblemLabel(message: String(localized: "Zurückholen gescheitert. Quill versucht es weiter.", bundle: .module))
-                            .padding(8)
+                            .padding(QuillDesign.TimeTravel.noticePadding)
+                    }
+                    if model.skippedImages > 0 {
+                        ProblemLabel(message: String(localized: "\(model.skippedImages) Bilder nicht zurückgeholt: Sie werden nicht mehr aufbewahrt.", bundle: .module))
+                            .padding(QuillDesign.TimeTravel.noticePadding)
                     }
                     BlockEditorView(controller: model.controller)
                 }
             }
         }
+    }
+
+    /// Im Papierkorb gilt die Seite als weg: nichts zurückholen.
+    private var pageExists: Bool {
+        pages.first.map { $0.trashedAt == nil } ?? false
     }
 
     private var title: String {

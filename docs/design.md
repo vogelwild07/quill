@@ -50,7 +50,7 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
 - 4-pt-Raster; Block-Abstand 4 pt, vor Überschriften 16 pt
 - Eckenradien 4 pt (Inline-Code, Checkbox, Bild), 6 pt (Bild-Platzhalter), 8 pt
   (Code-Block, Hinweise)
-- Alle Werte als Tokens in `QuillDesign` (`Typography`, `Spacing`, `EditorLayout`, `Radius`, `SyncNotice`)
+- Alle Werte als Tokens in `QuillDesign` (`Typography`, `Spacing`, `EditorLayout`, `Radius`, `SyncNotice`, `TimeTravel`)
 - Block-Griff nur bei Hover im linken Rand
 
 ## Interaktionsprinzipien
@@ -82,6 +82,17 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   zur Stelle.
 - Pausiert sind die Wahlknöpfe aus, mit Hinweis „Zum Wählen Sync fortsetzen.“; eine Marke
   verschwindet nie von selbst.
+
+## Zeitreise (12.3, ADR-031)
+
+- Eigenes Fenster je Seite (900 × 640 pt), links die Tage (`NavigationSplitView`, Spalte
+  180–220 pt), rechts der frühere Stand im Block-Editor im Lesemodus: Cursor und Markieren
+  gehen, Ändern nicht; Menü „Format“ ist gesperrt, Tastenkürzel ohne Menü geben einen Ton.
+- „Auswahl zurückholen“ in der Toolbar (`arrow.uturn.backward`), aktiv nur mit Markierung
+  und solange die Seite nicht im Papierkorb liegt.
+- Hinweise über dem Stand mit `ProblemLabel` (Zurückholen gescheitert, Bilder nicht mehr
+  aufbewahrt), Rand `QuillDesign.TimeTravel.noticePadding`.
+- Einstellungen › Zeitreise: Frist für gelöschte Bilder als Optionsfelder (vier Werte).
 
 ## Leerzustände
 

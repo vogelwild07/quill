@@ -345,7 +345,7 @@ beiden Ständen: Vergleiche deshalb nur im Wechsel.
 12.3 ist nicht langsamer. `sidebarLoad` lag während der ganzen Messung auf allen Ständen über
 der Schwelle von 200 ms, auch auf dem Stand nach 12.1 (`b9955df`: 217,7 / 220,4, am Morgen
 noch 188–197 ms). Ursache war Last von außen: `appstoreagent` lief die ganze Zeit mit rund
-93 % CPU, zeitweise auch `mds`. Die Messung ohne diese Last steht noch aus (Phase 12.5).
+93 % CPU, zeitweise auch `mds`. Die Messung ohne diese Last steht noch aus (siehe Schlussmessung Phase 12).
 
 ## Frist für gelöschte Bilder (22.10.2026, ADR-031)
 
@@ -364,6 +364,31 @@ Threads). Im Wechsel mit `main` (`4eb2f40`), zwei Runden:
 
 Nicht langsamer (`historyDays` +1 % auf einem Pfad, den 12.4 nicht berührt). `sidebarLoad`
 weiter auf beiden Ständen über 200 ms, `appstoreagent` lief weiter mit rund 93 % CPU.
+
+## Schlussmessung Phase 12 (22.10.2026, ADR-031)
+
+Stand vor der Phase (`cb3b6d0`) gegen den Stand nach dem Review von Phase 12, im Wechsel,
+zwei Runden:
+
+| Messung (ms) | vor Phase 12 | nach Phase 12 |
+|---|---|---|
+| editorLoad | 13,34 / 13,33 | 13,32 / 13,22 |
+| editorTyping | 1,22 / 1,22 | 1,22 / 1,22 |
+| bridgeLoad | 17,16 / 17,40 | 17,33 / 17,36 |
+| applyEditsReverse | 70,46 / 71,26 | 71,75 / 70,53 |
+| pageTreeBuild | 55,41 / 55,50 | 56,16 / 56,15 |
+| search | 45,90 / 47,15 | 45,56 / 45,79 |
+| exportPlan | 992,88 / 1000,81 | 991,34 / 994,53 |
+| historyDays | – | 92,80 / 94,39 |
+| historyDayBlocks | – | 15,54 / 15,48 |
+| App: sidebarLoad | 221,7 / 216,6 | 220,2 / 210,5 |
+| App: sidebarReload | 172,6 / 172,7 | 172,0 / 171,1 |
+| App: pageSwitch | 58,5 / 57,9 | 58,3 / 57,5 |
+
+Phase 12 macht nichts langsamer (`pageTreeBuild` +1,3 %, im Rauschen, der Pfad blieb
+unberührt). `sidebarLoad` liegt auf beiden Ständen über 200 ms: `appstoreagent` lief auch
+während dieser Messung mit rund 97 % CPU. Eine Messung ohne diese Last steht weiter aus;
+sie ist kein Grund, Phase 12 zurückzuhalten, weil beide Stände gleich schnell sind.
 
 ## Messbedingungen
 

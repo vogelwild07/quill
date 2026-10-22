@@ -23,9 +23,9 @@ public final class HistoryObserver {
     public func start() {
         guard observation == nil else { return }
         observation = NotificationObservation(EditorPersistenceBridge.didSave, object: nil) { [weak self] note in
-            let pageID = note.userInfo?["pageID"] as? UUID
+            let pageID = note.userInfo?[EditorPersistenceBridge.pageIDKey] as? UUID
             let fromEditor = note.object is EditorPersistenceBridge
-            let store = note.userInfo?["store"] as? PageStore
+            let store = note.userInfo?[EditorPersistenceBridge.storeKey] as? PageStore
             MainActor.assumeIsolated {
                 // Nur Speicherungen im eigenen Store (in Tests laufen mehrere nebeneinander).
                 guard let pageID, fromEditor, let self, store === self.recorder.store else { return }

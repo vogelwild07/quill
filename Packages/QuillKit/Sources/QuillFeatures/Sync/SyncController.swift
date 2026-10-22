@@ -514,7 +514,7 @@ public final class SyncController {
     /// Fenster (ADR-012), außer sie haben ungespeicherte Eingaben.
     public static func reloadOpenEditors(_ pages: Set<UUID>) {
         for page in pages {
-            NotificationCenter.default.post(name: EditorPersistenceBridge.didSave, object: nil, userInfo: ["pageID": page])
+            NotificationCenter.default.post(name: EditorPersistenceBridge.didSave, object: nil, userInfo: [EditorPersistenceBridge.pageIDKey: page])
         }
     }
 }
