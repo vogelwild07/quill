@@ -24,6 +24,32 @@ public struct OnDeviceModel: TextModel {
     public func respond(instructions: String, prompt: String) async throws -> String {
         // Je Anfrage eine neue Sitzung: Nichts aus früheren Anfragen fließt mit ein.
         let session = LanguageModelSession(model: .default, instructions: instructions)
-        return try await session.respond(to: prompt).content
+        do {
+            return try await session.respond(to: prompt).content
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            throw Self.aiError(error)
+        }
+    }
+
+    /// Ab macOS 27 wirft das Modell `LanguageModelError`, davor `GenerationError`.
+    static func aiError(_ error: any Error) -> AIError {
+        if #available(macOS 27.0, iOS 27.0, *), let error = error as? LanguageModelError {
+            switch error {
+            case .contextSizeExceeded: return .tooLong
+            case .guardrailViolation, .refusal: return .refused
+            case .unsupportedLanguageOrLocale: return .unsupportedLanguage
+            default: return .failed
+            }
+        }
+        guard let error = error as? LanguageModelSession.GenerationError else { return .failed }
+        switch error {
+        case .exceededContextWindowSize: return .tooLong
+        case .guardrailViolation, .refusal: return .refused
+        case .unsupportedLanguageOrLocale: return .unsupportedLanguage
+        case .assetsUnavailable: return .unavailable
+        default: return .failed
+        }
     }
 }

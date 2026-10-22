@@ -687,3 +687,11 @@ final class BlockHandleView: NSView, NSDraggingSource {
     }
 }
 #endif
+
+#if canImport(AppKit)
+/// Zwischenablage, die auch der Editor nutzt: sonst die allgemeine, in UI-Tests die eigene
+/// (`-QuillPasteboardName`). Für Kopieren außerhalb des Editors, z. B. eine Zusammenfassung.
+public enum EditorClipboard {
+    @MainActor public static var current: NSPasteboard { BlockTextView.defaultClipboard }
+}
+#endif

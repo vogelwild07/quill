@@ -34,6 +34,8 @@ struct LocalizationTests {
                 reason: "Vorgabe im Schema V2, übernommen aus V1 (ADR-011), nirgends angezeigt."),
         Allowed(file: "QuillAI/TestTextModel.swift", text: "Antwort des Test-Modells: …",
                 reason: "Antwort des Test-Modells, nur im Debug-Build (`-QuillFakeAI`, 16.1)."),
+        Allowed(file: "QuillFeatures/AI/PageSummarizer.swift", text: "Du fasst Notizen zusammen.", isPrefix: true,
+                reason: "Anweisung an das Sprachmodell, nie angezeigt; es antwortet in der Sprache der Notiz (16.2)."),
         Allowed(file: "QuillFeatures/TimeTravel/TimeTravelSeed.swift", text: "Erster Absatz",
                 reason: "Testseite für die Zeitreise, nur im Debug-Build (`-QuillSeedTimeTravel`, 12.3)."),
         Allowed(file: "QuillFeatures/TimeTravel/TimeTravelSeed.swift", text: "Alter Absatz",

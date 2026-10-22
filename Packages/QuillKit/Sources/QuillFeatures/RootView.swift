@@ -26,6 +26,7 @@ public struct RootView: View {
     @State private var window: NSWindow?
     @State private var launchNotice: LaunchNotice?
     @State private var isSyncReconnectShown = false
+    @State private var summaryRequest: SummaryRequest?
     #endif
 
     @Environment(\.pageStore) private var store
@@ -131,6 +132,15 @@ public struct RootView: View {
                 )
             }
         }
+        .sheet(item: $summaryRequest) { request in
+            if let store, let ai = persistence?.ai {
+                SummaryView(
+                    request: request,
+                    model: SummaryModel(pageID: request.pageID, store: store, model: ai.model),
+                    dismiss: { summaryRequest = nil }
+                )
+            }
+        }
         // Erst nach der Meldung zum eingespielten Backup fragen, wie der Sync weitergeht.
         .onChange(of: launchNotice == nil) { askToReconnectSync() }
         #endif
@@ -212,9 +222,25 @@ public struct RootView: View {
             toggleFavorite: { if let selection { operations.setFavorite(selection, !isFavorite(selection)) } },
             openInTab: { if let selection { open(selection, asTab: true) } },
             openInWindow: { if let selection { open(selection, asTab: false) } },
-            exportPage: { if let selection { exportPage(selection) } }
+            exportPage: { if let selection { exportPage(selection) } },
+            summarize: { if let selection { summarize(selection) } }
         )
     }
+
+    #if canImport(AppKit)
+    /// Zusammenfassung der Seite; einfügen lässt sie sich nur, wenn ihr Editor den Fokus hat.
+    private func summarize(_ pageID: UUID) {
+        let editor = (window?.firstResponder as? NSTextView).flatMap { $0.accessibilityIdentifier() == "editor.text" ? $0 : nil }
+        let title = (try? context.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.id == pageID })).first?.title) ?? ""
+        summaryRequest = SummaryRequest(
+            pageID: pageID,
+            title: title.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : title,
+            editor: editor
+        )
+    }
+    #else
+    private func summarize(_ pageID: UUID) {}
+    #endif
 
     #if canImport(AppKit)
     /// „Schnell öffnen“ über dem ganzen Fenster; Klick daneben schließt.

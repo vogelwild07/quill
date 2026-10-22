@@ -13,21 +13,23 @@ public final class AISettings {
 
     /// Will der Nutzer die KI-Funktionen? Standard: ja, sobald das Modell bereitsteht.
     public private(set) var isEnabled: Bool
-    public private(set) var availability: AIAvailability
+    /// `nil`, bis die erste Prüfung fertig ist. Geprüft wird außerhalb des Main Threads:
+    /// Beim ersten Mal kostet das einige Millisekunden, und das Menü fragt schon beim Start.
+    public private(set) var availability: AIAvailability?
     @ObservationIgnored public let model: any TextModel
     @ObservationIgnored private let defaults: UserDefaults?
-    @ObservationIgnored private let checkAvailability: @MainActor () -> AIAvailability
+    @ObservationIgnored private let checkAvailability: @Sendable () -> AIAvailability
 
     /// Ohne `defaults` gilt die Wahl nur bis zum Beenden.
     public init(
         defaults: UserDefaults?, model: any TextModel = OnDeviceModel(),
-        availability: @escaping @MainActor () -> AIAvailability = { OnDeviceModel.availability }
+        availability: @escaping @Sendable () -> AIAvailability = { OnDeviceModel.availability }
     ) {
         self.defaults = defaults
         self.model = model
         self.checkAvailability = availability
-        self.availability = availability()
         isEnabled = defaults?.object(forKey: Self.defaultsKey) as? Bool ?? true
+        Task { await refresh() }
     }
 
     /// Befehle der KI zeigen: nur mit bereitem Modell und eingeschaltet.
@@ -39,8 +41,9 @@ public final class AISettings {
     }
 
     /// Verfügbarkeit neu prüfen, z. B. nachdem das Modell fertig geladen ist.
-    public func refresh() {
-        let current = checkAvailability()
+    public func refresh() async {
+        let check = checkAvailability
+        let current = await Task.detached { check() }.value
         if current != availability { availability = current }
     }
 }

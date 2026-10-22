@@ -99,6 +99,10 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
 - Einstellungen › KI (`sparkles`): mit bereitem Modell ein Schalter „KI-Funktionen
   verwenden“ mit dem Hinweis, dass nichts ins Netz geht; ohne Modell statt des Schalters
   eine Erklärung mit `info.circle` (ein ausgegrauter Schalter wäre im Audit zu blass).
+- Seite › „Zusammenfassen …“ nur mit bereitem Modell und eingeschalteter KI. Blatt mit
+  Fortschritt, dann dem Text (auswählbar) und dem Hinweis, dass das Modell auf dem Mac ihn
+  erstellt hat und er geprüft werden soll; Knöpfe „Kopieren“ und „Einfügen“ (Standard, nur
+  wenn der Editor den Fokus hatte), „Schließen“ mit Escape. Fehler nennen den Grund in einem Satz.
 
 ## Leerzustände
 

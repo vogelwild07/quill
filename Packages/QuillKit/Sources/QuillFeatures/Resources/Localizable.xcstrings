@@ -196,7 +196,16 @@
     "Das Backup stammt von einer neueren Quill-Version und kann hier nicht eingespielt werden." : {
 
     },
+    "Das Sprachmodell hat diese Seite nicht zusammengefasst." : {
+
+    },
+    "Das Sprachmodell steht gerade nicht bereit." : {
+
+    },
     "Das Sprachmodell steht gerade nicht bereit. Die KI-Funktionen bleiben ausgeblendet." : {
+
+    },
+    "Das Sprachmodell unterstützt die Sprache dieser Seite nicht." : {
 
     },
     "Das Sprachmodell von Apple Intelligence rechnet auf diesem Mac. Deine Notizen gehen dafür nicht ins Netz." : {
@@ -247,6 +256,9 @@
     "Die Datenbank im Backup ist beschädigt." : {
 
     },
+    "Die Seite enthält keinen Text zum Zusammenfassen." : {
+
+    },
     "Die Seite selbst ist nicht betroffen." : {
 
     },
@@ -257,6 +269,9 @@
 
     },
     "Die Zeile mit dem Cursor bleibt in der Mitte, die übrigen Absätze treten zurück. Auch über Darstellung › Fokus-Modus (⇧⌘F)." : {
+
+    },
+    "Die Zusammenfassung ist gescheitert." : {
 
     },
     "Diese Version von Quill braucht ein neues Format für deine Daten. Vorher legt Quill ein Backup an. Ältere Versionen von Quill können die Daten danach nicht mehr öffnen." : {
@@ -271,6 +286,9 @@
     "Durchgestrichen" : {
 
     },
+    "Ein Abschnitt der Seite ist zu lang für das Sprachmodell." : {
+
+    },
     "Ein anderes Gerät hat diesen Block gelöscht oder anders geändert, während er hier bearbeitet wurde. Quill hat ihn behalten, damit nichts verloren geht." : {
 
     },
@@ -278,6 +296,9 @@
 
     },
     "Eine andere Quill-Instanz richtet gerade die Datenbank ein." : {
+
+    },
+    "Einfügen" : {
 
     },
     "Eingespielt: Backup vom %@." : {
@@ -301,6 +322,9 @@
     "Erledigt" : {
 
     },
+    "Erstellt vom Sprachmodell auf diesem Mac. Prüfe sie, bevor du sie verwendest." : {
+
+    },
     "Export fehlgeschlagen" : {
 
     },
@@ -308,6 +332,9 @@
 
     },
     "Exportieren …" : {
+
+    },
+    "Fasse zusammen …" : {
 
     },
     "Favorit verschieben" : {
@@ -431,6 +458,9 @@
 
     },
     "Keine offenen Konflikte." : {
+
+    },
+    "Kopieren" : {
 
     },
     "Kursiv" : {
@@ -569,6 +599,9 @@
 
     },
     "Quill wurde nicht beendet. Das Backup ist nicht mehr vorgemerkt, der aktuelle Stand bleibt. Wähle es bei Bedarf erneut über Ablage › Backup wiederherstellen …" : {
+
+    },
+    "Schließen" : {
 
     },
     "Schnell öffnen" : {
@@ -837,6 +870,12 @@
 
     },
     "Zurückholen gescheitert. Quill versucht es weiter." : {
+
+    },
+    "Zusammenfassen …" : {
+
+    },
+    "Zusammenfassung" : {
 
     },
     "Zusammenführen" : {

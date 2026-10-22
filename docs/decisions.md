@@ -672,7 +672,7 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Ein eigenes Modul `QuillAI` ist das einzige, das `FoundationModels` importiert, und nutzt nur `SystemLanguageModel`. `AIIsolationTests` prüft beides an den eingecheckten Dateien (kein Import außerhalb von `QuillAI`, kein `PrivateCloudCompute` irgendwo).
 - Die Funktionen sprechen das Modell über ein kleines Protokoll an. Unit- und UI-Tests nutzen ein Test-Modell mit festen Antworten (`-QuillFakeAI`, nur Debug), weil das echte Modell nicht auf jedem Mac läuft und nicht immer gleich antwortet.
 - Ohne Apple Intelligence (Gerät ungeeignet, ausgeschaltet, Modell lädt noch) sind die Befehle ausgeblendet; Einstellungen › KI erklärt warum.
-- Nichts aus einer KI-Antwort landet ohne Zutun des Nutzers in einer Seite: Zusammenfassung und To-dos zeigen erst eine Vorschau, Übernehmen geht über `EditorDocument` (⌘Z) und die Bridge (ADR-013).
+- Nichts aus einer KI-Antwort landet ohne Zutun des Nutzers in einer Seite: Zusammenfassung und To-dos zeigen erst eine Vorschau, Übernehmen lässt sich mit ⌘Z zurücknehmen.
 - Deployment-Ziel bleibt macOS 26.0: Funktionen ab 26.4 (`tokenCount`) nur hinter `#available`, sonst zählt Quill Zeichen.
 - Jeder Schritt ergänzt hier seine Entscheidungen mit Alternativen.
 
@@ -682,4 +682,12 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - `AISettings` entsteht erst beim ersten Zugriff: Die erste Abfrage der Verfügbarkeit kostet 3–7 ms auf dem Main Thread, der Start soll das nicht tragen.
 - Test-Modell `-QuillFakeAI <Fall von AIAvailability>` nur im Debug-Build und nur mit Test-Store.
 - Alternativen (nicht gewählt, nicht besprochen): Standard aus bis zum Einschalten (wie der Sync; aber hier verlässt nichts den Mac, und die Befehle erscheinen ohnehin nur auf Wunsch des Nutzers); KI-Code direkt in `QuillFeatures` (einfacher, aber dann prüft kein Test mehr, dass nur das Modell auf dem Gerät verwendet wird); Knopf „Systemeinstellungen öffnen“ (die Adresse des Bereichs „Apple Intelligence & Siri“ ist nicht dokumentiert); ausgegrauter Schalter mit Erklärung darunter (Kontrast im Audit zu gering).
+
+**Entscheidung (16.2, Seite zusammenfassen):**
+- Seite › „Zusammenfassen …“ (ohne Kürzel) erscheint nur mit bereitem Modell und eingeschalteter KI. Es speichert zuerst die offenen Editoren der Seite (`flushAll(pageID:)`) und fasst die Blöcke aus dem Store zusammen: ein Absatz je Block, ohne Bilder, Trenner und leere Blöcke.
+- Bis zu 6.000 Zeichen je Anfrage: Anweisung, Text und Antwort teilen sich das Kontextfenster (4.096 Token unter macOS 26, 8.192 unter 27); gemessen auf diesem Mac mit dem echten Modell: 5.891 Zeichen deutscher Text = 1.334 Token, Antwort auf Deutsch. Längere Seiten gehen in Stücken an Absatzgrenzen ans Modell, die Teilergebnisse werden noch einmal zusammengefasst; nach drei Runden zählt nur noch das erste Stück (Schutz vor einem Modell, das nicht kürzer antwortet).
+- Ergebnis in einem Blatt: „Kopieren“ (in die Zwischenablage des Editors, in UI-Tests die eigene), „Einfügen“ nur, wenn der Editor dieser Seite beim Aufruf den Fokus hatte. Eingefügt wird wie getippt an der Einfügemarke, als ein Absatz, als eigener Schritt für ⌘Z. Hinweis im Blatt, dass das Modell auf dem Mac die Zusammenfassung erstellt hat und sie geprüft werden soll.
+- Die Verfügbarkeit prüft `AISettings` jetzt außerhalb des Main Threads und ist bis dahin `nil` (Befehl ausgeblendet, Einstellungen mit Fortschritt): Das Menü fragt schon beim Start, die erste Prüfung kostet 3–7 ms.
+- Fehler des Modells kommen als `AIError` aus `QuillAI` (zu lang, abgelehnt, Sprache, nicht bereit, sonst), ab macOS 27 aus `LanguageModelError`, davor aus `GenerationError`; das Blatt nennt den Grund.
+- Alternativen (nicht gewählt, nicht besprochen): Zusammenfassung als eigener Block oben auf der Seite (über die Bridge, dann ohne ⌘Z im Editor); als Zitat-Block; immer gespeichert in der Seite (Eigenschaft); Fortschritt je Stück; Seite zu lang ablehnen statt in Stücken.
 
