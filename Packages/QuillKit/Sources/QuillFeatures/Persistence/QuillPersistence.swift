@@ -125,6 +125,9 @@ public final class QuillPersistence {
     /// Geschichte der Seiten für die Zeitreise (ADR-031), auch ohne Sync; zeichnet ab
     /// `history.start()` auf.
     public private(set) lazy var history = HistoryObserver(recorder: HistoryRecorder(store: store))
+    /// Frist für Bilder ohne Block (12.4, ADR-031); beim echten Store in den Einstellungen
+    /// des Macs, bei Test-Stores nur bis zum Beenden.
+    public let imageRetention: ImageRetentionSettings
     #if DEBUG || QUILL_SYNCTEST
     /// Nur für Tests: Gerätename statt des Mac-Namens (`syncDeviceNameArgument`).
     private var testDeviceName: String?
@@ -154,9 +157,11 @@ public final class QuillPersistence {
 
     init(
         container: ModelContainer, backup: StoreBackup?, preparation: StorePreparation? = nil,
-        syncStorage: any SyncSettingsStorage = MemorySyncSettingsStorage(), syncTestFolder: URL? = nil
+        syncStorage: any SyncSettingsStorage = MemorySyncSettingsStorage(), syncTestFolder: URL? = nil,
+        retentionDefaults: UserDefaults? = nil
     ) {
         self.container = container
+        self.imageRetention = ImageRetentionSettings(defaults: retentionDefaults)
         self.store = PageStore(modelContainer: container)
         self.syncStorage = syncStorage
         self.syncTestFolder = syncTestFolder
@@ -228,7 +233,8 @@ public final class QuillPersistence {
         }
         let persistence = QuillPersistence(
             container: container, backup: backup, preparation: preparation,
-            syncStorage: syncStorage(testStore), syncTestFolder: testStore == nil ? nil : syncTestFolder(arguments: arguments)
+            syncStorage: syncStorage(testStore), syncTestFolder: testStore == nil ? nil : syncTestFolder(arguments: arguments),
+            retentionDefaults: retentionDefaults(testStore)
         )
         #if DEBUG || QUILL_SYNCTEST
         if testStore != nil { configureTestHooks(persistence, arguments: arguments) }
@@ -254,6 +260,12 @@ public final class QuillPersistence {
         }
         #endif
         return UserDefaults.standard
+    }
+
+    /// Frist für Bilder: nur der echte Store liest und speichert sie in den Einstellungen
+    /// des Macs. Test-Stores nie, denn Debug-Builds teilen sie mit der echten App.
+    static func retentionDefaults(_ testStore: TestStore?) -> UserDefaults? {
+        testStore == nil ? .standard : nil
     }
 
     private static func syncTestFolder(arguments: [String]) -> URL? {
@@ -404,13 +416,16 @@ public final class QuillPersistence {
         return preparation == StorePreparation() ? nil : preparation
     }
 
-    /// Bilder, die seit 30 Tagen keinem Block mehr gehören (ADR-015). Läuft nach dem
-    /// Backup beim Start, damit ein versehentlich gelöschtes Bild dort noch liegt.
-    private func removeOrphanedAssets() {
+    /// Bilder, die seit der gewählten Frist keinem Block mehr gehören (ADR-015, 12.4),
+    /// bei „Immer“ keine. Läuft nach dem Backup beim Start, damit ein versehentlich
+    /// gelöschtes Bild dort noch liegt.
+    @discardableResult
+    func removeOrphanedAssets() -> Task<Void, Never>? {
+        guard let age = imageRetention.retention.age else { return nil }
         let store = store
-        Task.detached(priority: .utility) {
+        return Task.detached(priority: .utility) {
             do {
-                let count = try await store.removeOrphanedAssets()
+                let count = try await store.removeOrphanedAssets(olderThan: age)
                 if count > 0 { Self.logger.notice("Verwaiste Bilder gelöscht: \(count)") }
             } catch {
                 Self.logger.error("Aufräumen der Bilder fehlgeschlagen: \(error, privacy: .public)")
