@@ -46,6 +46,9 @@ public final class QuillPersistence {
     /// Startargument `-QuillSyncDeviceName <Name>`, nur mit einem Test-Store: Gerätename
     /// im Ordner statt des Mac-Namens; Synctest A und B laufen auf demselben Mac (11.6).
     public static let syncDeviceNameArgument = "QuillSyncDeviceName"
+    /// Startargument `-QuillSeedTimeTravel YES`, nur Debug und nur mit einem Test-Store:
+    /// legt eine Seite mit Geschichte über drei Tage an (`TimeTravelSeed`, 12.3).
+    public static let seedTimeTravelArgument = "QuillSeedTimeTravel"
     /// Relativ zum Benutzerordner; steht genauso in `App/QuillSynctest.entitlements`.
     public static let syncSharedFolderRoot = "Library/Containers/io.github.vogelwild07.quill.UITests.xctrunner/Data/tmp/QuillSyncUITests"
     #endif
@@ -289,6 +292,14 @@ public final class QuillPersistence {
         persistence.testDeviceName = value(syncDeviceNameArgument).flatMap { $0.isEmpty ? nil : $0 }
         persistence.sync.testHaltBeforeStoringPage = number(syncHaltArgument)
         EditorPersistenceBridge.testDelay = number(saveDelayArgument).map { .milliseconds($0) }
+        #if DEBUG
+        if flag(seedTimeTravelArgument, in: arguments) {
+            let store = persistence.store
+            Task {
+                do { try await TimeTravelSeed.write(to: store) } catch { logger.error("Zeitreise-Testseite: \(error, privacy: .public)") }
+            }
+        }
+        #endif
     }
 
     /// Der gemeinsame Ordner zu `-QuillSyncSharedFolder <name>`. Der Benutzerordner kommt

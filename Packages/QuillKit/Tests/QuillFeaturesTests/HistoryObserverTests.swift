@@ -33,4 +33,19 @@ struct HistoryObserverTests {
         let data = try #require(try await store.syncPage(page)?.document)
         #expect(try PageDocument(bytes: data).blocks().map(\.text) == ["Getippt"])
     }
+
+    @Test func savesInAnotherStoreAreIgnored() async throws {
+        let store = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
+        let observer = HistoryObserver(recorder: HistoryRecorder(store: store))
+        observer.start()
+        let other = PageStore(modelContainer: try QuillStore.makeInMemoryContainer())
+        let page = try await other.createPage(title: "Woanders")
+
+        let bridge = EditorPersistenceBridge(pageID: page, store: other)
+        var document = try await bridge.load()
+        document.blocks[0].text = "Getippt"
+        bridge.documentDidChange(document)
+        #expect(await bridge.flush())
+        #expect(observer.hasUnrecordedSaves == false)
+    }
 }

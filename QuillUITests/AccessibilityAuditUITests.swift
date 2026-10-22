@@ -142,6 +142,26 @@ final class AccessibilityAuditUITests: XCTestCase {
         XCTAssertTrue(app.buttons["syncReconnect.later"].waitForNonExistence(timeout: 5))
     }
 
+    /// Fenster „Zeitreise“ mit drei Tagen, früherer Stand gewählt (12.3, ADR-031).
+    func testAuditTimeTravel() throws {
+        app.terminate()
+        app = XCUIApplication.quill(storeDirectory: storeDirectory)
+        app.launchArguments += ["-QuillSeedTimeTravel", "YES"]
+        app.launch()
+        XCTAssertTrue(window.waitForExistence(timeout: 10))
+        let row = window.outlines["sidebar.pages"].pageRows.firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        row.click()
+        app.typeKey("y", modifierFlags: [.command, .option])
+        let travel = app.windows["Zeitreise: Zeitreise-Test"]
+        XCTAssertTrue(travel.waitForExistence(timeout: 10))
+        let days = travel.descendants(matching: .any).matching(identifier: "timeTravel.day")
+        XCTAssertTrue(days.element(boundBy: 2).waitForExistence(timeout: 10))
+        audit("Zeitreise (heute)")
+        days.element(boundBy: 2).click()
+        audit("Zeitreise (früherer Tag)")
+    }
+
     // MARK: - Audit
 
     private var window: XCUIElement { app.windows.firstMatch }

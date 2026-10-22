@@ -99,12 +99,14 @@ public final class EditorPersistenceBridge {
         live.allObjects.contains { $0.hasUnsavedChanges }
     }
 
-    /// Speichert alle Editoren sofort, z. B. vor dem Beenden der App. Gibt den ersten
-    /// Fehler zurück, wenn ein Editor nicht speichern konnte, sonst `nil`.
+    /// Speichert alle Editoren sofort, z. B. vor dem Beenden der App, mit `pageID` nur
+    /// die dieser Seite. Gibt den ersten Fehler zurück, wenn ein Editor nicht speichern
+    /// konnte, sonst `nil`.
     @discardableResult
-    public static func flushAll() async -> (any Error)? {
+    public static func flushAll(pageID: UUID? = nil) async -> (any Error)? {
         var firstError: (any Error)?
-        for bridge in live.allObjects where !(await bridge.flush()) {
+        for bridge in live.allObjects where pageID == nil || bridge.pageID == pageID {
+            guard !(await bridge.flush()) else { continue }
             firstError = firstError ?? bridge.lastError
         }
         return firstError
@@ -210,7 +212,7 @@ public final class EditorPersistenceBridge {
                 if let saved = try await store.applyEdits(pageID, edits, expected: stored) {
                     lastError = nil
                     setBaseline(document.blocks, stored: saved)
-                    NotificationCenter.default.post(name: Self.didSave, object: self, userInfo: ["pageID": pageID])
+                    NotificationCenter.default.post(name: Self.didSave, object: self, userInfo: ["pageID": pageID, "store": store])
                     return true
                 }
                 // Inzwischen hat jemand anderes geschrieben: zusammenführen, dann erneut.

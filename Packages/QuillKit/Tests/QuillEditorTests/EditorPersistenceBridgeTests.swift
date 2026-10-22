@@ -213,6 +213,22 @@ struct EditorPersistenceBridgeTests {
         #expect(await EditorPersistenceBridge.flushAll() == nil)
     }
 
+    /// Zeitreise (12.3): Mit Seite speichert `flushAll` nur deren Editoren.
+    @Test func flushAllForOnePageLeavesOthersWaiting() async throws {
+        let own = bridge()
+        _ = try await own.load()
+        let otherPage = try await store.createPage(title: "Andere")
+        let other = EditorPersistenceBridge(pageID: otherPage, store: store, delay: .seconds(60))
+        _ = try await other.load()
+        own.documentDidChange(EditorDocument(blocks: [EditorBlock(text: "eigene")]))
+        other.documentDidChange(EditorDocument(blocks: [EditorBlock(text: "andere")]))
+
+        #expect(await EditorPersistenceBridge.flushAll(pageID: pageID) == nil)
+        #expect(!own.hasUnsavedChanges)
+        #expect(other.hasUnsavedChanges)
+        await other.flush()
+    }
+
     /// Fehler 5: Eine geschlossene Bridge speichert evtl. noch; die neue lädt erst danach.
     @Test func loadWaitsForPendingChangesOfSamePage() async throws {
         var closed: EditorPersistenceBridge? = bridge()

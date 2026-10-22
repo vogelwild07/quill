@@ -770,6 +770,51 @@ struct ClipboardAndMoveTests {
         #expect(items.allSatisfy { !textView.validateUserInterfaceItem($0) })
     }
 
+    /// Lesemodus (Zeitreise, ADR-031): Markieren per Tastatur geht, ändern nichts.
+    @Test func readOnlyAllowsSelectingButNoChanges() throws {
+        let h = Harness([
+            EditorBlock(text: "Eins"), EditorBlock(kind: .todo, text: "Zwei"), EditorBlock(text: "Drei"),
+        ])
+        let textView = try #require(h.textView as? BlockTextView)
+        let board = pasteboard()
+        defer { board.releaseGlobally() }
+        board.setString("Eingesetzt", forType: .string)
+        textView.clipboard = board
+        h.editor.isReadOnly = true
+        var changes = 0
+        h.editor.onChange = { _ in changes += 1 }
+        let storage = h.storage
+
+        h.caret(at: 0, 2)
+        h.type("x")
+        h.press(#selector(NSResponder.insertNewline(_:)))
+        h.press(#selector(NSResponder.deleteBackward(_:)))
+        h.press(#selector(NSResponder.insertTab(_:)))
+        textView.paste(nil)
+        h.editor.toggleChecked(atCharacter: h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0)))
+        #expect(h.texts == ["Eins", "Zwei", "Drei"])
+        #expect(h.document.blocks[1].properties.isChecked == false)
+        #expect(h.storage == storage)
+        #expect(changes == 0)
+
+        // ⇧↓ markiert auch im Lesemodus (ohne Schreibmarke scrollte es nur).
+        #expect(h.editor.selectedBlockIDs.isEmpty)
+        h.press(#selector(NSResponder.moveDownAndModifySelection(_:)))
+        #expect(h.textView.selectedRange().length > 0)
+        #expect(h.editor.selectedBlockIDs.first == h.document.blocks[0].id)
+        // Es zählen die Blöcke, von denen ein Zeichen markiert ist.
+        let second = h.editor.characterLocation(of: BlockPosition(block: 1, offset: 0))
+        h.textView.setSelectedRange(NSRange(location: 2, length: second - 2))
+        #expect(h.editor.selectedBlockIDs == [h.document.blocks[0].id])
+        h.textView.setSelectedRange(NSRange(location: 2, length: second - 1))
+        #expect(h.editor.selectedBlockIDs == h.document.blocks[0...1].map(\.id))
+
+        let paste = NSMenuItem(title: "", action: #selector(NSText.paste(_:)), keyEquivalent: "")
+        let copy = NSMenuItem(title: "", action: #selector(NSText.copy(_:)), keyEquivalent: "")
+        #expect(!textView.validateUserInterfaceItem(paste))
+        #expect(textView.validateUserInterfaceItem(copy))
+    }
+
     /// „Einsetzen und Stil anpassen“ liest Klartext aus der eigenen Zwischenablage.
     @Test func pasteAsPlainTextUsesOwnClipboard() throws {
         let h = Harness([EditorBlock(text: "Hallo")])

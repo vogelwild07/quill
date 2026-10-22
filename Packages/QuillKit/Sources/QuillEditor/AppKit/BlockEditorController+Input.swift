@@ -19,6 +19,8 @@ extension BlockEditorController: NSTextViewDelegate {
     // MARK: Abfangen
 
     public func textView(_ textView: NSTextView, shouldChangeTextIn range: NSRange, replacementString: String?) -> Bool {
+        // Lesemodus: Tippen, Einsetzen, Ziehen, Korrekturen, auch markierter Text (IME).
+        guard !isReadOnly else { return false }
         guard !isApplying, let replacement = replacementString else { return true }
         if textView.hasMarkedText() { return true }
         // Undo/Redo spielt frühere Änderungen 1:1 zurück; danach wird das Modell gelesen.
@@ -164,6 +166,7 @@ extension BlockEditorController: NSTextViewDelegate {
 
     public func textViewDidChangeSelection(_ notification: Notification) {
         scheduleFocusUpdate()
+        onSelectionChange?()
         // Beim Tippen kommt die Auswahl vor `textDidChange`; die Absätze sind dann noch
         // nicht abgeglichen, und `textDidChange` aktualisiert das Menü ohnehin.
         if slashMenu.isVisible, editedRange == nil { slashMenu.update() }

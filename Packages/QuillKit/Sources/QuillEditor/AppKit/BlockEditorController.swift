@@ -25,6 +25,8 @@ public final class BlockEditorController: NSObject {
     public var onExitTop: (() -> Void)?
     /// ⌃Tab: Fokus aus dem Editor zum nächsten Bereich (Sidebar). Tab rückt ein.
     public var onExitForward: (() -> Void)?
+    /// Nach jeder Änderung der Auswahl (`selectedBlockIDs`).
+    public var onSelectionChange: (() -> Void)?
     /// Eigener Undo-Stapel pro Editor. `load` leert nur ihn, nicht das Undo des
     /// Fensters (Sidebar-Aktionen).
     let undoManager = UndoManager()
@@ -196,6 +198,9 @@ public final class BlockEditorController: NSObject {
 
     /// Schreibt `newDocument` als minimalen Diff in den Textspeicher (undo-fähig).
     func apply(_ newDocument: EditorDocument, cursor: BlockPosition?, actionName: String? = nil) {
+        // Schreibgeschützt (beim Laden) oder Lesemodus (Zeitreise): Der Text ändert sich
+        // nicht, das Dokument darf dann auch nicht wechseln, sonst passt es nicht mehr.
+        guard textView.isEditable, !isReadOnly else { return }
         let old = document.blocks
         let new = newDocument.blocks
         var prefix = 0

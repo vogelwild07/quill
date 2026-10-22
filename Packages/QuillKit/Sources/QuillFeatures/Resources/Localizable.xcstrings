@@ -51,6 +51,9 @@
         }
       }
     },
+    "Ab der ersten Bearbeitung hält Quill fest, wie die Seite am Ende jedes Tages aussah." : {
+
+    },
     "Abbrechen" : {
 
     },
@@ -79,6 +82,9 @@
 
     },
     "Ausschalten" : {
+
+    },
+    "Auswahl zurückholen" : {
 
     },
     "Backup bleibt vorgemerkt" : {
@@ -198,6 +204,9 @@
     "Die Datenbank im Backup ist beschädigt." : {
 
     },
+    "Die Seite selbst ist nicht betroffen." : {
+
+    },
     "Die Vormerkung ließ sich nicht löschen. Damit das Wiederherstellen nicht bei jedem Start erneut läuft, wurde nichts getauscht." : {
 
     },
@@ -285,6 +294,12 @@
     "Gelöschte Seiten bleiben hier 30 Tage und lassen sich wiederherstellen." : {
 
     },
+    "Geschichte nicht lesbar" : {
+
+    },
+    "Gestern" : {
+
+    },
     "Gleicht ab …" : {
 
     },
@@ -294,7 +309,13 @@
     "Hell und dunkel" : {
 
     },
+    "Heute" : {
+
+    },
     "Hier behalten: Auf einem anderen Gerät kam die Seite in den Papierkorb, hier wurde sie bearbeitet." : {
+
+    },
+    "Holt die markierten Absätze dieses Tages in die Seite zurück." : {
 
     },
     "Icon" : {
@@ -409,6 +430,9 @@
 
     },
     "Noch keine Backups" : {
+
+    },
+    "Noch keine Geschichte" : {
 
     },
     "Noch keine Seiten" : {
@@ -724,6 +748,15 @@
     "Wählst du den bisherigen Ordner „%@“ wieder, führt Quill zusammen. Mit einem anderen Ordner beginnt es dort neu." : {
 
     },
+    "Zeitreise" : {
+
+    },
+    "Zeitreise …" : {
+
+    },
+    "Zeitreise: %@" : {
+
+    },
     "Zitat" : {
 
     },
@@ -740,6 +773,9 @@
 
     },
     "Zur Stelle springen" : {
+
+    },
+    "Zurückholen gescheitert. Quill versucht es weiter." : {
 
     },
     "Zusammenführen" : {
