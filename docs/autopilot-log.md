@@ -25,6 +25,11 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Standard 90 statt bisher 30 Tage, „Immer“ löscht nie; kürzere Frist wirkt erst beim
   nächsten Start; Optionsfelder statt Klappmenü (ADR-031, Abschnitt 12.4).
 
+- [ ] Review Phase 12: Bild-Blöcke ohne aufbewahrtes Bild werden beim Zurückholen
+  übersprungen und gemeldet; Zurückholen ist aus, wenn die Seite im Papierkorb liegt; nach
+  dem Ausschalten des Sync wird bewusst weiter aufgezeichnet (ADR-031, Abschnitt „Review von
+  Phase 12“).
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -90,3 +95,20 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   ersetzt durch Optionsfelder statt einer Ausnahme.
 - Messung: im Wechsel mit `main` nicht langsamer; `sidebarLoad` weiter über 200 ms auf beiden
   Ständen (`appstoreagent`).
+
+### Review von Phase 12 und Schlussmessung (PR #30, ADR-031)
+
+- Lesemodus dicht: Formatieren, Blockart und Ziehen ändern im Zeitreise-Fenster nichts mehr,
+  die Menüs Format und Blockart sind dort aus.
+- Zeitreise-Fenster: lädt beim Aktivieren neu, Zurückholen aus bei Seite im Papierkorb,
+  Bild-Blöcke ohne Bild übersprungen und gemeldet; Maße als Tokens in `QuillDesign`.
+- `saveHistory` schluckt nur noch „Seite fehlt“, andere Fehler gehen nach oben;
+  `DocumentLocks.withLock` statt doppeltem Sperrcode; Schlüssel der Speicher-Meldung als
+  Konstanten.
+- Tests: Package 675 (125 + 135 + 283 + 30 + 9 + 93), UI 49 (1 übersprungen), Synctest 13
+  Fälle; 4 Gegenproben rot (2 Package, 2 UI). Formatier- und Zieh-Sperre ohne eigenen Test
+  (unter „Später“).
+- Schlussmessung gegen den Stand vor Phase 12 (`cb3b6d0`): nichts langsamer
+  (`docs/performance.md`). **Achtung:** `sidebarLoad` weiter über 200 ms auf beiden Ständen,
+  `appstoreagent` läuft seit über einem Tag mit rund 97 % CPU.
+- Phase 12 abgeschlossen.
