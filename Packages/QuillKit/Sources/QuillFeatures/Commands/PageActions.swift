@@ -17,6 +17,8 @@ public struct PageActions {
     var openInTab: @MainActor () -> Void
     var openInWindow: @MainActor () -> Void
     var exportPage: @MainActor () -> Void
+    /// „Zusammenfassen …“ (16.2, ADR-032); im Menü nur mit bereitem Modell.
+    var summarize: @MainActor () -> Void
 }
 
 /// Befehle des fokussierten Fensters, die nicht von einer Seite abhängen.

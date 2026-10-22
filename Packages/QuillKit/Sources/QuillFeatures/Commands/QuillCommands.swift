@@ -138,6 +138,11 @@ public struct QuillCommands: Commands {
             }
             .keyboardShortcut("y", modifiers: [.command, .option])
             .disabled(actions?.selection == nil)
+            // Nur mit bereitem Modell und eingeschalteter KI (ADR-032); ohne Kürzel.
+            if persistence?.ai.isUsable == true {
+                Button(String(localized: "Zusammenfassen …", bundle: .module)) { actions?.summarize() }
+                    .disabled(actions?.selection == nil)
+            }
             Divider()
             // ⇧⌘E wie „Exportieren“ in vielen Mac-Apps; ⌘E bleibt „Auswahl für Suche verwenden“.
             Button(String(localized: "Exportieren …", bundle: .module)) { actions?.exportPage() }

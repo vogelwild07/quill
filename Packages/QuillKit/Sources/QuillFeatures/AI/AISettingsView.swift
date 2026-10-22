@@ -9,7 +9,11 @@ struct AISettingsView: View {
 
     var body: some View {
         Form {
-            if let reason = Self.explanation(ai.availability) {
+            if ai.availability == nil {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity)
+            } else if let reason = ai.availability.flatMap(Self.explanation) {
                 // Ohne Modell kein Schalter: Ausgegraut wäre der Text zu blass.
                 Label {
                     Text(reason)
@@ -27,8 +31,8 @@ struct AISettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .onAppear { ai.refresh() }
-        .onChange(of: appearsActive) { if appearsActive { ai.refresh() } }
+        .task { await ai.refresh() }
+        .onChange(of: appearsActive) { if appearsActive { Task { await ai.refresh() } } }
     }
 
     static func explanation(_ availability: AIAvailability) -> String? {
