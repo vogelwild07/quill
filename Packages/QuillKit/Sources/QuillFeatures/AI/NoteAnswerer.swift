@@ -82,9 +82,8 @@ struct NoteAnswerer {
         var titles: [UUID: String] = [:]
         for term in terms {
             try Task.checkCancellation()
-            // Je Begriff zählt eine Seite einmal, auch mit Titel- und Inhaltstreffer.
-            var counted = Set<UUID>()
-            for hit in try await store.search(term) where counted.insert(hit.pageID).inserted {
+            // Die Suche liefert höchstens einen Treffer je Seite.
+            for hit in try await store.search(term) {
                 if counts[hit.pageID] == nil {
                     order.append(hit.pageID)
                     titles[hit.pageID] = hit.title
