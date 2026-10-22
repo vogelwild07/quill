@@ -282,14 +282,20 @@ und nicht auf dem Main Thread; Tippen und Seitenwechsel sollen davon nichts merk
 | pageTreeBuild | 54,46 | 54,97 |
 | search | 44,81 | 44,29 |
 | exportPlan | 981,42 | 959,64 |
-| App: ApplicationLaunch | 567,6 | 564,1 |
-| App: launch | 389,9 | 368,0 |
-| App: sidebarLoad | 188,2 | 174,6 |
-| App: sidebarReload | 147,8 | 150,4 |
-| App: pageSwitch | 75,4 | 73,3 |
+| App: ApplicationLaunch | 560,7 / 555,8 | 569,2 / 563,0 |
+| App: launch | 395,2 / 389,5 | 397,8 / 397,1 |
+| App: sidebarLoad | 197,3 / 188,4 | 197,4 / 196,8 |
+| App: sidebarReload | 174,2 / 153,3 | 152,4 / 153,2 |
+| App: pageSwitch | 59,8 / 57,2 | 59,1 / 57,6 |
 
-Keine Verschlechterung über das Rauschen hinaus (`sidebarReload` schwankt zwischen
-etwa 95 und 170 ms), alle Schwellen eingehalten.
+Package: drei Läufe je Stand. App: zwei Runden, abwechselnd alter Stand (eigener Worktree)
+und neuer Stand, Median je Lauf (Runde 1 / Runde 2). Ein einzelner Lauf allein reichte
+nicht: Der erste Lauf auf dem Endstand ergab `sidebarReload` 176,7 ms, weil nur einer von
+fünf Werten in der schnellen Gruppe um 105 ms lag (die Werte zerfallen in zwei Gruppen, um
+105 und um 150–184 ms). Im Wechsel ist der neue Stand nicht langsamer; `sidebarLoad` und
+der Start liegen 1–2 % höher, innerhalb der Streuung der Einzelwerte (Start alt 383–402 ms,
+neu 377–403 ms). Am selben Vormittag lag `sidebarLoad` auch auf dem alten Stand bei 197 ms,
+nahe der Schwelle von 200 ms. Alle Schwellen eingehalten.
 
 ## Messbedingungen
 
