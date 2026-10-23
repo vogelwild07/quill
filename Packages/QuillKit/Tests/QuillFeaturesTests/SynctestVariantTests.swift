@@ -26,6 +26,8 @@ struct SynctestVariantTests {
         "com.apple.security.app-sandbox",
         "com.apple.security.files.bookmarks.app-scope",
         "com.apple.security.files.user-selected.read-write",
+        // Nur gelesen, nur auf Klick: „Heutige Termine einfügen“ (15.5, ADR-033).
+        "com.apple.security.personal-information.calendars",
     ]
     static let exceptionKey = "com.apple.security.temporary-exception.files.home-relative-path.read-write"
 

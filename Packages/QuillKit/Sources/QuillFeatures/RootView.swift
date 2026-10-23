@@ -3,6 +3,7 @@ import CoreSpotlight
 #endif
 import QuillDesign
 import QuillEditor
+import QuillEditorCore
 import QuillModel
 import SwiftData
 import SwiftUI
@@ -38,6 +39,8 @@ public struct RootView: View {
     @State private var reminderRequest: ReminderRequest?
     @State private var relatedRequest: RelatedRequest?
     @State private var isAskShown = false
+    /// Hinweis zu „Heute“ oder „Heutige Termine einfügen“.
+    @State private var todayNotice: String?
     #endif
 
     @Environment(\.pageStore) private var store
@@ -140,6 +143,15 @@ public struct RootView: View {
             Button(String(localized: "OK", bundle: .module)) {}
         } message: { notice in
             Text(notice.message)
+        }
+        .alert(
+            String(localized: "Heute", bundle: .module),
+            isPresented: Binding(get: { todayNotice != nil }, set: { if !$0 { todayNotice = nil } }),
+            presenting: todayNotice
+        ) { _ in
+            Button(String(localized: "OK", bundle: .module)) {}
+        } message: { notice in
+            Text(notice)
         }
         .sheet(isPresented: $isSyncReconnectShown) {
             if let persistence {
@@ -284,7 +296,9 @@ public struct RootView: View {
             suggestTodos: { suggestTodos() },
             relatedPages: { if let selection { relatedPages(selection) } },
             askNotes: { askNotes() },
-            remind: { remind() }
+            remind: { remind() },
+            openToday: { openToday() },
+            insertTodayEvents: { insertTodayEvents() }
         )
     }
 
@@ -327,7 +341,49 @@ public struct RootView: View {
     private func remind() {
         reminderRequest = ReminderRequest(pageID: selection, focusedIn: window)
     }
+
+    /// Tagesseite öffnen, bei Bedarf anlegen.
+    private func openToday() {
+        guard let store else { return }
+        Task {
+            do {
+                showPage(try await TodayPage(store: store).open())
+            } catch {
+                todayNotice = String(localized: "Die Seite für heute ließ sich nicht öffnen.", bundle: .module)
+            }
+        }
+    }
+
+    /// Termine des Tages unter den Block an der Einfügemarke, als ein Schritt für ⌘Z.
+    private func insertTodayEvents() {
+        let editor = BlockEditorController.focused(in: window)
+        guard let editor, editor.allowsEditing, let anchor = editor.cursorBlockID, let persistence else {
+            todayNotice = String(localized: "Setze die Einfügemarke in eine Seite.", bundle: .module)
+            return
+        }
+        let events = TodayEvents(source: persistence.calendar)
+        Task {
+            switch await events.lines() {
+            case .denied:
+                todayNotice = String(localized: "Quill darf deinen Kalender nicht lesen. Du kannst das in den Systemeinstellungen unter „Datenschutz & Sicherheit › Kalender“ ändern.", bundle: .module)
+            case .empty:
+                todayNotice = String(localized: "Heute stehen keine Termine in deinem Kalender.", bundle: .module)
+            case .lines(let lines):
+                guard editor.acceptsInsertion, editor.document.blocks.contains(where: { $0.id == anchor }) else {
+                    NSSound.beep()
+                    return
+                }
+                editor.focus()
+                editor.insertBlocks(
+                    lines.map { EditorBlock(kind: .bulleted, text: $0) }, after: anchor,
+                    actionName: String(localized: "Termine einfügen", bundle: .module)
+                )
+            }
+        }
+    }
     #else
+    private func openToday() {}
+    private func insertTodayEvents() {}
     private func summarize(_ pageID: UUID) {}
     private func suggestTodos() {}
     private func relatedPages(_ pageID: UUID) {}

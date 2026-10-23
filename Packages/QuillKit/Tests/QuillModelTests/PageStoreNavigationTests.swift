@@ -229,6 +229,24 @@ struct PageStoreNavigationTests {
         #expect(try await store.recentPages().map(\.title) == ["A2", "B"])
     }
 
+    @Test func activeChildMatchesTitleAndParentOutsideTheTrash() async throws {
+        let days = try await page("Tage")
+        let nested = try await page("Tage", in: days)
+        let trashed = try await page("Heute", in: days)
+        try await store.trash(trashed)
+        let today = try await page("Heute", in: days)
+        try await page("Heute")
+
+        #expect(try await store.activeChild(titled: "Tage", in: nil) == days)
+        #expect(try await store.activeChild(titled: "Tage", in: days) == nested)
+        #expect(try await store.activeChild(titled: "Heute", in: days) == today)
+        #expect(try await store.activeChild(titled: "heute", in: days) == nil)
+
+        try await store.trash(days)
+        #expect(try await store.activeChild(titled: "Tage", in: nil) == nil)
+        #expect(try await store.activeChild(titled: "Heute", in: days) == nil)
+    }
+
     @Test func snippetCutsAtWordsAroundMatch() {
         let text = "Ein ziemlich langer Absatz mit vielen Worten, in dem irgendwo weit hinten das gesuchte Stichwort Lissabon steht und danach noch viel mehr Text folgt, damit auch hinten gekürzt wird."
         let match = (text as NSString).range(of: "Lissabon")

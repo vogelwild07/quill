@@ -27,6 +27,10 @@ public struct PageActions {
     var askNotes: @MainActor () -> Void
     /// „Erinnerung …“ für das To-do an der Einfügemarke (15.4, ADR-033).
     var remind: @MainActor () -> Void
+    /// „Heute“: Tagesseite öffnen (15.5, ADR-033).
+    var openToday: @MainActor () -> Void
+    /// „Heutige Termine einfügen“ an der Einfügemarke (15.5, ADR-033).
+    var insertTodayEvents: @MainActor () -> Void
 }
 
 /// Befehle des fokussierten Fensters, die nicht von einer Seite abhängen.
