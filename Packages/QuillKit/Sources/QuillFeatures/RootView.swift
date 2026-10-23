@@ -1,3 +1,6 @@
+#if canImport(AppKit)
+import CoreSpotlight
+#endif
 import QuillDesign
 import QuillEditor
 import QuillModel
@@ -106,6 +109,12 @@ public struct RootView: View {
             }
         })
         .onChange(of: PageJumpRouter.shared.request) { applyPageJump() }
+        // Treffer aus Spotlight (ADR-033).
+        .onContinueUserActivity(CSSearchableItemActionType) { activity in
+            if let id = (activity.userInfo?[CSSearchableItemActivityIdentifier] as? String).flatMap(UUID.init) {
+                showPage(id)
+            }
+        }
         #endif
         .focusedSceneValue(\.pageActions, operations.map(pageActions))
         .focusedSceneValue(\.windowActions, persistence.map { _ in WindowActions(restoreBackup: { isRestoreShown = true }) })

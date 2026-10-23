@@ -688,6 +688,9 @@
     "Seiten im Papierkorb" : {
 
     },
+    "Seiten in Spotlight zeigen" : {
+
+    },
     "Seiten und Inhalte durchsuchen" : {
 
     },
@@ -741,6 +744,9 @@
 
     },
     "Sperre nicht möglich: %@" : {
+
+    },
+    "Spotlight" : {
 
     },
     "Sprache" : {
@@ -807,6 +813,9 @@
 
     },
     "Titel" : {
+
+    },
+    "Titel und Text deiner Seiten kommen in den Suchindex dieses Macs, damit Spotlight sie findet. Seiten im Papierkorb nicht. Beim Ausschalten entfernt Quill alle Einträge." : {
 
     },
     "To-do" : {

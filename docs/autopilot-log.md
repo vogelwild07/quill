@@ -66,6 +66,13 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Test-Instanz neben den anderen Quill-Kopien nicht findet und das Registrieren des
   Debug-Builds den echten Store gefährden würde (ADR-033, Abschnitt 15.1).
 
+- [ ] 15.2: Seiten in Spotlight, Schalter in den Einstellungen (Standard aus, Wahl pro Mac);
+  Index nach dem Start neu, danach geänderte Seiten zwei Sekunden nach einer Speicherung;
+  Text höchstens 10 000 Zeichen je Seite; Test-Stores schreiben nur in einen Index im
+  Speicher; `pageTreeBuild` blieb in vier Runden 2,8–5 % über `main`, obwohl 15.2 den
+  Seitenbaum nicht ändert (Wiederholung unter 3 %, nach der Regel Rauschen; in 15.6 erneut
+  prüfen) (ADR-033, Abschnitt 15.2).
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -252,3 +259,14 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
 - Messung: `sidebarLoad` zuerst 3,3 % höher in einer Runde (Weg a: Meldung an Siri nach dem
   Start im Hintergrund), danach im Rauschen (`docs/performance.md`). Zweimal war der
   Bildschirm gesperrt, der UI-Lauf wurde nachgeholt.
+
+### 15.2 Spotlight (PR #38, ADR-033)
+
+- Seiten in Spotlight, eingeschaltet unter Einstellungen › Spotlight (Standard aus). Klick
+  auf einen Treffer öffnet die Seite. Papierkorb nie im Index, Ausschalten leert ihn.
+- Tests: Package 726 (135 + 175 + 284 + 30 + 9 + 93), UI 61 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 7 im Package und 1 im UI-Test rot, alle beim ersten Mal.
+- **Handtest:** Treffer in Spotlight öffnet die Seite (der Index des Macs bleibt in Tests
+  unberührt).
+- Messung: im Rauschen bis auf `pageTreeBuild` (+3,7 %, Wiederholung +2,8 %, Code
+  unverändert; `docs/performance.md`).

@@ -538,6 +538,28 @@ in beide Richtungen (+4,1, −0,7, +6,1, −2,0 %). `sidebarReload` hat zwei Hä
 um 150 ms; über die zehn Läufe des zweiten Durchgangs liegt der Median bei 144,5 (`main`) und
 121,1 ms (15.1). `pageTreeBuild` +1,6 %, im Rauschen; 15.1 ändert den Seitenbaum nicht.
 
+## Spotlight (23.10.2026, ADR-033)
+
+15.2 legt nichts in den Start: Der Index wird nur eingeschaltet und erst zwei Sekunden nach
+dem Start aufgebaut. Im Wechsel mit `main` (`fe0041f`), je zwei Runden:
+
+| Messung (ms) | `main` | 15.2 |
+|---|---|---|
+| editorLoad | 12,97 / 12,87 | 12,88 / 13,00 |
+| applyEditsReverse | 69,39 / 68,02 | 69,34 / 68,14 |
+| pageTreeBuild | 53,96 / 52,93 | 55,25 / 55,61 |
+| pageTreeBuild (Wiederholung) | 54,34 / 54,31 | 55,87 / 55,75 |
+| search | 44,43 / 44,57 | 45,17 / 44,47 |
+| App: sidebarLoad | 192,7 / 201,2 | 203,5 / 195,3 |
+| App: sidebarReload | 143,7 / 144,6 | 150,4 / 169,5 |
+| App: pageSwitch | 82,4 / 83,5 | 83,0 / 77,7 |
+
+`sidebarLoad` im Mittel +1,2 %, die Runden schwanken in beide Richtungen; `sidebarReload` hat
+wieder zwei Häufungen um 97 und 150 ms. `pageTreeBuild` lag im ersten Durchgang 3,7 % höher,
+in der Wiederholung 2,8 %. Die Messung ruft nur `PageTree.build` und `PageTree.favorites`
+auf, beide unverändert; vermutlich liegt der Code im Modul anders. Nach der Regel (unter 3 %
+in der Wiederholung) Rauschen; die Schlussmessung von Phase 15 prüft den Wert erneut.
+
 ## Messbedingungen
 
 | | |

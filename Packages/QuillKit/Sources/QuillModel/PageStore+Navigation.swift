@@ -219,6 +219,15 @@ extension PageStore {
         return titles
     }
 
+    /// Letzte Änderung jeder Seite außerhalb des Papierkorbs (Spotlight, ADR-033).
+    public func activePageDates() throws -> [UUID: Date] {
+        var dates: [UUID: Date] = [:]
+        for page in try modelContext.fetch(FetchDescriptor<Page>()) where !isInTrash(page) {
+            dates[page.id] = page.updatedAt
+        }
+        return dates
+    }
+
     /// Zuletzt bearbeitete Seiten (ohne Papierkorb), für „Schnell öffnen“ ohne Begriff.
     public func recentPages(limit: Int = 10) throws -> [SearchHit] {
         var descriptor = FetchDescriptor<Page>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)])
