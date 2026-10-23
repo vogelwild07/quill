@@ -28,6 +28,15 @@ struct TestImageTests {
         #expect(TestImage.png(spec: spec) == nil)
     }
 
+    /// Bild mit Schrift für die Texterkennung (ADR-034): hell mit dunklen Stellen.
+    @Test func textImageHasDarkLettering() throws {
+        let data = try #require(TestImage.png(spec: "text"))
+        let image = try #require(NSBitmapImageRep(data: data))
+        let brightness = (0..<image.pixelsWide).compactMap { image.colorAt(x: $0, y: image.pixelsHigh / 2)?.brightnessComponent }
+        #expect(brightness.contains { $0 > 0.9 })
+        #expect(brightness.contains { $0 < 0.3 })
+    }
+
     /// Bild für die README: breit wie ein Titelbild, nicht einfarbig.
     @Test func demoImageIsWideLandscape() throws {
         let data = try #require(TestImage.png(spec: "demo"))

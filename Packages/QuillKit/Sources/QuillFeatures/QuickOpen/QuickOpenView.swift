@@ -7,6 +7,8 @@ import SwiftUI
 /// ↑↓ wählen, ↩ öffnen, ⌘↩ in neuem Tab, ⎋ schließen; Maus wie im Slash-Menü.
 struct QuickOpenView: View {
     let store: PageStore
+    /// Text in Bildern (ADR-034); `nil` ohne Store.
+    let imageText: ImageTextIndex?
     let open: @MainActor (_ hit: SearchHit, _ inNewTab: Bool) -> Void
     let dismiss: @MainActor () -> Void
 
@@ -51,7 +53,7 @@ struct QuickOpenView: View {
         }
         .frame(width: 560)
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
-        .task(id: model.query) { await model.load(from: store) }
+        .task(id: model.query) { await model.load(from: store, imageText: imageText) }
         // Einen Durchlauf später: Beim Erscheinen hält noch der Editor oder das
         // Titelfeld den Fokus und würde ihn sofort zurückholen.
         .onAppear { DispatchQueue.main.async { isFieldFocused = true } }
@@ -135,8 +137,14 @@ struct QuickOpenView: View {
                     }
                 }
                 if let excerpt = hit.excerpt {
-                    Text(highlighted(excerpt))
-                        .font(.callout)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        // Text aus einem Bild (ADR-034).
+                        if case .image = hit.kind {
+                            Image(systemName: "photo")
+                        }
+                        Text(highlighted(excerpt))
+                    }
+                    .font(.callout)
                         .foregroundStyle(isSelected ? Self.selectedText.opacity(0.9) : Color.secondary)
                         .lineLimit(2)
                 }
@@ -171,7 +179,8 @@ struct QuickOpenView: View {
     }
 
     private func accessibilityLabel(_ hit: SearchHit, title: String, path: String) -> String {
-        [title, path, hit.excerpt ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")
+        let kind = if case .image = hit.kind { String(localized: "Bild", bundle: .module) } else { "" }
+        return [title, path, kind, hit.excerpt ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")
     }
 
     private func move(by delta: Int) -> KeyPress.Result {

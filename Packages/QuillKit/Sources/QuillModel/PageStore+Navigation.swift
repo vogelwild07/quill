@@ -8,6 +8,8 @@ public struct SearchHit: Sendable, Hashable, Identifiable {
         case page
         /// Text in einem Block passt; `match` ist der UTF-16-Bereich in dessen Text.
         case content(blockID: UUID, match: NSRange)
+        /// Erkannter Text eines Bilds passt (ADR-034); der Ausschnitt stammt daraus.
+        case image(blockID: UUID)
     }
 
     public let pageID: UUID
@@ -23,8 +25,16 @@ public struct SearchHit: Sendable, Hashable, Identifiable {
         switch kind {
         case .page: "page-\(pageID)"
         case .content(let blockID, _): "content-\(blockID)"
+        case .image(let blockID): "image-\(blockID)"
         }
     }
+}
+
+/// Bild eines Blocks auf einer Seite (Text in Bildern, ADR-034).
+public struct ImageReference: Sendable, Hashable {
+    public let blockID: UUID
+    public let pageID: UUID
+    public let assetID: UUID
 }
 
 /// Seite im Papierkorb, wie die Liste sie zeigt.
@@ -169,7 +179,10 @@ extension PageStore {
     /// (auch logisch über eine Elternseite) zählen nicht. Titeltreffer zuerst: Titel
     /// beginnt mit dem Begriff, dann ein Wort darin, dann irgendwo; bei Gleichstand
     /// zuletzt bearbeitet. Danach ein Inhaltstreffer je Seite (erster Block).
-    public func search(_ query: String, limit: Int = 50) throws -> [SearchHit] {
+    /// Höchstzahl der Treffer einer Suche.
+    public static let searchLimit = 50
+
+    public func search(_ query: String, limit: Int = searchLimit) throws -> [SearchHit] {
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !term.isEmpty else { return [] }
         let folded = Self.fold(term)
@@ -207,6 +220,36 @@ extension PageStore {
             }
         hits += content
         return hits
+    }
+
+    /// Bilder auf Seiten außerhalb des Papierkorbs (Text in Bildern, ADR-034).
+    public func activeImages() throws -> [ImageReference] {
+        try modelContext.fetch(FetchDescriptor<Asset>(predicate: #Predicate { $0.block != nil })).compactMap { asset in
+            guard let block = asset.block, let page = block.page, !isInTrash(page) else { return nil }
+            return ImageReference(blockID: block.id, pageID: page.id, assetID: asset.id)
+        }
+    }
+
+    /// Treffer für Bilder, deren erkannter Text passt: je Bild außerhalb des Papierkorbs
+    /// ein Eintrag mit dem Ausschnitt aus `excerpts` (je `Asset.id`), zuletzt bearbeitete
+    /// Seiten zuerst.
+    public func imageHits(_ excerpts: [UUID: String], limit: Int) throws -> [SearchHit] {
+        guard limit > 0, !excerpts.isEmpty else { return [] }
+        let ids = Array(excerpts.keys)
+        let found: [(page: Page, block: Block)] = try modelContext.fetch(FetchDescriptor<Asset>(predicate: #Predicate { ids.contains($0.id) }))
+            .compactMap { asset in
+                guard let block = asset.block, let page = block.page, !isInTrash(page) else { return nil }
+                return (page, block)
+            }
+        return found
+            .sorted { ($0.page.updatedAt, $1.block.sortKey) > ($1.page.updatedAt, $0.block.sortKey) }
+            .prefix(limit)
+            .map { page, block in
+                SearchHit(
+                    pageID: page.id, kind: .image(blockID: block.id), title: page.title, icon: page.icon, path: path(of: page),
+                    excerpt: block.asset.flatMap { excerpts[$0.id] }
+                )
+            }
     }
 
     /// Titel der Seiten außerhalb des Papierkorbs (Kurzbefehle, ADR-033); fehlende fehlen.

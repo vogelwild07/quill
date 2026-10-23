@@ -100,6 +100,11 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   (im dunklen Erscheinungsbild rot, auch vor Phase 15) (ADR-033, Abschnitt „Review von
   Phase 15“).
 
+- [ ] 17.1: Text in Bildern nur im Speicher, nach jedem Start neu erkannt (kein Feld im
+  Schema, keine Datei neben dem Store); nur „Schnell öffnen“ findet ihn, nicht Spotlight,
+  „Frag deine Notizen“ oder der Export; Enter setzt die Einfügemarke vor das Bild statt es
+  auszuwählen; Test-Stores nutzen die echte Erkennung von Vision (ADR-034, Abschnitt 17.1).
+
 
 ## Gemergt
 
