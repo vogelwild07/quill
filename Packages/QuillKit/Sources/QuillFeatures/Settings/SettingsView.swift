@@ -5,9 +5,9 @@ import QuillEditorCore
 import SwiftData
 import SwiftUI
 
-/// Einstellungen (⌘,): Darstellung, Sync, Zeitreise, KI, Spotlight, Lizenzen.
+/// Einstellungen (⌘,): Darstellung, Sync, Zeitreise, KI, Spotlight, Schnellnotiz, Lizenzen.
 public struct SettingsView: View {
-    private enum Pane: Hashable { case appearance, sync, timeTravel, ai, spotlight, licenses }
+    private enum Pane: Hashable { case appearance, sync, timeTravel, ai, spotlight, quickNote, licenses }
 
     private let persistence: QuillPersistence?
     /// Eigene Auswahl: Die Einstellungen öffnen nach jedem Start mit „Darstellung“.
@@ -37,6 +37,9 @@ public struct SettingsView: View {
                 }
                 Tab(String(localized: "Spotlight", bundle: .module), systemImage: "magnifyingglass", value: .spotlight) {
                     SpotlightSettingsView(spotlight: persistence.spotlight)
+                }
+                Tab(String(localized: "Schnellnotiz", bundle: .module), systemImage: "square.and.pencil", value: .quickNote) {
+                    QuickNoteSettingsView(note: persistence.quickNote)
                 }
             }
             Tab(String(localized: "Lizenzen", bundle: .module), systemImage: "doc.text", value: .licenses) {

@@ -73,6 +73,12 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Seitenbaum nicht ändert (Wiederholung unter 3 %, nach der Regel Rauschen; in 15.6 erneut
   prüfen) (ADR-033, Abschnitt 15.2).
 
+- [ ] 15.3: Schnellnotiz über ein Symbol in der Menüleiste und das feste Kürzel ⌃⌥⌘N, beide
+  Standard aus, das Kürzel eigens zuzuschalten; Fenster ohne Aktivierung von Quill; jede
+  Notiz wird eine neue Seite (erste Zeile Titel), keine feste Eingangsseite; Entwurf nur im
+  Speicher; Kürzel über `RegisterEventHotKey` (Carbon) statt Monitor mit
+  Bedienungshilfen-Freigabe (ADR-033, Abschnitt 15.3).
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -270,3 +276,16 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   unberührt).
 - Messung: im Rauschen bis auf `pageTreeBuild` (+3,7 %, Wiederholung +2,8 %, Code
   unverändert; `docs/performance.md`).
+
+### 15.3 Schnellnotiz (PR #39, ADR-033)
+
+- Symbol in der Menüleiste und Kürzel ⌃⌥⌘N (Einstellungen › Schnellnotiz, Standard aus)
+  öffnen ein schwebendes Fenster; „Als Seite sichern“ (⌘↩) legt eine Seite an.
+- Tests: Package 731 (135 + 180 + 284 + 30 + 9 + 93), UI 62 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 7 im Package rot; im UI-Test 3 rot (Kürzel ohne Wirkung, Entwurf beim
+  Schließen verloren, Symbol bleibt nach dem Ausschalten). Eine erste Fassung der dritten
+  blieb grün (ohne `removeStatusItem` verschwindet das Symbol beim Freigeben trotzdem) und
+  wurde durch eine wirksame ersetzt.
+- **Handtest:** Kürzel, während eine andere App vorn ist; Tippen ins Fenster, ohne dass Quill
+  nach vorn kommt.
+- Messung: im Rauschen, `pageTreeBuild` wieder gleichauf mit `main` (`docs/performance.md`).

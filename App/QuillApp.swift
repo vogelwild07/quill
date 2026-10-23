@@ -51,6 +51,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var persistence: Result<QuillPersistence, any Error>? = AppDelegate.openUnlessMigrationNeedsAnswer()
     /// Vor dem ersten Fenster, damit der erste Editor schon im gewählten Theme zeichnet.
     private let editorTheme: Void = EditorThemeSetup.configure()
+    /// Symbol und Kürzel der Schnellnotiz; folgt den Einstellungen.
+    @ObservationIgnored private var quickNoteMenuBar: QuickNoteMenuBar?
 
     /// Öffnet sofort, außer eine Migration braucht eine Antwort; dann `nil`.
     private static func openUnlessMigrationNeedsAnswer() -> Result<QuillPersistence, any Error>? {
@@ -82,6 +84,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if !persistence.isTestStore {
                 Task.detached(priority: .background) { QuillShortcuts.updateAppShortcutParameters() }
             }
+        }
+        // Schnellnotiz in der Menüleiste, nur wenn eingeschaltet (ADR-033).
+        if let persistence = try? persistence?.get() {
+            quickNoteMenuBar = QuickNoteMenuBar(note: persistence.quickNote)
         }
         // Seiten in Spotlight, nur wenn eingeschaltet (ADR-033).
         try? persistence?.get().spotlight.start()
