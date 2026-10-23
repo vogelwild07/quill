@@ -115,10 +115,13 @@ struct RemindersTests {
             let planned = await center.reminders
             return planned.keys.sorted() == [second.id] && planned[second.id]?.text == "Hafermilch"
         }
+        // Die Zentrale ist vor `byBlock` fertig; erst den Abgleich zu Ende laufen lassen.
+        await reminders.settle()
         #expect(reminders.byBlock.keys.sorted() == [second.id])
 
         try await store.trash(pageID)
         try await waitFor { await center.reminders.isEmpty }
+        await reminders.settle()
         #expect(reminders.byBlock.isEmpty)
     }
 
