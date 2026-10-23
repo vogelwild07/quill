@@ -97,6 +97,9 @@
     "Abhaken" : {
 
     },
+    "Als Seite sichern" : {
+
+    },
     "Alte Dateien beiseitegelegt" : {
 
     },
@@ -199,6 +202,9 @@
     "Das Backup stammt von einer neueren Quill-Version und kann hier nicht eingespielt werden." : {
 
     },
+    "Das Kürzel ist schon belegt, wohl von einer anderen App." : {
+
+    },
     "Das Sprachmodell hat diesen Text abgelehnt." : {
 
     },
@@ -265,6 +271,9 @@
     "Die Datenbank im Backup ist beschädigt." : {
 
     },
+    "Die Notiz konnte nicht gesichert werden. Sie bleibt hier." : {
+
+    },
     "Die Seite enthält keinen Text zum Zusammenfassen." : {
 
     },
@@ -295,6 +304,9 @@
     "Die Zusammenfassung ist gescheitert." : {
 
     },
+    "Die erste Zeile wird der Titel der neuen Seite." : {
+
+    },
     "Die markierten Absätze enthalten keinen Text." : {
 
     },
@@ -311,6 +323,9 @@
 
     },
     "Ein Abschnitt ist zu lang für das Sprachmodell." : {
+
+    },
+    "Ein Symbol in der Menüleiste öffnet ein kleines Fenster für eine Notiz, ohne Quill nach vorn zu holen. Gesichert wird sie als neue Seite." : {
 
     },
     "Ein anderes Gerät hat diesen Block gelöscht oder anders geändert, während er hier bearbeitet wurde. Quill hat ihn behalten, damit nichts verloren geht." : {
@@ -517,6 +532,9 @@
     "Kursiv" : {
 
     },
+    "Kürzel ⌃⌥⌘N in allen Apps" : {
+
+    },
     "Leerer Block" : {
 
     },
@@ -584,6 +602,9 @@
 
     },
     "Noch nicht geladen" : {
+
+    },
+    "Notiz" : {
 
     },
     "Notizen, die bleiben, und ein %@" : {
@@ -671,6 +692,12 @@
 
     },
     "Schnell öffnen …" : {
+
+    },
+    "Schnellnotiz" : {
+
+    },
+    "Schnellnotiz in der Menüleiste" : {
 
     },
     "Seite" : {
@@ -1020,6 +1047,9 @@
 
     },
     "Änderungen konnten nicht gespeichert werden. Quill versucht es automatisch erneut.\n%@" : {
+
+    },
+    "Öffnet die Schnellnotiz auch, wenn eine andere App vorn ist. Andere Apps bekommen das Kürzel dann nicht." : {
 
     },
     "Überschrift 1" : {
