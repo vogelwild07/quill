@@ -620,6 +620,30 @@ hatte Ausreißer in mehreren Messungen zugleich (`applyEditsMove` 18,1 ms, `expo
 200 ms, in der Wiederholung darunter; `sidebarReload` schwankt zwischen rund 105 und 180 ms
 je Messung, bei `main` wie bei 15.5.
 
+## Schlussmessung Phase 15 (23.10.2026, ADR-033)
+
+Nach den Fixes aus dem Review, im Wechsel mit dem Stand vor Phase 15 (`16f978f`), je zwei
+Runden:
+
+| Messung (ms) | vor Phase 15 | nach Phase 15 |
+|---|---|---|
+| applyEditsMove | 15,74 / 15,82 | 15,70 / 15,50 |
+| applyEditsReverse | 70,39 / 70,87 | 69,22 / 69,10 |
+| editorLoad | 12,98 / 13,24 | 13,40 / 13,13 |
+| exportPlan | 986,5 / 977,4 | 967,6 / 967,7 |
+| historyDays | 90,33 / 90,23 | 91,77 / 89,82 |
+| pageTreeBuild | 53,65 / 54,13 | 56,20 / 53,84 |
+| search | 45,28 / 44,80 | 44,90 / 44,78 |
+| App: sidebarLoad | 187,7 / 189,6 | 191,0 / 195,0 |
+| App: sidebarReload | 147,0 / 174,0 | 176,5 / 171,0 |
+| App: pageSwitch | 78,2 / 77,6 | 80,3 / 79,9 |
+
+Nichts über 3 %. Am nächsten dran: `pageSwitch` (+2,8 % im Mittel, beide Runden gleich),
+`sidebarLoad` (+2,3 %) und `pageTreeBuild` (+2,1 %, nur die erste Runde höher, die
+Wiederholung und der Lauf von `perf-package.py` mit 53,88 ms liegen beim alten Stand).
+`sidebarReload` hat zwei Lagen (rund 105 und 175 ms je Messung); der Median von 147,0 ms
+stammt aus einer Runde mit drei kurzen Messungen, die zweite Runde liegt gleichauf.
+
 ## Messbedingungen
 
 | | |

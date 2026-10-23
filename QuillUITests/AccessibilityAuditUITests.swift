@@ -421,7 +421,10 @@ final class AccessibilityAuditUITests: XCTestCase {
             if identifier == "sidebar.emptyState.message" {
                 return "primary auf dem Glas der Sidebar; der Kontrast hängt vom Hintergrund hinter dem Fenster ab. Auf festem Hintergrund prüft EmptyStateSnapshotTests 4,5:1 (A15, Entscheidung zum Sidebar-Glas)."
             }
-            if identifier == "reminder.marker.date", !state.layoutGroupFrames.contains(where: { $0.contains(frame) }) {
+            if identifier == "timeTravel.day", type == .staticText {
+                return "Tag (primary) auf dem Glas der Seitenleiste der Zeitreise; der Kontrast hängt vom Hintergrund hinter dem Fenster ab, im dunklen Erscheinungsbild rot, auch vor Phase 15 (Review von Phase 15, wie beim Sidebar-Glas)."
+            }
+            if identifier == "reminder.marker.date",!state.layoutGroupFrames.contains(where: { $0.contains(frame) }) {
                 return "Überschrift (primary) im Popover am rechten Rand, der über das Fenster hinausragt; das Glas zeigt, was hinter dem Fenster liegt (Entscheidung 15.4, wie beim Sidebar-Glas)."
             }
         default:
