@@ -313,6 +313,9 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   durch den Kontrast im Popover der Glocke, der über das Fenster hinausragt (Ausnahme, siehe
   Entscheidungen); `testTrash` im Synctest dreimal rot, danach im Wechsel je zweimal grün auf
   `main` und 15.4.
+- Isolationstests nach dem Commit: ein Test der Erinnerungen wackelte (prüfte `byBlock`,
+  bevor der Abgleich fertig war); behoben, 15 Wiederholungen grün, Gegenprobe mit
+  Verzögerung im Abgleich rot ohne und grün mit der Korrektur.
 - **Handtest:** echte Mitteilung zum Zeitpunkt, Klick darauf öffnet die Seite (auch wenn
   Quill dafür startet), Rückfrage nach der Erlaubnis beim ersten „Erinnern“.
 - Messung: im Rauschen (`docs/performance.md`).
