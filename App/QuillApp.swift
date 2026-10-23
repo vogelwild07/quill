@@ -83,6 +83,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Task.detached(priority: .background) { QuillShortcuts.updateAppShortcutParameters() }
             }
         }
+        // Seiten in Spotlight, nur wenn eingeschaltet (ADR-033).
+        try? persistence?.get().spotlight.start()
         // Geschichte für die Zeitreise, auch ohne Sync (ADR-031).
         try? persistence?.get().history.start()
         // Gleicht nur ab, wenn der Nutzer den Sync eingeschaltet hat (ADR-029).

@@ -135,6 +135,10 @@ public final class QuillPersistence {
     /// KI-Funktionen (ADR-032); Wahl wie bei der Frist für Bilder nur beim echten Store
     /// in den Einstellungen des Macs. Die Verfügbarkeit prüft `AISettings` im Hintergrund.
     public private(set) lazy var ai = AISettings(defaults: settingsDefaults)
+    /// Seiten in Spotlight (ADR-033); Test-Stores nur in einen Index im Speicher.
+    public private(set) lazy var spotlight = SpotlightIndexing(
+        store: store, index: isTestStore ? MemorySpotlightIndex() : SystemSpotlightIndex(), defaults: settingsDefaults
+    )
     #if DEBUG || QUILL_SYNCTEST
     /// Nur für Tests: Gerätename statt des Mac-Namens (`syncDeviceNameArgument`).
     private var testDeviceName: String?
