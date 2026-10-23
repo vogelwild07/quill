@@ -236,6 +236,23 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.typeKey(.escape, modifierFlags: [])
     }
 
+    /// Erinnerung an ein To-do (15.4): Blatt, dann Popover zum Zeichen.
+    func testAuditReminder() throws {
+        createPage("Auto")
+        app.typeText("\r[] Reifen wechseln")
+        app.menuBars.menuBarItems["Format"].click()
+        app.menuBars.menuItems["Erinnerung …"].click()
+        XCTAssertTrue(app.descendants(matching: .any)["reminder.date"].waitForExistence(timeout: 5))
+        audit("Erinnerung")
+        app.buttons["reminder.schedule"].click()
+        let marker = window.descendants(matching: .any)["editor.marker.reminder"]
+        XCTAssertTrue(marker.waitForExistence(timeout: 5))
+        marker.click()
+        XCTAssertTrue(app.buttons["reminder.marker.remove"].waitForExistence(timeout: 5))
+        audit("Erinnerung (Zeichen)")
+        app.typeKey(.escape, modifierFlags: [])
+    }
+
     private func relatedPages() {
         app.menuBars.menuBarItems["Seite"].click()
         app.menuBars.menuItems["Verwandte Seiten …"].click()

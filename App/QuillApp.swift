@@ -61,6 +61,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return result
     }
 
+    /// Vor dem Ende des Starts, damit ein Klick auf eine Erinnerung, der Quill startet,
+    /// die Seite öffnet. Test-Stores planen keine Mitteilungen (ADR-033).
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        if let persistence = try? persistence?.get(), !persistence.isTestStore {
+            ReminderNotifications.shared.install()
+        }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         if persistence == nil {
             let result = Result { try QuillPersistence.open(confirmMigration: MigrationPrompt.ask) }
@@ -89,6 +97,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let persistence = try? persistence?.get() {
             quickNoteMenuBar = QuickNoteMenuBar(note: persistence.quickNote)
         }
+        // Erinnerungen an To-dos mit den Blöcken abgleichen (ADR-033).
+        try? persistence?.get().reminders.start()
         // Seiten in Spotlight, nur wenn eingeschaltet (ADR-033).
         try? persistence?.get().spotlight.start()
         // Geschichte für die Zeitreise, auch ohne Sync (ADR-031).

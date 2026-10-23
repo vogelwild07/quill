@@ -88,13 +88,18 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         return CGRect(x: markerOriginX + 3, y: centerY - size / 2, width: size, height: size)
     }
 
-    /// Zeichen am rechten Rand (11.6): Konflikt vor „wiederhergestellt“. Beim Zeichnen
-    /// gelesen, wie `isDimmed`.
+    /// Zeichen am rechten Rand (11.6, 15.4): Konflikt vor „wiederhergestellt“ vor
+    /// Erinnerung. Beim Zeichnen gelesen, wie `isDimmed`.
     var marker: BlockMarker? {
-        if let blockID, (textLayoutManager?.delegate as? BlockLayoutDelegate)?.conflictBlocks.contains(blockID) == true {
+        let delegate = textLayoutManager?.delegate as? BlockLayoutDelegate
+        if let blockID, delegate?.conflictBlocks.contains(blockID) == true {
             return .conflict
         }
-        return isRestored ? .restored : nil
+        if isRestored { return .restored }
+        if let blockID, delegate?.reminderBlocks.contains(blockID) == true {
+            return .reminder
+        }
+        return nil
     }
 
     /// Feld des Zeichens rechts neben der Textspalte, auf Höhe der ersten Zeile.
@@ -203,6 +208,7 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         switch marker {
         case .conflict: drawConflictMarker(in: context)
         case .restored: drawRestoredMarker(in: context)
+        case .reminder: drawReminderMarker(in: context)
         case nil: break
         }
         context.restoreGState()
@@ -241,6 +247,29 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
         context.addLine(to: tip)
         context.addLine(to: CGPoint(x: tip.x + 3.5, y: tip.y + 3))
         context.strokePath()
+    }
+
+    /// Glocke: Erinnerung geplant (15.4).
+    private func drawReminderMarker(in context: CGContext) {
+        let rect = markerRect.insetBy(dx: 2, dy: 1.5)
+        let rimY = rect.maxY - 3
+        let domeRadius = rect.width * 0.32
+        let top = CGPoint(x: rect.midX, y: rect.minY + domeRadius + 1)
+        context.setLineWidth(1.5)
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+        context.setStrokeColor(EditorColor.secondary.cgColor)
+        // Kontext mit y nach unten: Kuppel oben, Flanken zum Rand, Rand als Linie.
+        context.move(to: CGPoint(x: rect.minX + 1, y: rimY))
+        context.addLine(to: CGPoint(x: top.x - domeRadius, y: rimY - 3))
+        context.addLine(to: CGPoint(x: top.x - domeRadius, y: top.y))
+        context.addArc(center: top, radius: domeRadius, startAngle: .pi, endAngle: 0, clockwise: false)
+        context.addLine(to: CGPoint(x: top.x + domeRadius, y: rimY - 3))
+        context.addLine(to: CGPoint(x: rect.maxX - 1, y: rimY))
+        context.closePath()
+        context.strokePath()
+        context.setFillColor(EditorColor.secondary.cgColor)
+        context.fillEllipse(in: CGRect(x: rect.midX - 1.5, y: rimY + 0.5, width: 3, height: 3))
     }
 
     private func drawCodeBackground(in context: CGContext) {
@@ -358,6 +387,8 @@ public enum BlockMarker: Sendable {
     case conflict
     /// Vom Sync wiederhergestellt (Löschen gegen Bearbeiten, ADR-026).
     case restored
+    /// Erinnerung an ein To-do geplant (15.4, ADR-033).
+    case reminder
 }
 
 /// Liefert `BlockLayoutFragment` für jeden Absatz.
@@ -368,6 +399,8 @@ final class BlockLayoutDelegate: NSObject, NSTextLayoutManagerDelegate {
     var focusedBlocks: Set<UUID>?
     /// Blöcke mit einem Konflikt aus dem Abgleich (`BlockLayoutFragment.marker`).
     var conflictBlocks: Set<UUID> = []
+    /// Blöcke mit geplanter Erinnerung (`BlockLayoutFragment.marker`).
+    var reminderBlocks: Set<UUID> = []
 
     func textLayoutManager(
         _ textLayoutManager: NSTextLayoutManager,

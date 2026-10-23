@@ -6,7 +6,7 @@ import QuillModel
 import QuillTestFixtures
 import Testing
 
-/// Zeichen am rechten Rand (11.6): Konflikt aus dem Abgleich und „wiederhergestellt“,
+/// Zeichen am rechten Rand (11.6, 15.4): Konflikt aus dem Abgleich, „wiederhergestellt“ und Erinnerung,
 /// gezeichnet, klickbar, für VoiceOver ein Knopf; „Markierung entfernen“ mit Undo.
 @MainActor
 @Suite("Editor: Zeichen für Konflikt und wiederhergestellt", .serialized, .renderingLock)
@@ -44,6 +44,15 @@ struct BlockMarkerTests {
         #expect(markers.map { $0.accessibilityIdentifier() } == ["editor.marker.conflict"])
     }
 
+    /// Erinnerung (15.4) nach Konflikt und „wiederhergestellt“.
+    @Test func reminderMarkerComesLast() {
+        editor.reminderBlocks = [restored.id, plain.id]
+        #expect(markers.map { $0.accessibilityIdentifier() } == ["editor.marker.restored", "editor.marker.reminder"])
+        #expect(markers.last?.accessibilityLabel() == "Erinnerung geplant, zum Ansehen klicken: Umstritten")
+        editor.conflictBlocks = [plain.id]
+        #expect(markers.map { $0.accessibilityIdentifier() } == ["editor.marker.restored", "editor.marker.conflict"])
+    }
+
     @Test func pressAndClickAskForThePopoverOfThatBlock() throws {
         editor.conflictBlocks = [plain.id]
         var asked: [(UUID, BlockMarker)] = []
@@ -77,13 +86,17 @@ struct BlockMarkerTests {
         #expect(editor.document == before)
     }
 
-    @Test(arguments: [NSAppearance.Name.aqua, .darkAqua])
-    func markersAreDrawnInBothAppearances(_ appearance: NSAppearance.Name) throws {
+    @Test(arguments: [(NSAppearance.Name.aqua, false), (.darkAqua, false), (.aqua, true), (.darkAqua, true)])
+    func markersAreDrawnInBothAppearances(_ appearance: NSAppearance.Name, reminder: Bool) throws {
         window.appearance = NSAppearance(named: appearance)
-        editor.conflictBlocks = [plain.id]
+        if reminder {
+            editor.reminderBlocks = [plain.id]
+        } else {
+            editor.conflictBlocks = [plain.id]
+        }
         textView.layoutSubtreeIfNeeded()
         let image = try Bitmap(textView, scale: 1)
-        try image.writePNG(named: "markers-\(appearance.rawValue)")
+        try image.writePNG(named: "markers-\(reminder ? "reminder-" : "")\(appearance.rawValue)")
         let background = image.luminance(atX: image.width - 4, y: image.height - 4)
         for block in [restored.id, plain.id, other.id] {
             let rect = try #require(textView.markerViewFrame(ofBlock: block)).integral

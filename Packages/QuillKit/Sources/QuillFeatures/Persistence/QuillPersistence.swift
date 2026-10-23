@@ -141,6 +141,10 @@ public final class QuillPersistence {
     )
     /// Schnellnotiz (ADR-033); Wahl wie bei Spotlight nur beim echten Store gespeichert.
     public private(set) lazy var quickNote = QuickNote(store: store, defaults: settingsDefaults)
+    /// Erinnerungen an To-dos (ADR-033); Test-Stores planen nur in einen Ersatz im Speicher.
+    public private(set) lazy var reminders = Reminders(
+        store: store, center: isTestStore ? MemoryReminderCenter() : SystemReminderCenter()
+    )
     #if DEBUG || QUILL_SYNCTEST
     /// Nur für Tests: Gerätename statt des Mac-Namens (`syncDeviceNameArgument`).
     private var testDeviceName: String?

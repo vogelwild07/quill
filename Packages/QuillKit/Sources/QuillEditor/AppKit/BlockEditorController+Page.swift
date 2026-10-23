@@ -40,6 +40,12 @@ extension BlockEditorController {
         return document.blocks[first...last].map(\.id)
     }
 
+    /// Block an der Einfügemarke (Anfang der Auswahl); `nil` ohne Blöcke.
+    public var cursorBlockID: UUID? {
+        guard !document.blocks.isEmpty else { return nil }
+        return document.blocks[blockIndex(atCharacter: textView.selectedRange().location)].id
+    }
+
     /// Setzt den Cursor an den Anfang des ersten Blocks und fokussiert den Editor
     /// (↩ im Titel).
     public func focusStart() {
