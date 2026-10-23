@@ -736,3 +736,9 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Texte, die das System aus den Metadaten liest (Titel, Beschreibungen, Siri-Sätze), stehen als Ausnahmen in `LocalizationTests`; Fehlermeldungen und die Antwort stehen im Katalog von QuillFeatures.
 - Getestet im Package: die Logik (`PageIntentActionsTests`) und die Aktionen selbst ohne das System (`PageIntentsTests`). Ein UI-Test über das System (App Intents Testing, ab macOS 27) erreicht nicht die Test-Instanz: Für die Kennung sind mehrere Quill-Kopien registriert (`/Applications`, DerivedData, Worktrees), das System meldet „nicht vorhanden“. Die Test-Instanz selbst zu registrieren hieße, dass das System bei einem Kurzbefehl den Debug-Build startet, der ohne Testargument den echten Store öffnet; deshalb nicht. Öffnen ohne offenes Fenster und Siri prüft der Nutzer von Hand.
 - Alternativen (nicht gewählt, nicht besprochen): Aktionen im App-Target (sicher ausgelesen, aber Logik und Tests getrennt von QuillKit); Liste per Parameter wählen statt fortsetzen (mehr Bedienung bei Siri); immer Absätze anhängen (die Einkaufsliste bekäme keine To-dos); eigenes URL-Schema zum Öffnen (würde bei mehreren Kopien die falsche App, womöglich mit dem echten Store, starten).
+
+**Entscheidung (15.2, Spotlight, Plan):**
+- Einstellungen › Spotlight: „Seiten in Spotlight zeigen“, Standard aus, pro Mac (`QuillSpotlightEnabled`). Titel und Text der Seiten (Anfang) kommen in den Spotlight-Index des Macs; Papierkorb nie. Ausschalten löscht alle Einträge von Quill.
+- Eingeschaltet baut Quill den Index nach dem Start im Hintergrund neu auf (alte Einträge weg, alle Seiten neu) und trägt danach nur geänderte Seiten nach, gesammelt nach jeder Speicherung im Store.
+- Ein Klick auf einen Treffer öffnet die Seite im vordersten Fenster.
+- Test-Stores schreiben nie in den Index des Macs (Ersatz im Speicher); Unit-Tests mit Ersatz-Index.
