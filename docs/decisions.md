@@ -743,3 +743,9 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Ein Klick auf einen Treffer kommt als `NSUserActivity` (`CSSearchableItemActionType`) und öffnet die Seite in dem Fenster, das SwiftUI dafür wählt.
 - Test-Stores schreiben nur in einen Index im Speicher (`MemorySpotlightIndex`, `QuillPersistence.isTestStore`), denn Debug-Builds haben dieselbe Kennung wie die echte App. Unit-Tests mit diesem Ersatz; der Klick aus Spotlight ist Handtest.
 - Alternativen (nicht gewählt, nicht besprochen): Standard an (wie Notizen von Apple; aber Text verlässt den Store, darum erst auf Wunsch); nur Titel (weniger Daten, aber Spotlight fände Inhalte nicht); Seiten als `IndexedEntity` über App Intents (öffnet über „Seite öffnen“, aber dieselbe Unsicherheit, welche Quill-Kopie das System nimmt, und weniger erprobt); den Stand des Index zwischen Starts merken statt neu aufzubauen (spart Arbeit beim Start, braucht aber eigenen gespeicherten Zustand und erkennt gelöschte Seiten schlechter).
+
+**Entscheidung (15.3, Schnellnotiz, Plan):**
+- Einstellungen › Schnellnotiz: „Schnellnotiz in der Menüleiste“ (Standard aus) und, nur wenn das an ist, „Kürzel ⌃⌥⌘N in allen Apps“ (Standard aus). Beides pro Mac in `UserDefaults`, Test-Stores nur bis zum Beenden.
+- Klick auf das Symbol in der Menüleiste oder das Kürzel öffnet ein kleines schwebendes Fenster mit einem Textfeld, ohne Quill nach vorn zu holen. „Sichern“ (⌘↩) legt eine neue Seite an: erste Zeile Titel, jede weitere Zeile ein Absatz (wie „Neue Seite“ aus 15.1). Esc schließt; der Entwurf bleibt bis zum Sichern, nur im Speicher.
+- Das Kürzel über `RegisterEventHotKey` (geht in der Sandbox ohne Bedienungshilfen-Freigabe); ist es belegt, sagt das die Einstellung.
+
