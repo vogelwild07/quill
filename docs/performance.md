@@ -516,6 +516,28 @@ höher (in der Nacht vorher 54,83 / 54,64 gegen 54,12 / 53,89), `applyEditsRever
 Über alle zehn Läufe liegt der Median bei 119,2 (vorher) und 118,5 ms (nachher).
 `sidebarLoad` liegt wieder unter 200 ms auf beiden Ständen.
 
+## Kurzbefehle und Siri (23.10.2026, ADR-033)
+
+15.1 meldet beim Start die Seitentitel an Siri. Im ersten Durchgang lag `sidebarLoad` in der
+zweiten Runde 3,3 % über `main` (`16f978f`); danach läuft die Meldung im Hintergrund nach dem
+Start. Im Wechsel mit `main`, je zwei Runden:
+
+| Messung (ms) | `main` | 15.1 |
+|---|---|---|
+| editorLoad | 13,19 / 12,98 | 12,70 / 13,02 |
+| applyEditsReverse | 68,06 / 69,45 | 68,63 / 68,10 |
+| pageTreeBuild | 53,86 / 53,73 | 54,86 / 54,52 |
+| search | 45,01 / 44,65 | 43,96 / 44,66 |
+| App: sidebarLoad (vor der Änderung) | 209,7 / 209,2 | 212,4 / 216,0 |
+| App: sidebarLoad (danach, zwei Durchgänge) | 184,8 / 192,4 · 188,0 / 198,5 | 192,4 / 191,1 · 199,4 / 194,5 |
+| App: sidebarReload (danach) | 142,6 / 149,2 · 150,3 / 98,7 | 143,3 / 169,2 · 98,5 / 143,7 |
+| App: pageSwitch (danach) | 82,3 / 81,4 | 82,9 / 79,1 |
+
+Nicht langsamer: `sidebarLoad` nach der Änderung im Mittel 1,8 % höher, die Runden schwanken
+in beide Richtungen (+4,1, −0,7, +6,1, −2,0 %). `sidebarReload` hat zwei Häufungen um 97 und
+um 150 ms; über die zehn Läufe des zweiten Durchgangs liegt der Median bei 144,5 (`main`) und
+121,1 ms (15.1). `pageTreeBuild` +1,6 %, im Rauschen; 15.1 ändert den Seitenbaum nicht.
+
 ## Messbedingungen
 
 | | |

@@ -60,6 +60,12 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   vier Blätter; ⌘D weist jetzt auch markierten Text und den Lesemodus ab (ADR-032,
   Abschnitt „Review von Phase 16“).
 
+- [ ] 15.1: Kurzbefehle „Neue Seite“, „Zu Seite hinzufügen“, „Seite öffnen“; Anhängen setzt
+  eine Liste am Ende der Seite fort (sonst Absätze); Seiten nur über den Titel gesucht;
+  Seitentitel für Siri meldet nur der echte Store; kein UI-Test über das System, weil es die
+  Test-Instanz neben den anderen Quill-Kopien nicht findet und das Registrieren des
+  Debug-Builds den echten Store gefährden würde (ADR-033, Abschnitt 15.1).
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -234,3 +240,15 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Abweichungen unter 3 % und in der Wiederholung im selben Bereich (`docs/performance.md`).
   Der erste Versuch fiel in eine Bildschirmsperre und wurde nach dem Entsperren nachgeholt.
 - Phase 16 abgeschlossen.
+
+### 15.1 Kurzbefehle und Siri (PR #37, ADR-033)
+
+- Aktionen „Neue Seite“, „Zu Seite hinzufügen“ (Liste fortsetzen), „Seite öffnen“, je zwei
+  Siri-Sätze. Aktionen in `QuillFeatures/Intents`, Siri-Sätze im App-Target.
+- Tests: Package 720 (135 + 169 + 284 + 30 + 9 + 93), UI 60 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 7 im Package rot, alle beim ersten Mal.
+- Kein UI-Test über das System (App Intents Testing meldet die App als nicht vorhanden).
+  **Handtest:** Siri und „Seite öffnen“ ohne offenes Fenster.
+- Messung: `sidebarLoad` zuerst 3,3 % höher in einer Runde (Weg a: Meldung an Siri nach dem
+  Start im Hintergrund), danach im Rauschen (`docs/performance.md`). Zweimal war der
+  Bildschirm gesperrt, der UI-Lauf wurde nachgeholt.
