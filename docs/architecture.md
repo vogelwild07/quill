@@ -303,8 +303,20 @@ QuillFeatures/QuickNote
                       Aktivierung (schwebend, alle Spaces), Kürzel ⌃⌥⌘N über GlobalHotKey
   GlobalHotKey        RegisterEventHotKey (Carbon), ohne Freigabe der Bedienungshilfen;
                       belegt → QuickNote.isShortcutTaken
+QuillFeatures/Reminders
+  Reminders           geplante Erinnerungen je Block (Quelle: das System); set prüft offenes
+                      To-do und Zukunft, fragt dann nach der Erlaubnis; nach didSave (1 s)
+                      Abgleich mit den Blöcken: abgehakt/gelöscht/Papierkorb → entfernen,
+                      neuer Text → neu planen
+  ReminderCenter      SystemReminderCenter (UNUserNotificationCenter, reminder-<Block>)
+                      oder MemoryReminderCenter (Test-Stores, Tests)
+  ReminderNotifications  Delegate: Banner auch im Vordergrund, Klick → PageJumpRouter.open
+  ReminderView        Blatt „Erinnerung“ (Format-Menü), ReminderMarkerView im Popover
+QuillEditor
+  BlockMarker.reminder   Glocke am rechten Rand, reminderBlocks setzt PageDetailView
 App
-  AppDelegate         hält QuickNoteMenuBar ab dem Start
+  AppDelegate         hält QuickNoteMenuBar ab dem Start; setzt den Delegate der
+                      Mitteilungen in applicationWillFinishLaunching (nur echter Store)
 ```
 
 ## Sync (ADR-026, ADR-029, ab Phase 11)

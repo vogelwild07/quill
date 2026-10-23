@@ -130,6 +130,13 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   nach vorn. Textfeld mit Fokus, darunter grau „Die erste Zeile wird der Titel der neuen
   Seite.“ (bei einem Fehler rot, der Entwurf bleibt), Knöpfe „Abbrechen“ (Esc) und „Als Seite
   sichern“ (⌘↩, ohne Text gesperrt). Kein Liquid Glass, es ist Inhalt.
+- Erinnerung (Format › Erinnerung …): Blatt 400 pt breit, Überschrift „Erinnerung“, darunter
+  grau der Text des To-dos, Datum und Uhrzeit (Vorschlag morgen 9:00), ein Satz, dass eine
+  Mitteilung auf diesem Mac erinnert (Fehler rot an derselben Stelle). Am To-do eine Glocke in
+  `EditorColor.secondary` am rechten Rand, selbst gezeichnet wie die Zeichen aus 11.6; das
+  Popover nennt den Zeitpunkt fett in der Überschrift (normaler Text hielt auf dem Glas den
+  Kontrast nicht) und bietet „Erinnerung entfernen“. Mitteilung: Text des To-dos, darunter
+  der Seitentitel.
 - Kurzbefehle: Titel und Siri-Sätze auf Deutsch, Antwort von „Zu Seite hinzufügen“ in einem
   Satz mit dem Titel der Seite.
 
