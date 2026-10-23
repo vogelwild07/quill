@@ -87,6 +87,12 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Ausnahme im Audit für die Überschrift des Popovers, wenn er über das Fenster hinausragt
   (ADR-033, Abschnitt 15.4).
 
+- [ ] 15.5: Tagesseite unter einer Sammelseite „Tage“, beide über den Titel gefunden (kein
+  Feld im Schema; Umbenennen oder Sprachwechsel führt zu neuen Seiten); Kürzel ⇧⌘T für
+  „Heute“; Termine nur auf Klick als Aufzählung, ganztägige zuerst, Uhrzeit im Format des
+  Systems; neues Entitlement für Kalender in der echten App und, damit der Test der
+  Entitlements gilt, in den Testvarianten (ADR-033, Abschnitt 15.5).
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -319,3 +325,18 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
 - **Handtest:** echte Mitteilung zum Zeitpunkt, Klick darauf öffnet die Seite (auch wenn
   Quill dafür startet), Rückfrage nach der Erlaubnis beim ersten „Erinnern“.
 - Messung: im Rauschen (`docs/performance.md`).
+
+### 15.5 Tagesseite mit heutigen Terminen (PR #41, ADR-033)
+
+- „Ablage › Heute“ (⇧⌘T) öffnet die Seite des Tages unter „Tage“ und legt beide bei Bedarf
+  an; „Format › Heutige Termine einfügen“ fügt die Termine aus dem Kalender des Macs als
+  Aufzählung hinter der Einfügemarke ein (ein Schritt für ⌘Z). Ohne Erlaubnis, ohne Termine
+  oder ohne Einfügemarke erscheint ein Hinweis. Test-Stores lesen nie den Kalender.
+- Tests: Package 745 (136 + 192 + 285 + 30 + 9 + 93), UI 65 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 10 im Package rot, 4 im UI-Test rot.
+- Messung: App im Rauschen; `sidebarLoad` in einer Runde 200,6 ms und damit knapp über der
+  Grenze, in der Wiederholung 197,1 ms (`main` 195,9 / 197,6). Package: eine Runde mit
+  Ausreißern in mehreren Messungen ohne Bezug zur Änderung (`applyEditsMove` 18,1 ms),
+  Wiederholung im Bereich von `main` (`docs/performance.md`).
+- **Handtest:** Rückfrage nach der Erlaubnis für den Kalender beim ersten Einfügen, echte
+  Termine des Tages.

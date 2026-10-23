@@ -598,6 +598,28 @@ Wiederholung; die erste Runde scheiterte an XCTest („Timed out while enabling 
 mode“), während andere Apps liefen. In der Wiederholung lagen `main` und 15.4 gleich, beide
 über den Werten aus 15.3 (`sidebarReload` rund 172 statt 152 ms).
 
+## Tagesseite (23.10.2026, ADR-033)
+
+15.5 fügt nur Menübefehle hinzu; Kalender und Seite werden erst auf Klick gelesen. Im Wechsel
+mit `main` (`42cdaaa`), je zwei Runden (Package aus der Wiederholung):
+
+| Messung (ms) | `main` | 15.5 |
+|---|---|---|
+| applyEditsMove | 15,22 / 15,45 | 15,43 / 15,43 |
+| editorLoad | 12,98 / 13,19 | 12,87 / 13,22 |
+| exportPlan | 965,5 / 968,3 | 968,2 / 975,9 |
+| pageTreeBuild | 54,65 / 54,62 | 54,84 / 54,84 |
+| search | 43,72 / 44,75 | 44,10 / 45,06 |
+| App: sidebarLoad | 195,9 / 197,6 | 200,6 / 197,1 |
+| App: sidebarReload | 157,8 / 177,0 | 177,9 / 177,9 |
+| App: pageSwitch | 80,6 / 80,8 | 79,9 / 79,2 |
+
+Alles im Rauschen (höchstens +1,1 %, `sidebarLoad` im Mittel). Die erste Runde im Package
+hatte Ausreißer in mehreren Messungen zugleich (`applyEditsMove` 18,1 ms, `exportPlan`
+1005 ms), die Wiederholung nicht. `sidebarLoad` lag in einer Runde knapp über der Grenze von
+200 ms, in der Wiederholung darunter; `sidebarReload` schwankt zwischen rund 105 und 180 ms
+je Messung, bei `main` wie bei 15.5.
+
 ## Messbedingungen
 
 | | |
