@@ -295,6 +295,16 @@ QuillFeatures/Spotlight
   SpotlightIndex      SystemSpotlightIndex (CSSearchableIndex, Domäne …quill.pages, Titel,
                       Text bis 10.000 Zeichen) oder MemorySpotlightIndex (Test-Stores, Tests)
   RootView            onContinueUserActivity(CSSearchableItemActionType) öffnet die Seite
+QuillFeatures/QuickNote
+  QuickNote           Wahl pro Mac (QuillQuickNoteEnabled, QuillQuickNoteShortcut, Standard
+                      aus), Entwurf nur im Speicher; save legt über PageIntentActions eine
+                      Seite an (erste Zeile Titel)
+  QuickNoteMenuBar    folgt QuickNote (withObservationTracking): NSStatusItem, NSPanel ohne
+                      Aktivierung (schwebend, alle Spaces), Kürzel ⌃⌥⌘N über GlobalHotKey
+  GlobalHotKey        RegisterEventHotKey (Carbon), ohne Freigabe der Bedienungshilfen;
+                      belegt → QuickNote.isShortcutTaken
+App
+  AppDelegate         hält QuickNoteMenuBar ab dem Start
 ```
 
 ## Sync (ADR-026, ADR-029, ab Phase 11)

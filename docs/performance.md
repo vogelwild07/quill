@@ -560,6 +560,24 @@ in der Wiederholung 2,8 %. Die Messung ruft nur `PageTree.build` und `PageTree.f
 auf, beide unverändert; vermutlich liegt der Code im Modul anders. Nach der Regel (unter 3 %
 in der Wiederholung) Rauschen; die Schlussmessung von Phase 15 prüft den Wert erneut.
 
+## Schnellnotiz (23.10.2026, ADR-033)
+
+15.3 legt beim Start nur einen Beobachter der Schalter an; Symbol und Kürzel gibt es erst
+nach dem Einschalten. Im Wechsel mit `main` (`a03106b`), je zwei Runden:
+
+| Messung (ms) | `main` | 15.3 |
+|---|---|---|
+| editorLoad | 12,90 / 12,84 | 12,92 / 12,97 |
+| applyEditsReverse | 68,96 / 68,74 | 69,29 / 68,79 |
+| pageTreeBuild | 54,57 / 54,74 | 54,63 / 54,63 |
+| search | 44,03 / 43,87 | 44,25 / 44,35 |
+| App: sidebarLoad | 197,5 / 197,9 | 196,8 / 198,0 |
+| App: sidebarReload | 151,3 / 151,2 | 152,6 / 152,2 |
+| App: pageSwitch | 82,2 / 81,0 | 80,5 / 81,6 |
+
+Alles im Rauschen (höchstens +0,9 %, `search`). `pageTreeBuild` liegt wieder gleichauf; die
+2,8–3,7 % aus 15.2 waren damit kein Effekt des Codes.
+
 ## Messbedingungen
 
 | | |

@@ -122,6 +122,14 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   zeigen“, Standard aus, darunter in einem Satz, was in den Suchindex des Macs kommt und dass
   Ausschalten alle Einträge entfernt. Treffer in Spotlight zeigen Titel (oder „Ohne Titel“)
   und Text; ein Klick öffnet die Seite im vordersten Fenster.
+- Einstellungen › Schnellnotiz (`square.and.pencil`, nach Spotlight): „Schnellnotiz in der
+  Menüleiste“ und, nur damit, „Kürzel ⌃⌥⌘N in allen Apps“, beide Standard aus; ist das
+  Kürzel belegt, sagt das ein roter Satz darunter. Symbol in der Menüleiste
+  `square.and.pencil` (Vorlage, passt sich der Leiste an).
+- Fenster der Schnellnotiz: klein (360 × 220), schwebend, über allen Spaces, holt Quill nicht
+  nach vorn. Textfeld mit Fokus, darunter grau „Die erste Zeile wird der Titel der neuen
+  Seite.“ (bei einem Fehler rot, der Entwurf bleibt), Knöpfe „Abbrechen“ (Esc) und „Als Seite
+  sichern“ (⌘↩, ohne Text gesperrt). Kein Liquid Glass, es ist Inhalt.
 - Kurzbefehle: Titel und Siri-Sätze auf Deutsch, Antwort von „Zu Seite hinzufügen“ in einem
   Satz mit dem Titel der Seite.
 
