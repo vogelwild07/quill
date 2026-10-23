@@ -750,3 +750,10 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Das Kürzel über `RegisterEventHotKey` (Carbon): geht in der Sandbox ohne Freigabe der Bedienungshilfen, anders als ein globaler Monitor von `NSEvent`. Ist es belegt, sagt das die Einstellung. Symbol, Fenster und Kürzel stehen in `QuillFeatures/QuickNote` (AppKit, nur Mac); das App-Target hält nur `QuickNoteMenuBar`.
 - Getestet im Package: Schalter und Sichern (`QuickNoteTests`); im UI-Test: Symbol, Fenster, Sichern als Seite, Kürzel, Esc, Entwurf, Ausschalten (`QuickNoteUITests`), dazu der Audit der Einstellungen.
 - Alternativen (nicht gewählt, nicht besprochen): `MenuBarExtra` von SwiftUI (das Fenster ließe sich vom Kürzel nicht öffnen); Kürzel frei wählbar (eigener Rekorder, mehr Oberfläche; später möglich); Notizen an eine feste Seite „Eingang“ anhängen statt neuer Seiten (weniger Seiten, aber eine Seite, die der Nutzer nicht angelegt hat); Quill beim Öffnen aktivieren (holte alle Fenster nach vorn); Entwurf zwischen Starts sichern (eigene Datei außerhalb des Stores).
+
+**Entscheidung (15.4, To-dos mit Erinnerung, Plan):**
+- „Format › Erinnerung …“ für das To-do an der Einfügemarke: Blatt mit Datum und Uhrzeit (Vorschlag morgen 9:00), „Erinnern“, „Entfernen“, „Abbrechen“. Zum Zeitpunkt kommt eine Mitteilung auf diesem Mac mit dem Text des To-dos und dem Titel der Seite; ein Klick öffnet die Seite.
+- Die Erinnerung steht nur als geplante Mitteilung im System, nicht in den Blöcken: kein neues Block-Feld, also keine Schema-Version und keine Migration des echten Stores (die bräuchte nach ADR-029 die Freigabe des Nutzers), nichts im Sync-Ordner. Folge: Erinnerungen gelten nur auf diesem Mac und fehlen in Backups.
+- Ein Zeichen am rechten Rand des To-dos (wie Konflikt und „wiederhergestellt“, 11.6) zeigt die Erinnerung; Klick zeigt Zeitpunkt und „Entfernen“. Abhaken, Löschen oder Papierkorb entfernen die Erinnerung; geänderter Text wird nachgetragen.
+- Die Erlaubnis für Mitteilungen fragt Quill erst beim ersten „Erinnern“. Test-Stores planen nur in einen Ersatz im Speicher, nie Mitteilungen des Macs.
+
