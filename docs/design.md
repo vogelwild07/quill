@@ -116,6 +116,15 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   und schließt das Blatt. Hinweis, dass das Modell auf dem Mac die Seiten anhand gemeinsamer
   Begriffe vorschlägt. Ohne Treffer der Leerzustand „Keine verwandten Seiten“ aus dem Katalog.
 
+## Apple-Ökosystem
+
+- Einstellungen › Spotlight (`magnifyingglass`, nach KI): Schalter „Seiten in Spotlight
+  zeigen“, Standard aus, darunter in einem Satz, was in den Suchindex des Macs kommt und dass
+  Ausschalten alle Einträge entfernt. Treffer in Spotlight zeigen Titel (oder „Ohne Titel“)
+  und Text; ein Klick öffnet die Seite im vordersten Fenster.
+- Kurzbefehle: Titel und Siri-Sätze auf Deutsch, Antwort von „Zu Seite hinzufügen“ in einem
+  Satz mit dem Titel der Seite.
+
 ## Leerzustände
 
 Nach HIG: Symbol, Titel, ein Satz Erklärung, wo es passt ein Knopf. Alle Fälle im Katalog

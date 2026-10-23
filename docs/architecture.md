@@ -288,6 +288,13 @@ QuillFeatures/Intents
   NewPageIntent       legt an, öffnet über OpenPageIntent
   AddToPageIntent     im Hintergrund; speichert vorher offene Editoren der Seite (flushAll)
   OpenPageIntent      PageJumpRouter.open: vorderstes Hauptfenster, sonst ein neues
+QuillFeatures/Spotlight
+  SpotlightIndexing   Wahl pro Mac (QuillSpotlightEnabled, Standard aus); eingeschaltet
+                      Neuaufbau nach dem Start, danach Geändertes nach ModelContext.didSave
+                      (2 s gesammelt, der Reihe nach); aus: alles löschen
+  SpotlightIndex      SystemSpotlightIndex (CSSearchableIndex, Domäne …quill.pages, Titel,
+                      Text bis 10.000 Zeichen) oder MemorySpotlightIndex (Test-Stores, Tests)
+  RootView            onContinueUserActivity(CSSearchableItemActionType) öffnet die Seite
 ```
 
 ## Sync (ADR-026, ADR-029, ab Phase 11)
