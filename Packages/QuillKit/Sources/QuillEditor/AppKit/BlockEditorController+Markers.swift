@@ -3,8 +3,8 @@ import AppKit
 import QuillEditorCore
 import QuillModel
 
-/// Zeichen am rechten Rand eines Blocks (11.6): Konflikt aus dem Abgleich oder
-/// „wiederhergestellt“. Ein Klick (oder Drücken per Bedienungshilfen) zeigt ein
+/// Zeichen am rechten Rand eines Blocks (11.6): Konflikt aus dem Abgleich,
+/// „wiederhergestellt“ oder geplante Erinnerung (15.4). Ein Klick (oder Drücken per Bedienungshilfen) zeigt ein
 /// Popover; den Inhalt liefert die App (`markerPopoverContent`).
 extension BlockEditorController {
     /// Blöcke mit Konflikt aus dem letzten Abgleich.
@@ -14,6 +14,17 @@ extension BlockEditorController {
             guard newValue != layoutDelegate.conflictBlocks else { return }
             let changed = newValue.symmetricDifference(layoutDelegate.conflictBlocks)
             layoutDelegate.conflictBlocks = newValue
+            redrawBlocks(changed)
+        }
+    }
+
+    /// To-dos mit geplanter Erinnerung (15.4); die App kennt sie, das Dokument nicht.
+    public var reminderBlocks: Set<UUID> {
+        get { layoutDelegate.reminderBlocks }
+        set {
+            guard newValue != layoutDelegate.reminderBlocks else { return }
+            let changed = newValue.symmetricDifference(layoutDelegate.reminderBlocks)
+            layoutDelegate.reminderBlocks = newValue
             redrawBlocks(changed)
         }
     }
@@ -40,7 +51,8 @@ extension BlockEditorController {
     func markedBlocks() -> [(id: UUID, marker: BlockMarker)] {
         document.blocks.compactMap { block in
             if conflictBlocks.contains(block.id) { return (block.id, .conflict) }
-            return block.isRestored ? (block.id, .restored) : nil
+            if block.isRestored { return (block.id, .restored) }
+            return reminderBlocks.contains(block.id) ? (block.id, .reminder) : nil
         }
     }
 
@@ -56,6 +68,8 @@ extension BlockEditorController {
         popover.behavior = .transient
         popover.contentViewController = content
         popover.show(relativeTo: rect, of: textView, preferredEdge: .maxX)
+        // Sonst meldet der Audit das Popover als Element ohne Beschreibung.
+        content.view.window?.setAccessibilityLabel(textView.markerHelp(marked.marker))
         markerPopover = popover
         return true
     }
@@ -126,6 +140,7 @@ extension BlockTextView {
         switch marker {
         case .conflict: String(localized: "Zwei Fassungen nach dem Abgleich, zum Wählen klicken", bundle: .module)
         case .restored: String(localized: "Wiederhergestellt nach dem Abgleich", bundle: .module)
+        case .reminder: String(localized: "Erinnerung geplant, zum Ansehen klicken", bundle: .module)
         }
     }
 
@@ -150,6 +165,7 @@ final class MarkerAccessibilityElement: NSAccessibilityElement {
         switch marker {
         case .conflict: setAccessibilityIdentifier("editor.marker.conflict")
         case .restored: setAccessibilityIdentifier("editor.marker.restored")
+        case .reminder: setAccessibilityIdentifier("editor.marker.reminder")
         }
     }
 

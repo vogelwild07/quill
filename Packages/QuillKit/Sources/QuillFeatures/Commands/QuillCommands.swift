@@ -119,6 +119,9 @@ public struct QuillCommands: Commands {
             formatButton("Abhaken", #selector(EditorFormattingActions.quillToggleChecked(_:)))
                 .keyboardShortcut(.return)
                 .disabled(actions?.isQuickOpenShown == true)
+            // Erinnerung an das To-do an der Einfügemarke (15.4, ADR-033).
+            Button(String(localized: "Erinnerung …", bundle: .module)) { actions?.remind() }
+                .disabled(actions == nil || readOnlyEditor == true)
             Divider()
             // ⌥⌘↑/↓ statt ⌥⇧↑/↓: Das erweitert in Textfeldern die Auswahl absatzweise.
             formatButton("Block nach oben", #selector(EditorFormattingActions.quillMoveBlockUp(_:)))

@@ -30,6 +30,7 @@ final class PageEditorSession {
         rename: @escaping @MainActor (UUID, String) -> Void,
         setIcon: @escaping @MainActor (UUID, String?) -> Void,
         sync: SyncController? = nil,
+        reminders: Reminders? = nil,
         pageActions: PageSyncActions = PageSyncActions()
     ) {
         bridge = EditorPersistenceBridge(pageID: pageID, store: store)
@@ -69,6 +70,15 @@ final class PageEditorSession {
                     controller?.closeMarkerPopover()
                     controller?.clearRestored(blockID: blockID)
                 })
+            case .reminder:
+                guard let reminders else { return nil }
+                let content = NSHostingController(rootView: ReminderMarkerView(date: reminders.byBlock[blockID]?.date) {
+                    controller?.closeMarkerPopover()
+                    Task { await reminders.remove(blockID: blockID) }
+                })
+                // Die Hosting-View ist sonst eine Gruppe ohne Beschreibung (Audit).
+                content.view.setAccessibilityLabel(String(localized: "Erinnerung", bundle: .module))
+                return content
             }
         }
     }

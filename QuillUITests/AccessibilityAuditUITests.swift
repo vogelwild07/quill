@@ -236,6 +236,23 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.typeKey(.escape, modifierFlags: [])
     }
 
+    /// Erinnerung an ein To-do (15.4): Blatt, dann Popover zum Zeichen.
+    func testAuditReminder() throws {
+        createPage("Auto")
+        app.typeText("\r[] Reifen wechseln")
+        app.menuBars.menuBarItems["Format"].click()
+        app.menuBars.menuItems["Erinnerung …"].click()
+        XCTAssertTrue(app.descendants(matching: .any)["reminder.date"].waitForExistence(timeout: 5))
+        audit("Erinnerung")
+        app.buttons["reminder.schedule"].click()
+        let marker = window.descendants(matching: .any)["editor.marker.reminder"]
+        XCTAssertTrue(marker.waitForExistence(timeout: 5))
+        marker.click()
+        XCTAssertTrue(app.buttons["reminder.marker.remove"].waitForExistence(timeout: 5))
+        audit("Erinnerung (Zeichen)")
+        app.typeKey(.escape, modifierFlags: [])
+    }
+
     private func relatedPages() {
         app.menuBars.menuBarItems["Seite"].click()
         app.menuBars.menuItems["Verwandte Seiten …"].click()
@@ -403,6 +420,9 @@ final class AccessibilityAuditUITests: XCTestCase {
             }
             if identifier == "sidebar.emptyState.message" {
                 return "primary auf dem Glas der Sidebar; der Kontrast hängt vom Hintergrund hinter dem Fenster ab. Auf festem Hintergrund prüft EmptyStateSnapshotTests 4,5:1 (A15, Entscheidung zum Sidebar-Glas)."
+            }
+            if identifier == "reminder.marker.date", !state.layoutGroupFrames.contains(where: { $0.contains(frame) }) {
+                return "Überschrift (primary) im Popover am rechten Rand, der über das Fenster hinausragt; das Glas zeigt, was hinter dem Fenster liegt (Entscheidung 15.4, wie beim Sidebar-Glas)."
             }
         default:
             break

@@ -25,6 +25,8 @@ public struct PageActions {
     var relatedPages: @MainActor () -> Void
     /// „Frag deine Notizen …“ (16.4, ADR-032); im Menü nur mit bereitem Modell.
     var askNotes: @MainActor () -> Void
+    /// „Erinnerung …“ für das To-do an der Einfügemarke (15.4, ADR-033).
+    var remind: @MainActor () -> Void
 }
 
 /// Befehle des fokussierten Fensters, die nicht von einer Seite abhängen.

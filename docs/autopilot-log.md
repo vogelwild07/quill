@@ -79,6 +79,14 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Speicher; Kürzel über `RegisterEventHotKey` (Carbon) statt Monitor mit
   Bedienungshilfen-Freigabe (ADR-033, Abschnitt 15.3).
 
+- [ ] 15.4: Erinnerung an ein offenes To-do nur als Mitteilung auf diesem Mac, kein Feld im
+  Schema (bleibt nicht über den Sync erhalten); Zeitpunkt und Text in den geplanten
+  Mitteilungen des Systems; abgehakte, gelöschte oder in den Papierkorb gelegte To-dos
+  verlieren ihre Erinnerung; Zeichen „Glocke“ am Rand nach Konflikt und „wiederhergestellt“;
+  Befehl „Erinnerung …“ im Menü Format ohne Kürzel; Erlaubnis erst beim ersten Planen;
+  Ausnahme im Audit für die Überschrift des Popovers, wenn er über das Fenster hinausragt
+  (ADR-033, Abschnitt 15.4).
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -289,3 +297,25 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
 - **Handtest:** Kürzel, während eine andere App vorn ist; Tippen ins Fenster, ohne dass Quill
   nach vorn kommt.
 - Messung: im Rauschen, `pageTreeBuild` wieder gleichauf mit `main` (`docs/performance.md`).
+
+### 15.4 To-dos mit Erinnerung (PR #40, ADR-033)
+
+- „Format › Erinnerung …“ plant für das To-do an der Einfügemarke eine Mitteilung auf diesem
+  Mac; Glocke am rechten Rand, Klick zeigt Zeitpunkt und „Erinnerung entfernen“; abhaken,
+  löschen oder Papierkorb entfernt sie, Textänderung plant neu.
+- Tests: Package 739 (135 + 187 + 285 + 30 + 9 + 93), UI 64 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 9 im Package rot (eine erste Fassung der Reihenfolge der Zeichen blieb
+  grün, weil die Reihenfolge doppelt steht; ein Test der gezeichneten Zeichen ersetzt sie),
+  3 im UI-Test rot.
+- Erster voller Lauf mit vielen Ausfällen ohne Bezug zum Code: XCTest konnte die
+  Automatisierung nicht einschalten oder keine Ereignisse erzeugen, alle Laufzeiten rund
+  25 % länger, während am Mac andere Apps liefen. Wiederholt: alle UI-Klassen grün; Audit rot
+  durch den Kontrast im Popover der Glocke, der über das Fenster hinausragt (Ausnahme, siehe
+  Entscheidungen); `testTrash` im Synctest dreimal rot, danach im Wechsel je zweimal grün auf
+  `main` und 15.4.
+- Isolationstests nach dem Commit: ein Test der Erinnerungen wackelte (prüfte `byBlock`,
+  bevor der Abgleich fertig war); behoben, 15 Wiederholungen grün, Gegenprobe mit
+  Verzögerung im Abgleich rot ohne und grün mit der Korrektur.
+- **Handtest:** echte Mitteilung zum Zeitpunkt, Klick darauf öffnet die Seite (auch wenn
+  Quill dafür startet), Rückfrage nach der Erlaubnis beim ersten „Erinnern“.
+- Messung: im Rauschen (`docs/performance.md`).

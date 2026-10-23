@@ -75,12 +75,13 @@ struct PageDetailView: View {
             let session = PageEditorSession(
                 pageID: pageID, title: page?.title ?? "", icon: page?.icon,
                 store: store, context: context, rename: rename, setIcon: setIcon,
-                sync: persistence?.sync, pageActions: actions
+                sync: persistence?.sync, reminders: persistence?.reminders, pageActions: actions
             )
             self.session = session
             applyTitleFocusRequest()
             await session.load()
             updateConflictBlocks()
+            updateReminderBlocks()
             isLoaded = true
             QuillSignposts.pageDidLoad()
             applyRevealRequest()
@@ -96,12 +97,18 @@ struct PageDetailView: View {
         .onChange(of: editorFocusRequest) { applyEditorFocusRequest() }
         .onChange(of: revealRequest) { applyRevealRequest() }
         .onChange(of: persistence?.sync.conflicts(onPage: pageID)) { updateConflictBlocks() }
+        .onChange(of: persistence?.reminders.blocks(onPage: pageID)) { updateReminderBlocks() }
     }
 
     /// Zeichen am Rand für Blöcke mit Konflikt (11.6).
     private func updateConflictBlocks() {
         let conflicts = persistence?.sync.conflicts(onPage: pageID) ?? []
         session?.controller.conflictBlocks = Set(conflicts.filter { !$0.isPageField }.map(\.conflict.objectID))
+    }
+
+    /// Zeichen am Rand für To-dos mit Erinnerung (15.4).
+    private func updateReminderBlocks() {
+        session?.controller.reminderBlocks = persistence?.reminders.blocks(onPage: pageID) ?? []
     }
 
     /// Erst nach dem Laden und einen Durchlauf später, wenn der Editor im Fenster

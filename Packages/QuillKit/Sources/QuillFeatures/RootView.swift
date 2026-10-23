@@ -35,6 +35,7 @@ public struct RootView: View {
     @State private var isSyncReconnectShown = false
     @State private var summaryRequest: SummaryRequest?
     @State private var todoRequest: TodoRequest?
+    @State private var reminderRequest: ReminderRequest?
     @State private var relatedRequest: RelatedRequest?
     @State private var isAskShown = false
     #endif
@@ -165,6 +166,11 @@ public struct RootView: View {
                 )
             }
         }
+        .sheet(item: $reminderRequest) { request in
+            if let reminders = persistence?.reminders {
+                ReminderView(request: request, reminders: reminders, dismiss: { reminderRequest = nil })
+            }
+        }
         .sheet(item: $relatedRequest) { request in
             if let store, let ai = persistence?.ai {
                 RelatedView(
@@ -277,7 +283,8 @@ public struct RootView: View {
             summarize: { if let selection { summarize(selection) } },
             suggestTodos: { suggestTodos() },
             relatedPages: { if let selection { relatedPages(selection) } },
-            askNotes: { askNotes() }
+            askNotes: { askNotes() },
+            remind: { remind() }
         )
     }
 
@@ -315,11 +322,17 @@ public struct RootView: View {
     private func askNotes() {
         isAskShown = true
     }
+
+    /// Erinnerung an das To-do an der Einfügemarke.
+    private func remind() {
+        reminderRequest = ReminderRequest(pageID: selection, focusedIn: window)
+    }
     #else
     private func summarize(_ pageID: UUID) {}
     private func suggestTodos() {}
     private func relatedPages(_ pageID: UUID) {}
     private func askNotes() {}
+    private func remind() {}
     #endif
 
     #if canImport(AppKit)

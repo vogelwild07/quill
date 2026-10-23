@@ -271,6 +271,9 @@
     "Die Datenbank im Backup ist beschädigt." : {
 
     },
+    "Die Erinnerung konnte nicht geplant werden." : {
+
+    },
     "Die Notiz konnte nicht gesichert werden. Sie bleibt hier." : {
 
     },
@@ -334,6 +337,9 @@
     "Ein ruhiger Morgen" : {
 
     },
+    "Eine Mitteilung auf diesem Mac erinnert dich daran." : {
+
+    },
     "Eine andere Quill-Instanz richtet gerade die Datenbank ein." : {
 
     },
@@ -355,7 +361,25 @@
     "Endgültig löschen …" : {
 
     },
+    "Entfernen" : {
+
+    },
     "Entwurf fertig" : {
+
+    },
+    "Erinnern" : {
+
+    },
+    "Erinnerung" : {
+
+    },
+    "Erinnerung am %@" : {
+
+    },
+    "Erinnerung entfernen" : {
+
+    },
+    "Erinnerung …" : {
 
     },
     "Erledigt" : {
@@ -658,6 +682,9 @@
     "Quellen" : {
 
     },
+    "Quill darf keine Mitteilungen senden. Erlaube sie in den Systemeinstellungen unter „Mitteilungen“." : {
+
+    },
     "Quill gleicht deine Seiten über einen Ordner ab, zum Beispiel in iCloud Drive. Jeder Mac schreibt dort nur eigene Dateien, nichts wird überschrieben." : {
 
     },
@@ -764,6 +791,9 @@
     "Seitentitel" : {
 
     },
+    "Setze die Einfügemarke in ein To-do." : {
+
+    },
     "Sie wurde gelöscht oder liegt im Papierkorb." : {
 
     },
@@ -846,6 +876,9 @@
 
     },
     "To-do" : {
+
+    },
+    "To-do ohne Text" : {
 
     },
     "To-dos einfügen" : {
@@ -962,6 +995,9 @@
     "Wiederherstellen …" : {
 
     },
+    "Wähle einen Zeitpunkt in der Zukunft." : {
+
+    },
     "Wähle links eine Seite oder lege eine neue an." : {
 
     },
@@ -972,6 +1008,9 @@
 
     },
     "Wählst du den bisherigen Ordner „%@“ wieder, führt Quill zusammen. Mit einem anderen Ordner beginnt es dort neu." : {
+
+    },
+    "Zeitpunkt" : {
 
     },
     "Zeitreise" : {

@@ -578,6 +578,26 @@ nach dem Einschalten. Im Wechsel mit `main` (`a03106b`), je zwei Runden:
 Alles im Rauschen (höchstens +0,9 %, `search`). `pageTreeBuild` liegt wieder gleichauf; die
 2,8–3,7 % aus 15.2 waren damit kein Effekt des Codes.
 
+## Erinnerungen (23.10.2026, ADR-033)
+
+15.4 gleicht nach jeder Speicherung die geplanten Mitteilungen ab; ohne Erinnerungen ist das
+eine leere Liste. Im Wechsel mit `main` (`fd788ed`), je zwei Runden:
+
+| Messung (ms) | `main` | 15.4 |
+|---|---|---|
+| editorLoad | 12,85 / 13,05 | 13,17 / 12,84 |
+| applyEditsReverse | 68,48 / 69,22 | 69,59 / 69,57 |
+| pageTreeBuild | 54,62 / 54,81 | 55,40 / 55,53 |
+| search | 43,98 / 44,90 | 43,82 / 44,54 |
+| App: sidebarLoad | 182,6 / 182,3 | 182,1 / 182,6 |
+| App: sidebarReload | 172,5 / 171,4 | 173,6 / 170,4 |
+| App: pageSwitch | 79,2 / 79,3 | 78,3 / 78,1 |
+
+Alles im Rauschen (höchstens +1,3 %, `pageTreeBuild`). Die App-Werte stammen aus der
+Wiederholung; die erste Runde scheiterte an XCTest („Timed out while enabling automation
+mode“), während andere Apps liefen. In der Wiederholung lagen `main` und 15.4 gleich, beide
+über den Werten aus 15.3 (`sidebarReload` rund 172 statt 152 ms).
+
 ## Messbedingungen
 
 | | |
