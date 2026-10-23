@@ -718,3 +718,18 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Nicht geändert: Unter macOS 27 hat `LanguageModelError` keinen Fall für fehlende Modelldaten, ein solcher Fehler bleibt „gescheitert“. Die vier Blätter bekommen keinen gemeinsamen Rahmen und keine gemeinsame Phase: Inhalt und Knöpfe unterscheiden sich, ein Rahmen würde das verdecken; beim nächsten Blatt neu prüfen. Die Texthilfen bleiben in `PageSummarizer`. ⌘D (Duplizieren) weist jetzt wie die To-dos markierten Text und den Lesemodus ab, das ist gewollt (Editor-Regel). Die Beschriftung für Seiten ohne Titel in der Seitenliste (aus dem Audit) bleibt.
 - Ohne eigenen UI-Test: Abbruch während der Arbeit (das Test-Modell antwortet sofort) und das neue Prüfen beim Aktivieren (das Test-Modell hat eine feste Verfügbarkeit je Start).
 
+## ADR-033: Apple-Ökosystem auf dem Mac (2026-10-23, entsteht mit Phase 15)
+
+**Kontext:** Phase 15 bindet Quill an Kurzbefehle, Siri, Spotlight, die Menüleiste, Mitteilungen und den Kalender an. Die iPhone-Teile sind pausiert (ADR-030). Die Teilen-Erweiterung braucht eine App Group und damit das Developer Program; sie bleibt offen, bis der Nutzer das Konto hat. Alle Anbindungen berühren Daten außerhalb des Stores (Spotlight-Index, Mitteilungen, Kalender) oder laufen über das System in die App hinein (Kurzbefehle); Tests dürfen weder den echten Store noch den echten Index, Kalender oder Mitteilungen des Macs berühren.
+
+**Entscheidung (Plan):**
+- Jeder Schritt einzeln, Logik in `QuillKit`, im App-Target nur, was das System dort verlangt.
+- Was Daten außerhalb des Stores schreibt (Spotlight, Menüleiste mit Kürzel), ist pro Mac abschaltbar und im Zweifel aus, bis der Nutzer es einschaltet. Test-Stores schreiben nie dorthin; Tests nutzen Ersatz-Objekte.
+- Kalender und Mitteilungen fragen erst, wenn der Nutzer die Funktion aufruft, nie beim Start.
+- Jeder Schritt ergänzt hier seine Entscheidungen mit Alternativen.
+
+**Entscheidung (15.1, Kurzbefehle und Siri, Plan):**
+- Drei Aktionen: „Neue Seite“ (Titel und Text optional, öffnet die Seite), „Zu Seite hinzufügen“ (Text an eine gewählte Seite anhängen, ohne Quill nach vorn zu holen), „Seite öffnen“. Seiten als `PageEntity` mit Suche über den Titel und den zuletzt bearbeiteten Seiten als Vorschlag. Siri-Sätze auf Deutsch als App Shortcuts.
+- „Zu Seite hinzufügen“ macht aus jeder Zeile einen Block. Endet die Seite mit einem To-do oder einer Aufzählung, setzen die neuen Blöcke die Liste fort (so landet „Milch“ in der Einkaufsliste als To-do); sonst Absätze. Geschrieben wird über `PageStore.applyEdits`; ein offener Editor übernimmt die Blöcke wie aus dem Sync.
+- Die Aktionen stehen im App-Target (dort liest das System sie sicher aus), die Logik in `QuillFeatures` (`PageIntentActions`) mit Unit-Tests.
+- UI-Test mit App Intents Testing über das System gegen die Test-Instanz im RAM. Bevor ein Test schreibt, prüft er mit einer nur lesenden Abfrage, dass die Antwort aus dieser Instanz kommt (eine Seite mit zufälligem Titel, die nur dort existiert); sonst bricht er ab. Die veröffentlichte v0.3.0 kennt noch keine Aktionen.
