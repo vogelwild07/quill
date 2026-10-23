@@ -271,6 +271,9 @@
     "Die Seite enthält noch keinen Text, zu dem es verwandte Seiten geben könnte." : {
 
     },
+    "Die Seite gibt es nicht mehr." : {
+
+    },
     "Die Seite selbst ist nicht betroffen." : {
 
     },
@@ -344,6 +347,9 @@
 
     },
     "Erstellt vom Sprachmodell auf diesem Mac. Prüfe sie, bevor du sie verwendest." : {
+
+    },
+    "Es gibt keinen Text zum Hinzufügen." : {
 
     },
     "Export fehlgeschlagen" : {
@@ -635,6 +641,9 @@
 
     },
     "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
+
+    },
+    "Quill ist noch nicht bereit. Öffne Quill und versuch es noch einmal." : {
 
     },
     "Quill schreibt nichts in den Ordner, bis du fortsetzt, auch nicht nach einem Neustart." : {
@@ -948,6 +957,9 @@
 
     },
     "Zu wenig freier Speicher: %@ nötig, %@ frei." : {
+
+    },
+    "Zu „%@“ hinzugefügt." : {
 
     },
     "Zuletzt bearbeitet" : {

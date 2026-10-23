@@ -74,6 +74,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ProfilingSeed.seedAndQuit(persistence)
         }
         #endif
+        // Kurzbefehle und Siri schreiben in diesen Store (ADR-033).
+        // Seitentitel für Siri meldet nur der echte Store: Debug-Builds haben dieselbe Kennung.
+        if let persistence = try? persistence?.get() {
+            PageIntentStore.connect(persistence)
+            if !persistence.isTestStore { QuillShortcuts.updateAppShortcutParameters() }
+        }
         // Geschichte für die Zeitreise, auch ohne Sync (ADR-031).
         try? persistence?.get().history.start()
         // Gleicht nur ab, wenn der Nutzer den Sync eingeschaltet hat (ADR-029).

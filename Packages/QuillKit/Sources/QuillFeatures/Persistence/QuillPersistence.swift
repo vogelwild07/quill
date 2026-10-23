@@ -151,6 +151,9 @@ public final class QuillPersistence {
     public let syncTestFolder: URL?
     private let syncStorage: any SyncSettingsStorage
     private let settingsDefaults: UserDefaults?
+    /// Test-Stores schreiben nichts außerhalb des Stores, auch nicht an Siri oder Spotlight
+    /// (ADR-033): Debug-Builds haben dieselbe Kennung wie die echte App.
+    public var isTestStore: Bool { settingsDefaults == nil }
     private var syncReconnectPromptClaimed = false
     private let backup: StoreBackup?
     /// Was beim Start vorbereitet wurde (Wiederherstellen, Beiseitelegen), bis es

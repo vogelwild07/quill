@@ -100,7 +100,7 @@ public struct RootView: View {
         .overlay { quickOpen }
         .background(WindowAccessor { window in
             self.window = window
-            PageJumpRouter.shared.register(window)
+            PageJumpRouter.shared.register(window, openWindow: openWindow)
             if let pageID = WindowRouter.shared.claim(for: window) {
                 selection = pageID
             }

@@ -209,6 +209,16 @@ extension PageStore {
         return hits
     }
 
+    /// Titel der Seiten außerhalb des Papierkorbs (Kurzbefehle, ADR-033); fehlende fehlen.
+    public func activeTitles(of pageIDs: [UUID]) throws -> [UUID: String] {
+        let ids = Set(pageIDs)
+        var titles: [UUID: String] = [:]
+        for page in try modelContext.fetch(FetchDescriptor<Page>(predicate: #Predicate { ids.contains($0.id) })) where !isInTrash(page) {
+            titles[page.id] = page.title
+        }
+        return titles
+    }
+
     /// Zuletzt bearbeitete Seiten (ohne Papierkorb), für „Schnell öffnen“ ohne Begriff.
     public func recentPages(limit: Int = 10) throws -> [SearchHit] {
         var descriptor = FetchDescriptor<Page>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)])
