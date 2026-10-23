@@ -7,6 +7,9 @@
     "%@ · „%@“" : {
 
     },
+    "%@–%@ %@" : {
+
+    },
     "%lld Bilder nicht zurückgeholt: Sie werden nicht mehr aufbewahrt." : {
       "localizations" : {
         "de" : {
@@ -283,6 +286,9 @@
     "Die Seite enthält noch keinen Text, zu dem es verwandte Seiten geben könnte." : {
 
     },
+    "Die Seite für heute ließ sich nicht öffnen." : {
+
+    },
     "Die Seite gibt es nicht mehr." : {
 
     },
@@ -445,6 +451,9 @@
     "Ganzer Block" : {
 
     },
+    "Ganztägig: %@" : {
+
+    },
     "Gelöschte Bilder aufbewahren" : {
 
     },
@@ -470,6 +479,12 @@
 
     },
     "Heute" : {
+
+    },
+    "Heute stehen keine Termine in deinem Kalender." : {
+
+    },
+    "Heutige Termine einfügen" : {
 
     },
     "Hier behalten: Auf einem anderen Gerät kam die Seite in den Papierkorb, hier wurde sie bearbeitet." : {
@@ -682,6 +697,9 @@
     "Quellen" : {
 
     },
+    "Quill darf deinen Kalender nicht lesen. Du kannst das in den Systemeinstellungen unter „Datenschutz & Sicherheit › Kalender“ ändern." : {
+
+    },
     "Quill darf keine Mitteilungen senden. Erlaube sie in den Systemeinstellungen unter „Mitteilungen“." : {
 
     },
@@ -794,6 +812,9 @@
     "Setze die Einfügemarke in ein To-do." : {
 
     },
+    "Setze die Einfügemarke in eine Seite." : {
+
+    },
     "Sie wurde gelöscht oder liegt im Papierkorb." : {
 
     },
@@ -858,6 +879,15 @@
 
     },
     "Sync pausieren" : {
+
+    },
+    "Tage" : {
+
+    },
+    "Termin" : {
+
+    },
+    "Termine einfügen" : {
 
     },
     "Text" : {
@@ -1062,6 +1092,12 @@
 
     },
     "Zwei Werte für ein Feld" : {
+
+    },
+    "ab %@ %@" : {
+
+    },
+    "bis %@ %@" : {
 
     },
     "erledigt" : {

@@ -145,6 +145,17 @@ public final class QuillPersistence {
     public private(set) lazy var reminders = Reminders(
         store: store, center: isTestStore ? MemoryReminderCenter() : SystemReminderCenter()
     )
+    /// Kalender für „Heutige Termine einfügen“ (ADR-033); Test-Stores lesen nur zwei feste
+    /// Termine im Speicher.
+    private(set) lazy var calendar: any CalendarSource = isTestStore ? Self.testCalendar() : SystemCalendarSource()
+
+    private static func testCalendar() -> any CalendarSource {
+        #if DEBUG || QUILL_SYNCTEST
+        MemoryCalendarSource.sample()
+        #else
+        MemoryCalendarSource()
+        #endif
+    }
     #if DEBUG || QUILL_SYNCTEST
     /// Nur für Tests: Gerätename statt des Mac-Namens (`syncDeviceNameArgument`).
     private var testDeviceName: String?

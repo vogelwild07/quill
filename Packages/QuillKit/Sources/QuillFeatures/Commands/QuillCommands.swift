@@ -34,6 +34,11 @@ public struct QuillCommands: Commands {
             .keyboardShortcut("n", modifiers: [.command, .shift])
             .disabled(actions?.selection == nil)
 
+            // Tagesseite unter „Tage“ (15.5, ADR-033).
+            Button(String(localized: "Heute", bundle: .module)) { actions?.openToday() }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+                .disabled(actions == nil)
+
             Divider()
 
             Button(String(localized: "Neuer Tab", bundle: .module)) {
@@ -121,6 +126,9 @@ public struct QuillCommands: Commands {
                 .disabled(actions?.isQuickOpenShown == true)
             // Erinnerung an das To-do an der Einfügemarke (15.4, ADR-033).
             Button(String(localized: "Erinnerung …", bundle: .module)) { actions?.remind() }
+                .disabled(actions == nil || readOnlyEditor == true)
+            // Termine des Tages unter den Block an der Einfügemarke (15.5, ADR-033).
+            Button(String(localized: "Heutige Termine einfügen", bundle: .module)) { actions?.insertTodayEvents() }
                 .disabled(actions == nil || readOnlyEditor == true)
             Divider()
             // ⌥⌘↑/↓ statt ⌥⇧↑/↓: Das erweitert in Textfeldern die Auswahl absatzweise.

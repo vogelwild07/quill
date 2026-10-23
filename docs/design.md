@@ -137,6 +137,13 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   Popover nennt den Zeitpunkt fett in der Überschrift (normaler Text hielt auf dem Glas den
   Kontrast nicht) und bietet „Erinnerung entfernen“. Mitteilung: Text des To-dos, darunter
   der Seitentitel.
+- Tagesseite (Ablage › Heute, ⇧⌘T): Titel wie das lange Datum („Freitag, 23. Oktober 2026“),
+  unter der Sammelseite „Tage“, der neueste Tag oben. „Format › Heutige Termine einfügen“
+  setzt eine Aufzählung unter den Block an der Einfügemarke: ganztägige Termine zuerst
+  („Ganztägig: Geburtstag“), dann nach Beginn („9:00–10:00 Zahnarzt“, Uhrzeit im Format des
+  Systems). Fehlt die Einfügemarke, der Zugriff auf den Kalender oder ein Termin, sagt das eine
+  Meldung „Heute“ in einem Satz. Rückfrage des Systems: „Quill liest deinen Kalender nur, wenn
+  du die heutigen Termine in eine Seite einfügst.“
 - Kurzbefehle: Titel und Siri-Sätze auf Deutsch, Antwort von „Zu Seite hinzufügen“ in einem
   Satz mit dem Titel der Seite.
 

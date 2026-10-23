@@ -219,6 +219,14 @@ extension PageStore {
         return titles
     }
 
+    /// Erste Seite mit genau diesem Titel unter `parentID` (bei `nil` auf der obersten Ebene),
+    /// außerhalb des Papierkorbs (Tagesseite, ADR-033).
+    public func activeChild(titled title: String, in parentID: UUID?) throws -> UUID? {
+        try modelContext.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.title == title }))
+            .filter { $0.parent?.id == parentID && !isInTrash($0) }
+            .min { $0.siblingOrder < $1.siblingOrder }?.id
+    }
+
     /// Letzte Änderung jeder Seite außerhalb des Papierkorbs (Spotlight, ADR-033).
     public func activePageDates() throws -> [UUID: Date] {
         var dates: [UUID: Date] = [:]

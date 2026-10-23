@@ -312,6 +312,17 @@ QuillFeatures/Reminders
                       oder MemoryReminderCenter (Test-Stores, Tests)
   ReminderNotifications  Delegate: Banner auch im Vordergrund, Klick → PageJumpRouter.open
   ReminderView        Blatt „Erinnerung“ (Format-Menü), ReminderMarkerView im Popover
+QuillFeatures/Today
+  TodayPage           „Ablage › Heute“ (⇧⌘T): Sammelseite „Tage“ (oberste Ebene) und Seite
+                      des Tages darunter, beide über den Titel (PageStore.activeChild),
+                      fehlende angelegt, neuester Tag zuerst
+  TodayEvents         Termine des Tages als Zeilen („9:00–10:00 …“, „Ganztägig: …“, „bis …“,
+                      „ab …“); fragt erst hier nach dem Kalender
+  CalendarSource      SystemCalendarSource (EventKit, nur gelesen, Store erst beim ersten
+                      Klick) oder MemoryCalendarSource (Test-Stores mit zwei festen Terminen,
+                      Tests)
+  RootView            fügt die Zeilen als Aufzählung unter den Block an der Einfügemarke ein
+                      (insertBlocks, ein Schritt für ⌘Z), sonst Hinweis „Heute“
 QuillEditor
   BlockMarker.reminder   Glocke am rechten Rand, reminderBlocks setzt PageDetailView
 App
