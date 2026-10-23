@@ -369,8 +369,9 @@ public struct RootView: View {
             case .empty:
                 todayNotice = String(localized: "Heute stehen keine Termine in deinem Kalender.", bundle: .module)
             case .lines(let lines):
+                // Während der Rückfrage zum Kalender kann der Block oder die Seite weg sein.
                 guard editor.acceptsInsertion, editor.document.blocks.contains(where: { $0.id == anchor }) else {
-                    NSSound.beep()
+                    todayNotice = String(localized: "Setze die Einfügemarke in eine Seite.", bundle: .module)
                     return
                 }
                 editor.focus()

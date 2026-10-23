@@ -1,4 +1,5 @@
 import Foundation
+import QuillEditorCore
 @testable import QuillFeatures
 import QuillModel
 import Testing
@@ -125,7 +126,43 @@ struct RemindersTests {
         #expect(reminders.byBlock.isEmpty)
     }
 
+    /// Entfernen, während der Abgleich die geplanten schon gelesen hat: Der Abgleich darf
+    /// die Erinnerung danach nicht zurückbringen.
+    @Test func removingWaitsForARunningReconcile() async throws {
+        let slow = SlowReminderCenter()
+        let reminders = Reminders(store: store, center: slow, delay: .milliseconds(10))
+        let todo = Self.todo("Anrufen")
+        let pageID = try await page("Heute", [todo])
+        await slow.schedule(Reminder(blockID: todo.id, pageID: pageID, date: later, text: "Anrufen", pageTitle: "Heute"))
+
+        reminders.start()
+        try await waitFor { await slow.reads > 0 }
+        await reminders.remove(blockID: todo.id)
+        await reminders.settle()
+        #expect(await slow.inner.reminders.isEmpty)
+        #expect(reminders.byBlock.isEmpty)
+    }
+
+    @Test func notificationTitleIsOneLineWithFallback() {
+        #expect(SystemReminderCenter.title("Brot\u{2028}und Milch") == "Brot und Milch")
+        #expect(SystemReminderCenter.title(" ") == "To-do ohne Text")
+    }
+
+    @Test func triggerKeepsTheSeconds() throws {
+        let date = Date(timeIntervalSince1970: (Date.now.timeIntervalSince1970 / 60).rounded(.up) * 60 + 3600 + 40)
+        #expect(SystemReminderCenter.trigger(at: date).nextTriggerDate() == date)
+    }
+
     #if canImport(AppKit)
+    @Test func onlyOpenTodosInAnEditableEditor() {
+        let open = EditorBlock(kind: .todo, text: "Offen")
+        let done = EditorBlock(kind: .todo, text: "Erledigt", isChecked: true)
+        #expect(ReminderRequest.remindable(open, allowsEditing: true) == open)
+        #expect(ReminderRequest.remindable(done, allowsEditing: true) == nil)
+        #expect(ReminderRequest.remindable(open, allowsEditing: false) == nil)
+        #expect(ReminderRequest.remindable(EditorBlock(kind: .paragraph, text: "Absatz"), allowsEditing: true) == nil)
+    }
+
     @Test func suggestionIsTomorrowAtNine() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: "Europe/Berlin"))
@@ -134,4 +171,23 @@ struct RemindersTests {
         #expect(ReminderView.suggestion(now: now, calendar: calendar) == expected)
     }
     #endif
+}
+
+/// Liest die geplanten sofort, gibt sie aber erst nach einer Pause zurück: So hat der
+/// Abgleich einen alten Stand, während der Test entfernt.
+private actor SlowReminderCenter: ReminderCenter {
+    let inner = MemoryReminderCenter()
+    private(set) var reads = 0
+
+    func authorize() async throws -> Bool { true }
+
+    func pending() async -> [Reminder] {
+        let planned = await inner.pending()
+        reads += 1
+        try? await Task.sleep(for: .milliseconds(300))
+        return planned
+    }
+
+    func schedule(_ reminder: Reminder) async { await inner.schedule(reminder) }
+    func cancel(_ blockIDs: [UUID]) async { await inner.cancel(blockIDs) }
 }

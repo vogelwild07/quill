@@ -53,9 +53,23 @@ public final class Reminders {
     }
 
     /// Plant die Erinnerung (ersetzt eine vorhandene). `false`, wenn Mitteilungen für
-    /// Quill aus sind; gefragt wird beim ersten Mal.
+    /// Quill aus sind; gefragt wird beim ersten Mal. In der Reihe mit dem Abgleich, sonst
+    /// überschriebe ein laufender Abgleich die neue Erinnerung.
     public func set(blockID: UUID, pageID: UUID, date: Date) async throws -> Bool {
         guard date > .now else { throw Failure.past }
+        return try await serially { try await $0.schedule(blockID: blockID, pageID: pageID, date: date) }
+    }
+
+    /// In der Reihe mit dem Abgleich, sonst plante ein laufender Abgleich sie wieder.
+    public func remove(blockID: UUID) async {
+        _ = try? await serially { reminders in
+            await reminders.center.cancel([blockID])
+            reminders.byBlock[blockID] = nil
+            reminders.scheduleExpiry()
+        }
+    }
+
+    private func schedule(blockID: UUID, pageID: UUID, date: Date) async throws -> Bool {
         guard let title = try await store.activeTitles(of: [pageID])[pageID],
               let block = try await store.blocks(of: pageID).first(where: { $0.id == blockID }), Self.isOpenTodo(block)
         else { throw Failure.notATodo }
@@ -65,12 +79,6 @@ public final class Reminders {
         byBlock[blockID] = reminder
         scheduleExpiry()
         return true
-    }
-
-    public func remove(blockID: UUID) async {
-        await center.cancel([blockID])
-        byBlock[blockID] = nil
-        scheduleExpiry()
     }
 
     /// Wartet, bis alles Angestoßene abgeglichen ist.
@@ -106,6 +114,18 @@ public final class Reminders {
         }
     }
 
+    /// Wie `enqueue`, gibt aber Ergebnis und Fehler an den Aufrufer.
+    private func serially<T: Sendable>(_ step: @escaping @MainActor (Reminders) async throws -> T) async throws -> T {
+        let previous = work
+        let task = Task { [weak self] () throws -> T in
+            await previous?.value
+            guard let self else { throw CancellationError() }
+            return try await step(self)
+        }
+        work = Task { _ = try? await task.value }
+        return try await task.value
+    }
+
     private func reconcile() async throws {
         var kept: [UUID: Reminder] = [:]
         var dropped: [UUID] = []
@@ -132,12 +152,14 @@ public final class Reminders {
     }
 
     /// Fällige Erinnerungen verschwinden aus den geplanten; danach neu lesen, damit das
-    /// Zeichen am To-do geht.
+    /// Zeichen am To-do geht. Steht eine schon fällige noch da, erst nach einer Minute
+    /// wieder, nicht jede Sekunde.
     private func scheduleExpiry() {
         expiry?.cancel()
         guard let next = byBlock.values.map(\.date).min() else { return }
+        let wait = next > .now ? next.timeIntervalSinceNow + 1 : 60
         expiry = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(max(0, next.timeIntervalSinceNow) + 1))
+            try? await Task.sleep(for: .seconds(wait))
             guard !Task.isCancelled else { return }
             self?.enqueue { try await $0.reconcile() }
         }

@@ -27,7 +27,7 @@ final class ReminderUITests: XCTestCase {
         // Ohne To-do an der Einfügemarke: Hinweis, „Erinnern“ gesperrt.
         app.typeKey(.upArrow, modifierFlags: [])
         openReminderSheet()
-        XCTAssertEqual(sheet.staticTexts["reminder.message"].value as? String, "Setze die Einfügemarke in ein To-do.")
+        XCTAssertEqual(sheet.staticTexts["reminder.message"].value as? String, "Setze die Einfügemarke in ein offenes To-do.")
         XCTAssertFalse(sheet.buttons["reminder.schedule"].isEnabled)
         app.typeKey(.escape, modifierFlags: [])
         waitFor(!self.sheet.exists, "Blatt bleibt offen")
