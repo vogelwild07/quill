@@ -488,6 +488,34 @@ Nicht langsamer. An diesem Abend lag `sidebarLoad` auch auf `main` über der Gre
 lag 16.5 rund 3 ms höher, im zweiten gleichauf. `applyEditsReverse` überschneidet sich mit
 `main`, der Store ist unverändert.
 
+## Schlussmessung Phase 16 (23.10.2026, ADR-032)
+
+Stand vor der Phase (`4aa3ac8`) gegen den Stand nach dem Review von Phase 16, im Wechsel,
+zwei Runden:
+
+| Messung (ms) | vor Phase 16 | nach Phase 16 |
+|---|---|---|
+| editorLoad | 12,52 / 13,18 | 12,58 / 12,74 |
+| editorTyping | 1,18 / 1,19 | 1,19 / 1,19 |
+| bridgeLoad | 16,66 / 16,89 | 16,63 / 16,79 |
+| applyEditsReverse | 65,71 / 68,11 | 68,20 / 69,48 |
+| pageTreeBuild | 53,65 / 54,08 | 54,50 / 54,75 |
+| search | 43,99 / 44,61 | 43,89 / 44,81 |
+| exportPlan | 949,46 / 963,91 | 960,98 / 954,76 |
+| historyDays | 90,14 / 90,07 | 89,73 / 90,98 |
+| App: sidebarLoad | 190,1 / 193,2 | 196,2 / 191,2 |
+| App: sidebarReload | 141,9 / 96,2 | 151,1 / 97,7 |
+| App: pageSwitch | 81,1 / 82,0 | 81,6 / 80,8 |
+
+Phase 16 macht nichts langsamer; als Rauschen gilt eine Abweichung unter 3 %, wenn die
+Wiederholung im selben Bereich liegt. `pageTreeBuild` lag in beiden Messungen rund 1,4 %
+höher (in der Nacht vorher 54,83 / 54,64 gegen 54,12 / 53,89), `applyEditsReverse` diesmal
+2,9 %, in der Nacht vorher 0,2 %. Beide Pfade (Seitenbaum, Store) ändert Phase 16 nicht.
+`search` war in der Nacht 2 % höher, jetzt gleich. `sidebarReload` hat zwei Häufungen um
+96 und um 145 ms; der Median je Runde hängt davon ab, wie viele schnelle Läufe dabei sind.
+Über alle zehn Läufe liegt der Median bei 119,2 (vorher) und 118,5 ms (nachher).
+`sidebarLoad` liegt wieder unter 200 ms auf beiden Ständen.
+
 ## Messbedingungen
 
 | | |

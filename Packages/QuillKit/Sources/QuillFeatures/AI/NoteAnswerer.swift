@@ -11,6 +11,8 @@ struct NoteAnswerer {
     static let textLimit = PageSummarizer.chunkLimit
     /// Wörter der Frage, nach denen gesucht wird, wenn die Begriffe des Modells nichts finden.
     static let minWordLength = 4
+    /// Längere Fragen lehnt Quill ab: Frage und Notizen teilen sich das Kontextfenster.
+    static let maxQuestionLength = 500
 
     /// Die Suche findet Teile von Wörtern, nicht ganze Zusammensetzungen: „Zahnarzttermin“
     /// fände „Zahnarzt am Montag“ nicht, deshalb auch die Teile.
@@ -42,6 +44,8 @@ struct NoteAnswerer {
     enum Failure: Error, Equatable {
         /// Die Frage ist leer.
         case emptyQuestion
+        /// Die Frage ist länger als `maxQuestionLength`; das Modell wurde nicht gefragt.
+        case questionTooLong
         /// Keine Seite passt zur Frage; das Modell wurde nicht gefragt.
         case noSources
     }
@@ -52,6 +56,7 @@ struct NoteAnswerer {
     func answer(_ question: String) async throws -> Answer {
         let question = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !question.isEmpty else { throw Failure.emptyQuestion }
+        guard question.count <= Self.maxQuestionLength else { throw Failure.questionTooLong }
         var terms = TermSearch.cleaned(try await model.list(instructions: Self.termInstructions, prompt: question))
         var pages = try await sources(for: terms)
         if pages.isEmpty {

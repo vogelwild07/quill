@@ -243,7 +243,8 @@ QuillAI
   TestTextModel     nur Debug: sofortige, feste Antwort
 QuillFeatures/AI
   AISettings        Verfügbarkeit + Wahl pro Mac (QuillAIEnabled), isUsable; Verfügbarkeit
-                    außerhalb des Main Threads geprüft (erstes Mal 3–7 ms), bis dahin nil
+                    außerhalb des Main Threads geprüft (erstes Mal 3–7 ms), bis dahin nil;
+                    neu beim Start, in den Einstellungen und beim Aktivieren eines Fensters
   AISettingsView    Einstellungen › KI: Schalter oder Erklärung
   PageSummarizer    Blöcke → Text (ohne Bilder, Trenner, leere), Stücke bis 6.000 Zeichen,
                     höchstens 3 Runden, Antwort als ein Absatz
@@ -253,12 +254,15 @@ QuillFeatures/AI
                     Nummern, Kästchen und Doppelte, höchstens 50
   TodoView          Blatt „To-dos vorschlagen …“: Liste ansehen, Einfügen als To-do-Blöcke unter
                     der Markierung (BlockEditorController.insertBlocks, ein Schritt für ⌘Z)
+                    Einfügen nur in bearbeitbare Editoren und nie bei markiertem Text
+                    (BlockEditorController.focused(in:), acceptsInsertion, insertTyped)
   AIProblem         ein Satz je AIError, für alle Blätter
   TermSearch        Suchbegriffe bereinigen (höchstens 5), PageStore.search je Begriff, Seiten
                     mit den meisten Begriffen zuerst, ohne Papierkorb, auf Wunsch ohne eine Seite
   NoteAnswerer      Frage → Suchbegriffe (list) → TermSearch, höchstens 5 Seiten und 6.000
                     Zeichen; sonst Wörter der Frage
-  AskView           Blatt „Frag deine Notizen …“: speichert offene Editoren, Antwort + Quellen
+  AskView           Blatt „Frag deine Notizen …“: speichert offene Editoren, Antwort + Quellen;
+                    Fragen bis 500 Zeichen, „Schließen“ bricht ab
   RelatedPageFinder Titel + Text der Seite (Anfang, 6.000 Zeichen) → Suchbegriffe (list) →
                     TermSearch ohne die Seite selbst, höchstens 5
   RelatedView       Blatt „Verwandte Seiten …“: speichert Editoren der Seite, Seiten mit

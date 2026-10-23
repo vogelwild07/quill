@@ -21,6 +21,8 @@ final class AskModel {
     private(set) var phase = Phase.idle
     @ObservationIgnored private let store: PageStore
     @ObservationIgnored private let model: any TextModel
+    /// Laufende Frage; „Schließen“ bricht sie ab.
+    @ObservationIgnored private var task: Task<Void, Never>?
 
     private static let logger = Logger(subsystem: "io.github.vogelwild07.quill", category: "ai")
 
@@ -31,6 +33,15 @@ final class AskModel {
 
     var canAsk: Bool {
         phase != .working && !question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    func submit() {
+        guard canAsk else { return }
+        task = Task { await ask() }
+    }
+
+    func cancel() {
+        task?.cancel()
     }
 
     func ask() async {
@@ -52,6 +63,8 @@ final class AskModel {
         switch error {
         case NoteAnswerer.Failure.emptyQuestion:
             String(localized: "Stell zuerst eine Frage.", bundle: .module)
+        case NoteAnswerer.Failure.questionTooLong:
+            String(localized: "Deine Frage ist zu lang. Stell sie kürzer.", bundle: .module)
         case NoteAnswerer.Failure.noSources:
             String(localized: "Zu deiner Frage habe ich keine passenden Seiten gefunden.", bundle: .module)
         default:
@@ -79,9 +92,9 @@ struct AskView: View {
                 )
                 .labelsHidden()
                 .focused($isQuestionFocused)
-                .onSubmit { Task { await model.ask() } }
+                .onSubmit { model.submit() }
                 .accessibilityIdentifier("ask.question")
-                Button(String(localized: "Fragen", bundle: .module)) { Task { await model.ask() } }
+                Button(String(localized: "Fragen", bundle: .module)) { model.submit() }
                     .keyboardShortcut(.defaultAction)
                     .disabled(!model.canAsk)
                     .accessibilityIdentifier("ask.submit")
@@ -101,6 +114,7 @@ struct AskView: View {
         .padding(20)
         .frame(width: 460)
         .onAppear { isQuestionFocused = true }
+        .onDisappear { model.cancel() }
     }
 
     @ViewBuilder
@@ -129,7 +143,7 @@ struct AskView: View {
                         Button {
                             open(source.pageID)
                         } label: {
-                            Label(Self.title(source), systemImage: "doc.text")
+                            Label(PageLabel.title(source.title), systemImage: "doc.text")
                         }
                         .buttonStyle(.link)
                         .accessibilityIdentifier("ask.source")
@@ -142,10 +156,6 @@ struct AskView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("ask.problem")
         }
-    }
-
-    static func title(_ source: NoteAnswerer.Source) -> String {
-        source.title.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : source.title
     }
 }
 #endif

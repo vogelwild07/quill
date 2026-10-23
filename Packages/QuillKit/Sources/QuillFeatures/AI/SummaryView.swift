@@ -12,8 +12,9 @@ struct SummaryRequest: Identifiable {
     let id = UUID()
     let pageID: UUID
     let title: String
-    /// Editor der Seite mit der Einfügemarke, falls er beim Aufruf den Fokus hatte.
-    weak var editor: NSTextView?
+    /// Editor der Seite mit der Einfügemarke, falls er beim Aufruf den Fokus hatte und
+    /// bearbeitbar war.
+    weak var editor: BlockEditorController?
 }
 
 /// Zusammenfassung einer Seite (16.2, ADR-032).
@@ -141,14 +142,16 @@ struct SummaryView: View {
         }
     }
 
-    /// Wie getippt an der Einfügemarke: ein Absatz, ⌘Z nimmt ihn zurück.
+    /// Wie getippt an der Einfügemarke: ein Absatz, ⌘Z nimmt ihn zurück. Bei markiertem
+    /// Text (IME) nie eingreifen: Das Blatt bleibt offen.
     private func insert() {
         guard let summary, let editor = request.editor else { return }
+        guard editor.acceptsInsertion else {
+            NSSound.beep()
+            return
+        }
         dismiss()
-        editor.window?.makeFirstResponder(editor)
-        // Eigener Schritt für ⌘Z, nicht mit dem zuletzt Getippten zusammen.
-        editor.breakUndoCoalescing()
-        editor.insertText(summary, replacementRange: editor.selectedRange())
+        editor.insertTyped(summary)
     }
 }
 #endif

@@ -54,6 +54,12 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   vorhandenen Suche, gemeinsame Begriffe sichtbar; kein Einfügen von Links, weil es noch
   keine Links auf Seiten gibt (ADR-032, Abschnitt 16.5).
 
+- [ ] Review Phase 16: KI-Text wird bei markiertem Text oder im Lesemodus nicht eingefügt
+  (Piepton); Fragen über 500 Zeichen werden abgelehnt; „Schließen“ bricht eine Frage ab;
+  Verfügbarkeit beim Aktivieren eines Fensters neu geprüft; kein gemeinsamer Rahmen für die
+  vier Blätter; ⌘D weist jetzt auch markierten Text und den Lesemodus ab (ADR-032,
+  Abschnitt „Review von Phase 16“).
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -214,3 +220,17 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Fälle. Gegenproben: 9 im Package und 3 im UI-Test rot, alle beim ersten Mal.
 - Messung im Wechsel mit `main` (`470c39c`), zweimal: nicht langsamer. An diesem Abend lag
   `sidebarLoad` auch auf `main` über 200 ms (sonst 190 ms); der Mac maß insgesamt langsamer.
+
+### Review von Phase 16 und Schlussmessung (PR #36, ADR-032)
+
+- Einfügen aus den Blättern geht über `BlockEditorController.insertTyped` und
+  `acceptsInsertion`: nie bei markiertem Text, nie im Lesemodus, sonst Piepton.
+- „Verwandte Seiten“ ohne Treffer als Leerzustand aus dem Katalog; Frage abbrechen beim
+  Schließen, Fragen über 500 Zeichen abgelehnt; Verfügbarkeit beim Aktivieren neu geprüft;
+  `check-release-binary.sh` sucht auch `QuillFakeAI`.
+- Tests: Package 708 (135 + 157 + 284 + 30 + 9 + 93), UI 60 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 5 im Package und 1 im UI-Test rot.
+- Schlussmessung gegen den Stand vor Phase 16 (`4aa3ac8`): nichts langsamer, alle
+  Abweichungen unter 3 % und in der Wiederholung im selben Bereich (`docs/performance.md`).
+  Der erste Versuch fiel in eine Bildschirmsperre und wurde nach dem Entsperren nachgeholt.
+- Phase 16 abgeschlossen.

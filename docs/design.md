@@ -113,8 +113,8 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
 - Seite › „Verwandte Seiten …“ unter „To-dos vorschlagen …“, gleiche Bedingung. Blatt mit
   Titel der Seite, Fortschritt, dann bis zu fünf Seiten als Links mit `doc.text`, darunter
   in Sekundärfarbe „Gemeinsam: …“ mit den gemeinsamen Begriffen; ein Klick öffnet die Seite
-  und schließt das Blatt. Ohne Treffer ein Satz statt der Liste; Hinweis, dass das Modell auf
-  dem Mac die Seiten anhand gemeinsamer Begriffe vorschlägt.
+  und schließt das Blatt. Hinweis, dass das Modell auf dem Mac die Seiten anhand gemeinsamer
+  Begriffe vorschlägt. Ohne Treffer der Leerzustand „Keine verwandten Seiten“ aus dem Katalog.
 
 ## Leerzustände
 
@@ -129,6 +129,9 @@ Nach HIG: Symbol, Titel, ein Satz Erklärung, wo es passt ein Knopf. Alle Fälle
 | Papierkorb | Der Papierkorb ist leer | – |
 | Backups | Noch keine Backups | – |
 | Schnell öffnen ohne Treffer | Keine Treffer | – |
+| Zeitreise ohne Geschichte | Noch keine Geschichte | – |
+| Zeitreise, Geschichte nicht lesbar | Geschichte nicht lesbar | – |
+| Verwandte Seiten ohne Treffer | Keine verwandten Seiten | – |
 
 Symbol grau; Titel und Erklärung in primary, weil der Systemstil hell nur 3,1:1 erreicht
 (WCAG verlangt 4,5:1). Eine leere Seite zeigt im Editor „Leere Seite – mit „/“ wählst du

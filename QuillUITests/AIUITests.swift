@@ -221,7 +221,7 @@ final class AIUITests: XCTestCase {
         createPage("Einkauf")
         createPage("Kuchen")
         relatedMenuItem.click()
-        let empty = app.descendants(matching: .any)["related.empty"]
+        let empty = app.descendants(matching: .any)["related.emptyState.title"]
         XCTAssertTrue(empty.waitForExistence(timeout: 10))
         XCTAssertFalse(app.descendants(matching: .any)["related.page"].exists)
         app.typeKey(.escape, modifierFlags: [])

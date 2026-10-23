@@ -1,4 +1,5 @@
 import QuillDesign
+import QuillEditor
 import QuillModel
 import SwiftData
 import SwiftUI
@@ -13,6 +14,9 @@ public struct RootView: View {
     @State private var titleFocusRequest: UUID?
     @State private var editorFocusRequest: UUID?
     @State private var isShowingTrash = false
+    #if canImport(AppKit)
+    @Environment(\.appearsActive) private var appearsActive
+    #endif
     @State private var isQuickOpenShown = false
     @State private var revealRequest: RevealRequest?
     @State private var isRestoreShown = false
@@ -159,8 +163,7 @@ public struct RootView: View {
                     model: RelatedModel(request: request, store: store, model: ai.model),
                     open: { pageID in
                         relatedRequest = nil
-                        isShowingTrash = false
-                        selection = pageID
+                        showPage(pageID)
                     },
                     dismiss: { relatedRequest = nil }
                 )
@@ -172,8 +175,7 @@ public struct RootView: View {
                     model: AskModel(store: store, model: ai.model),
                     open: { pageID in
                         isAskShown = false
-                        isShowingTrash = false
-                        selection = pageID
+                        showPage(pageID)
                     },
                     dismiss: { isAskShown = false }
                 )
@@ -181,6 +183,8 @@ public struct RootView: View {
         }
         // Erst nach der Meldung zum eingespielten Backup fragen, wie der Sync weitergeht.
         .onChange(of: launchNotice == nil) { askToReconnectSync() }
+        // Modell fertig geladen oder Apple Intelligence umgeschaltet: Menü der KI anpassen (ADR-032).
+        .onChange(of: appearsActive) { if appearsActive { Task { await persistence?.ai.refresh() } } }
         #endif
         .onAppear {
             if selection == nil { selection = UUID(uuidString: storedSelection) }
@@ -271,12 +275,11 @@ public struct RootView: View {
     #if canImport(AppKit)
     /// Zusammenfassung der Seite; einfügen lässt sie sich nur, wenn ihr Editor den Fokus hat.
     private func summarize(_ pageID: UUID) {
-        let editor = (window?.firstResponder as? NSTextView).flatMap { $0.accessibilityIdentifier() == "editor.text" ? $0 : nil }
-        let title = (try? context.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.id == pageID })).first?.title) ?? ""
+        let editor = BlockEditorController.focused(in: window)
         summaryRequest = SummaryRequest(
             pageID: pageID,
-            title: title.isEmpty ? String(localized: "Ohne Titel", bundle: .module) : title,
-            editor: editor
+            title: PageLabel.title(storedTitle(pageID)),
+            editor: editor?.allowsEditing == true ? editor : nil
         )
     }
 
@@ -286,8 +289,18 @@ public struct RootView: View {
     }
 
     private func relatedPages(_ pageID: UUID) {
-        let title = (try? context.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.id == pageID })).first?.title) ?? ""
-        relatedRequest = RelatedRequest(pageID: pageID, title: title)
+        relatedRequest = RelatedRequest(pageID: pageID, title: storedTitle(pageID))
+    }
+
+    /// Titel wie gespeichert, leer bei „Ohne Titel“.
+    private func storedTitle(_ pageID: UUID) -> String {
+        (try? context.fetch(FetchDescriptor<Page>(predicate: #Predicate { $0.id == pageID })).first?.title) ?? ""
+    }
+
+    /// Seite aus einem Blatt der KI öffnen (Quelle, verwandte Seite).
+    private func showPage(_ pageID: UUID) {
+        isShowingTrash = false
+        selection = pageID
     }
 
     private func askNotes() {

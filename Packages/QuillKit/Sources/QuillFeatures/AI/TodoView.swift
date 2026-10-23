@@ -12,19 +12,17 @@ struct TodoRequest: Identifiable {
     let id = UUID()
     /// Blöcke der Markierung; leer, wenn kein Editor den Fokus oder nichts markiert hatte.
     let blocks: [EditorBlock]
-    /// Editor mit der Markierung; unter ihren letzten Block kommen die To-dos.
+    /// Editor mit der Markierung, nur wenn bearbeitbar; unter ihren letzten Block kommen die To-dos.
     weak var editor: BlockEditorController?
-    weak var textView: NSTextView?
 
     /// Markierung im Editor, der in `window` den Fokus hat.
     @MainActor
     init(focusedIn window: NSWindow?) {
-        let textView = (window?.firstResponder as? NSTextView).flatMap { $0.accessibilityIdentifier() == "editor.text" ? $0 : nil }
-        let editor = textView?.delegate as? BlockEditorController
+        let editor = BlockEditorController.focused(in: window)
         let ids = Set(editor?.selectedBlockIDs ?? [])
         blocks = editor?.document.blocks.filter { ids.contains($0.id) } ?? []
-        self.editor = editor
-        self.textView = textView
+        // Seite im Papierkorb oder Lesemodus: Vorschläge ja, Einfügen nein.
+        self.editor = editor?.allowsEditing == true ? editor : nil
     }
 }
 
@@ -151,8 +149,12 @@ struct TodoView: View {
     /// Unter dem letzten markierten Block, als ein Schritt für ⌘Z.
     private func insert() {
         guard let items, let editor = request.editor, let anchor = request.blocks.last?.id else { return }
+        guard editor.acceptsInsertion else {
+            NSSound.beep()
+            return
+        }
         dismiss()
-        if let textView = request.textView { textView.window?.makeFirstResponder(textView) }
+        editor.focus()
         editor.insertBlocks(
             items.map { EditorBlock(kind: .todo, text: $0) }, after: anchor,
             actionName: String(localized: "To-dos einfügen", bundle: .module)

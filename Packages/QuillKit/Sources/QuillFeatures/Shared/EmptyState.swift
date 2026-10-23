@@ -18,6 +18,8 @@ enum EmptyState: CaseIterable {
     case noHistory
     /// Zeitreise: Geschichte der Seite nicht lesbar.
     case historyUnreadable
+    /// „Verwandte Seiten“ ohne Treffer (ADR-032).
+    case noRelatedPages
 
     var title: String {
         switch self {
@@ -29,6 +31,7 @@ enum EmptyState: CaseIterable {
         case .noResults: String(localized: "Keine Treffer", bundle: .module)
         case .noHistory: String(localized: "Noch keine Geschichte", bundle: .module)
         case .historyUnreadable: String(localized: "Geschichte nicht lesbar", bundle: .module)
+        case .noRelatedPages: String(localized: "Keine verwandten Seiten", bundle: .module)
         }
     }
 
@@ -42,6 +45,7 @@ enum EmptyState: CaseIterable {
         case .noResults: String(localized: "Kein Seitentitel und kein Text passt zur Suche.", bundle: .module)
         case .noHistory: String(localized: "Ab der ersten Bearbeitung hält Quill fest, wie die Seite am Ende jedes Tages aussah.", bundle: .module)
         case .historyUnreadable: String(localized: "Die Seite selbst ist nicht betroffen.", bundle: .module)
+        case .noRelatedPages: String(localized: "Keine andere Seite enthält die Begriffe, die das Sprachmodell in dieser Seite gefunden hat.", bundle: .module)
         }
     }
 
@@ -55,6 +59,7 @@ enum EmptyState: CaseIterable {
         case .noResults: "magnifyingglass"
         case .noHistory: "calendar.badge.clock"
         case .historyUnreadable: "exclamationmark.triangle"
+        case .noRelatedPages: "doc.on.doc"
         }
     }
 }
