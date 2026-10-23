@@ -45,12 +45,22 @@ struct BlockMarkerTests {
     }
 
     /// Erinnerung (15.4) nach Konflikt und „wiederhergestellt“.
-    @Test func reminderMarkerComesLast() {
+    @Test func reminderMarkerComesLast() throws {
         editor.reminderBlocks = [restored.id, plain.id]
         #expect(markers.map { $0.accessibilityIdentifier() } == ["editor.marker.restored", "editor.marker.reminder"])
         #expect(markers.last?.accessibilityLabel() == "Erinnerung geplant, zum Ansehen klicken: Umstritten")
+        #expect(try drawnMarkers() == [.restored, .reminder, nil])
         editor.conflictBlocks = [plain.id]
         #expect(markers.map { $0.accessibilityIdentifier() } == ["editor.marker.restored", "editor.marker.conflict"])
+        #expect(try drawnMarkers() == [.restored, .conflict, nil])
+    }
+
+    /// Was das Fragment jedes Blocks zeichnet.
+    private func drawnMarkers() throws -> [BlockMarker?] {
+        try [restored, plain, other].map { block in
+            let frame = try #require(textView.markerViewFrame(ofBlock: block.id))
+            return textView.fragment(atViewPoint: CGPoint(x: textView.textContainerOrigin.x + 1, y: frame.midY))?.marker
+        }
     }
 
     @Test func pressAndClickAskForThePopoverOfThatBlock() throws {
