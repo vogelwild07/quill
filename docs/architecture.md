@@ -269,6 +269,27 @@ QuillFeatures/AI
                     gemeinsamen Begriffen, Klick öffnet
 ```
 
+## Apple-Ökosystem (ADR-033, ab Phase 15)
+
+Kurzbefehle und Siri (15.1): Die Aktionen stehen in `QuillFeatures/Intents`, das App-Target
+nimmt sie über sein `AppIntentsPackage` auf. Nur die Siri-Sätze (`AppShortcutsProvider`)
+stehen im App-Target, weil das System sie nur dort ausliest.
+
+```text
+App
+  QuillAppIntents     AppIntentsPackage mit QuillFeaturesIntents
+  QuillShortcuts      Siri-Sätze; Seitentitel meldet nur der echte Store
+                      (updateAppShortcutParameters, nicht bei isTestStore)
+QuillFeatures/Intents
+  PageIntentStore     Store der App, gesetzt nach dem Öffnen; sonst „noch nicht bereit“
+  PageIntentActions   Seite anlegen, Zeilen anhängen (Liste fortsetzen, vor leere Blöcke am
+                      Ende), Seiten nach Titel, zuletzt bearbeitete; schreibt über PageStore
+  PageEntity/Query    Seite für Kurzbefehle, Suche über den Titel, ohne Papierkorb
+  NewPageIntent       legt an, öffnet über OpenPageIntent
+  AddToPageIntent     im Hintergrund; speichert vorher offene Editoren der Seite (flushAll)
+  OpenPageIntent      PageJumpRouter.open: vorderstes Hauptfenster, sonst ein neues
+```
+
 ## Sync (ADR-026, ADR-029, ab Phase 11)
 
 `QuillSync` ist das einzige Modul mit Automerge (`AutomergeIsolationTests`) und hängt nur an QuillModel:

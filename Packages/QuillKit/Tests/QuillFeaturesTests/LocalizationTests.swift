@@ -82,7 +82,30 @@ struct LocalizationTests {
                 reason: "Name des Ordners im Sync-Ordner (ADR-026), gleich auf allen Geräten, sprachneutral."),
         Allowed(file: "QuillExport/MarkdownExporter.swift", text: "---", isPrefix: true,
                 reason: "YAML-Kopf; Schlüssel gehören zum Format, nicht zur Sprache."),
+        Allowed(file: "App/QuillAppIntents.swift", text: "Neue Seite in …", reason: appIntentsReason),
+        Allowed(file: "App/QuillAppIntents.swift", text: "Neue Seite mit … anlegen", reason: appIntentsReason),
+        Allowed(file: "App/QuillAppIntents.swift", text: "Neue Seite", reason: appIntentsReason),
+        Allowed(file: "App/QuillAppIntents.swift", text: "In … zu … hinzufügen", reason: appIntentsReason),
+        Allowed(file: "App/QuillAppIntents.swift", text: "Zu … in … hinzufügen", reason: appIntentsReason),
+        Allowed(file: "App/QuillAppIntents.swift", text: "Zu Seite hinzufügen", reason: appIntentsReason),
+        Allowed(file: "App/QuillAppIntents.swift", text: "… in … öffnen", reason: appIntentsReason),
+        Allowed(file: "App/QuillAppIntents.swift", text: "Öffne … in …", reason: appIntentsReason),
+        Allowed(file: "App/QuillAppIntents.swift", text: "Seite öffnen", reason: appIntentsReason),
+        Allowed(file: "QuillFeatures/Intents/PageIntents.swift", text: "Neue Seite", reason: appIntentsReason),
+        Allowed(file: "QuillFeatures/Intents/PageIntents.swift", text: "Legt in Quill eine neue Seite an und öffnet sie.", reason: appIntentsReason),
+        Allowed(file: "QuillFeatures/Intents/PageIntents.swift", text: "Zu Seite hinzufügen", reason: appIntentsReason),
+        Allowed(file: "QuillFeatures/Intents/PageIntents.swift", text: "Hängt jede Zeile als Block an eine Seite an. Endet die Seite mit einer Liste, wird sie fortgesetzt.", reason: appIntentsReason),
+        Allowed(file: "QuillFeatures/Intents/PageIntents.swift", text: "Seite öffnen", reason: appIntentsReason),
+        Allowed(file: "QuillFeatures/Intents/PageIntents.swift", text: "Seite", occurrences: 3, reason: appIntentsReason),
+        Allowed(file: "QuillFeatures/Intents/PageIntents.swift", text: "Titel", occurrences: 2, reason: appIntentsReason),
+        Allowed(file: "QuillFeatures/Intents/PageIntents.swift", text: "Text", occurrences: 2, reason: appIntentsReason),
+        Allowed(file: "QuillFeatures/Intents/PageIntents.swift", text: "Was soll auf die Seite?", reason: appIntentsReason),
+        Allowed(file: "QuillFeatures/Intents/PageIntents.swift", text: "… zu … hinzufügen", reason: appIntentsReason),
     ]
+
+    /// Siri und Kurzbefehle lesen diese Texte aus den Metadaten der App, nicht aus einem
+    /// Katalog in Quill (ADR-033). Bis es eine zweite Sprache gibt, gilt die Ausgangssprache.
+    static let appIntentsReason = "App Intents: Text aus den Metadaten der App (ADR-033)."
 
     /// Zahlen in diesen Sätzen brauchen keine Pluralform (Form „Wort: Zahl“ oder Maße).
     static let pluralFree: Set<String> = [
