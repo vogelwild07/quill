@@ -17,7 +17,7 @@ struct PageIntentsTests {
     }
 
     @Test func newPageWithTitleAndText() async throws {
-        var intent = NewPageIntent()
+        let intent = NewPageIntent()
         intent.pageTitle = "Aus dem Kurzbefehl"
         intent.text = "Erste Zeile\nZweite Zeile"
         _ = try await intent.perform()
@@ -31,7 +31,7 @@ struct PageIntentsTests {
         let first = BlockSnapshot(id: UUID(), kindRaw: BlockKind.todo.rawValue, text: "Brot")
         try await store.applyEdits(id, BlockEdits(upserts: [first], order: [first.id]))
 
-        var intent = AddToPageIntent()
+        let intent = AddToPageIntent()
         intent.page = PageEntity(.init(id: id, title: "Einkaufsliste"))
         intent.text = "Milch"
         _ = try await intent.perform()
