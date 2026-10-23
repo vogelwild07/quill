@@ -93,6 +93,14 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Systems; neues Entitlement für Kalender in der echten App und, damit der Test der
   Entitlements gilt, in den Testvarianten (ADR-033, Abschnitt 15.5).
 
+- [ ] Review Phase 15: „Erinnern“ und „Entfernen“ in der Reihe des Abgleichs; Mitteilung mit
+  Sekunden und „To-do ohne Text“; Blatt nur für offene To-dos; Seite und Blöcke von
+  Schnellnotiz und „Neue Seite“ bleiben zwei Schritte; Test-Stores melden das Kürzel der
+  Schnellnotiz weiter an; neue Ausnahme im Audit für die Tage der Zeitreise auf dem Glas
+  (im dunklen Erscheinungsbild rot, auch vor Phase 15) (ADR-033, Abschnitt „Review von
+  Phase 15“).
+
+
 ## Gemergt
 
 ### 12.1 Geschichte aufzeichnen (PR #25, ADR-031)
@@ -340,3 +348,20 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Wiederholung im Bereich von `main` (`docs/performance.md`).
 - **Handtest:** Rückfrage nach der Erlaubnis für den Kalender beim ersten Einfügen, echte
   Termine des Tages.
+
+### Review von Phase 15 und Schlussmessung (PR #42, ADR-033)
+
+- Review über PR #37–#41 nach Standards und ADR-033. Behoben: Erinnern und Entfernen in
+  der Reihe des Abgleichs, Auslöser mit Sekunden, keine Abfrage jede Sekunde für fällige
+  Erinnerungen, Titel der Mitteilung in einer Zeile mit Ersatz, Blatt nur für offene
+  To-dos, Delegate der Mitteilungen auch nach einer Rückfrage vor der Migration, Satz statt
+  Piepton beim Einfügen der Termine, Kürzel meldet sich beim Freigeben ab.
+- Tests: Package 749 (136 + 196 + 285 + 30 + 9 + 93), UI 65 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 4 im Package rot; der Test der Reihenfolge 15-mal grün.
+- Audit im vollen Lauf rot: Tag „Heute“ in der Seitenleiste der Zeitreise, Kontrast auf dem
+  Glas. Dreimal rot auf diesem Branch, zweimal rot auf dem Stand vor Phase 15, der Mac stand
+  inzwischen im dunklen Erscheinungsbild; Ausnahme wie beim Glas der Sidebar, danach alle
+  6 Audits grün.
+- Schlussmessung gegen den Stand vor Phase 15 (`16f978f`): nichts über 3 %, am nächsten
+  `pageSwitch` mit +2,8 % (`docs/performance.md`).
+- Phase 15 abgeschlossen, ohne Teilen-Erweiterung (braucht das Developer Program).

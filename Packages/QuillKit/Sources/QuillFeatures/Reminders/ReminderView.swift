@@ -11,7 +11,7 @@ import SwiftUI
 struct ReminderRequest: Identifiable {
     let id = UUID()
     let pageID: UUID?
-    /// `nil`, wenn die Einfügemarke in keinem bearbeitbaren To-do steht.
+    /// `nil`, wenn die Einfügemarke in keinem bearbeitbaren, offenen To-do steht.
     let block: EditorBlock?
 
     @MainActor
@@ -20,7 +20,12 @@ struct ReminderRequest: Identifiable {
         let editor = BlockEditorController.focused(in: window)
         let cursor = editor?.cursorBlockID
         let block = editor?.document.blocks.first { $0.id == cursor }
-        self.block = editor?.allowsEditing == true && block?.kind == .todo ? block : nil
+        self.block = Self.remindable(block, allowsEditing: editor?.allowsEditing == true)
+    }
+
+    /// Nur ein offenes To-do in einem bearbeitbaren Editor.
+    static func remindable(_ block: EditorBlock?, allowsEditing: Bool) -> EditorBlock? {
+        allowsEditing && block?.kind == .todo && block?.isChecked == false ? block : nil
     }
 }
 
@@ -73,7 +78,7 @@ struct ReminderView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("reminder.message")
             } else {
-                Text("Setze die Einfügemarke in ein To-do.", bundle: .module)
+                Text("Setze die Einfügemarke in ein offenes To-do.", bundle: .module)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("reminder.message")
             }

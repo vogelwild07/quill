@@ -29,7 +29,12 @@ final class GlobalHotKey {
         }
     }
 
-    /// Vor dem Freigeben aufrufen; der Handler hält keine Referenz.
+    /// Der Handler hält keine Referenz; spätestens beim Freigeben abmelden, sonst ruft
+    /// Carbon ins Leere.
+    isolated deinit {
+        unregister()
+    }
+
     func unregister() {
         if let hotKey { UnregisterEventHotKey(hotKey) }
         if let handler { RemoveEventHandler(handler) }

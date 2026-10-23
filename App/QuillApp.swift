@@ -88,6 +88,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Seitentitel für Siri meldet nur der echte Store: Debug-Builds haben dieselbe Kennung.
         if let persistence = try? persistence?.get() {
             PageIntentStore.connect(persistence)
+            // Nach einer Rückfrage vor der Migration erst hier; doppelt schadet nicht.
+            if !persistence.isTestStore { ReminderNotifications.shared.install() }
             // Nach dem Start, im Hintergrund: Der Start soll das nicht tragen.
             if !persistence.isTestStore {
                 Task.detached(priority: .background) { QuillShortcuts.updateAppShortcutParameters() }

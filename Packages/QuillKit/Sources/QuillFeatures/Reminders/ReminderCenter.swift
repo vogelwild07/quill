@@ -39,17 +39,15 @@ struct SystemReminderCenter: ReminderCenter {
 
     func schedule(_ reminder: Reminder) async throws {
         let content = UNMutableNotificationContent()
-        content.title = reminder.text
+        content.title = Self.title(reminder.text)
         content.body = PageLabel.title(reminder.pageTitle)
         content.sound = .default
         content.userInfo = [
             "blockID": reminder.blockID.uuidString, "pageID": reminder.pageID.uuidString,
             "date": reminder.date.timeIntervalSince1970, "text": reminder.text, "pageTitle": reminder.pageTitle,
         ]
-        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: reminder.date)
         let request = UNNotificationRequest(
-            identifier: Self.prefix + reminder.blockID.uuidString, content: content,
-            trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+            identifier: Self.prefix + reminder.blockID.uuidString, content: content, trigger: Self.trigger(at: reminder.date)
         )
         try await UNUserNotificationCenter.current().add(request)
     }
@@ -57,6 +55,19 @@ struct SystemReminderCenter: ReminderCenter {
     func cancel(_ blockIDs: [UUID]) async {
         guard !blockIDs.isEmpty else { return }
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: blockIDs.map { Self.prefix + $0.uuidString })
+    }
+
+    /// Mit Sekunden: Ohne läge der Auslöser in der laufenden Minute schon vorbei.
+    static func trigger(at date: Date, calendar: Calendar = .current) -> UNCalendarNotificationTrigger {
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+        return UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+    }
+
+    /// Titel der Mitteilung: Text des To-dos in einer Zeile, wie im Blatt mit Ersatz, wenn
+    /// er leer ist.
+    static func title(_ text: String) -> String {
+        let line = text.replacingOccurrences(of: "\u{2028}", with: " ").trimmingCharacters(in: .whitespaces)
+        return line.isEmpty ? String(localized: "To-do ohne Text", bundle: .module) : line
     }
 
     /// Seite aus einer Mitteilung, für den Klick darauf.
