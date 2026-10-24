@@ -812,7 +812,7 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 **Entscheidung (Plan):**
 - „Seite › Präsentieren“ (⌥⌘P, frei in Textfeldern und im System; Keynote nutzt dasselbe Kürzel zum Abspielen) öffnet für die ausgewählte Seite ein eigenes Fenster im Vollbild. Vorher speichert Quill offene Änderungen der Seite (`EditorPersistenceBridge.flushAll`) und liest die Blöcke einmal aus dem Store; Änderungen während der Präsentation erscheinen erst beim nächsten Start.
 - Folien: Jede Überschrift der obersten Ebene, die auf der Seite vorkommt, beginnt eine Folie (gibt es `heading1`, trennen nur diese; sonst `heading2`, sonst `heading3`). Die erste Folie zeigt den Titel der Seite und alles vor der ersten trennenden Überschrift. Ohne Überschriften ist die ganze Seite eine Folie. Die Rechnung ist eine reine Funktion (`SlideDeck`) ohne AppKit.
-- Darstellung: der Editor im Lesemodus ohne Schreibmarke, im Theme der Seite, vergrößert auf die Breite des Bildschirms (Vergrößerung der Scroll-Ansicht, höchstens 2,5-fach), darunter klein „Folie 2 von 5“. Ist eine Folie höher als der Bildschirm, lässt sie sich scrollen.
+- Darstellung: der Editor im Lesemodus ohne Schreibmarke, im eingestellten Theme, vergrößert auf die Breite des Bildschirms (Vergrößerung der Scroll-Ansicht, höchstens 2,5-fach), darunter klein „Folie 2 von 5“. Ist eine Folie höher als der Bildschirm, lässt sie sich scrollen.
 - Tasten: →, ↓, Leertaste, Bild ab und ↩ weiter; ←, ↑, Bild auf und ⇧-Leertaste zurück; Pos1 und Ende springen zur ersten und letzten Folie; Esc beendet die Präsentation und schließt das Fenster. Auf der letzten Folie bleibt „weiter“ stehen.
 - Nichts wird gespeichert: keine Änderung am Store, an Einstellungen, an der Geschichte oder am Sync.
 - Test-Stores bleiben im Fenster statt im Vollbild (Vollbild wechselt den Space und blieb nach einem abgebrochenen Test stehen). Das Vollbild gehört zum Handtest.
@@ -823,4 +823,10 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Das Fenster wird nach einem Neustart nicht wiederhergestellt (`restorationBehavior(.disabled)`), sonst begänne eine Präsentation von selbst im Vollbild.
 - „Folie 2 von 5“ ohne Pluralformen (eine Stelle von vielen, „Folie 1 von 1“ passt), Ausnahme in `LocalizationTests`.
 - Nicht in diesem Schritt: Notizen für Vortragende, Zeiger, zweiter Bildschirm, Übergänge, Klick zum Weiterblättern.
+
+**Entscheidung (Review von 18.2):**
+- Tasten mit ⌘, ⌥ oder ⌃ gehen an Menü und System statt an die Präsentation (vorher blätterten auch ⌘→ und ⌥↓). Der Tasten-Monitor endet spätestens, wenn das Fenster schließt, und greift nur, solange es das Fenster gibt.
+- Jede Folie beginnt oben, auch wenn die vorige heruntergescrollt war; auf der letzten Folie lädt „weiter“ nichts neu.
+- Die Breite einer Folie ohne Vergrößerung ist ein Token (`QuillDesign.Presentation.columnWidth`).
+- Nicht geändert (Ermessen): ↓ und Leertaste blättern auch auf einer Folie, die höher ist als der Bildschirm (Scrollen mit Trackpad oder Maus; wer Folien plant, hält sie kurz). Seiten im Papierkorb lassen sich präsentieren, die Präsentation liest nur. Der Titel kommt aus `@Query`, das beim ersten Zeichnen synchron liest, vor `.task`. Gemeinsame Helfer der UI-Tests und die Einrichtung des Editors im Lesemodus bleiben wie in den übrigen Dateien (Zeitreise, Sprachnotiz). Esc im Vollbild gehört zum Handtest.
 
