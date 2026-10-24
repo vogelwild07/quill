@@ -7,79 +7,79 @@ Neueste Einträge unten.
 
 ## Zu prüfende Entscheidungen
 
-Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
+Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer. Alle geprüft am 24.10.2026 vor v0.4.0.
 
-- [ ] Regel „Fehlersuche“ in `CLAUDE.md` geändert, nachdem die Ursache der roten Einsetz-Tests
+- [x] Regel „Fehlersuche“ in `CLAUDE.md` geändert, nachdem die Ursache der roten Einsetz-Tests
   gefunden war (siehe PR #26).
-- [ ] 12.2: Tage aus den Zeitstempeln der Änderungen, im Kalender des Macs, der die Zeitreise
+- [x] 12.2: Tage aus den Zeitstempeln der Änderungen, im Kalender des Macs, der die Zeitreise
   zeigt; ein Tagesstand enthält alles, worauf seine Änderungen aufbauen; Tage werden beim
   Öffnen gebildet, nicht gespeichert (ADR-031, Abschnitt 12.2).
 
-- [ ] 12.3: Zeitreise als eigenes Fenster je Seite; früherer Stand im Lesemodus (Cursor und
+- [x] 12.3: Zeitreise als eigenes Fenster je Seite; früherer Stand im Lesemodus (Cursor und
   Markieren per Tastatur gehen, Ändern nicht); „Auswahl zurückholen“ ersetzt noch vorhandene
   Absätze an ihrer Stelle und setzt gelöschte hinter ihren nächsten früheren Nachbarn; eine
   Rückholung lässt sich nur über eine weitere Rückholung rückgängig machen, nicht mit ⌘Z
   (ADR-031, Abschnitt 12.3).
 
-- [ ] 12.4: Frist für gelöschte Bilder pro Mac in den Einstellungen (nicht im Store oder Sync),
+- [x] 12.4: Frist für gelöschte Bilder pro Mac in den Einstellungen (nicht im Store oder Sync),
   Standard 90 statt bisher 30 Tage, „Immer“ löscht nie; kürzere Frist wirkt erst beim
   nächsten Start; Optionsfelder statt Klappmenü (ADR-031, Abschnitt 12.4).
 
-- [ ] Review Phase 12: Bild-Blöcke ohne aufbewahrtes Bild werden beim Zurückholen
+- [x] Review Phase 12: Bild-Blöcke ohne aufbewahrtes Bild werden beim Zurückholen
   übersprungen und gemeldet; Zurückholen ist aus, wenn die Seite im Papierkorb liegt; nach
   dem Ausschalten des Sync wird bewusst weiter aufgezeichnet (ADR-031, Abschnitt „Review von
   Phase 12“).
 
-- [ ] 16.1: KI standardmäßig an, wenn Apple Intelligence bereit ist (ein Schalter in
+- [x] 16.1: KI standardmäßig an, wenn Apple Intelligence bereit ist (ein Schalter in
   Einstellungen › KI schaltet alles aus); ohne Apple Intelligence eine Erklärung statt eines
   ausgegrauten Schalters, kein Knopf zu den Systemeinstellungen (Adresse nicht dokumentiert);
   FoundationModels nur im neuen Modul `QuillAI` (ADR-032, Abschnitt 16.1).
 
-- [ ] 16.2: Zusammenfassung in einem Blatt mit „Kopieren“ und „Einfügen“ (an der
+- [x] 16.2: Zusammenfassung in einem Blatt mit „Kopieren“ und „Einfügen“ (an der
   Einfügemarke, ein Schritt für ⌘Z), nicht als eigener Block in der Seite; bis 6.000 Zeichen
   je Anfrage, längere Seiten in Stücken; Verfügbarkeit im Hintergrund geprüft (ADR-032,
   Abschnitt 16.2).
 
-- [ ] 16.3: To-dos nur aus markierten Absätzen, als Vorschau-Liste; „Einfügen“ legt sie als
+- [x] 16.3: To-dos nur aus markierten Absätzen, als Vorschau-Liste; „Einfügen“ legt sie als
   To-do-Blöcke unter die Markierung, die Absätze bleiben (nicht ersetzen); Liste per Guided
   Generation statt Text zerlegen; höchstens 50 (ADR-032, Abschnitt 16.3).
 
-- [ ] 16.4: „Frag deine Notizen“ als Blatt aus Ablage; Suchbegriffe vom Modell, ohne Treffer
+- [x] 16.4: „Frag deine Notizen“ als Blatt aus Ablage; Suchbegriffe vom Modell, ohne Treffer
   die Wörter der Frage ab 4 Buchstaben; höchstens 5 Seiten und 6.000 Zeichen, lange Seiten
   um die erste Fundstelle gekürzt; ohne passende Seite wird das Modell nicht gefragt; alle
   Quellen anklickbar (ADR-032, Abschnitt 16.4).
 
-- [ ] 16.5: „Verwandte Seiten …“ als Blatt aus dem Menü Seite statt Leiste neben dem Editor;
+- [x] 16.5: „Verwandte Seiten …“ als Blatt aus dem Menü Seite statt Leiste neben dem Editor;
   bis zu 5 Seiten aus Suchbegriffen des Modells (Titel und Anfang der Seite) und der
   vorhandenen Suche, gemeinsame Begriffe sichtbar; kein Einfügen von Links, weil es noch
   keine Links auf Seiten gibt (ADR-032, Abschnitt 16.5).
 
-- [ ] Review Phase 16: KI-Text wird bei markiertem Text oder im Lesemodus nicht eingefügt
+- [x] Review Phase 16: KI-Text wird bei markiertem Text oder im Lesemodus nicht eingefügt
   (Piepton); Fragen über 500 Zeichen werden abgelehnt; „Schließen“ bricht eine Frage ab;
   Verfügbarkeit beim Aktivieren eines Fensters neu geprüft; kein gemeinsamer Rahmen für die
   vier Blätter; ⌘D weist jetzt auch markierten Text und den Lesemodus ab (ADR-032,
   Abschnitt „Review von Phase 16“).
 
-- [ ] 15.1: Kurzbefehle „Neue Seite“, „Zu Seite hinzufügen“, „Seite öffnen“; Anhängen setzt
+- [x] 15.1: Kurzbefehle „Neue Seite“, „Zu Seite hinzufügen“, „Seite öffnen“; Anhängen setzt
   eine Liste am Ende der Seite fort (sonst Absätze); Seiten nur über den Titel gesucht;
   Seitentitel für Siri meldet nur der echte Store; kein UI-Test über das System, weil es die
   Test-Instanz neben den anderen Quill-Kopien nicht findet und das Registrieren des
   Debug-Builds den echten Store gefährden würde (ADR-033, Abschnitt 15.1).
 
-- [ ] 15.2: Seiten in Spotlight, Schalter in den Einstellungen (Standard aus, Wahl pro Mac);
+- [x] 15.2: Seiten in Spotlight, Schalter in den Einstellungen (Standard aus, Wahl pro Mac);
   Index nach dem Start neu, danach geänderte Seiten zwei Sekunden nach einer Speicherung;
   Text höchstens 10 000 Zeichen je Seite; Test-Stores schreiben nur in einen Index im
   Speicher; `pageTreeBuild` blieb in vier Runden 2,8–5 % über `main`, obwohl 15.2 den
   Seitenbaum nicht ändert (Wiederholung unter 3 %, nach der Regel Rauschen; in 15.6 erneut
   prüfen) (ADR-033, Abschnitt 15.2).
 
-- [ ] 15.3: Schnellnotiz über ein Symbol in der Menüleiste und das feste Kürzel ⌃⌥⌘N, beide
+- [x] 15.3: Schnellnotiz über ein Symbol in der Menüleiste und das feste Kürzel ⌃⌥⌘N, beide
   Standard aus, das Kürzel eigens zuzuschalten; Fenster ohne Aktivierung von Quill; jede
   Notiz wird eine neue Seite (erste Zeile Titel), keine feste Eingangsseite; Entwurf nur im
   Speicher; Kürzel über `RegisterEventHotKey` (Carbon) statt Monitor mit
   Bedienungshilfen-Freigabe (ADR-033, Abschnitt 15.3).
 
-- [ ] 15.4: Erinnerung an ein offenes To-do nur als Mitteilung auf diesem Mac, kein Feld im
+- [x] 15.4: Erinnerung an ein offenes To-do nur als Mitteilung auf diesem Mac, kein Feld im
   Schema (bleibt nicht über den Sync erhalten); Zeitpunkt und Text in den geplanten
   Mitteilungen des Systems; abgehakte, gelöschte oder in den Papierkorb gelegte To-dos
   verlieren ihre Erinnerung; Zeichen „Glocke“ am Rand nach Konflikt und „wiederhergestellt“;
@@ -87,43 +87,43 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Ausnahme im Audit für die Überschrift des Popovers, wenn er über das Fenster hinausragt
   (ADR-033, Abschnitt 15.4).
 
-- [ ] 15.5: Tagesseite unter einer Sammelseite „Tage“, beide über den Titel gefunden (kein
+- [x] 15.5: Tagesseite unter einer Sammelseite „Tage“, beide über den Titel gefunden (kein
   Feld im Schema; Umbenennen oder Sprachwechsel führt zu neuen Seiten); Kürzel ⇧⌘T für
   „Heute“; Termine nur auf Klick als Aufzählung, ganztägige zuerst, Uhrzeit im Format des
   Systems; neues Entitlement für Kalender in der echten App und, damit der Test der
   Entitlements gilt, in den Testvarianten (ADR-033, Abschnitt 15.5).
 
-- [ ] Review Phase 15: „Erinnern“ und „Entfernen“ in der Reihe des Abgleichs; Mitteilung mit
+- [x] Review Phase 15: „Erinnern“ und „Entfernen“ in der Reihe des Abgleichs; Mitteilung mit
   Sekunden und „To-do ohne Text“; Blatt nur für offene To-dos; Seite und Blöcke von
   Schnellnotiz und „Neue Seite“ bleiben zwei Schritte; Test-Stores melden das Kürzel der
   Schnellnotiz weiter an; neue Ausnahme im Audit für die Tage der Zeitreise auf dem Glas
   (im dunklen Erscheinungsbild rot, auch vor Phase 15) (ADR-033, Abschnitt „Review von
   Phase 15“).
 
-- [ ] 17.1: Text in Bildern nur im Speicher, nach jedem Start neu erkannt (kein Feld im
+- [x] 17.1: Text in Bildern nur im Speicher, nach jedem Start neu erkannt (kein Feld im
   Schema, keine Datei neben dem Store); nur „Schnell öffnen“ findet ihn, nicht Spotlight,
   „Frag deine Notizen“ oder der Export; Enter setzt die Einfügemarke vor das Bild statt es
   auszuwählen; Test-Stores nutzen die echte Erkennung von Vision (ADR-034, Abschnitt 17.1).
 
-- [ ] 17.2: Sprachnotiz im Blatt, eingefügt als ein Absatz unter dem Block an der
+- [x] 17.2: Sprachnotiz im Blatt, eingefügt als ein Absatz unter dem Block an der
   Einfügemarke; Aufnahme nie gespeichert; nur in der Sprache des Systems und nur, wenn deren
   Modell schon installiert ist (kein Download, kein Vormerken); kein Kürzel; neues
   Entitlement für das Mikrofon in der echten App und den Testvarianten (ADR-034,
   Abschnitt 17.2).
 
-- [ ] Review Phase 17: Rückfragen nach Kalender und Mikrofon auch in den Testvarianten;
+- [x] Review Phase 17: Rückfragen nach Kalender und Mikrofon auch in den Testvarianten;
   Sprache vor dem Mikrofon geprüft; Mikrofon und Erkennung bei jedem Fehler freigegeben;
   eigener Satz, wenn die Erkennung kein Audioformat anbietet; ein gemeinsamer Hinweis für
   „Heute“, „Heutige Termine einfügen“ und „Sprachnotiz …“; keine eigene Schicht für die
   Suche, kein `isImage`, keine Tokens für Abstände (ADR-034, Abschnitt „Review von
   Phase 17“).
 
-- [ ] 18.2: Präsentieren in einem eigenen Fenster im Vollbild (⌥⌘P); Folien an den
+- [x] 18.2: Präsentieren in einem eigenen Fenster im Vollbild (⌥⌘P); Folien an den
   Überschriften der obersten vorkommenden Ebene, erste Folie mit dem Titel; Stand beim Start,
   keine Änderungen während der Präsentation; vergrößerter Editor im Lesemodus statt eigener
   Darstellung; Test-Stores ohne Vollbild (ADR-035).
 
-- [ ] Review 18.2: Tasten mit ⌘, ⌥ oder ⌃ gehen an Menü und System; jede Folie beginnt oben;
+- [x] Review 18.2: Tasten mit ⌘, ⌥ oder ⌃ gehen an Menü und System; jede Folie beginnt oben;
   ↓ und Leertaste blättern auch auf einer Folie, die höher als der Bildschirm ist (Rest mit
   Trackpad oder Maus); Seiten im Papierkorb lassen sich präsentieren; Titel weiter aus
   `@Query` (ADR-035, Abschnitt „Review von 18.2“).
