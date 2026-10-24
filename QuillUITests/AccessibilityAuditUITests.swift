@@ -119,6 +119,53 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.typeKey("w", modifierFlags: .command)
     }
 
+    /// Glas von Quill (ADR-036) in Stellung klar und getönt: Sidebar, Toolbar, Slash-Menü,
+    /// Schnell öffnen und der Regler in den Einstellungen. Der Kontrast-Check misst das
+    /// echte Glas über dem Schreibtisch dieses Macs.
+    func testAuditGlass() throws {
+        for (level, name) in [("0", "klar"), ("1", "getönt")] {
+            app.terminate()
+            app = XCUIApplication.quill(storeDirectory: storeDirectory)
+            app.launchArguments += ["-QuillPasteboardName", pasteboard.name.rawValue, "-QuillTestGlass", level]
+            app.launch()
+            XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
+            app.windows.firstMatch.click()
+
+            createPage("Glas \(name)")
+            app.typeText("\r")
+            app.typeText("Text auf der Seite\r")
+            window.buttons["page.favorite"].click()
+            audit("Glas \(name): Sidebar und Toolbar")
+            app.typeText("/")
+            audit("Glas \(name): Slash-Menü")
+            app.typeKey(.escape, modifierFlags: [])
+            app.typeKey("o", modifierFlags: .command)
+            audit("Glas \(name): Schnell öffnen", orphans: .quickOpen)
+            app.typeKey(.escape, modifierFlags: [])
+
+            app.typeKey(",", modifierFlags: .command)
+            XCTAssertTrue(app.sliders["settings.glass.slider"].waitForExistence(timeout: 5))
+            audit("Glas \(name): Einstellungen › Darstellung mit Regler")
+            app.typeKey("w", modifierFlags: .command)
+        }
+
+        app.terminate()
+        app = XCUIApplication.quill(storeDirectory: storeDirectory)
+        app.launchArguments += ["-QuillTestGlass", "0.5", "-QuillTestReduceTransparency", "YES"]
+        app.launch()
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
+        app.windows.firstMatch.click()
+        // Mit Seite: Sonst misst der Kontrast-Check den Leerzustand im Detail durch das
+        // Einstellungsfenster hindurch, das davor liegt.
+        createPage("Glas deckend")
+        app.typeText("\r")
+        audit("Glas deckend: Sidebar und Toolbar")
+        app.typeKey(",", modifierFlags: .command)
+        XCTAssertTrue(app.descendants(matching: .any)["settings.glass.reduceTransparency"].waitForExistence(timeout: 5))
+        audit("Einstellungen › Darstellung, „Transparenz reduzieren“")
+        app.typeKey("w", modifierFlags: .command)
+    }
+
     /// Rückfrage nach einem eingespielten Backup bei eingeschaltetem Sync (ADR-029).
     func testAuditSyncReconnect() throws {
         app.terminate()
@@ -164,6 +211,9 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(window.waitForExistence(timeout: 10))
         let travel = app.openSeededTimeTravel()
+        // Zeiger weg von der Zeile in der Sidebar: Deren Tooltip (Hilfetext des Systems,
+        // ohne Beschreibung) erschien sonst im Audit, auch auf `main`.
+        travel.timeTravelDays.element(boundBy: 0).hover()
         audit("Zeitreise (heute)")
         travel.timeTravelDays.element(boundBy: 2).click()
         audit("Zeitreise (früherer Tag)")

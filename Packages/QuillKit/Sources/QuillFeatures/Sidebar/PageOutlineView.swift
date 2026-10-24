@@ -2,6 +2,8 @@
 import AppKit
 import Carbon.HIToolbox
 import QuillDesign
+import QuillEditor
+import QuillEditorCore
 import QuillModel
 import SwiftUI
 
@@ -118,6 +120,9 @@ struct PageOutlineView: NSViewRepresentable {
         /// nach dem Ablegen dort.
         private var dropTarget: SidebarSection.DropTarget = .hidden
 
+        /// Regler für Liquid Glass und Theme: Textfarben der sichtbaren Zeilen neu (ADR-036).
+        private var glassObservations: [NotificationObservation] = []
+
         private static let expandedKey = "QuillSidebarExpandedPages"
         private var expanded: Set<UUID> = Set(
             (UserDefaults.standard.stringArray(forKey: expandedKey) ?? []).compactMap(UUID.init(uuidString:))
@@ -126,6 +131,13 @@ struct PageOutlineView: NSViewRepresentable {
         func update(from view: PageOutlineView) {
             parent = view
             guard let outline else { return }
+            if glassObservations.isEmpty {
+                glassObservations = [GlassSettings.didChange, EditorThemeSettings.didChange].map { name in
+                    NotificationObservation(name, object: nil) { [weak self] _ in
+                        MainActor.assumeIsolated { self?.applyGlassColors() }
+                    }
+                }
+            }
             if view.nodes != nodes || view.favorites != favoriteNodes {
                 if !view.favorites.isEmpty { dropTarget = .hidden }
                 nodes = view.nodes
@@ -237,14 +249,32 @@ struct PageOutlineView: NSViewRepresentable {
                 let cell = outlineView.makeView(withIdentifier: identifier, owner: nil) as? GroupCellView
                     ?? GroupCellView(identifier: identifier)
                 cell.configure(title: item.node.title)
+                cell.glassColor = glassStyle(in: outlineView)?.secondaryNSColor
                 return cell
             }
             let identifier = NSUserInterfaceItemIdentifier("PageCell")
             let cell = outlineView.makeView(withIdentifier: identifier, owner: nil) as? PageCellView
                 ?? PageCellView(identifier: identifier)
             cell.configure(with: item.node, isFavoriteRow: item.role == .favorite)
+            cell.glassColor = glassStyle(in: outlineView)?.textNSColor
             cell.textField?.delegate = self
             return cell
+        }
+
+        /// Stil des Glases für die Darstellung der Sidebar; `nil` bei „Wie System“.
+        private func glassStyle(in outlineView: NSOutlineView) -> GlassStyle? {
+            GlassStyle.current(dark: outlineView.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua)
+        }
+
+        /// Textfarben der sichtbaren Zeilen nach Regler, Theme und Darstellung.
+        func applyGlassColors() {
+            guard let outline else { return }
+            let style = glassStyle(in: outline)
+            outline.enumerateAvailableRowViews { rowView, _ in
+                for case let cell as GlassTextColoring in rowView.subviews {
+                    cell.glassColor = cell is GroupCellView ? style?.secondaryNSColor : style?.textNSColor
+                }
+            }
         }
 
         func outlineView(_ outlineView: NSOutlineView, rowViewForItem item: Any) -> NSTableRowView? {
@@ -541,6 +571,12 @@ private final class MenuAction: NSObject {
 final class PageOutlineTableView: NSOutlineView {
     weak var coordinator: PageOutlineView.Coordinator?
 
+    /// Hell und dunkel haben eigene Textfarben auf dem Glas (ADR-036).
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        coordinator?.applyGlassColors()
+    }
+
     /// Ein Klick holt den Tastaturfokus in die Sidebar (wie im Finder), auch wenn
     /// vorher das Titelfeld der Seite fokussiert war. Sonst landen ↩ und ⌘⌫ dort.
     override func mouseDown(with event: NSEvent) {
@@ -562,8 +598,46 @@ final class PageOutlineTableView: NSOutlineView {
     }
 }
 
+/// Zelle mit eigener Textfarbe auf dem Glas von Quill (ADR-036). Nur in nicht
+/// ausgewählten Zeilen: Auf der Auswahl gelten die Farben des Systems.
+@MainActor
+protocol GlassTextColoring: NSTableCellView {
+    var glassColor: NSColor? { get set }
+}
+
+/// Merkt sich die Farbe des Systems, solange eine eigene gilt, und setzt sie danach zurück.
+@MainActor
+final class GlassTextColor {
+    private var systemColor: NSColor?
+
+    func apply(_ glassColor: NSColor?, to field: NSTextField?, style: NSView.BackgroundStyle) {
+        guard let field else { return }
+        if let glassColor, style == .normal {
+            if systemColor == nil { systemColor = field.textColor }
+            field.textColor = glassColor
+        } else if let systemColor {
+            field.textColor = systemColor
+            self.systemColor = nil
+        }
+    }
+}
+
 /// Überschrift eines Abschnitts („Favoriten“, „Seiten“).
-final class GroupCellView: NSTableCellView {
+final class GroupCellView: NSTableCellView, GlassTextColoring {
+    private let glassText = GlassTextColor()
+    var glassColor: NSColor? {
+        didSet { needsDisplay = true }
+    }
+
+    override var backgroundStyle: NSView.BackgroundStyle {
+        didSet { needsDisplay = true }
+    }
+
+    override func viewWillDraw() {
+        glassText.apply(glassColor, to: textField, style: backgroundStyle)
+        super.viewWillDraw()
+    }
+
     init(identifier: NSUserInterfaceItemIdentifier) {
         super.init(frame: .zero)
         self.identifier = identifier
@@ -589,7 +663,21 @@ final class GroupCellView: NSTableCellView {
 }
 
 /// Zeile: Emoji oder Symbol, dann bearbeitbarer Titel.
-final class PageCellView: NSTableCellView {
+final class PageCellView: NSTableCellView, GlassTextColoring {
+    private let glassText = GlassTextColor()
+    var glassColor: NSColor? {
+        didSet { needsDisplay = true }
+    }
+
+    override var backgroundStyle: NSView.BackgroundStyle {
+        didSet { needsDisplay = true }
+    }
+
+    override func viewWillDraw() {
+        glassText.apply(glassColor, to: textField, style: backgroundStyle)
+        super.viewWillDraw()
+    }
+
     private let iconLabel = NSTextField(labelWithString: "")
     private let symbolView = DecorativeImageView()
     /// Marke „wiederhergestellt“ am Zeilenende (11.6); VoiceOver hört sie im Wert der Zeile.

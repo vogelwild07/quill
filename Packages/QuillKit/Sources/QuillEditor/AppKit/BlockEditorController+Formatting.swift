@@ -158,7 +158,8 @@ extension BlockEditorController {
             }
             self.focus()
         }
-        popover.contentViewController = NSHostingController(rootView: editor)
+        // Tönung über dem Glas des Popovers nach dem Regler (ADR-036).
+        popover.contentViewController = NSHostingController(rootView: editor.quillGlassTint())
         var anchor = textView.firstRect(forCharacterRange: target.range, actualRange: nil)
         if let window = textView.window {
             anchor = textView.convert(window.convertFromScreen(anchor), from: nil)

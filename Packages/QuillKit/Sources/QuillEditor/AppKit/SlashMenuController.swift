@@ -230,7 +230,7 @@ struct SlashMenuView: View {
                 .accessibilityIdentifier("slash.hint")
         }
         .frame(width: 280)
-        .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .quillGlass(in: .rect(cornerRadius: 14))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("slash.menu")
     }

@@ -10,6 +10,9 @@
     "%@–%@ %@" : {
 
     },
+    "%lld %% getönt" : {
+
+    },
     "%lld Bilder nicht zurückgeholt: Sie werden nicht mehr aufbewahrt." : {
       "localizations" : {
         "de" : {
@@ -493,6 +496,9 @@
     "Gestern" : {
 
     },
+    "Getönt" : {
+
+    },
     "Gleicht ab …" : {
 
     },
@@ -589,6 +595,9 @@
     "Keine verwandten Seiten" : {
 
     },
+    "Klar" : {
+
+    },
     "Kopieren" : {
 
     },
@@ -608,6 +617,9 @@
 
     },
     "Link …" : {
+
+    },
+    "Liquid Glass" : {
 
     },
     "Lizenzen" : {
@@ -740,6 +752,9 @@
 
     },
     "Quill darf keine Mitteilungen senden. Erlaube sie in den Systemeinstellungen unter „Mitteilungen“." : {
+
+    },
+    "Quill folgt der Einstellung für Liquid Glass in den Systemeinstellungen." : {
 
     },
     "Quill gleicht deine Seiten über einen Ordner ab, zum Beispiel in iCloud Drive. Jeder Mac schreibt dort nur eigene Dateien, nichts wird überschrieben." : {
@@ -1061,6 +1076,9 @@
     "Wenn du Quill jetzt beendest, gehen diese Änderungen verloren. Solange Quill geöffnet bleibt, wird das Speichern weiter versucht.\n\n%@" : {
 
     },
+    "Wie System" : {
+
+    },
     "Wiederhergestellt nach dem Abgleich" : {
 
     },
@@ -1203,6 +1221,9 @@
 
     },
     "„Quill/quill.json“ ist unlesbar." : {
+
+    },
+    "„Transparenz reduzieren“ ist in den Bedienungshilfen an. Das Glas in Quill ist deshalb deckend." : {
 
     },
     "↑↓ wählen   ↩ öffnen   ⌘↩ in neuem Tab   ⎋ schließen" : {

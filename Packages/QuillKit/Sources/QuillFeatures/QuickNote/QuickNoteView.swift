@@ -1,5 +1,6 @@
 #if canImport(AppKit)
 import OSLog
+import QuillEditor
 import SwiftUI
 
 /// Inhalt des Fensters der Schnellnotiz (15.3, ADR-033).
@@ -46,6 +47,8 @@ struct QuickNoteView: View {
         }
         .padding(16)
         .frame(minWidth: 340, minHeight: 220)
+        // Das ganze Fenster ist Glas, auch unter der Titelleiste (ADR-036).
+        .background { Color.clear.quillGlass(in: Rectangle()).ignoresSafeArea() }
     }
 
     private func save() async {

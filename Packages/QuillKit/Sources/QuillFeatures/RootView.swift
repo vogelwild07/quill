@@ -71,6 +71,8 @@ public struct RootView: View {
                     if let sync = persistence?.sync { SyncSidebarStatus(sync: sync) }
                 }
                 #endif
+                // Tönung über dem Glas der Sidebar nach dem Regler (ADR-036).
+                .quillGlassTint()
             }
         } detail: {
             if isShowingTrash, let operations {
@@ -92,7 +94,9 @@ public struct RootView: View {
                 .toolbar {
                     ToolbarItem {
                         favoriteButton(selection, operations: operations)
+                            .quillToolbarButtonGlass()
                     }
+                    .quillToolbarGlass()
                 }
             } else {
                 EmptyStateView(

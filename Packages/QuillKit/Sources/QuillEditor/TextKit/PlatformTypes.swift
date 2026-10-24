@@ -82,6 +82,24 @@ enum Platform {
         (UIAccessibility.darkerSystemColorsStatusDidChangeNotification, .default)
         #endif
     }
+
+    /// „Transparenz reduzieren“ in den Bedienungshilfen (ADR-036).
+    @MainActor static var reducesTransparency: Bool {
+        #if canImport(AppKit)
+        NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+        #else
+        UIAccessibility.isReduceTransparencyEnabled
+        #endif
+    }
+
+    /// Benachrichtigung, wenn sich `reducesTransparency` ändert, mit ihrem Center.
+    @MainActor static var reducesTransparencyDidChange: (name: Notification.Name, center: NotificationCenter) {
+        #if canImport(AppKit)
+        (NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, NSWorkspace.shared.notificationCenter)
+        #else
+        (UIAccessibility.reduceTransparencyStatusDidChangeNotification, .default)
+        #endif
+    }
 }
 
 extension PlatformColor {
