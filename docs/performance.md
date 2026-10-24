@@ -714,6 +714,28 @@ streuen auf beiden Ständen zwischen rund 168 und 197 ms. `sidebarReload` hat zw
 kurzen Messungen. `pageSwitch` liegt auf beiden Ständen bei rund 78 ms statt 57 ms wie beim
 Lauf von 17.2, also an der Umgebung, nicht an Phase 17.
 
+## Präsentieren (24.10.2026, ADR-035)
+
+18.2 fügt nur einen Menübefehl und ein eigenes Fenster hinzu, das erst mit ⌥⌘P entsteht. Im
+Wechsel mit `main` (`78a2d62`), je zwei Runden:
+
+| Messung (ms) | `main` | 18.2 |
+|---|---|---|
+| applyEditsMove | 15,53 / 15,43 | 16,05 / 15,44 |
+| editorLoad | 13,02 / 13,29 | 12,87 / 13,03 |
+| exportPlan | 973,8 / 966,8 | 969,4 / 967,9 |
+| historyDays | 89,81 / 90,02 | 89,98 / 89,69 |
+| pageTreeBuild | 54,89 / 54,75 | 54,17 / 54,14 |
+| search | 44,53 / 45,33 | 46,01 / 44,78 |
+| App: sidebarLoad | 184,4 / 185,6 | 188,3 / 185,1 |
+| App: sidebarReload | 151,3 / 171,3 | 174,4 / 173,2 |
+| App: pageSwitch | 77,5 / 77,4 | 78,8 / 78,2 |
+
+Nichts über 3 %. `applyEditsMove` und `search` liegen nur in der ersten Runde höher (+3,3 %
+bzw. +3,3 % je Messung, im Mittel beider Runden +1,7 % und +0,5 %), `pageSwitch` +1,4 % im
+Mittel. `sidebarReload` hat zwei Lagen (rund 105 und 170–185 ms je Messung); der Median von
+151,3 ms stammt aus einer Runde mit zwei kurzen Messungen.
+
 ## Messbedingungen
 
 | | |
