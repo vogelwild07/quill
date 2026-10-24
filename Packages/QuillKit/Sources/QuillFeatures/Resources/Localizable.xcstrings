@@ -445,6 +445,9 @@
     "Fokus-Modus" : {
 
     },
+    "Folie %lld von %lld" : {
+
+    },
     "Fortschritt des Abgleichs" : {
 
     },
@@ -716,6 +719,15 @@
 
     },
     "Pausiert" : {
+
+    },
+    "Präsentation" : {
+
+    },
+    "Präsentation: %@" : {
+
+    },
+    "Präsentieren" : {
 
     },
     "Quellen" : {

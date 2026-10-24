@@ -818,3 +818,9 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Test-Stores bleiben im Fenster statt im Vollbild (Vollbild wechselt den Space und blieb nach einem abgebrochenen Test stehen). Das Vollbild gehört zum Handtest.
 - Alternativen (nicht gewählt, nicht besprochen): Trennlinien als Foliengrenze (wer Folien will, gliedert meist schon mit Überschriften; Trennlinien teilen auch Gedanken innerhalb eines Abschnitts); jede Überschrift trennt (Unterabschnitte zerfielen in winzige Folien); live mitlaufende Änderungen (jede Speicherung würde die Folie neu aufbauen und die Stelle verschieben); Präsentation im Fenster des Editors (verändert Sidebar und Fenstergröße, die danach zurückmüssten); Export nach Keynote oder PDF (fremdes Format, Datei auf der Platte); eigene Darstellung mit festen Schriftgrößen statt Vergrößerung (zweiter Renderer für alle Blockarten).
 
+**Entscheidung (18.2, umgesetzt):**
+- Tasten über einen lokalen Monitor nur für das Fenster der Präsentation (`PresentationKeys`) statt `onKeyPress`: Im Fenster nimmt keine Ansicht den Fokus (der Editor ist ohne Schreibmarke, `isSelectable = false`), `onKeyPress` kam im UI-Test nie an.
+- Das Fenster wird nach einem Neustart nicht wiederhergestellt (`restorationBehavior(.disabled)`), sonst begänne eine Präsentation von selbst im Vollbild.
+- „Folie 2 von 5“ ohne Pluralformen (eine Stelle von vielen, „Folie 1 von 1“ passt), Ausnahme in `LocalizationTests`.
+- Nicht in diesem Schritt: Notizen für Vortragende, Zeiger, zweiter Bildschirm, Übergänge, Klick zum Weiterblättern.
+

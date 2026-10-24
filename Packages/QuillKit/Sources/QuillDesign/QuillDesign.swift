@@ -86,6 +86,17 @@ public enum QuillDesign {
         public static let noticePadding: CGFloat = 8
     }
 
+    /// Präsentieren (18.2, ADR-035).
+    public enum Presentation {
+        /// Höchste Vergrößerung des Editors auf breiten Bildschirmen.
+        public static let maxMagnification: CGFloat = 2.5
+        /// Fenster ohne Vollbild (Test-Stores).
+        public static let minWindowWidth: CGFloat = 800
+        public static let minWindowHeight: CGFloat = 500
+        /// Abstand von „Folie 2 von 5“ zur Ecke.
+        public static let counterPadding: CGFloat = 16
+    }
+
     /// Eckenradien.
     public enum Radius {
         /// Inline-Code, Checkbox, Bild, Hover-Fläche des ＋.

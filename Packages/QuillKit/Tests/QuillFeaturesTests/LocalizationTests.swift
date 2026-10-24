@@ -115,11 +115,13 @@ struct LocalizationTests {
     /// Katalog in Quill (ADR-033). Bis es eine zweite Sprache gibt, gilt die Ausgangssprache.
     static let appIntentsReason = "App Intents: Text aus den Metadaten der App (ADR-033)."
 
-    /// Zahlen in diesen Sätzen brauchen keine Pluralform (Form „Wort: Zahl“ oder Maße).
+    /// Zahlen in diesen Sätzen brauchen keine Pluralform (Form „Wort: Zahl“, Maße oder
+    /// eine Stelle von vielen wie „Folie 1 von 1“).
     static let pluralFree: Set<String> = [
         "Fehlende Bilder: %lld",
         "Seiten: %lld · Bilder: %lld",
         "Bild, %lld × %lld Punkte",
+        "Folie %lld von %lld",
     ]
 
     static let root = URL(filePath: #filePath)
