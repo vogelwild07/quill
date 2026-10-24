@@ -90,7 +90,11 @@ struct VoiceNoteTests {
         let persistence = QuillPersistence(container: try QuillStore.makeInMemoryContainer(), backup: nil)
         #expect(persistence.isTestStore)
         let voice = try #require(persistence.voice as? MemoryVoiceTranscriber)
+        #if DEBUG
         #expect(voice.words.joined(separator: " ") == MemoryVoiceTranscriber.sampleText)
+        #else
+        #expect(voice.words.isEmpty)
+        #endif
     }
 
     private func waitUntil(_ condition: () -> Bool) async throws {
