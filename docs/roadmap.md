@@ -28,6 +28,9 @@ Jede Phase auf eigenem Branch mit PR; auf `main` nur grüne Builds.
 
 ## Später
 
+Aus dem Release v0.4.0 (2026-10-24, ADR-022):
+- Automerge im Release selbst aus dem Quellcode bauen, damit keine Pfade fremder Build-Rechner im Binary stehen (braucht cargo im Release-Build).
+
 Aus Phase 15.4 (2026-10-23, ADR-033):
 - Zeitpunkt der Erinnerung als Feld des To-dos (synct auf andere Macs, steht im Backup); braucht Schema V3 mit Migration nach Freigabe des Nutzers und eine Erweiterung des Sync-Formats. Bis dahin gilt eine Erinnerung nur auf dem Mac, auf dem sie geplant wurde.
 
