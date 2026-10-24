@@ -68,13 +68,10 @@ print -r -- "$signature" | grep -q 'flags=.*runtime' || fail "ohne Hardened Runt
 entitlements=$(codesign -d --entitlements - --xml "$app" 2>/dev/null) || fail "Entitlements nicht lesbar"
 print -r -- "$entitlements" | grep -q com.apple.security.app-sandbox || fail "ohne App Sandbox"
 if print -r -- "$entitlements" | grep -q get-task-allow; then fail "Debug-Entitlement get-task-allow"; fi
-# grep: 0 = gefunden, 1 = nichts gefunden, 2 = Lesefehler (zählt als Fehler).
-paths=$(grep -r -l -a -F /Users/ "$app") && found=0 || found=$?
-case $found in
-  0) echo "$paths"; fail "persönlicher Pfad im Bundle (siehe oben)" ;;
-  1) ;;
-  *) fail "Bundle nicht lesbar (grep $found)" ;;
-esac
+# Kein Pfad aus einem Benutzerordner im Bundle. Einzige Ausnahme (ADR-022): Pfade vom
+# Build-Rechner der fertig gebauten Rust-Bibliothek von automerge-swift (Cargo-Registry,
+# Rust-Toolchain, Build-Ordner). Der eigene Benutzername bricht immer ab.
+"$root/Scripts/check-bundle-paths.pl" "$USER" "$app" || fail "persönlicher Pfad im Bundle (siehe oben)"
 "$root/Scripts/check-release-binary.sh" --app "$app" || fail "Profiling- oder Testcode im Bundle"
 
 # 3. .dmg: App und Verknüpfung zu /Applications, Name „Programme“ wie im Finder
