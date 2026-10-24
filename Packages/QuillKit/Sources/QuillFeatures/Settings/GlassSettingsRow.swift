@@ -1,3 +1,5 @@
+#if canImport(AppKit)
+import AppKit
 import QuillDesign
 import QuillEditor
 import QuillEditorCore
@@ -19,21 +21,22 @@ struct GlassSettingsRow: View {
             }
             .accessibilityIdentifier("settings.glass.followsSystem")
 
-            Slider(value: Binding(get: { glass.level }, set: { glass.setLevel($0) }), in: 0...1, step: GlassSettings.step) {
-                Text("Liquid Glass", bundle: .module)
-            } minimumValueLabel: {
+            HStack(spacing: 8) {
+                // Die Symbole sagen dasselbe wie der Wert des Reglers („Klar“ … „Getönt“).
                 Image(systemName: "circle.dotted")
-                    .accessibilityLabel(Text("Klar", bundle: .module))
+                    .accessibilityHidden(true)
                     .help(String(localized: "Klar", bundle: .module))
-            } maximumValueLabel: {
+                GlassLevelSlider(
+                    level: Binding(get: { glass.level }, set: { glass.setLevel($0) }),
+                    label: String(localized: "Liquid Glass", bundle: .module),
+                    valueDescription: Self.valueDescription(glass.level)
+                )
+                .disabled(isSliderDisabled)
                 Image(systemName: "circle.fill")
-                    .accessibilityLabel(Text("Getönt", bundle: .module))
+                    .accessibilityHidden(true)
                     .help(String(localized: "Getönt", bundle: .module))
             }
-            .labelsHidden()
-            .disabled(isSliderDisabled)
-            .accessibilityValue(Self.valueDescription(glass.level))
-            .accessibilityIdentifier("settings.glass.slider")
+            .foregroundStyle(isSliderDisabled ? .tertiary : .secondary)
             .frame(maxWidth: QuillDesign.Glass.sliderWidth)
 
             if glass.reduceTransparency {
@@ -62,3 +65,59 @@ struct GlassSettingsRow: View {
         }
     }
 }
+
+/// Regler mit fünf Rasterpunkten als `NSSlider`: Der `Slider` von SwiftUI gibt VoiceOver
+/// nur die Zahl (0,25) statt „25 % getönt“, und sein Knopf erscheint als eigenes Element
+/// ohne Beschreibung (Meldung im Audit). Der Knopf ist hier kein eigenes Element; bedient
+/// wird der Regler selbst, mit den Pfeiltasten oder VoiceOver.
+private struct GlassLevelSlider: NSViewRepresentable {
+    @Binding var level: Double
+    let label: String
+    let valueDescription: String
+
+    func makeNSView(context: Context) -> NSSlider {
+        let slider = GlassNSSlider(value: level, minValue: 0, maxValue: 1, target: context.coordinator, action: #selector(Coordinator.changed(_:)))
+        slider.numberOfTickMarks = Int(1 / GlassSettings.step) + 1
+        slider.allowsTickMarkValuesOnly = true
+        slider.isContinuous = true
+        slider.controlSize = .regular
+        slider.setAccessibilityIdentifier("settings.glass.slider")
+        return slider
+    }
+
+    func updateNSView(_ slider: NSSlider, context: Context) {
+        context.coordinator.level = $level
+        if slider.doubleValue != level { slider.doubleValue = level }
+        slider.isEnabled = context.environment.isEnabled
+        slider.setAccessibilityLabel(label)
+        slider.setAccessibilityValueDescription(valueDescription)
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(level: $level) }
+
+    @MainActor
+    final class Coordinator: NSObject {
+        var level: Binding<Double>
+
+        init(level: Binding<Double>) {
+            self.level = level
+        }
+
+        @objc func changed(_ sender: NSSlider) {
+            level.wrappedValue = sender.doubleValue
+        }
+    }
+}
+
+/// Ohne den Knopf als eigenes Element; das Element der Bedienungshilfen ist die Zelle.
+private final class GlassNSSlider: NSSlider {
+    override class var cellClass: AnyClass? {
+        get { GlassSliderCell.self }
+        set {}
+    }
+}
+
+private final class GlassSliderCell: NSSliderCell {
+    override func accessibilityChildren() -> [Any]? { [] }
+}
+#endif

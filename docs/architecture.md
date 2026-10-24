@@ -405,7 +405,7 @@ QuillEditor/Theme
   quillToolbarGlass() Toolbar ohne gemeinsames Glas, Knöpfe mit quillToolbarButtonGlass()
   GlassAccessibility  „Transparenz reduzieren“ aus NSWorkspace → GlassSettings
 QuillFeatures
-  GlassSettingsRow    „Wie System“, Regler mit Symbolen klar/getönt, Hinweis
+  GlassSettingsRow    „Wie System“, Regler (NSSlider, GlassLevelSlider) mit Symbolen klar/getönt, Hinweis
   PageOutlineView     Textfarbe der Zeilen nach Regler, Theme und Darstellung
   EditorThemeSetup    -QuillTestGlass, -QuillTestReduceTransparency (nur Test-Store)
 Tests

@@ -858,6 +858,7 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Fenster der Schnellnotiz: ganz aus Glas, auch unter der Titelleiste, auch bei „Wie System“ (dann `Glass.regular`). Vorher war es eine deckende Fensterfläche; der Wunsch nennt es ausdrücklich als Glasfläche.
 - Popover mit Fläche: Link (⌘K), Konflikte, „wiederhergestellt“ und Erinnerung am Block.
 - Startargumente nur mit Test-Store: `-QuillTestGlass <Stufe>` (ohne: „Wie System“) und `-QuillTestReduceTransparency YES|NO` (fest, die Bedienungshilfen des Macs wirken dann nicht). Test-Stores lesen und schreiben die Wahl des Nutzers nie.
-- VoiceOver liest am Regler „Klar“, „25 % getönt“ … „Getönt“; die Symbole heißen „Klar“ und „Getönt“.
+- Der Regler ist ein `NSSlider` mit fünf Rasterpunkten (`GlassLevelSlider`), kein `Slider` von SwiftUI: Der gibt VoiceOver nur die Zahl (0,25) statt eines eigenen Werts, und sein Knopf erscheint als eigenes Element ohne Beschreibung (Meldung im Audit). Am `NSSlider` liest VoiceOver „Klar“, „25 % getönt“ … „Getönt“ (`accessibilityValueDescription`); der Knopf ist kein eigenes Element. Die Symbole links und rechts sind für VoiceOver versteckt, weil der Wert dasselbe sagt.
+- `testAuditTimeTravel` setzt den Zeiger vor dem Audit auf den ersten Tag: Der Tooltip der zuvor angeklickten Zeile in der Sidebar erschien sonst als Element ohne Beschreibung, auch auf `main` (Xcode 27.1).
 - `AccessibilityAuditUITests.testAuditGlass` prüft Sidebar, Toolbar, Slash-Menü, Schnell öffnen und den Regler in Stellung klar und getönt; der Kontrast-Check des Audits misst dabei das echte Glas über dem Schreibtisch des Testrechners.
 

@@ -33,6 +33,11 @@ final class GlassUITests: XCTestCase {
     private var slider: XCUIElement { app.sliders["settings.glass.slider"] }
     private var hint: XCUIElement { app.descendants(matching: .any)["settings.glass.reduceTransparency"] }
 
+    /// Stufe des Reglers; VoiceOver liest dazu „Klar“ … „Getönt“ (`GlassSettingsRowTests`).
+    private var level: Double? {
+        (slider.value as? NSNumber)?.doubleValue ?? (slider.value as? String).flatMap(Double.init)
+    }
+
     private func isOn(_ toggle: XCUIElement) -> Bool {
         (toggle.value as? NSNumber)?.boolValue ?? (toggle.value as? String == "1")
     }
@@ -44,6 +49,7 @@ final class GlassUITests: XCTestCase {
         app.typeText("Text bleibt gleich")
         let editor = app.windows.firstMatch.textViews["editor.text"]
         let before = editor.value as? String
+        let rows = app.windows.firstMatch.outlines["sidebar.pages"].cells.count
 
         let toggle = openSettings()
         XCTAssertTrue(isOn(toggle), "„Wie System“ ist Standard")
@@ -54,11 +60,14 @@ final class GlassUITests: XCTestCase {
         toggle.click()
         XCTAssertFalse(isOn(toggle))
         XCTAssertTrue(slider.isEnabled)
-        XCTAssertEqual(slider.value as? String, "50 % getönt", "Standard Mitte")
+        XCTAssertEqual(level, 0.5, "Standard Mitte")
+        XCTAssertEqual(slider.label, "Liquid Glass")
         slider.adjust(toNormalizedSliderPosition: 0)
-        XCTAssertEqual(slider.value as? String, "Klar")
+        XCTAssertEqual(level, 0)
+        slider.adjust(toNormalizedSliderPosition: 0.8)
+        XCTAssertEqual(level, 0.75, "rastet auf Stufen von 25 %")
         slider.adjust(toNormalizedSliderPosition: 1)
-        XCTAssertEqual(slider.value as? String, "Getönt")
+        XCTAssertEqual(level, 1)
 
         toggle.click()
         XCTAssertTrue(isOn(toggle))
@@ -68,7 +77,7 @@ final class GlassUITests: XCTestCase {
         app.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(editor.waitForExistence(timeout: 5))
         XCTAssertEqual(editor.value as? String, before)
-        XCTAssertEqual(app.windows.firstMatch.outlines["sidebar.pages"].cells.count, 1)
+        XCTAssertEqual(app.windows.firstMatch.outlines["sidebar.pages"].cells.count, rows)
     }
 
     /// Startargument: Stufe ohne „Wie System“; „Transparenz reduzieren“ graut den Regler
@@ -77,10 +86,11 @@ final class GlassUITests: XCTestCase {
         launch(["-QuillTestGlass", "0.25", "-QuillTestReduceTransparency", "YES"])
         let toggle = openSettings()
         XCTAssertFalse(isOn(toggle))
-        XCTAssertEqual(slider.value as? String, "25 % getönt")
+        XCTAssertEqual(level, 0.25)
         XCTAssertFalse(slider.isEnabled, "„Transparenz reduzieren“ hat Vorrang")
         XCTAssertTrue(hint.exists)
-        XCTAssertTrue(hint.label.contains("Transparenz reduzieren"), hint.label)
+        let text = "\(hint.label) \(hint.value ?? "")"
+        XCTAssertTrue(text.contains("Transparenz reduzieren"), text)
 
         // Auch mit „Wie System“ bleibt der Hinweis; der Regler bleibt aus.
         toggle.click()

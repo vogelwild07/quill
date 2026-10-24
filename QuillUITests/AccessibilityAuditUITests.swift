@@ -154,6 +154,12 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.launchArguments += ["-QuillTestGlass", "0.5", "-QuillTestReduceTransparency", "YES"]
         app.launch()
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
+        app.windows.firstMatch.click()
+        // Mit Seite: Sonst misst der Kontrast-Check den Leerzustand im Detail durch das
+        // Einstellungsfenster hindurch, das davor liegt.
+        createPage("Glas deckend")
+        app.typeText("\r")
+        audit("Glas deckend: Sidebar und Toolbar")
         app.typeKey(",", modifierFlags: .command)
         XCTAssertTrue(app.descendants(matching: .any)["settings.glass.reduceTransparency"].waitForExistence(timeout: 5))
         audit("Einstellungen › Darstellung, „Transparenz reduzieren“")
@@ -205,6 +211,9 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(window.waitForExistence(timeout: 10))
         let travel = app.openSeededTimeTravel()
+        // Zeiger weg von der Zeile in der Sidebar: Deren Tooltip (Hilfetext des Systems,
+        // ohne Beschreibung) erschien sonst im Audit, auch auf `main`.
+        travel.timeTravelDays.element(boundBy: 0).hover()
         audit("Zeitreise (heute)")
         travel.timeTravelDays.element(boundBy: 2).click()
         audit("Zeitreise (früherer Tag)")
