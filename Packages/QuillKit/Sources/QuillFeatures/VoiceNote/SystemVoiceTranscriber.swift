@@ -9,18 +9,20 @@ import Synchronization
 /// Systems, beginnt keine Aufnahme.
 struct SystemVoiceTranscriber: VoiceTranscriber {
     func start() async throws -> VoiceRecording {
-        guard await Self.microphoneAllowed() else { throw VoiceProblem.microphoneDenied }
+        // Sprache zuerst: Ohne ihr Modell fragt Quill gar nicht erst nach dem Mikrofon.
         guard let locale = await Self.installedLocale() else { throw VoiceProblem.languageMissing }
         let transcriber = SpeechTranscriber(locale: locale, preset: .progressiveTranscription)
         guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else {
-            throw VoiceProblem.languageMissing
+            throw VoiceProblem.recognizerUnavailable
         }
+        guard await Self.microphoneAllowed() else { throw VoiceProblem.microphoneDenied }
         let microphone = try Microphone(format: format)
         let analyzer = SpeechAnalyzer(modules: [transcriber])
-        try await analyzer.start(inputSequence: microphone.inputs)
         do {
+            try await analyzer.start(inputSequence: microphone.inputs)
             try microphone.start()
         } catch {
+            microphone.stop()
             await analyzer.cancelAndFinishNow()
             throw error
         }
@@ -36,9 +38,10 @@ struct SystemVoiceTranscriber: VoiceTranscriber {
                 continuation.finish(throwing: error)
             }
         }
+        // Bei jedem Ende das Mikrofon freigeben; nach einem Abbruch oder Fehler auch die Erkennung.
         continuation.onTermination = { termination in
-            guard case .cancelled = termination else { return }
             microphone.stop()
+            if case .finished(nil) = termination { return }
             reader.cancel()
             Task { await analyzer.cancelAndFinishNow() }
         }

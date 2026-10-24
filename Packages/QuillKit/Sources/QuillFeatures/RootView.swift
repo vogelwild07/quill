@@ -40,10 +40,8 @@ public struct RootView: View {
     @State private var voiceNoteRequest: VoiceNoteRequest?
     @State private var relatedRequest: RelatedRequest?
     @State private var isAskShown = false
-    /// Hinweis zu „Heute“ oder „Heutige Termine einfügen“.
-    @State private var todayNotice: String?
-    /// Hinweis zu „Sprachnotiz …“ ohne Einfügemarke.
-    @State private var voiceNotice: String?
+    /// Hinweis zu „Heute“, „Heutige Termine einfügen“ oder „Sprachnotiz …“.
+    @State private var commandNotice: CommandNotice?
     #endif
 
     @Environment(\.pageStore) private var store
@@ -148,22 +146,13 @@ public struct RootView: View {
             Text(notice.message)
         }
         .alert(
-            String(localized: "Heute", bundle: .module),
-            isPresented: Binding(get: { todayNotice != nil }, set: { if !$0 { todayNotice = nil } }),
-            presenting: todayNotice
+            commandNotice?.title ?? "",
+            isPresented: Binding(get: { commandNotice != nil }, set: { if !$0 { commandNotice = nil } }),
+            presenting: commandNotice
         ) { _ in
             Button(String(localized: "OK", bundle: .module)) {}
         } message: { notice in
-            Text(notice)
-        }
-        .alert(
-            String(localized: "Sprachnotiz", bundle: .module),
-            isPresented: Binding(get: { voiceNotice != nil }, set: { if !$0 { voiceNotice = nil } }),
-            presenting: voiceNotice
-        ) { _ in
-            Button(String(localized: "OK", bundle: .module)) {}
-        } message: { notice in
-            Text(notice)
+            Text(notice.message)
         }
         .sheet(isPresented: $isSyncReconnectShown) {
             if let persistence {
@@ -371,7 +360,7 @@ public struct RootView: View {
             do {
                 showPage(try await TodayPage(store: store).open())
             } catch {
-                todayNotice = String(localized: "Die Seite für heute ließ sich nicht öffnen.", bundle: .module)
+                commandNotice = CommandNotice(today: String(localized: "Die Seite für heute ließ sich nicht öffnen.", bundle: .module))
             }
         }
     }
@@ -380,20 +369,20 @@ public struct RootView: View {
     private func insertTodayEvents() {
         let editor = BlockEditorController.focused(in: window)
         guard let editor, editor.allowsEditing, let anchor = editor.cursorBlockID, let persistence else {
-            todayNotice = String(localized: "Setze die Einfügemarke in eine Seite.", bundle: .module)
+            commandNotice = CommandNotice(today: String(localized: "Setze die Einfügemarke in eine Seite.", bundle: .module))
             return
         }
         let events = TodayEvents(source: persistence.calendar)
         Task {
             switch await events.lines() {
             case .denied:
-                todayNotice = String(localized: "Quill darf deinen Kalender nicht lesen. Du kannst das in den Systemeinstellungen unter „Datenschutz & Sicherheit › Kalender“ ändern.", bundle: .module)
+                commandNotice = CommandNotice(today: String(localized: "Quill darf deinen Kalender nicht lesen. Du kannst das in den Systemeinstellungen unter „Datenschutz & Sicherheit › Kalender“ ändern.", bundle: .module))
             case .empty:
-                todayNotice = String(localized: "Heute stehen keine Termine in deinem Kalender.", bundle: .module)
+                commandNotice = CommandNotice(today: String(localized: "Heute stehen keine Termine in deinem Kalender.", bundle: .module))
             case .lines(let lines):
                 // Während der Rückfrage zum Kalender kann der Block oder die Seite weg sein.
                 guard editor.acceptsInsertion, editor.document.blocks.contains(where: { $0.id == anchor }) else {
-                    todayNotice = String(localized: "Setze die Einfügemarke in eine Seite.", bundle: .module)
+                    commandNotice = CommandNotice(today: String(localized: "Setze die Einfügemarke in eine Seite.", bundle: .module))
                     return
                 }
                 editor.focus()
@@ -408,7 +397,7 @@ public struct RootView: View {
     /// Sprachnotiz unter den Block an der Einfügemarke.
     private func voiceNote() {
         guard let request = VoiceNoteRequest(focusedIn: window) else {
-            voiceNotice = String(localized: "Setze die Einfügemarke in eine Seite.", bundle: .module)
+            commandNotice = CommandNotice(voiceNote: String(localized: "Setze die Einfügemarke in eine Seite.", bundle: .module))
             return
         }
         voiceNoteRequest = request
@@ -547,3 +536,21 @@ public struct RootView: View {
     RootView()
         .modelContainer(for: Page.self, inMemory: true)
 }
+
+#if canImport(AppKit)
+/// Hinweis zu einem Befehl im Menü, mit dem Befehl als Titel.
+private struct CommandNotice {
+    let title: String
+    let message: String
+
+    init(today message: String) {
+        title = String(localized: "Heute", bundle: .module)
+        self.message = message
+    }
+
+    init(voiceNote message: String) {
+        title = String(localized: "Sprachnotiz", bundle: .module)
+        self.message = message
+    }
+}
+#endif

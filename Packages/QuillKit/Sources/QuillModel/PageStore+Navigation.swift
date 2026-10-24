@@ -175,13 +175,13 @@ extension PageStore {
 
     // MARK: Suche
 
+    /// Höchstzahl der Treffer einer Suche.
+    public static let searchLimit = 50
+
     /// Sucht nach Titel und Inhalt, ohne Groß/klein und Akzente. Seiten im Papierkorb
     /// (auch logisch über eine Elternseite) zählen nicht. Titeltreffer zuerst: Titel
     /// beginnt mit dem Begriff, dann ein Wort darin, dann irgendwo; bei Gleichstand
     /// zuletzt bearbeitet. Danach ein Inhaltstreffer je Seite (erster Block).
-    /// Höchstzahl der Treffer einer Suche.
-    public static let searchLimit = 50
-
     public func search(_ query: String, limit: Int = searchLimit) throws -> [SearchHit] {
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !term.isEmpty else { return [] }
@@ -225,9 +225,14 @@ extension PageStore {
     /// Bilder auf Seiten außerhalb des Papierkorbs (Text in Bildern, ADR-034).
     public func activeImages() throws -> [ImageReference] {
         try modelContext.fetch(FetchDescriptor<Asset>(predicate: #Predicate { $0.block != nil })).compactMap { asset in
-            guard let block = asset.block, let page = block.page, !isInTrash(page) else { return nil }
-            return ImageReference(blockID: block.id, pageID: page.id, assetID: asset.id)
+            activePlacement(of: asset).map { ImageReference(blockID: $0.block.id, pageID: $0.page.id, assetID: asset.id) }
         }
+    }
+
+    /// Block und Seite eines Bilds, wenn die Seite nicht im Papierkorb liegt.
+    private func activePlacement(of asset: Asset) -> (page: Page, block: Block)? {
+        guard let block = asset.block, let page = block.page, !isInTrash(page) else { return nil }
+        return (page, block)
     }
 
     /// Treffer für Bilder, deren erkannter Text passt: je Bild außerhalb des Papierkorbs
@@ -237,10 +242,8 @@ extension PageStore {
         guard limit > 0, !excerpts.isEmpty else { return [] }
         let ids = Array(excerpts.keys)
         let found: [(page: Page, block: Block)] = try modelContext.fetch(FetchDescriptor<Asset>(predicate: #Predicate { ids.contains($0.id) }))
-            .compactMap { asset in
-                guard let block = asset.block, let page = block.page, !isInTrash(page) else { return nil }
-                return (page, block)
-            }
+            .compactMap(activePlacement)
+        // Neueste Seite zuerst, auf einer Seite das obere Bild zuerst.
         return found
             .sorted { ($0.page.updatedAt, $1.block.sortKey) > ($1.page.updatedAt, $0.block.sortKey) }
             .prefix(limit)

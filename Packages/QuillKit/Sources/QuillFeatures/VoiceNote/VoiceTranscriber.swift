@@ -14,6 +14,8 @@ enum VoiceProblem: Error, Equatable {
     case languageMissing
     /// Kein Mikrofon angeschlossen.
     case noMicrophone
+    /// Die Erkennung bietet kein Audioformat an.
+    case recognizerUnavailable
 }
 
 /// Eine laufende Aufnahme. `updates` endet nach `finish()` mit dem letzten festen Text;

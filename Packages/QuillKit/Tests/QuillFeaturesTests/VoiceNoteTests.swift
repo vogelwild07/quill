@@ -64,6 +64,7 @@ struct VoiceNoteTests {
         (VoiceProblem.microphoneDenied, "Mikrofon“ ändern"),
         (VoiceProblem.languageMissing, "nicht installiert"),
         (VoiceProblem.noMicrophone, "kein Mikrofon"),
+        (VoiceProblem.recognizerUnavailable, "gerade nicht verfügbar"),
     ])
     func problemsSaySo(problem: VoiceProblem, fragment: String) async {
         let model = VoiceNoteModel(transcriber: MemoryVoiceTranscriber(problem: problem))

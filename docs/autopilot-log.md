@@ -111,6 +111,13 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Entitlement für das Mikrofon in der echten App und den Testvarianten (ADR-034,
   Abschnitt 17.2).
 
+- [ ] Review Phase 17: Rückfragen nach Kalender und Mikrofon auch in den Testvarianten;
+  Sprache vor dem Mikrofon geprüft; Mikrofon und Erkennung bei jedem Fehler freigegeben;
+  eigener Satz, wenn die Erkennung kein Audioformat anbietet; ein gemeinsamer Hinweis für
+  „Heute“, „Heutige Termine einfügen“ und „Sprachnotiz …“; keine eigene Schicht für die
+  Suche, kein `isImage`, keine Tokens für Abstände (ADR-034, Abschnitt „Review von
+  Phase 17“).
+
 
 ## Gemergt
 
@@ -403,3 +410,18 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   (nur eine Testdatei im Package geändert).
 - Messung: im Rauschen, Package höchstens +1,2 % (`docs/performance.md`).
 - **Handtest:** Rückfrage nach dem Mikrofon beim ersten „Aufnehmen“, echtes Diktat.
+
+### Review von Phase 17 und Schlussmessung (PR #45, ADR-034)
+
+- Review über PR #43–#44 nach Standards und ADR-034. Behoben: Texte für die Rückfragen nach
+  Kalender und Mikrofon fehlten in `SynctestA`/`SynctestB` (macOS beendet die App sonst bei
+  der Rückfrage; beim Kalender seit 15.5), Sprache vor dem Mikrofon geprüft, Mikrofon und
+  Erkennung bei Fehlern sofort frei, eigener Satz ohne Audioformat, ein gemeinsamer
+  Hinweis in `RootView`, Suche nach Bildern ohne doppelte Prüfung.
+- Tests: Package 764 (136 + 210 + 286 + 30 + 9 + 93), UI 67 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 3 im Package rot.
+- Schlussmessung gegen den Stand vor Phase 17 (`7bd23f4`): Package höchstens +0,6 %,
+  `sidebarLoad` nur in der ersten Runde höher (`docs/performance.md`).
+- Phase 17 abgeschlossen.
+- **Handtest:** Fehlt das Sprachmodell, kommt keine Rückfrage nach dem Mikrofon; nach einem
+  Fehler in der Aufnahme erlischt die Anzeige des Mikrofons in der Menüleiste.

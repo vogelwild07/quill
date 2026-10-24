@@ -44,6 +44,19 @@ struct SynctestVariantTests {
         }
     }
 
+    /// Ohne Text der Rückfrage beendet macOS die App, sobald sie Kalender oder Mikrofon
+    /// anfragt; die Testvarianten haben die Entitlements der echten App.
+    @Test func everyVariantExplainsCalendarAndMicrophone() throws {
+        let keys = ["INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription", "INFOPLIST_KEY_NSMicrophoneUsageDescription"]
+        let configurations = try Self.appConfigurations()
+        #expect(configurations.count == 5)
+        for configuration in configurations {
+            for key in keys {
+                #expect(configuration.settings[key]?.isEmpty == false, "\(configuration.name): \(key)")
+            }
+        }
+    }
+
     @Test func synctestVariantsGetExactlyOneFolderException() throws {
         let synctest = try Self.entitlements("App/QuillSynctest.entitlements")
         #expect(synctest.keys.sorted() == (Self.realEntitlements + [Self.exceptionKey]).sorted())

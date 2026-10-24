@@ -145,8 +145,8 @@ struct QuickOpenView: View {
                         Text(highlighted(excerpt))
                     }
                     .font(.callout)
-                        .foregroundStyle(isSelected ? Self.selectedText.opacity(0.9) : Color.secondary)
-                        .lineLimit(2)
+                    .foregroundStyle(isSelected ? Self.selectedText.opacity(0.9) : Color.secondary)
+                    .lineLimit(2)
                 }
             }
             Spacer(minLength: 0)

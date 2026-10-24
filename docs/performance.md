@@ -689,6 +689,31 @@ Runde 7 % höher, in der Wiederholung darunter; die Einzelwerte streuen auf beid
 zwischen rund 167 und 200 ms. `sidebarReload` hat wie immer zwei Lagen (rund 107 und 160–180 ms
 je Messung), der Median der zweiten Runde stammt aus drei langen Messungen.
 
+## Schlussmessung Phase 17 (24.10.2026, ADR-034)
+
+Nach den Fixes aus dem Review, im Wechsel mit dem Stand vor Phase 17 (`7bd23f4`), je zwei
+Runden:
+
+| Messung (ms) | vor Phase 17 | nach Phase 17 |
+|---|---|---|
+| applyEditsMove | 16,10 / 16,09 | 16,02 / 16,11 |
+| applyEditsReverse | 71,80 / 71,06 | 71,65 / 70,23 |
+| editorLoad | 13,77 / 13,26 | 13,29 / 13,43 |
+| exportPlan | 999,4 / 994,9 | 1004,9 / 996,4 |
+| historyDays | 92,35 / 92,38 | 93,39 / 92,18 |
+| pageTreeBuild | 56,39 / 56,53 | 55,15 / 55,84 |
+| search | 46,17 / 46,90 | 45,97 / 45,87 |
+| App: sidebarLoad | 174,1 / 187,0 | 192,3 / 184,6 |
+| App: sidebarReload | 104,2 / 173,4 | 173,1 / 170,5 |
+| App: pageSwitch | 77,1 / 78,3 | 77,8 / 78,6 |
+
+Package im Rauschen, höchstens +0,6 % (`exportPlan`, `historyDays`). `sidebarLoad` liegt in
+der ersten Runde 10 % höher, in der Wiederholung unter dem alten Stand; die Einzelwerte
+streuen auf beiden Ständen zwischen rund 168 und 197 ms. `sidebarReload` hat zwei Lagen
+(rund 104 und 170–175 ms je Messung); der Median von 104,2 ms stammt aus einer Runde mit drei
+kurzen Messungen. `pageSwitch` liegt auf beiden Ständen bei rund 78 ms statt 57 ms wie beim
+Lauf von 17.2, also an der Umgebung, nicht an Phase 17.
+
 ## Messbedingungen
 
 | | |
