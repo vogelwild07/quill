@@ -351,6 +351,22 @@ App
                       nur lokal)
 ```
 
+Sprachnotiz (17.2): Die Aufnahme geht als Puffer direkt an die Erkennung, nie in eine Datei.
+
+```
+QuillFeatures/VoiceNote
+  VoiceTranscriber        start() → VoiceRecording (updates: unsicher/fest, finish)
+  SystemVoiceTranscriber  nur echter Store: Mikrofon-Erlaubnis beim ersten „Aufnehmen“,
+                          Sprache des Systems nur aus installedLocales (kein AssetInventory),
+                          AVAudioEngine → AVAudioConverter → SpeechAnalyzer/SpeechTranscriber
+  MemoryVoiceTranscriber  Test-Stores: fester Text im Debug-Build, nie das Mikrofon
+  VoiceNoteModel          feste und unsichere Wörter, Stopp, Abbrechen, Fehler als Satz
+  VoiceNoteView           Blatt; „Einfügen“ = ein Absatz unter dem Block an der
+                          Einfügemarke (insertBlocks, ein Schritt für ⌘Z)
+App
+  Quill.entitlements      com.apple.security.device.audio-input (auch Testvarianten)
+```
+
 ## Sync (ADR-026, ADR-029, ab Phase 11)
 
 `QuillSync` ist das einzige Modul mit Automerge (`AutomergeIsolationTests`) und hängt nur an QuillModel:

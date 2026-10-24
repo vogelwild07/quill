@@ -152,6 +152,20 @@ public final class QuillPersistence {
     /// Termine im Speicher.
     private(set) lazy var calendar: any CalendarSource = isTestStore ? Self.testCalendar() : SystemCalendarSource()
 
+    #if canImport(AppKit)
+    /// Abschrift für „Sprachnotiz …“ (ADR-034); Test-Stores nehmen nie auf, sondern lesen
+    /// einen festen Text aus dem Speicher.
+    private(set) lazy var voice: any VoiceTranscriber = isTestStore ? Self.testVoice() : SystemVoiceTranscriber()
+
+    private static func testVoice() -> any VoiceTranscriber {
+        #if DEBUG || QUILL_SYNCTEST
+        MemoryVoiceTranscriber(text: MemoryVoiceTranscriber.sampleText)
+        #else
+        MemoryVoiceTranscriber()
+        #endif
+    }
+    #endif
+
     private static func testCalendar() -> any CalendarSource {
         #if DEBUG || QUILL_SYNCTEST
         MemoryCalendarSource.sample()

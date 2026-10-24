@@ -109,6 +109,9 @@
     "Apple Intelligence ist aus. Schalte es in den Systemeinstellungen unter „Apple Intelligence & Siri“ ein, dann erscheinen die KI-Funktionen." : {
 
     },
+    "Aufnehmen" : {
+
+    },
     "Aufzählung" : {
 
     },
@@ -268,6 +271,9 @@
     "Die Antwort ist gescheitert." : {
 
     },
+    "Die Aufnahme ist gescheitert." : {
+
+    },
     "Die Dateien konnten nicht getauscht werden." : {
 
     },
@@ -293,6 +299,12 @@
 
     },
     "Die Seite selbst ist nicht betroffen." : {
+
+    },
+    "Die Spracherkennung für deine Sprache ist auf diesem Mac nicht installiert." : {
+
+    },
+    "Die Stelle zum Einfügen gibt es nicht mehr. Kopiere den Text oder schließe das Blatt." : {
 
     },
     "Die Suche nach Aufgaben ist gescheitert." : {
@@ -388,6 +400,9 @@
     "Erinnerung …" : {
 
     },
+    "Erkannt auf diesem Mac. Die Aufnahme wird nicht gespeichert, nur der Text kommt unter die Einfügemarke." : {
+
+    },
     "Erledigt" : {
 
     },
@@ -395,6 +410,9 @@
 
     },
     "Es gibt keinen Text zum Hinzufügen." : {
+
+    },
+    "Es ist kein Mikrofon angeschlossen." : {
 
     },
     "Export fehlgeschlagen" : {
@@ -631,6 +649,9 @@
     "Nicht gespeichert" : {
 
     },
+    "Noch kein Text." : {
+
+    },
     "Noch keine Backups" : {
 
     },
@@ -695,6 +716,9 @@
 
     },
     "Quellen" : {
+
+    },
+    "Quill darf das Mikrofon nicht nutzen. Du kannst das in den Systemeinstellungen unter „Datenschutz & Sicherheit › Mikrofon“ ändern." : {
 
     },
     "Quill darf deinen Kalender nicht lesen. Du kannst das in den Systemeinstellungen unter „Datenschutz & Sicherheit › Kalender“ ändern." : {
@@ -830,6 +854,18 @@
     "Sprache" : {
 
     },
+    "Sprachnotiz" : {
+
+    },
+    "Sprachnotiz einfügen" : {
+
+    },
+    "Sprachnotiz …" : {
+
+    },
+    "Sprich jetzt …" : {
+
+    },
     "Später" : {
 
     },
@@ -837,6 +873,9 @@
 
     },
     "Stell zuerst eine Frage." : {
+
+    },
+    "Stopp" : {
 
     },
     "Stufe %@" : {
