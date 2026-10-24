@@ -644,6 +644,29 @@ Wiederholung und der Lauf von `perf-package.py` mit 53,88 ms liegen beim alten S
 `sidebarReload` hat zwei Lagen (rund 105 und 175 ms je Messung); der Median von 147,0 ms
 stammt aus einer Runde mit drei kurzen Messungen, die zweite Runde liegt gleichauf.
 
+## Text in Bildern (24.10.2026, ADR-034)
+
+17.1 erkennt den Text der Bilder nach dem Start im Hintergrund (Priorität `.utility`, 2 s
+nach dem Speichern) und hält ihn nur im Speicher. Im Wechsel mit `main` (`7bd23f4`), je zwei
+Runden:
+
+| Messung (ms) | `main` | 17.1 |
+|---|---|---|
+| applyEditsMove | 15,10 / 14,67 | 14,77 / 14,86 |
+| editorLoad | 13,16 / 12,72 | 12,66 / 12,07 |
+| exportPlan | 957,9 / 959,6 | 954,6 / 925,7 |
+| pageTreeBuild | 54,48 / 54,37 | 53,46 / 51,76 |
+| search | 44,36 / 43,79 | 43,69 / 42,22 |
+| App: sidebarLoad | 161,7 / 165,6 | 161,8 / 163,4 |
+| App: sidebarReload | – / 107,8 | 107,4 / 105,9 |
+| App: pageSwitch | 56,7 / 56,9 | 55,6 / 56,8 |
+
+Nichts schlechter. Die App-Werte liegen auf beiden Ständen deutlich unter denen von Phase 15
+(Ursache unbekannt, beide Stände gleich betroffen; verglichen wird nur im Wechsel). In der ersten Runde von
+`main` fehlt `sidebarReload` (Test dort rot, die Wiederholung grün). Der Bestand der Messung
+hat keine Bilder; die Erkennung selbst braucht beim ersten Mal im System rund 25 s, danach
+0,05–0,1 s je Bild, ohne den Main Thread.
+
 ## Messbedingungen
 
 | | |
