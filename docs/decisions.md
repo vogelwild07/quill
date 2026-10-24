@@ -804,3 +804,17 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - Endet die Abschrift mit einem Fehler oder scheitert der Start der Erkennung, gibt Quill Mikrofon und Erkennung sofort frei (vorher nur beim Abbruch).
 - Hinweise zu „Heute“, „Heutige Termine einfügen“ und „Sprachnotiz …“ teilen sich eine Meldung mit dem Befehl als Titel.
 - Nicht geändert (Ermessen): eigene Fassade für Text- und Bildsuche, `isImage` am Treffer, Abstände des Blatts als Tokens (die übrigen Blätter haben dieselben festen Werte). Die Reihenfolge der Prüfungen und das Freigeben des Mikrofons deckt kein automatischer Test ab (echtes Mikrofon), sie gehören zum Handtest.
+
+## ADR-035: Präsentieren (2026-10-24, entsteht mit 18.2)
+
+**Kontext:** Phase 18.2 der Roadmap: eine Seite als Folien zeigen, getrennt an Überschriften. Quill hat schon einen Lesemodus des Editors (Zeitreise, ADR-031) und Themes (ADR-024). Im Autopilot ohne Rücksprache entschieden; im Zweifel die einfachere, datensparsame Lösung.
+
+**Entscheidung (Plan):**
+- „Seite › Präsentieren“ (⌥⌘P, frei in Textfeldern und im System; Keynote nutzt dasselbe Kürzel zum Abspielen) öffnet für die ausgewählte Seite ein eigenes Fenster im Vollbild. Vorher speichert Quill offene Änderungen der Seite (`EditorPersistenceBridge.flushAll`) und liest die Blöcke einmal aus dem Store; Änderungen während der Präsentation erscheinen erst beim nächsten Start.
+- Folien: Jede Überschrift der obersten Ebene, die auf der Seite vorkommt, beginnt eine Folie (gibt es `heading1`, trennen nur diese; sonst `heading2`, sonst `heading3`). Die erste Folie zeigt den Titel der Seite und alles vor der ersten trennenden Überschrift. Ohne Überschriften ist die ganze Seite eine Folie. Die Rechnung ist eine reine Funktion (`SlideDeck`) ohne AppKit.
+- Darstellung: der Editor im Lesemodus ohne Schreibmarke, im Theme der Seite, vergrößert auf die Breite des Bildschirms (Vergrößerung der Scroll-Ansicht, höchstens 2,5-fach), darunter klein „Folie 2 von 5“. Ist eine Folie höher als der Bildschirm, lässt sie sich scrollen.
+- Tasten: →, ↓, Leertaste, Bild ab und ↩ weiter; ←, ↑, Bild auf und ⇧-Leertaste zurück; Pos1 und Ende springen zur ersten und letzten Folie; Esc beendet die Präsentation und schließt das Fenster. Auf der letzten Folie bleibt „weiter“ stehen.
+- Nichts wird gespeichert: keine Änderung am Store, an Einstellungen, an der Geschichte oder am Sync.
+- Test-Stores bleiben im Fenster statt im Vollbild (Vollbild wechselt den Space und blieb nach einem abgebrochenen Test stehen). Das Vollbild gehört zum Handtest.
+- Alternativen (nicht gewählt, nicht besprochen): Trennlinien als Foliengrenze (wer Folien will, gliedert meist schon mit Überschriften; Trennlinien teilen auch Gedanken innerhalb eines Abschnitts); jede Überschrift trennt (Unterabschnitte zerfielen in winzige Folien); live mitlaufende Änderungen (jede Speicherung würde die Folie neu aufbauen und die Stelle verschieben); Präsentation im Fenster des Editors (verändert Sidebar und Fenstergröße, die danach zurückmüssten); Export nach Keynote oder PDF (fremdes Format, Datei auf der Platte); eigene Darstellung mit festen Schriftgrößen statt Vergrößerung (zweiter Renderer für alle Blockarten).
+

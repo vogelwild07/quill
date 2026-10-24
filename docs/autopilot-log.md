@@ -118,6 +118,11 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Suche, kein `isImage`, keine Tokens für Abstände (ADR-034, Abschnitt „Review von
   Phase 17“).
 
+- [ ] 18.2: Präsentieren in einem eigenen Fenster im Vollbild (⌥⌘P); Folien an den
+  Überschriften der obersten vorkommenden Ebene, erste Folie mit dem Titel; Stand beim Start,
+  keine Änderungen während der Präsentation; vergrößerter Editor im Lesemodus statt eigener
+  Darstellung; Test-Stores ohne Vollbild (ADR-035).
+
 
 ## Gemergt
 
