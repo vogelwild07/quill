@@ -467,7 +467,7 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer. Alle ge
 - **Handtest:** Esc beendet die Präsentation auch aus dem Vollbild; ⌘Q und andere Kürzel
   wirken während der Präsentation.
 
-### 19 Liquid Glass (PR #NR, ADR-036)
+### 19 Liquid Glass (PR #50, ADR-036)
 
 - Einstellungen › Darstellung › „Liquid Glass“: „Wie System“ (Standard) und Regler klar ↔
   getönt in fünf Stufen; Sidebar, Toolbar, Slash-Menü, Schnell öffnen, Popover und Fenster
