@@ -667,6 +667,28 @@ Nichts schlechter. Die App-Werte liegen auf beiden Ständen deutlich unter denen
 hat keine Bilder; die Erkennung selbst braucht beim ersten Mal im System rund 25 s, danach
 0,05–0,1 s je Bild, ohne den Main Thread.
 
+## Sprachnotiz (24.10.2026, ADR-034)
+
+17.2 fügt nur einen Menübefehl und ein Blatt hinzu; Mikrofon und Erkennung starten erst mit
+„Aufnehmen“. Im Wechsel mit `main` (`5ad93c8`), je zwei Runden:
+
+| Messung (ms) | `main` | 17.2 |
+|---|---|---|
+| applyEditsMove | 16,15 / 16,04 | 16,01 / 16,19 |
+| editorLoad | 13,63 / 13,31 | 13,42 / 13,58 |
+| exportPlan | 1003,6 / 999,1 | 1004,0 / 1001,3 |
+| historyDays | 92,22 / 92,83 | 93,52 / 93,85 |
+| pageTreeBuild | 56,79 / 56,22 | 55,80 / 56,33 |
+| search | 46,22 / 46,73 | 46,35 / 45,95 |
+| App: sidebarLoad | 174,9 / 173,1 | 188,0 / 170,7 |
+| App: sidebarReload | 106,3 / 108,1 | 107,4 / 161,6 |
+| App: pageSwitch | 58,4 / 57,3 | 57,5 / 56,5 |
+
+Im Rauschen: Package höchstens +1,2 % (`historyDays`). `sidebarLoad` liegt in der ersten
+Runde 7 % höher, in der Wiederholung darunter; die Einzelwerte streuen auf beiden Ständen
+zwischen rund 167 und 200 ms. `sidebarReload` hat wie immer zwei Lagen (rund 107 und 160–180 ms
+je Messung), der Median der zweiten Runde stammt aus drei langen Messungen.
+
 ## Messbedingungen
 
 | | |

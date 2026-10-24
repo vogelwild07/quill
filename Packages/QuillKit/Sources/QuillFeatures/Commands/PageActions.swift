@@ -31,6 +31,8 @@ public struct PageActions {
     var openToday: @MainActor () -> Void
     /// „Heutige Termine einfügen“ an der Einfügemarke (15.5, ADR-033).
     var insertTodayEvents: @MainActor () -> Void
+    /// „Sprachnotiz …“ an der Einfügemarke (17.2, ADR-034).
+    var voiceNote: @MainActor () -> Void
 }
 
 /// Befehle des fokussierten Fensters, die nicht von einer Seite abhängen.

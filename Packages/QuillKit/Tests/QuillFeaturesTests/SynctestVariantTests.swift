@@ -21,9 +21,11 @@ struct SynctestVariantTests {
         return BuildSettings.configurations(in: project).filter { $0.settings["INFOPLIST_KEY_CFBundleDisplayName"] != nil }
     }
 
-    /// Die echte App: Sandbox, Lesezeichen, vom Nutzer gewählte Ordner, sonst nichts.
+    /// Die echte App: Sandbox, Mikrofon, Lesezeichen, vom Nutzer gewählte Ordner, Kalender, sonst nichts.
     static let realEntitlements = [
         "com.apple.security.app-sandbox",
+        // Nur während einer Sprachnotiz (17.2, ADR-034).
+        "com.apple.security.device.audio-input",
         "com.apple.security.files.bookmarks.app-scope",
         "com.apple.security.files.user-selected.read-write",
         // Nur gelesen, nur auf Klick: „Heutige Termine einfügen“ (15.5, ADR-033).

@@ -130,6 +130,9 @@ public struct QuillCommands: Commands {
             // Termine des Tages unter den Block an der Einfügemarke (15.5, ADR-033).
             Button(String(localized: "Heutige Termine einfügen", bundle: .module)) { actions?.insertTodayEvents() }
                 .disabled(actions == nil || readOnlyEditor == true)
+            // Abschrift einer Aufnahme unter den Block an der Einfügemarke (17.2, ADR-034).
+            Button(String(localized: "Sprachnotiz …", bundle: .module)) { actions?.voiceNote() }
+                .disabled(actions == nil || readOnlyEditor == true)
             Divider()
             // ⌥⌘↑/↓ statt ⌥⇧↑/↓: Das erweitert in Textfeldern die Auswahl absatzweise.
             formatButton("Block nach oben", #selector(EditorFormattingActions.quillMoveBlockUp(_:)))

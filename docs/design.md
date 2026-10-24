@@ -149,6 +149,13 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
 - Text in Bildern (ADR-034): In „Schnell öffnen“ stehen Bilder unter „Inhalt“ wie Treffer im
   Text, der Ausschnitt aus dem erkannten Text mit SF Symbol `photo` davor; Bedienungshilfen
   lesen „Seite, Bild, Ausschnitt“. Enter setzt die Einfügemarke vor das Bild.
+- Sprachnotiz (ADR-034): „Format › Sprachnotiz …“ öffnet ein Blatt mit „Aufnehmen“ (SF Symbol
+  `mic.fill`) bzw. „Stopp“ (`stop.fill`) links, „Abbrechen“ und „Einfügen“ rechts. Die
+  Abschrift steht live darüber, unsichere Wörter in Sekundärfarbe; ein Satz darunter sagt, dass
+  die Aufnahme nicht gespeichert wird. Fehler (Mikrofon nicht erlaubt, Sprache nicht
+  installiert, kein Mikrofon) stehen als `ProblemLabel` im Blatt. Rückfrage des Systems:
+  „Quill nutzt das Mikrofon nur, während du eine Sprachnotiz aufnimmst. Die Aufnahme wird auf
+  diesem Mac abgeschrieben und nicht gespeichert.“
 
 ## Leerzustände
 

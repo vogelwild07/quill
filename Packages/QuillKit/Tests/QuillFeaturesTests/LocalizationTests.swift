@@ -52,6 +52,8 @@ struct LocalizationTests {
                 reason: "Aufbau der Anfrage an das Sprachmodell (Frage und Notizen), nie angezeigt (16.4)."),
         Allowed(file: "QuillEditor/AppKit/TestImage.swift", text: "Fahrplan Gardasee",
                 reason: "Schrift im Testbild für die Texterkennung, nur im Debug-Build (17.1)."),
+        Allowed(file: "QuillFeatures/VoiceNote/VoiceTranscriber.swift", text: "Milch und Brot kaufen.",
+                reason: "Abschrift im Ersatz für das Mikrofon der Test-Stores, nur im Debug-Build (17.2)."),
         Allowed(file: "QuillFeatures/Today/CalendarSource.swift", text: "Zahnarzt",
                 reason: "Termin im Kalender-Ersatz der Test-Stores, nur im Debug-Build (15.5)."),
         Allowed(file: "QuillFeatures/Today/CalendarSource.swift", text: "Geburtstag",

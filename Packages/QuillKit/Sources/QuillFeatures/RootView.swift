@@ -37,10 +37,13 @@ public struct RootView: View {
     @State private var summaryRequest: SummaryRequest?
     @State private var todoRequest: TodoRequest?
     @State private var reminderRequest: ReminderRequest?
+    @State private var voiceNoteRequest: VoiceNoteRequest?
     @State private var relatedRequest: RelatedRequest?
     @State private var isAskShown = false
     /// Hinweis zu „Heute“ oder „Heutige Termine einfügen“.
     @State private var todayNotice: String?
+    /// Hinweis zu „Sprachnotiz …“ ohne Einfügemarke.
+    @State private var voiceNotice: String?
     #endif
 
     @Environment(\.pageStore) private var store
@@ -153,6 +156,15 @@ public struct RootView: View {
         } message: { notice in
             Text(notice)
         }
+        .alert(
+            String(localized: "Sprachnotiz", bundle: .module),
+            isPresented: Binding(get: { voiceNotice != nil }, set: { if !$0 { voiceNotice = nil } }),
+            presenting: voiceNotice
+        ) { _ in
+            Button(String(localized: "OK", bundle: .module)) {}
+        } message: { notice in
+            Text(notice)
+        }
         .sheet(isPresented: $isSyncReconnectShown) {
             if let persistence {
                 SyncReconnectView(
@@ -181,6 +193,15 @@ public struct RootView: View {
         .sheet(item: $reminderRequest) { request in
             if let reminders = persistence?.reminders {
                 ReminderView(request: request, reminders: reminders, dismiss: { reminderRequest = nil })
+            }
+        }
+        .sheet(item: $voiceNoteRequest) { request in
+            if let persistence {
+                VoiceNoteView(
+                    request: request,
+                    model: VoiceNoteModel(transcriber: persistence.voice),
+                    dismiss: { voiceNoteRequest = nil }
+                )
             }
         }
         .sheet(item: $relatedRequest) { request in
@@ -298,7 +319,8 @@ public struct RootView: View {
             askNotes: { askNotes() },
             remind: { remind() },
             openToday: { openToday() },
-            insertTodayEvents: { insertTodayEvents() }
+            insertTodayEvents: { insertTodayEvents() },
+            voiceNote: { voiceNote() }
         )
     }
 
@@ -382,7 +404,17 @@ public struct RootView: View {
             }
         }
     }
+
+    /// Sprachnotiz unter den Block an der Einfügemarke.
+    private func voiceNote() {
+        guard let request = VoiceNoteRequest(focusedIn: window) else {
+            voiceNotice = String(localized: "Setze die Einfügemarke in eine Seite.", bundle: .module)
+            return
+        }
+        voiceNoteRequest = request
+    }
     #else
+    private func voiceNote() {}
     private func openToday() {}
     private func insertTodayEvents() {}
     private func summarize(_ pageID: UUID) {}
