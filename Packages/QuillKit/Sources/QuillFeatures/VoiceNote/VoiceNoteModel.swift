@@ -109,6 +109,8 @@ final class VoiceNoteModel {
             String(localized: "Die Spracherkennung für deine Sprache ist auf diesem Mac nicht installiert.", bundle: .module)
         case VoiceProblem.noMicrophone:
             String(localized: "Es ist kein Mikrofon angeschlossen.", bundle: .module)
+        case VoiceProblem.recognizerUnavailable:
+            String(localized: "Die Spracherkennung ist auf diesem Mac gerade nicht verfügbar.", bundle: .module)
         default:
             String(localized: "Die Aufnahme ist gescheitert.", bundle: .module)
         }

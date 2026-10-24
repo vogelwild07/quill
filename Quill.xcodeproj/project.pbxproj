@@ -457,6 +457,8 @@
 				EXCLUDED_SOURCE_FILE_NAMES = InfoPlist.xcstrings;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Quill Synctest A";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Quill liest deinen Kalender nur, wenn du die heutigen Termine in eine Seite einfügst.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Quill nutzt das Mikrofon nur, während du eine Sprachnotiz aufnimmst. Die Aufnahme wird auf diesem Mac abgeschrieben und nicht gespeichert.";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -483,6 +485,8 @@
 				EXCLUDED_SOURCE_FILE_NAMES = InfoPlist.xcstrings;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Quill Synctest B";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Quill liest deinen Kalender nur, wenn du die heutigen Termine in eine Seite einfügst.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Quill nutzt das Mikrofon nur, während du eine Sprachnotiz aufnimmst. Die Aufnahme wird auf diesem Mac abgeschrieben und nicht gespeichert.";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
