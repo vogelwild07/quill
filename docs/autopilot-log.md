@@ -389,3 +389,17 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   danach dreimal grün.
 - Messung: nichts schlechter, Package und App im Bereich von `main` oder darunter
   (`docs/performance.md`).
+
+### 17.2 Sprachnotiz (PR #44, ADR-034)
+
+- „Format › Sprachnotiz …“: Blatt mit „Aufnehmen“/„Stopp“, Abschrift live mit
+  `SpeechTranscriber` auf dem Gerät, „Einfügen“ setzt einen Absatz unter den Block an der
+  Einfügemarke (ein Schritt für ⌘Z). Aufnahme nie gespeichert, kein Download von Modellen;
+  neues Entitlement für das Mikrofon. Test-Stores lesen einen festen Text aus dem Speicher.
+- Tests: Package 763 (136 + 209 + 286 + 30 + 9 + 93), UI 67 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 6 im Package rot, 2 im UI-Test rot.
+- Erster voller Lauf rot: Release-Build der Tests scheiterte am Testtext, den es nur im
+  Debug-Build gibt. Test angepasst, Teil ohne UI wiederholt und grün; UI-Lauf gilt weiter
+  (nur eine Testdatei im Package geändert).
+- Messung: im Rauschen, Package höchstens +1,2 % (`docs/performance.md`).
+- **Handtest:** Rückfrage nach dem Mikrofon beim ersten „Aufnehmen“, echtes Diktat.
