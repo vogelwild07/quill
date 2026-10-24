@@ -156,6 +156,10 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   installiert, kein Mikrofon) stehen als `ProblemLabel` im Blatt. Rückfrage des Systems:
   „Quill nutzt das Mikrofon nur, während du eine Sprachnotiz aufnimmst. Die Aufnahme wird auf
   diesem Mac abgeschrieben und nicht gespeichert.“
+- Präsentieren (ADR-035): „Seite › Präsentieren“ (⌥⌘P) öffnet die Seite im Vollbild ohne
+  Titelleiste auf dem Hintergrund des Themes. Die Folie ist der Editor im Lesemodus ohne
+  Schreibmarke und ohne ＋/⋮⋮, vergrößert auf die Breite (höchstens 2,5-fach); unten rechts
+  „Folie 2 von 5“ in `.callout` und Sekundärfarbe. Esc beendet.
 
 ## Leerzustände
 

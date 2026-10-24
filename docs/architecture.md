@@ -367,6 +367,26 @@ App
   Quill.entitlements      com.apple.security.device.audio-input (auch Testvarianten)
 ```
 
+## Präsentieren (ADR-035, 18.2)
+
+Nur lesend: kein Schreiben in Store, Einstellungen, Geschichte oder Sync.
+
+```
+QuillFeatures/Presentation
+  SlideDeck           reine Funktion: Folien an den Überschriften der obersten vorkommenden
+                      Ebene, erste Folie = Titel (heading1) + Blöcke davor
+  PresentationModel   flushAll(pageID:) → store.blocks(of:) einmal; Folie = EditorDocument
+                      im BlockEditorController (nicht bearbeitbar, isSelectable = false);
+                      fit(width:) vergrößert die Scroll-Ansicht (höchstens 2,5-fach)
+  PresentationScene   WindowGroup je Seite, ohne Titelleiste, ohne Wiederherstellung;
+                      Vollbild nur für den echten Store
+  PresentationKeys    lokaler Tasten-Monitor nur für das eigene Fenster (keine Ansicht hat
+                      dort den Fokus, darum kein onKeyPress)
+QuillCommands         Seite › Präsentieren (⌥⌘P) öffnet die Szene mit der ausgewählten Seite
+App
+  QuillApp            legt PresentationScene an
+```
+
 ## Sync (ADR-026, ADR-029, ab Phase 11)
 
 `QuillSync` ist das einzige Modul mit Automerge (`AutomergeIsolationTests`) und hängt nur an QuillModel:

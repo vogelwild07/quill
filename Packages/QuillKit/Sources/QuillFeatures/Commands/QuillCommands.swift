@@ -158,6 +158,12 @@ public struct QuillCommands: Commands {
             }
             .keyboardShortcut("y", modifiers: [.command, .option])
             .disabled(actions?.selection == nil)
+            // ⌥⌘P: frei in Textfeldern und im System, wie Abspielen in Keynote (ADR-035).
+            Button(String(localized: "Präsentieren", bundle: .module)) {
+                if let selection = actions?.selection { openWindow(id: PresentationScene.windowID, value: selection) }
+            }
+            .keyboardShortcut("p", modifiers: [.command, .option])
+            .disabled(actions?.selection == nil)
             // Nur mit bereitem Modell und eingeschalteter KI (ADR-032); ohne Kürzel.
             if persistence?.ai.isUsable == true {
                 Button(String(localized: "Zusammenfassen …", bundle: .module)) { actions?.summarize() }

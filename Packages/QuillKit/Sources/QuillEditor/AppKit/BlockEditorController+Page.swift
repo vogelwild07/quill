@@ -22,6 +22,13 @@ extension BlockEditorController {
         set { textView.isEditable = newValue }
     }
 
+    /// Ohne Markieren und Schreibmarke, z. B. beim Präsentieren: Der Editor nimmt keinen
+    /// Fokus, Tasten gehen an die umgebende Ansicht.
+    public var isSelectable: Bool {
+        get { textView.isSelectable }
+        set { textView.isSelectable = newValue }
+    }
+
     /// Lesemodus, z. B. für frühere Stände in der Zeitreise: Markieren, Kopieren und die
     /// Schreibmarke gehen wie sonst (auch per Tastatur, ⇧↓), jede Änderung wird abgelehnt.
     /// Anders als `isEditable = false`: Ohne Schreibmarke scrollen Pfeiltasten nur.

@@ -118,6 +118,11 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   Suche, kein `isImage`, keine Tokens für Abstände (ADR-034, Abschnitt „Review von
   Phase 17“).
 
+- [ ] 18.2: Präsentieren in einem eigenen Fenster im Vollbild (⌥⌘P); Folien an den
+  Überschriften der obersten vorkommenden Ebene, erste Folie mit dem Titel; Stand beim Start,
+  keine Änderungen während der Präsentation; vergrößerter Editor im Lesemodus statt eigener
+  Darstellung; Test-Stores ohne Vollbild (ADR-035).
+
 
 ## Gemergt
 
@@ -425,3 +430,20 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
 - Phase 17 abgeschlossen.
 - **Handtest:** Fehlt das Sprachmodell, kommt keine Rückfrage nach dem Mikrofon; nach einem
   Fehler in der Aufnahme erlischt die Anzeige des Mikrofons in der Menüleiste.
+
+### 18.2 Präsentieren (PR #46, ADR-035)
+
+- „Seite › Präsentieren“ (⌥⌘P): eigenes Fenster im Vollbild, Folien an den Überschriften
+  der obersten vorkommenden Ebene, erste Folie mit dem Titel; Editor im Lesemodus ohne
+  Schreibmarke, vergrößert auf die Breite; Pfeile, Leertaste, Bild auf/ab, ↩, Pos1, Ende,
+  Esc. Speichert offene Änderungen vorher, schreibt selbst nichts.
+- Tasten über einen Monitor nur für das Fenster: `onKeyPress` kam im UI-Test nie an, weil
+  im Fenster keine Ansicht den Fokus hat.
+- Tests: Package 770 (136 + 216 + 286 + 30 + 9 + 93), UI 68 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 6 im Package rot, 2 im UI-Test rot.
+- Nebenbei: zwei Schlüssel der Testvarianten in `project.pbxproj` in die Reihenfolge von
+  Xcode gebracht (im Review von Phase 17 falsch eingefügt).
+- Messung: nichts über 3 % (`docs/performance.md`).
+- **Handtest:** Vollbild beim Start und Ende mit Esc (Test-Stores bleiben im Fenster),
+  Größe der Schrift auf dem Bildschirm, Bilder auf Folien.
+
