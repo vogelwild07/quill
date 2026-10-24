@@ -387,6 +387,32 @@ App
   QuillApp            legt PresentationScene an
 ```
 
+## Liquid Glass (ADR-036, Phase 19)
+
+Regler unter Einstellungen › Darstellung; pro Mac in `UserDefaults`, nie im Store.
+
+```
+QuillEditorCore/Theme
+  GlassSettings       „Wie System“ (Standard), Stufe 0 … 1 in Schritten von 0,25,
+                      „Transparenz reduzieren“; beobachtbar, didChange für AppKit
+  GlassTint           Farbe aus dem Theme (feste Themes der anderen Darstellung: Standard),
+                      Text Schwarz/Weiß, Boden der Deckkraft für 4,5 : 1 über Weiß, Schwarz,
+                      Grau und sechs bunten Hintergründen; a = Boden + Stufe · (1 − Boden)
+QuillEditor/Theme
+  GlassStyle          current(dark:) → nil bei „Wie System“
+  quillGlass(in:)     eigenes Glas: Glass.clear.tint(Farbe · Stufe) über Fläche mit Boden
+  quillGlassTint()    Fläche mit Deckkraft a über System-Glas (Sidebar, Popover)
+  quillToolbarGlass() Toolbar ohne gemeinsames Glas, Knöpfe mit quillToolbarButtonGlass()
+  GlassAccessibility  „Transparenz reduzieren“ aus NSWorkspace → GlassSettings
+QuillFeatures
+  GlassSettingsRow    „Wie System“, Regler mit Symbolen klar/getönt, Hinweis
+  PageOutlineView     Textfarbe der Zeilen nach Regler, Theme und Darstellung
+  EditorThemeSetup    -QuillTestGlass, -QuillTestReduceTransparency (nur Test-Store)
+Tests
+  GlassTests, GlassPreviewTests (PNGs in Design/Vorschau/), GlassUITests,
+  AccessibilityAuditUITests.testAuditGlass
+```
+
 ## Sync (ADR-026, ADR-029, ab Phase 11)
 
 `QuillSync` ist das einzige Modul mit Automerge (`AutomergeIsolationTests`) und hängt nur an QuillModel:

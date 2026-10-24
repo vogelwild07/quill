@@ -67,8 +67,10 @@ struct TimeTravelView: View {
                 }
                 .help(String(localized: "Holt die markierten Absätze dieses Tages in die Seite zurück.", bundle: .module))
                 .disabled(!model.canRestore || !pageExists)
+                .quillToolbarButtonGlass()
                 .accessibilityIdentifier("timeTravel.restore")
             }
+            .quillToolbarGlass()
         }
         .focusedSceneValue(\.readOnlyEditor, true)
         .task { await model.load() }

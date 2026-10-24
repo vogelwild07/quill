@@ -85,7 +85,7 @@ struct LicensesView: View {
 }
 
 /// Theme des Editors: Liste mit kleinen Vorschauen, daneben eine große (ADR-024);
-/// darunter der Fokus-Modus. Ein Klick wirkt sofort in allen Fenstern.
+/// darunter der Fokus-Modus und Liquid Glass (ADR-036). Ein Klick wirkt sofort in allen Fenstern.
 struct AppearanceSettingsView: View {
     private var settings = EditorThemeSettings.shared
     private var focus = EditorFocusSettings.shared
@@ -99,6 +99,8 @@ struct AppearanceSettingsView: View {
                 Text("Die Zeile mit dem Cursor bleibt in der Mitte, die übrigen Absätze treten zurück. Auch über Darstellung › Fokus-Modus (⇧⌘F).", bundle: .module)
             }
             .accessibilityIdentifier("settings.focusMode")
+            Divider()
+            GlassSettingsRow()
         }
         .padding(20)
     }

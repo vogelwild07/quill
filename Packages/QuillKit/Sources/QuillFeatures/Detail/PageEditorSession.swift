@@ -64,18 +64,18 @@ final class PageEditorSession {
                 return NSHostingController(rootView: ConflictListView(
                     pageID: pageID, sync: sync, blockID: blockID,
                     blockText: pageActions.blockText, pageTitle: pageActions.pageTitle
-                ))
+                ).quillGlassTint())
             case .restored:
                 return NSHostingController(rootView: RestoredBlockView {
                     controller?.closeMarkerPopover()
                     controller?.clearRestored(blockID: blockID)
-                })
+                }.quillGlassTint())
             case .reminder:
                 guard let reminders else { return nil }
                 let content = NSHostingController(rootView: ReminderMarkerView(date: reminders.byBlock[blockID]?.date) {
                     controller?.closeMarkerPopover()
                     Task { await reminders.remove(blockID: blockID) }
-                })
+                }.quillGlassTint())
                 // Die Hosting-View ist sonst eine Gruppe ohne Beschreibung (Audit).
                 content.view.setAccessibilityLabel(String(localized: "Erinnerung", bundle: .module))
                 return content

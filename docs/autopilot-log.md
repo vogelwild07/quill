@@ -128,7 +128,7 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer. Alle ge
   Trackpad oder Maus); Seiten im Papierkorb lassen sich präsentieren; Titel weiter aus
   `@Query` (ADR-035, Abschnitt „Review von 18.2“).
 
-- [ ] 19: Regler für Liquid Glass mit Boden der Deckkraft je Theme (im Dunklen beginnt „klar“ deckender); Tönung mit der Theme-Farbe, bei festen Themes der anderen Darstellung mit Standard; Text auf dem Glas in Theme-Farben; Fläche über dem System-Glas, wo es keine API für die Tönung gibt; „Wie System“ ändert nichts; Vorschaubilder als gerechnete Näherung (ADR-036).
+- [ ] 19: Regler für Liquid Glass mit Boden der Deckkraft je Theme (im Dunklen beginnt „klar“ deckender); Tönung mit der Theme-Farbe, bei festen Themes der anderen Darstellung mit Standard; Text auf dem Glas Schwarz bzw. Weiß (mit Theme-Farben lag der Boden bei 82–87 %); Fläche über dem System-Glas, wo es keine API für die Tönung gibt; „Wie System“ ändert nichts; Vorschaubilder als gerechnete Näherung (ADR-036).
 
 ## Gemergt
 

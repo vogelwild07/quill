@@ -89,10 +89,14 @@ public final class QuickNoteMenuBar: NSObject {
     private func makePanel() -> NSPanel {
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 360, height: 220),
-            styleMask: [.titled, .closable, .resizable, .nonactivatingPanel],
+            styleMask: [.titled, .closable, .resizable, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered, defer: false
         )
         panel.title = String(localized: "Schnellnotiz", bundle: .module)
+        // Glas statt Fensterfläche (ADR-036): Das Glas zeichnet `QuickNoteView`.
+        panel.titlebarAppearsTransparent = true
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
         panel.isFloatingPanel = true
         panel.level = .floating
         panel.hidesOnDeactivate = false

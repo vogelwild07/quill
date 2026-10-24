@@ -1,4 +1,5 @@
 import QuillDesign
+import QuillEditor
 import QuillModel
 import QuillSync
 import SwiftData
@@ -125,6 +126,7 @@ struct PageSyncNotice: View {
                             .accessibilityIdentifier("detail.conflicts")
                             .popover(isPresented: $showsConflicts, arrowEdge: .bottom) {
                                 ConflictListView(pageID: pageID, sync: sync, blockText: blockText, pageTitle: pageTitle)
+                                    .quillGlassTint()
                             }
                     }
                     .accessibilityElement(children: .contain)

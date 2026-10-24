@@ -32,7 +32,7 @@ UUID-`id`, `createdAt`/`updatedAt`, alle Attribute optional oder mit Default, **
 - Selbst gezeichnete Elemente nur Farben aus `EditorColor` (Theme-Rollen, ADR-024) oder Systemfarben; SF Symbols nicht mit `NSColor.set()` einfärben (bleibt schwarz). Hell + dunkel per `EditorSnapshotTests` prüfen. Tests, die zeichnen oder das Theme wechseln, mit Trait `.renderingLock` aus `QuillTestFixtures` (Theme gilt prozessweit, auch über Test-Targets).
 
 ## Design
-Apple HIG, Liquid Glass nur Sidebar/Toolbars/Popover, nicht Inhalt. SF Pro / SF Mono, Systemfarben, Dark Mode automatisch. Tokens in `QuillDesign`, Details `docs/design.md`. Leerzustände nur über `EmptyState`/`EmptyStateView`. `AccessibilityAuditUITests` ist rot bei jeder neuen Meldung; Ausnahmen nur einzeln mit Begründung, keine Prüfart pauschal. Icon `App/Resources/AppIcon.icon`, nur in Icon Composer ändern.
+Apple HIG, Liquid Glass nur Sidebar/Toolbars/Popover, Slash-Menü, Schnell öffnen und Fenster der Schnellnotiz, nicht Inhalt; Deckkraft nach dem Regler „Liquid Glass“ mit Boden für 4,5 : 1 (`GlassTint`, ADR-036). SF Pro / SF Mono, Systemfarben, Dark Mode automatisch. Tokens in `QuillDesign`, Details `docs/design.md`. Leerzustände nur über `EmptyState`/`EmptyStateView`. `AccessibilityAuditUITests` ist rot bei jeder neuen Meldung; Ausnahmen nur einzeln mit Begründung, keine Prüfart pauschal. Icon `App/Resources/AppIcon.icon`, nur in Icon Composer ändern.
 
 ## Tools
 - **XcodeBuildMCP** für Bauen/Testen/Starten (macOS-Workflow). Fallback: `xcodebuild`.

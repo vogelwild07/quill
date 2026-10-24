@@ -4,7 +4,7 @@ Grundlage: Apple Human Interface Guidelines. Eigene Gestaltung; keine Designs, A
 
 ## Ästhetik
 
-„Papier unter Glas“: Inhaltsflächen matt, ruhig, typografisch. Liquid Glass nur für Sidebar, Toolbar, Slash-Menü und das Panel „Schnell öffnen“ (⌘O). Identität über Typografie, Weißraum und einen eigenen Akzent, nicht über Deko.
+„Papier unter Glas“: Inhaltsflächen matt, ruhig, typografisch. Liquid Glass nur für Sidebar, Toolbar, Slash-Menü, Popover, das Panel „Schnell öffnen“ (⌘O) und das Fenster der Schnellnotiz; wie durchsichtig, steuert der Regler „Liquid Glass“ (ADR-036). Identität über Typografie, Weißraum und einen eigenen Akzent, nicht über Deko.
 
 ## Farben
 
@@ -129,7 +129,8 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
 - Fenster der Schnellnotiz: klein (360 × 220), schwebend, über allen Spaces, holt Quill nicht
   nach vorn. Textfeld mit Fokus, darunter grau „Die erste Zeile wird der Titel der neuen
   Seite.“ (bei einem Fehler rot, der Entwurf bleibt), Knöpfe „Abbrechen“ (Esc) und „Als Seite
-  sichern“ (⌘↩, ohne Text gesperrt). Kein Liquid Glass, es ist Inhalt.
+  sichern“ (⌘↩, ohne Text gesperrt). Das Fenster ist ganz aus Glas, auch unter der
+  Titelleiste (ADR-036).
 - Erinnerung (Format › Erinnerung …): Blatt 400 pt breit, Überschrift „Erinnerung“, darunter
   grau der Text des To-dos, Datum und Uhrzeit (Vorschlag morgen 9:00), ein Satz, dass eine
   Mitteilung auf diesem Mac erinnert (Fehler rot an derselben Stelle). Am To-do eine Glocke in
@@ -156,6 +157,14 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   installiert, kein Mikrofon) stehen als `ProblemLabel` im Blatt. Rückfrage des Systems:
   „Quill nutzt das Mikrofon nur, während du eine Sprachnotiz aufnimmst. Die Aufnahme wird auf
   diesem Mac abgeschrieben und nicht gespeichert.“
+- Liquid Glass (ADR-036): Einstellungen › Darstellung unter dem Fokus-Modus, Überschrift
+  „Liquid Glass“, Schalter „Wie System“ (Standard an) mit Erklärung, darunter der Regler
+  (320 pt) zwischen `circle.dotted` (klar) und `circle.fill` (getönt) mit fünf
+  Rasterpunkten, Standard Mitte. Ausgegraut bei „Wie System“ und bei „Transparenz
+  reduzieren“, dann darunter grau mit `info.circle` der Hinweis, dass das Glas deckend ist.
+  Getönt wird mit der Hintergrundfarbe des Themes; Text auf dem Glas Schwarz bzw. Weiß,
+  Nebentext mit 85 % Deckkraft. Knöpfe der Toolbar in eigenen Kapseln (8 × 5 pt Abstand).
+  Vorschaubilder (Näherung) in `Design/Vorschau/`.
 - Präsentieren (ADR-035): „Seite › Präsentieren“ (⌥⌘P) öffnet die Seite im Vollbild ohne
   Titelleiste auf dem Hintergrund des Themes. Die Folie ist der Editor im Lesemodus ohne
   Schreibmarke und ohne ＋/⋮⋮, vergrößert auf die Breite (höchstens 2,5-fach); unten rechts

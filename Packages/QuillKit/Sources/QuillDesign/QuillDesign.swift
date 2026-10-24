@@ -99,6 +99,15 @@ public enum QuillDesign {
         public static let counterPadding: CGFloat = 16
     }
 
+    /// Regler für Liquid Glass (Phase 19, ADR-036).
+    public enum Glass {
+        /// Abstand des Symbols zum Rand seiner Glaskapsel in der Toolbar.
+        public static let toolbarHorizontalPadding: CGFloat = 8
+        public static let toolbarVerticalPadding: CGFloat = 5
+        /// Breite des Reglers in den Einstellungen.
+        public static let sliderWidth: CGFloat = 320
+    }
+
     /// Eckenradien.
     public enum Radius {
         /// Inline-Code, Checkbox, Bild, Hover-Fläche des ＋.

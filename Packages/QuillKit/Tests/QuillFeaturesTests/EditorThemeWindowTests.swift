@@ -77,6 +77,43 @@ struct EditorThemeWindowTests {
         #expect(!focus.isEnabled)
     }
 
+    /// Regler für Liquid Glass wie das Theme (ADR-036): Test-Store liest und schreibt nie,
+    /// Startargumente nur dort; ohne sie „Wie System“ und ohne „Transparenz reduzieren“.
+    @Test func testStoreNeverTouchesTheUsersGlass() {
+        let followsKey = GlassSettings.followsSystemKey
+        let levelKey = GlassSettings.levelKey
+        UserDefaults.standard.set(false, forKey: followsKey)
+        UserDefaults.standard.set(1.0, forKey: levelKey)
+        defer {
+            UserDefaults.standard.removeObject(forKey: followsKey)
+            UserDefaults.standard.removeObject(forKey: levelKey)
+            GlassSettings.shared.configure(defaults: nil, followsSystem: true, level: GlassSettings.defaultLevel, reduceTransparency: false)
+            EditorFocusSettings.shared.configure(defaults: nil, initial: false)
+            EditorThemeSettings.shared.configure(defaults: nil, initial: .standard)
+        }
+        let glass = GlassSettings.shared
+
+        EditorThemeSetup.configure(arguments: ["Quill", "-QuillInMemoryStore", "YES"])
+        #expect(glass.followsSystem, "Gespeicherte Wahl des Nutzers nicht gelesen")
+        #expect(!glass.reduceTransparency)
+        glass.setFollowsSystem(false)
+        glass.setLevel(0)
+        #expect(UserDefaults.standard.object(forKey: levelKey) as? Double == 1, "Nichts geschrieben")
+
+        EditorThemeSetup.configure(arguments: ["Quill", "-QuillInMemoryStore", "YES", "-QuillTestGlass", "0.25", "-QuillTestReduceTransparency", "YES"])
+        #expect(!glass.followsSystem)
+        #expect(glass.level == 0.25)
+        #expect(glass.reduceTransparency)
+
+        // Ohne Test-Store: die gespeicherte Wahl; die Startargumente wirken nicht.
+        #expect(EditorThemeSetup.glassArgument != levelKey)
+        EditorThemeSetup.configure(arguments: ["Quill", "-QuillTestGlass", "0"])
+        #expect(!glass.followsSystem)
+        #expect(glass.level == 1)
+        glass.setLevel(0.5)
+        #expect(UserDefaults.standard.object(forKey: levelKey) as? Double == 0.5)
+    }
+
     // MARK: Fenster mit Sidebar
 
     /// Echtes Fenster aus Sidebar im Systemstil und Editor mit Seitenkopf. Feste Themes

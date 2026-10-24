@@ -61,6 +61,7 @@ Alle wirken nur aus der Kommandozeile und nur in Debug-Builds (ADR-019, ADR-021)
 - `-QuillWindowSize <Breite>x<Höhe>`: Das erste Fenster bekommt diese Größe in Punkten (für die Bilder oben).
 - `-QuillEditorTheme <id>`: Theme des Editors (`standard`, `quill`, `tinte`, `sonne`, `lagune`, `abend`, `kontrast`), nur zusammen mit einem der Test-Stores; dann liest und speichert Quill die eigene Wahl nicht.
 - `-QuillTestFocusMode YES`: Fokus-Modus beim Start, ebenso nur mit einem Test-Store.
+- `-QuillTestGlass <0 … 1>` und `-QuillTestReduceTransparency YES`: Regler für Liquid Glass ohne „Wie System“ bzw. „Transparenz reduzieren“ fest, nur mit einem Test-Store.
 - `-QuillSyncTestFolder <Name>`: „Ordner wählen“ im Sync nimmt ohne Dateiauswahl diesen Unterordner des temporären Ordners der App, nur mit einem Test-Store. Test-Stores speichern die Einstellungen des Sync nie in denen des Macs.
 
 ## Struktur

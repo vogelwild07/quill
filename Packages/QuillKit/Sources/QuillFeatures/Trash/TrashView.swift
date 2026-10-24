@@ -1,3 +1,4 @@
+import QuillEditor
 import QuillModel
 import SwiftData
 import SwiftUI
@@ -63,13 +64,16 @@ struct TrashView: View {
                     selection.forEach(restore)
                 }
                 .disabled(selection.isEmpty)
+                .quillToolbarButtonGlass()
                 .accessibilityIdentifier("trash.restore")
                 Button(String(localized: "Endgültig löschen …", bundle: .module), systemImage: "trash.slash") {
                     pendingDeletion = .pages(Array(selection))
                 }
                 .disabled(selection.isEmpty)
+                .quillToolbarButtonGlass()
                 .accessibilityIdentifier("trash.delete")
             }
+            .quillToolbarGlass()
         }
         .alert(
             confirmationTitle(entries),

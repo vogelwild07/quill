@@ -1,4 +1,5 @@
 #if canImport(AppKit)
+import QuillEditor
 import QuillModel
 import SwiftUI
 
@@ -52,7 +53,7 @@ struct QuickOpenView: View {
                 .accessibilityIdentifier("quickOpen.hint")
         }
         .frame(width: 560)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .quillGlass(in: .rect(cornerRadius: 16))
         .task(id: model.query) { await model.load(from: store, imageText: imageText) }
         // Einen Durchlauf später: Beim Erscheinen hält noch der Editor oder das
         // Titelfeld den Fokus und würde ihn sofort zurückholen.
