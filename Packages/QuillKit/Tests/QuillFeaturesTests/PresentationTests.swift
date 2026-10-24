@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import QuillDesign
 import QuillEditorCore
@@ -43,23 +44,27 @@ struct PresentationTests {
     }
 
     @Test func magnificationFillsTheWidthWithinLimits() {
-        let column = QuillDesign.contentMaxWidth + 2 * QuillDesign.EditorLayout.minSideMargin
+        let column = QuillDesign.Presentation.columnWidth
         #expect(PresentationModel.magnification(forWidth: column / 2) == 1)
         #expect(PresentationModel.magnification(forWidth: column * 2) == 2)
         #expect(PresentationModel.magnification(forWidth: column * 10) == QuillDesign.Presentation.maxMagnification)
     }
 
     @Test func keysTurnPagesAndEscapeCloses() {
-        #expect(PresentationKeys.key(special: .rightArrow, characters: nil, shift: false) == .next)
-        #expect(PresentationKeys.key(special: .pageDown, characters: nil, shift: false) == .next)
-        #expect(PresentationKeys.key(special: .carriageReturn, characters: "\r", shift: false) == .next)
-        #expect(PresentationKeys.key(special: .upArrow, characters: nil, shift: false) == .previous)
-        #expect(PresentationKeys.key(special: nil, characters: " ", shift: false) == .next)
-        #expect(PresentationKeys.key(special: nil, characters: " ", shift: true) == .previous)
-        #expect(PresentationKeys.key(special: .home, characters: nil, shift: false) == .first)
-        #expect(PresentationKeys.key(special: .end, characters: nil, shift: false) == .last)
-        #expect(PresentationKeys.key(special: nil, characters: "\u{1b}", shift: false) == .close)
-        #expect(PresentationKeys.key(special: nil, characters: "a", shift: false) == nil)
+        #expect(PresentationKeys.key(special: .rightArrow, characters: nil) == .next)
+        #expect(PresentationKeys.key(special: .pageDown, characters: nil) == .next)
+        #expect(PresentationKeys.key(special: .carriageReturn, characters: "\r") == .next)
+        #expect(PresentationKeys.key(special: .upArrow, characters: nil) == .previous)
+        #expect(PresentationKeys.key(special: nil, characters: " ") == .next)
+        #expect(PresentationKeys.key(special: nil, characters: " ", modifiers: .shift) == .previous)
+        #expect(PresentationKeys.key(special: .home, characters: nil) == .first)
+        #expect(PresentationKeys.key(special: .end, characters: nil) == .last)
+        #expect(PresentationKeys.key(special: nil, characters: "\u{1b}") == .close)
+        #expect(PresentationKeys.key(special: nil, characters: "a") == nil)
+        // ⌘←, ⌥↓, ⌃Leertaste gehören Menü und System.
+        #expect(PresentationKeys.key(special: .leftArrow, characters: nil, modifiers: .command) == nil)
+        #expect(PresentationKeys.key(special: .downArrow, characters: nil, modifiers: .option) == nil)
+        #expect(PresentationKeys.key(special: nil, characters: " ", modifiers: .control) == nil)
     }
 
     @MainActor
@@ -80,7 +85,7 @@ struct PresentationTests {
         #expect(model.controller.document.blocks.map(\.text) == ["Vortrag"])
         #expect(!model.controller.allowsEditing)
         #expect(!model.controller.isSelectable)
-        model.fit(width: (QuillDesign.contentMaxWidth + 2 * QuillDesign.EditorLayout.minSideMargin) * 2)
+        model.fit(width: QuillDesign.Presentation.columnWidth * 2)
         #expect(model.controller.scrollView.magnification == 2)
 
         model.previous()
@@ -90,8 +95,13 @@ struct PresentationTests {
         model.next()
         #expect(model.index == 2)
         model.first()
-        model.next()
+        // Die nächste Folie beginnt oben, auch nach Scrollen auf der vorigen.
+        model.controller.scrollView.contentView.scroll(to: NSPoint(x: 0, y: 300))
+        model.handle(.next)
         #expect(model.controller.document.blocks.map(\.text) == ["Eins"])
+        #expect(model.controller.scrollView.contentView.bounds.origin.y == 0)
+        model.handle(.close)
+        #expect(model.index == 1)
         withExtendedLifetime(bridge) {}
     }
 }

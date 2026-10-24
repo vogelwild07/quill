@@ -88,6 +88,8 @@ public enum QuillDesign {
 
     /// Präsentieren (18.2, ADR-035).
     public enum Presentation {
+        /// Textspalte mit Rändern; so breit ist eine Folie ohne Vergrößerung.
+        public static let columnWidth = contentMaxWidth + 2 * EditorLayout.minSideMargin
         /// Höchste Vergrößerung des Editors auf breiten Bildschirmen.
         public static let maxMagnification: CGFloat = 2.5
         /// Fenster ohne Vollbild (Test-Stores).

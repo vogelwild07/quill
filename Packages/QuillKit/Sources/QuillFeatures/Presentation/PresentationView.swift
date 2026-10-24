@@ -52,13 +52,7 @@ struct PresentationView: View {
             .navigationTitle(String(localized: "Präsentation: \(PageLabel.title(pages.first?.title ?? ""))", bundle: .module))
             .background(WindowAccessor { window in
                 keys.start(in: window) { key in
-                    switch key {
-                    case .next: model.next()
-                    case .previous: model.previous()
-                    case .first: model.first()
-                    case .last: model.last()
-                    case .close: dismiss()
-                    }
+                    if key == .close { dismiss() } else { model.handle(key) }
                 }
                 // Test-Stores bleiben im Fenster: Vollbild wechselt den Space (ADR-035).
                 if !persistence.isTestStore, !window.styleMask.contains(.fullScreen) { window.toggleFullScreen(nil) }
@@ -91,6 +85,7 @@ struct PresentationView: View {
         }
     }
 }
+
 /// Tasten der Präsentation. Ein Monitor nur für dieses Fenster statt `onKeyPress`: Im
 /// Fenster nimmt keine Ansicht den Fokus, der Editor ist ohne Schreibmarke.
 @MainActor
@@ -100,25 +95,35 @@ final class PresentationKeys {
     }
 
     private var monitor: Any?
+    private var closing: (any NSObjectProtocol)?
 
+    /// Endet mit `stop()` oder spätestens, wenn das Fenster schließt.
     func start(in window: NSWindow, handle: @escaping @MainActor (Key) -> Void) {
         stop()
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak window] event in
-            guard event.window === window,
-                  let key = Self.key(special: event.specialKey, characters: event.charactersIgnoringModifiers, shift: event.modifierFlags.contains(.shift))
+            guard let window, event.window === window,
+                  let key = Self.key(special: event.specialKey, characters: event.charactersIgnoringModifiers, modifiers: event.modifierFlags)
             else { return event }
             handle(key)
             return nil
+        }
+        closing = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.stop() }
         }
     }
 
     func stop() {
         if let monitor { NSEvent.removeMonitor(monitor) }
+        if let closing { NotificationCenter.default.removeObserver(closing) }
         monitor = nil
+        closing = nil
     }
 
     /// →, ↓, Leertaste, Bild ab, ↩ weiter; ←, ↑, Bild auf, ⇧-Leertaste zurück; Pos1, Ende; Esc.
-    nonisolated static func key(special: NSEvent.SpecialKey?, characters: String?, shift: Bool) -> Key? {
+    /// Mit ⌘, ⌥ oder ⌃ gehört die Taste dem Menü oder dem System.
+    nonisolated static func key(special: NSEvent.SpecialKey?, characters: String?, modifiers: NSEvent.ModifierFlags = []) -> Key? {
+        guard modifiers.isDisjoint(with: [.command, .option, .control]) else { return nil }
+        let shift = modifiers.contains(.shift)
         switch special {
         case .rightArrow, .downArrow, .pageDown, .carriageReturn, .enter: return .next
         case .leftArrow, .upArrow, .pageUp: return .previous
