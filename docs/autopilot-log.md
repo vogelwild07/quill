@@ -123,6 +123,10 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   keine Änderungen während der Präsentation; vergrößerter Editor im Lesemodus statt eigener
   Darstellung; Test-Stores ohne Vollbild (ADR-035).
 
+- [ ] Review 18.2: Tasten mit ⌘, ⌥ oder ⌃ gehen an Menü und System; jede Folie beginnt oben;
+  ↓ und Leertaste blättern auch auf einer Folie, die höher als der Bildschirm ist (Rest mit
+  Trackpad oder Maus); Seiten im Papierkorb lassen sich präsentieren; Titel weiter aus
+  `@Query` (ADR-035, Abschnitt „Review von 18.2“).
 
 ## Gemergt
 
@@ -447,3 +451,42 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
 - **Handtest:** Vollbild beim Start und Ende mit Esc (Test-Stores bleiben im Fenster),
   Größe der Schrift auf dem Bildschirm, Bilder auf Folien.
 
+### Review von 18.2 und Schlussmessung (PR #47, ADR-035)
+
+- Review über PR #46 nach Standards und ADR-035. Behoben: Tasten mit ⌘, ⌥ oder ⌃ blätterten
+  mit und kamen nicht beim Menü an; der Monitor endet spätestens mit dem Fenster; jede Folie
+  beginnt oben; Breite einer Folie als Token `QuillDesign.Presentation.columnWidth`; Blättern
+  im Modell statt in der Ansicht.
+- Tests: Package 770 (136 + 216 + 286 + 30 + 9 + 93), UI 68 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 3 im Package rot.
+- Schlussmessung gegen den Stand vor 18.2 (`78a2d62`): Package höchstens +0,8 %,
+  `sidebarLoad` nur in der ersten Runde höher (`docs/performance.md`).
+- Mac-Roadmap ohne Phase 14 abgeschlossen.
+- **Handtest:** Esc beendet die Präsentation auch aus dem Vollbild; ⌘Q und andere Kürzel
+  wirken während der Präsentation.
+
+## Schlussbericht (24.10.2026)
+
+Der Autopilot hat die Mac-Roadmap ohne Phase 14 abgearbeitet: Phasen 12, 16, 15 (ohne
+Teilen-Erweiterung), 17 und 18.2, PR #25 bis #47, jede Phase mit Review und Schlussmessung.
+Kein Messwert wurde nach der Wiederholung um mehr als 3 % schlechter.
+
+**Zu prüfen:** die Liste „Zu prüfende Entscheidungen“ oben.
+
+**Handtests**, die kein automatischer Test abdeckt (Test-Stores nutzen nie echte Dienste):
+
+- Siri und Kurzbefehle; „Seite öffnen“, wenn kein Fenster offen ist.
+- Klick auf einen Treffer in Spotlight.
+- Kürzel der Schnellnotiz (⌃⌥⌘N), während eine andere App vorne ist.
+- Erinnerung: Rückfrage nach Mitteilungen, echte Mitteilung, Klick darauf.
+- Tagesseite: Rückfrage nach dem Kalender, echte Termine.
+- Sprachnotiz: Rückfrage nach dem Mikrofon, echtes Diktat; fehlt das Sprachmodell, keine
+  Rückfrage; nach einem Fehler erlischt die Anzeige des Mikrofons.
+- Präsentieren: Vollbild beim Start, Esc beendet es auch aus dem Vollbild, Kürzel mit ⌘
+  wirken, Größe der Schrift, Bilder auf Folien.
+
+**Offen:**
+
+- Phase 14 Verschlüsselung, bis der Nutzer sie einplant.
+- Teilen-Erweiterung (Phase 15), braucht das Developer Program.
+- Release der neuen Funktionen nur mit dem Nutzer (`Scripts/make-release.sh`).

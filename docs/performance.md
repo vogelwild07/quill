@@ -736,6 +736,27 @@ bzw. +3,3 % je Messung, im Mittel beider Runden +1,7 % und +0,5 %), `pageSwitch`
 Mittel. `sidebarReload` hat zwei Lagen (rund 105 und 170–185 ms je Messung); der Median von
 151,3 ms stammt aus einer Runde mit zwei kurzen Messungen.
 
+## Schlussmessung 18.2 (24.10.2026, ADR-035)
+
+Nach den Fixes aus dem Review, im Wechsel mit dem Stand vor 18.2 (`78a2d62`), je zwei Runden:
+
+| Messung (ms) | vor 18.2 | nach Review |
+|---|---|---|
+| applyEditsMove | 15,44 / 15,19 | 15,20 / 15,26 |
+| applyEditsReverse | 69,30 / 67,80 | 68,45 / 69,79 |
+| editorLoad | 12,95 / 12,89 | 12,84 / 13,04 |
+| exportPlan | 968,0 / 971,6 | 963,8 / 965,8 |
+| historyDays | 89,84 / 89,93 | 89,92 / 89,90 |
+| pageTreeBuild | 54,88 / 54,75 | 54,08 / 53,25 |
+| search | 44,06 / 45,07 | 44,49 / 44,77 |
+| App: sidebarLoad | 182,6 / 184,9 | 191,8 / 183,2 |
+| App: sidebarReload | 171,6 / 173,0 | 151,7 / 172,8 |
+| App: pageSwitch | 79,4 / 77,7 | 77,5 / 78,0 |
+
+Package im Rauschen, höchstens +0,8 % (`applyEditsReverse` im Mittel beider Runden).
+`sidebarLoad` liegt in der ersten Runde 5 % höher, in der Wiederholung unter dem alten Stand.
+`sidebarReload` hat wieder zwei Lagen (rund 105 und 150–175 ms je Messung).
+
 ## Messbedingungen
 
 | | |
