@@ -105,6 +105,12 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   „Frag deine Notizen“ oder der Export; Enter setzt die Einfügemarke vor das Bild statt es
   auszuwählen; Test-Stores nutzen die echte Erkennung von Vision (ADR-034, Abschnitt 17.1).
 
+- [ ] 17.2: Sprachnotiz im Blatt, eingefügt als ein Absatz unter dem Block an der
+  Einfügemarke; Aufnahme nie gespeichert; nur in der Sprache des Systems und nur, wenn deren
+  Modell schon installiert ist (kein Download, kein Vormerken); kein Kürzel; neues
+  Entitlement für das Mikrofon in der echten App und den Testvarianten (ADR-034,
+  Abschnitt 17.2).
+
 
 ## Gemergt
 
