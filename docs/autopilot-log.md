@@ -128,7 +128,7 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer. Alle ge
   Trackpad oder Maus); Seiten im Papierkorb lassen sich präsentieren; Titel weiter aus
   `@Query` (ADR-035, Abschnitt „Review von 18.2“).
 
-- [ ] 19: Regler für Liquid Glass mit Boden der Deckkraft je Theme (im Dunklen beginnt „klar“ deckender); Tönung mit der Theme-Farbe, bei festen Themes der anderen Darstellung mit Standard; Text auf dem Glas Schwarz bzw. Weiß (mit Theme-Farben lag der Boden bei 82–87 %); Fläche über dem System-Glas, wo es keine API für die Tönung gibt; „Wie System“ ändert nichts; Vorschaubilder als gerechnete Näherung (ADR-036).
+- [x] 19: Regler für Liquid Glass mit Boden der Deckkraft je Theme (im Dunklen beginnt „klar“ deckender); Tönung mit der Theme-Farbe, bei festen Themes der anderen Darstellung mit Standard; Text auf dem Glas Schwarz bzw. Weiß (mit Theme-Farben lag der Boden bei 82–87 %); Fläche über dem System-Glas, wo es keine API für die Tönung gibt; „Wie System“ ändert nichts; Vorschaubilder als gerechnete Näherung (ADR-036).
 
 ## Gemergt
 
@@ -467,6 +467,23 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer. Alle ge
 - **Handtest:** Esc beendet die Präsentation auch aus dem Vollbild; ⌘Q und andere Kürzel
   wirken während der Präsentation.
 
+### 19 Liquid Glass (PR #NR, ADR-036)
+
+- Einstellungen › Darstellung › „Liquid Glass“: „Wie System“ (Standard) und Regler klar ↔
+  getönt in fünf Stufen; Sidebar, Toolbar, Slash-Menü, Schnell öffnen, Popover und Fenster
+  der Schnellnotiz; Boden der Deckkraft für 4,5 : 1; „Transparenz reduzieren“ hat Vorrang.
+- Regler als `NSSlider`: Der `Slider` von SwiftUI gab VoiceOver nur die Zahl, sein Knopf
+  erschien im Audit ohne Beschreibung.
+- `testAuditTimeTravel` war auch auf `main` rot (Tooltip der Sidebar-Zeile im Audit);
+  Zeiger geht jetzt vor dem Audit auf den ersten Tag.
+- Tests: Package 784 (136 + 218 + 298 + 30 + 9 + 93), UI 71 (1 übersprungen), Synctest 13
+  Fälle, zusammen 868; 4 Gegenproben rot wie erwartet (ohne Boden, ohne „Transparenz
+  reduzieren“, falscher Wert für VoiceOver, Regler nie ausgegraut).
+- Messung siehe `docs/performance.md`, Abschnitt „Phase 19“: Package und App im Rauschen.
+- Vorschaubilder (gerechnete Näherung): `Design/Vorschau/liquid-glass-sidebar-*.png`.
+- Handtest offen: echtes Glas über Schreibtischbildern ansehen; „Transparenz reduzieren“ in
+  den Systemeinstellungen bei offener App umschalten.
+
 ## Schlussbericht (24.10.2026)
 
 Der Autopilot hat die Mac-Roadmap ohne Phase 14 abgearbeitet: Phasen 12, 16, 15 (ohne
@@ -486,6 +503,8 @@ Kein Messwert wurde nach der Wiederholung um mehr als 3 % schlechter.
   Rückfrage; nach einem Fehler erlischt die Anzeige des Mikrofons.
 - Präsentieren: Vollbild beim Start, Esc beendet es auch aus dem Vollbild, Kürzel mit ⌘
   wirken, Größe der Schrift, Bilder auf Folien.
+- Liquid Glass: echtes Glas in allen Stufen über hellem, dunklem und buntem
+  Schreibtischbild; „Transparenz reduzieren“ live umschalten.
 
 **Offen:**
 

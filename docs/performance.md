@@ -757,6 +757,27 @@ Package im Rauschen, höchstens +0,8 % (`applyEditsReverse` im Mittel beider Run
 `sidebarLoad` liegt in der ersten Runde 5 % höher, in der Wiederholung unter dem alten Stand.
 `sidebarReload` hat wieder zwei Lagen (rund 105 und 150–175 ms je Messung).
 
+## Phase 19: Liquid Glass (ADR-036)
+
+Im Wechsel mit `main` vor Phase 19 (`f9f92cf`), je zwei Runden, Regler wie im Auslieferungszustand auf „Wie System“:
+
+| Messung (ms) | vor 19 | nach 19 |
+|---|---|---|
+| applyEditsMove | 15,67 / 15,93 | 15,45 / 16,51 |
+| applyEditsReverse | 70,66 / 70,07 | 69,17 / 71,98 |
+| editorLoad | 13,19 / 12,98 | 12,91 / 13,42 |
+| exportPlan | 974,2 / 1002,2 | 968,9 / 1016,4 |
+| historyDays | 91,78 / 92,68 | 89,86 / 91,41 |
+| pageTreeBuild | 55,36 / 54,10 | 54,05 / 54,25 |
+| search | 45,26 / 45,80 | 44,77 / 45,71 |
+| App: sidebarLoad | 162,1 / 173,2 | 165,0 / 173,8 |
+| App: sidebarReload | 168,8 / 145,0 | 171,3 / 168,2 |
+| App: pageSwitch | 78,5 / 76,6 | 77,9 / 78,4 |
+
+Package im Rauschen (`applyEditsMove` +1,1 %, `applyEditsReverse` +0,3 % im Mittel beider Runden).
+`sidebarLoad` und `pageSwitch` gleich. `sidebarReload` hat weiter zwei Lagen (rund 145 und 170 ms je Messung); in Runde 2 trifft der Median vor 19 die untere, nach 19 die obere, die Einzelwerte liegen in beiden Fällen in denselben Lagen.
+Bei eigener Stufe bekommt jede Zeile der Sidebar zusätzlich eine Textfarbe; gemessen ist der Standard „Wie System“.
+
 ## Messbedingungen
 
 | | |
