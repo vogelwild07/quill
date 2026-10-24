@@ -51,7 +51,7 @@ final class QuickOpenModel {
     /// Sucht nach `debounce` Ruhe; ohne Begriff sofort die zuletzt bearbeiteten.
     /// Läuft in `.task(id: query)`: Ein neuer Begriff bricht das alte Laden ab, und
     /// veraltete Ergebnisse werden nie angezeigt.
-    func load(from store: PageStore, debounce: Duration = .milliseconds(100)) async {
+    func load(from store: PageStore, imageText: ImageTextIndex? = nil, debounce: Duration = .milliseconds(100)) async {
         let query = query
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if !term.isEmpty {
@@ -59,7 +59,11 @@ final class QuickOpenModel {
         }
         guard !Task.isCancelled else { return }
         do {
-            let hits = term.isEmpty ? try await store.recentPages() : try await store.search(term)
+            var hits = term.isEmpty ? try await store.recentPages() : try await store.search(term)
+            // Bilder nach den Treffern im Text, bis zur Grenze der Suche (ADR-034).
+            if let excerpts = imageText?.excerpts(matching: term), !excerpts.isEmpty {
+                hits += try await store.imageHits(excerpts, limit: PageStore.searchLimit - hits.count)
+            }
             guard !Task.isCancelled, query == self.query else { return }
             sections = Self.sections(hits, isSearching: !term.isEmpty)
             selection = 0

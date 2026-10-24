@@ -100,6 +100,11 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
   (im dunklen Erscheinungsbild rot, auch vor Phase 15) (ADR-033, Abschnitt „Review von
   Phase 15“).
 
+- [ ] 17.1: Text in Bildern nur im Speicher, nach jedem Start neu erkannt (kein Feld im
+  Schema, keine Datei neben dem Store); nur „Schnell öffnen“ findet ihn, nicht Spotlight,
+  „Frag deine Notizen“ oder der Export; Enter setzt die Einfügemarke vor das Bild statt es
+  auszuwählen; Test-Stores nutzen die echte Erkennung von Vision (ADR-034, Abschnitt 17.1).
+
 
 ## Gemergt
 
@@ -365,3 +370,16 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer.
 - Schlussmessung gegen den Stand vor Phase 15 (`16f978f`): nichts über 3 %, am nächsten
   `pageSwitch` mit +2,8 % (`docs/performance.md`).
 - Phase 15 abgeschlossen, ohne Teilen-Erweiterung (braucht das Developer Program).
+
+### 17.1 Text in Bildern durchsuchbar (PR #43, ADR-034)
+
+- Vision erkennt den Text der Bilder im Hintergrund, nur im Speicher und nach jedem Start
+  neu; „Schnell öffnen“ (⌘O) zeigt passende Bilder mit Symbol und Ausschnitt, Enter springt
+  auf die Seite und setzt die Einfügemarke vor das Bild.
+- Tests: Package 756 (136 + 202 + 286 + 30 + 9 + 93), UI 66 (1 übersprungen), Synctest 13
+  Fälle. Gegenproben: 7 im Package rot, 2 im UI-Test rot.
+- `TodayUITests` im vollen Lauf einmal rot (Zahl der Zeilen 3 statt 2, davor wiederholte
+  Meldungen „Not hittable“ im Menü, der Mac war vermutlich in Benutzung); ohne Bezug zu 17.1,
+  danach dreimal grün.
+- Messung: nichts schlechter, Package und App im Bereich von `main` oder darunter
+  (`docs/performance.md`).

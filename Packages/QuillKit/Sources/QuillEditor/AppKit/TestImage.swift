@@ -3,7 +3,7 @@ import AppKit
 import OSLog
 import QuillEditorCore
 
-/// Startargument `-QuillTestImage <Breite>x<Höhe>`, `heavy` oder `demo`:
+/// Startargument `-QuillTestImage <Breite>x<Höhe>`, `heavy`, `demo` oder `text`:
 /// Die App erzeugt das Testbild selbst und legt es in ihre eigene Zwischenablage
 /// (`-QuillPasteboardName`). So setzen UI-Tests Bilder ein, ohne dass ein anderer
 /// Prozess die Zwischenablage füllt; das sperrt der Datenschutz („Einsetzen aus
@@ -29,10 +29,12 @@ enum TestImage {
 
     /// `heavy`: Rauschen, kaum komprimierbar, ein PNG über 20 MB. `demo`: ruhige
     /// Landschaft für die Bilder in der README (`ReadmeScreenshotUITests`). Sonst
-    /// einfarbig in `<Breite>x<Höhe>` (je 1…4000).
+    /// einfarbig in `<Breite>x<Höhe>` (je 1…4000). `text`: dunkle Schrift auf Weiß für
+    /// die Texterkennung (ADR-034).
     static func png(spec: String) -> Data? {
         if spec == "heavy" { return noise(width: 2700, height: 2700) }
         if spec == "demo" { return landscape(width: 1600, height: 640) }
+        if spec == "text" { return lettering(textImageText, width: 800, height: 200) }
         let parts = spec.split(separator: "x").compactMap { Int($0) }
         guard parts.count == 2, parts.allSatisfy({ (1...4000).contains($0) }),
               let context = CGContext(
@@ -75,6 +77,24 @@ enum TestImage {
         hills(base: 0.38, amplitude: 0.07, phase: 0.6, color: CGColor(srgbRed: 0.42, green: 0.58, blue: 0.66, alpha: 1))
         hills(base: 0.22, amplitude: 0.06, phase: 2.4, color: CGColor(srgbRed: 0.27, green: 0.45, blue: 0.47, alpha: 1))
         return context.makeImage().flatMap { NSBitmapImageRep(cgImage: $0).representation(using: .png, properties: [:]) }
+    }
+
+    /// Text im Bild `text`, den UI-Tests in der Suche finden.
+    static let textImageText = "Fahrplan Gardasee"
+
+    private static func lettering(_ text: String, width: Int, height: Int) -> Data? {
+        let image = NSImage(size: NSSize(width: width, height: height), flipped: false) { rect in
+            NSColor.white.setFill()
+            rect.fill()
+            (text as NSString).draw(
+                at: NSPoint(x: 40, y: CGFloat(height) / 2 - 24),
+                withAttributes: [.font: NSFont.systemFont(ofSize: 48), .foregroundColor: NSColor.black]
+            )
+            return true
+        }
+        return image.tiffRepresentation
+            .flatMap(NSBitmapImageRep.init(data:))
+            .flatMap { $0.representation(using: .png, properties: [:]) }
     }
 
     private static func noise(width: Int, height: Int) -> Data? {

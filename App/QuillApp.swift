@@ -103,6 +103,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         try? persistence?.get().reminders.start()
         // Seiten in Spotlight, nur wenn eingeschaltet (ADR-033).
         try? persistence?.get().spotlight.start()
+        // Text in Bildern für die Suche, nur im Speicher (ADR-034).
+        try? persistence?.get().imageText.start()
         // Geschichte für die Zeitreise, auch ohne Sync (ADR-031).
         try? persistence?.get().history.start()
         // Gleicht nur ab, wenn der Nutzer den Sync eingeschaltet hat (ADR-029).

@@ -146,6 +146,9 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   du die heutigen Termine in eine Seite einfügst.“
 - Kurzbefehle: Titel und Siri-Sätze auf Deutsch, Antwort von „Zu Seite hinzufügen“ in einem
   Satz mit dem Titel der Seite.
+- Text in Bildern (ADR-034): In „Schnell öffnen“ stehen Bilder unter „Inhalt“ wie Treffer im
+  Text, der Ausschnitt aus dem erkannten Text mit SF Symbol `photo` davor; Bedienungshilfen
+  lesen „Seite, Bild, Ausschnitt“. Enter setzt die Einfügemarke vor das Bild.
 
 ## Leerzustände
 

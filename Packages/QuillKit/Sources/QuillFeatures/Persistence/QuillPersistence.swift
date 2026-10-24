@@ -145,6 +145,9 @@ public final class QuillPersistence {
     public private(set) lazy var reminders = Reminders(
         store: store, center: isTestStore ? MemoryReminderCenter() : SystemReminderCenter()
     )
+    /// Text in Bildern für die Suche (ADR-034); Vision rechnet nur lokal, darum auch für
+    /// Test-Stores.
+    public private(set) lazy var imageText = ImageTextIndex(store: store, recognizer: VisionTextRecognizer())
     /// Kalender für „Heutige Termine einfügen“ (ADR-033); Test-Stores lesen nur zwei feste
     /// Termine im Speicher.
     private(set) lazy var calendar: any CalendarSource = isTestStore ? Self.testCalendar() : SystemCalendarSource()

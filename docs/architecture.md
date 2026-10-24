@@ -330,6 +330,27 @@ App
                       Mitteilungen in applicationWillFinishLaunching (nur echter Store)
 ```
 
+## Erfassen ohne Tippen (ADR-034, ab Phase 17)
+
+Alles auf dem Gerät, nichts ins Netz, kein neues Feld im Schema. Text in Bildern (17.1):
+
+```
+QuillModel
+  PageStore.activeImages   Bilder auf Seiten außerhalb des Papierkorbs (Block, Seite, Asset)
+  PageStore.imageHits      Treffer `.image(blockID:)` für Bilder, deren Text passt
+QuillFeatures/ImageText
+  TextRecognizer       VisionTextRecognizer (RecognizeTextRequest, genau, Sprache
+                       automatisch); Tests mit eigenem Ersatz
+  ImageTextIndex       Text je Asset nur im Speicher; erkennt nach dem Start und nach jeder
+                       Speicherung (didSave, 2 s gesammelt) nur neue Bilder, der Reihe nach,
+                       Priorität .utility; excerpts(matching:) für die Suche
+  QuickOpenModel       hängt Bildtreffer an die Treffer im Text, bis PageStore.searchLimit
+  RootView.openHit     springt zum Bild, Einfügemarke davor
+App
+  AppDelegate         startet imageText nach dem Start (auch Test-Stores: Vision rechnet
+                      nur lokal)
+```
+
 ## Sync (ADR-026, ADR-029, ab Phase 11)
 
 `QuillSync` ist das einzige Modul mit Automerge (`AutomergeIsolationTests`) und hängt nur an QuillModel:

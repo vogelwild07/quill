@@ -403,7 +403,7 @@ public struct RootView: View {
                     .contentShape(.rect)
                     .onTapGesture { isQuickOpenShown = false }
                     .accessibilityHidden(true)
-                QuickOpenView(store: store, open: openHit, dismiss: { isQuickOpenShown = false })
+                QuickOpenView(store: store, imageText: persistence?.imageText, open: openHit, dismiss: { isQuickOpenShown = false })
                     .padding(.top, 56)
             }
         }
@@ -429,8 +429,14 @@ public struct RootView: View {
             open(hit.pageID, asTab: true)
             return
         }
-        if case .content(let blockID, let match) = hit.kind {
+        switch hit.kind {
+        case .page:
+            break
+        case .content(let blockID, let match):
             revealRequest = RevealRequest(pageID: hit.pageID, blockID: blockID, range: match)
+        case .image(let blockID):
+            // Einfügemarke vor dem Bild: Eine Auswahl über dem Bild nähme Tippen nicht an.
+            revealRequest = RevealRequest(pageID: hit.pageID, blockID: blockID, range: NSRange(location: 0, length: 0))
         }
         selection = hit.pageID
     }
