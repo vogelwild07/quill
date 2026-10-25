@@ -42,6 +42,8 @@ cat > "$work/srv/appcast.xml" <<XML
 </channel></rss>
 XML
 
+if [ "${FEED_MODE:-signed}" != unsigned ]; then "$SPARKLE/bin/sign_update" --account $account "$work/srv/appcast.xml"; fi
+if [ "${FEED_MODE:-signed}" = tampered ]; then sed -i '' 's|<title>Version 2</title>|<title>Version 2!</title>|' "$work/srv/appcast.xml"; fi
 rm -rf "$install/UpdateSpike.app"; ditto "$work/v1/UpdateSpike.app" "$install/UpdateSpike.app"
 if [ -n "${QUARANTINE:-}" ]; then
   # Wie nach einem Download im Browser; $QUARANTINE sind die Flags (0083 neu, 00c3 mit Freigabe).

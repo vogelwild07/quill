@@ -26,6 +26,8 @@ cat > "$app/Contents/Info.plist" <<PLIST
 	<key>SUFeedURL</key><string>$FEED</string>
 	<key>SUPublicEDKey</key><string>$PUBKEY</string>
 	<key>SUEnableInstallerLauncherService</key><true/>
+	<key>SURequireSignedFeed</key><true/>
+	<key>SUVerifyUpdateBeforeExtraction</key><true/>
 	<key>SUEnableAutomaticChecks</key><true/>
 	<key>SpikePostpone</key><${POSTPONE:-false}/>
 	<key>SpikeOwnDriver</key><${OWN_DRIVER:-false}/>

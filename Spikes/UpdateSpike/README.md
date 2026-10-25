@@ -11,7 +11,10 @@ SPARKLE=<Ordner mit Sparkle.framework und bin/> \
 
 Schalter (Umgebung): `QUARANTINE=00c3` (v1 mit Quarantäne), `POSTPONE_V1=true` (v1 gibt die
 Installation nie frei), `OWN_DRIVER=true` (eigene Oberfläche wie in Quill) mit
-`BACKUP_FAILS_V1=true` (Backup scheitert), `LOCAL_ATS=false` (ohne `NSAllowsLocalNetworking`).
+`BACKUP_FAILS_V1=true` (Backup scheitert), `LOCAL_ATS=false` (ohne `NSAllowsLocalNetworking`),
+`FEED_MODE=tampered` (Appcast nach dem Signieren geändert) oder `FEED_MODE=unsigned` (ohne
+Signatur); Standard ist ein signierter Appcast wie in Quill (`SURequireSignedFeed`,
+`SUVerifyUpdateBeforeExtraction`).
 Der Schlüssel liegt im Schlüsselbund unter dem Konto `quill-update-spike`; nach dem Spike mit
 `security delete-generic-password -a quill-update-spike -s https://sparkle-project.org` löschen.
 Ergebnisse in ADR-037.
