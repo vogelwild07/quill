@@ -66,7 +66,12 @@ Fall back to grep or file reads only for what the graph does not model: literal 
 - Gegenproben nur aus einer Kopie im Scratchpad: Datei kopieren, Fehler einbauen, Test laufen lassen, Datei aus der Kopie zurück und per `cmp` prüfen. Nie `git checkout`/`git restore` (sonst gehen uncommittete Änderungen verloren).
 - Isolationstests nach dem Committen neuer Dateien erneut laufen lassen, vor dem Push (mindestens `swift test --filter QuillFeaturesTests`): `SpikeIsolationTests` und `BundleIdentifierTests` lesen nur eingecheckte Dateien (`git ls-files`), ein Lauf davor sieht neue Dateien nicht.
 - Gegenproben, deren Code nicht kompiliert, zählen nicht und werden mit kompilierbarem Fehler wiederholt.
-- Voller Lauf = Package-Tests, `Scripts/check-ios-build.sh`, App-Build ohne Warnungen, Release-Build der Tests (`swift build -c release -Xswiftc -enable-testing --build-tests --package-path Packages/QuillKit`), `python3 Scripts/perf-package.py 3`, `Scripts/check-release-binary.sh`, alle UI-Klassen und `Scripts/test-synctest-ui.sh`. Schlägt einer davon fehl (auch Release-Build oder perf-package), ist der Lauf rot.
+- Umfang je PR (seit 2026-10-25):
+  - Kleine PRs: Package-Tests, App-Build ohne Warnungen und die UI-Klassen des betroffenen Bereichs. Im Bericht nennen, welche Klassen gewählt wurden und warum.
+  - Voller Lauf nur am Ende einer Funktion oder Phase, vor jedem Release und immer, wenn Store, Sync, Migration, Speichern oder Backup berührt werden. Voller Lauf = Package-Tests, `Scripts/check-ios-build.sh`, App-Build ohne Warnungen, Release-Build der Tests (`swift build -c release -Xswiftc -enable-testing --build-tests --package-path Packages/QuillKit`), `Scripts/check-release-binary.sh`, alle UI-Klassen und `Scripts/test-synctest-ui.sh`.
+  - perf (`python3 Scripts/perf-package.py 3`, App über `Scripts/perf-ui.py`) nur, wenn Editor, Sidebar, Laden, Speichern oder Suche betroffen sind.
+  - Gegenproben und Isolationstests wie unten, in jedem Umfang.
+  - Schlägt ein Teil des gewählten Umfangs fehl (auch Release-Build oder perf), ist der Lauf rot.
 - In jedem Bericht die Summe über alle Test-Targets nennen (`swift test` schreibt eine Zeile „Test run with …“ pro Target), nicht nur eine Zeile; jeden Test nur einmal zählen: Package-Tests, die der App-Lauf (`xcodebuild test`) noch einmal ausführt, nicht dazuzählen.
 
 ## Fehlersuche
