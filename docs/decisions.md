@@ -877,3 +877,22 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 1. Spike in `Spikes/UpdateSpike` mit eigener Kennung (`io.github.vogelwild07.quill.updatespike`), nie der Kennung der echten App: kleine Sandbox-App mit Sparkle 2, ad hoc signiert, Version 1 und 2, Appcast lokal ausgeliefert. Kriterien: v1 findet v2, prüft die EdDSA-Signatur, ersetzt sich und startet als v2; manipuliertes Archiv wird abgelehnt; keine Rückfrage von Gatekeeper oder „App-Verwaltung“; dreimal hintereinander gleich.
 2. Entscheidung mit Begründung hier, dann Umsetzung im Modul der Wahl, Tests, Doku, voller Lauf.
 
+**Spike (2026-10-25, Sparkle 2.10.0, macOS 27.0.1, `Spikes/UpdateSpike`):**
+- Ohne Zusatz startet die App gar nicht: Mit Hardened Runtime lädt eine ad hoc signierte App kein ad hoc signiertes `Sparkle.framework` („different Team IDs“, Library Validation). Es geht nur mit `com.apple.security.cs.disable-library-validation`.
+- Damit aktualisiert sich v1 auf v2 und startet neu, mit `.zip` und `.dmg`, im Scratchpad und unter `/Applications`, dreimal hintereinander ohne Fehler, jeweils in etwa zwei Sekunden. Keine Rückfrage von Gatekeeper oder „App-Verwaltung“; die neue Version trägt keine Quarantäne, ihre Signatur ist gültig. Sparkle nimmt die neue Ad-hoc-Signatur an, weil die EdDSA-Signatur stimmt.
+- Ein nach dem Signieren geändertes Byte im Archiv: Abbruch („improperly signed“ bei `.zip`, Fehler beim Entpacken bei `.dmg`), v1 bleibt.
+- v1 mit Quarantäne ohne Umzug durch den Finder läuft verlagert (App Translocation); Sparkle bricht dann mit „can’t be updated if it’s running from the location it was downloaded to“ ab. Wer Quill wie in der Anleitung in „Programme“ zieht, ist nicht betroffen.
+- Wichtig für das Backup: Gibt die App die Installation im Haken `shouldPostponeRelaunchForUpdate` nicht frei und beendet sich, installiert Sparkle trotzdem. Mit eigener Oberfläche (`SPUUserDriver`) antwortet die App bei „Update gefunden“ erst nach dem Backup; scheitert es, antwortet sie „abbrechen“, und auch nach dem Beenden bleibt v1.
+- `http://127.0.0.1` lädt Sparkle auch ohne `NSAllowsLocalNetworking`; Quill braucht keine ATS-Ausnahme.
+
+**Entscheidung: Sparkle 2.10.0.**
+- Begründung: Die eigene Lösung über die Releases-API kann die App aus der Sandbox nicht ersetzen. Sie könnte nur die .dmg laden und öffnen; die Datei trüge Quarantäne, die eine Sandbox-App nicht entfernen darf, und jede neue Version bräuchte wieder die Freigabe in den Systemeinstellungen. Sparkle installiert über einen Dienst außerhalb der Sandbox, prüft EdDSA-Signaturen von Archiv und Appcast, bringt Werkzeuge für Schlüssel im Schlüsselbund und das Signieren mit und lief im Spike zuverlässig.
+- Preis: drei neue Entitlements. `network.client` (Quill hatte bisher gar kein Netz), zwei Ausnahmen für `mach-lookup` (`<Kennung>-spks`, `-spki`, Installationsdienst von Sparkle) und `disable-library-validation`. Letzteres erlaubt der App, Bibliotheken ohne gleiche Team-ID zu laden. Quill lädt keine Plug-ins; das Siegel der Signatur deckt alle Bibliotheken im Bundle ab; Hardened Runtime bleibt sonst an (keine `DYLD_*`-Variablen). Mit Developer-ID-Signatur (Roadmap „Später“) fällt die Ausnahme weg.
+- Abgelehnt: Sparkles Standardoberfläche (englischer Aufbau, kein Platz für das Backup vor dem Bereitlegen), automatisches Laden und Installieren beim Beenden (Installation ohne Backup), Systemprofil, Delta-Updates.
+
+**Umsetzung (geplant):**
+- Modul `QuillUpdate` in QuillKit, einziges mit Sparkle (Isolationstest), nur macOS. Eigene Oberfläche `UpdateUserDriver` mit Fenster „Update“; Backup des Stores, bevor Quill „installieren“ antwortet.
+- Info.plist: `SUFeedURL` = `https://github.com/vogelwild07/quill/releases/latest/download/appcast.xml`, `SUPublicEDKey`, `SURequireSignedFeed`, `SUVerifyUpdateBeforeExtraction`, `SUEnableSystemProfiling` = NO, `SUEnableAutomaticChecks` = NO (Quill fragt selbst), `SUAllowsAutomaticUpdates` = NO, `SUScheduledCheckInterval` = 86400, `SUEnableInstallerLauncherService` = YES.
+- Erlaubt sind nur Feed und Archiv über HTTPS von `github.com/vogelwild07/quill`; alles andere bricht vor dem Laden ab. Debug-Builds mit Test-Store dürfen einen Feed auf `127.0.0.1` nutzen (UI-Tests).
+- Nur die echte Kennung sucht nach Updates; Testvarianten und Profiling nie.
+
