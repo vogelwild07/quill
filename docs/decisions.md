@@ -862,3 +862,18 @@ Neu in Phase 3: `EditorPersistenceBridge` (Anbindung an `PageStore`) und Inline-
 - `testAuditTimeTravel` setzt den Zeiger vor dem Audit auf den ersten Tag: Der Tooltip der zuvor angeklickten Zeile in der Sidebar erschien sonst als Element ohne Beschreibung, auch auf `main` (Xcode 27.1).
 - `AccessibilityAuditUITests.testAuditGlass` prüft Sidebar, Toolbar, Slash-Menü, Schnell öffnen und den Regler in Stellung klar und getönt; der Kontrast-Check des Audits misst dabei das echte Glas über dem Schreibtisch des Testrechners.
 
+## ADR-037: Updates (2026-10-25, entsteht mit Phase 20)
+
+**Kontext:** Wunsch des Nutzers: Quill sucht auf Wunsch nach neuen Versionen und installiert sie. Bisher hat Quill gar kein Netz (Sandbox ohne `network.client`), Releases sind ad hoc signiert, ohne Developer Program (ADR-022).
+
+**Vorgaben des Nutzers:**
+- Zuerst prüfen, ob Sparkle 2 mit Ad-hoc-Signatur zuverlässig läuft, mit zwei Testversionen; sonst eine einfache Lösung über die Releases-API von GitHub mit Download und Prüfung der SHA-256.
+- Standard aus, einmalige Frage beim ersten Start. Nur die Versionsliste abfragen, kein Systemprofil, keine Kennung. Höchstens einmal am Tag.
+- Menü „Quill › Nach Updates suchen …“; Einstellungen › Allgemein mit „Automatisch suchen“ und „Zuletzt geprüft“.
+- Nur von `github.com/vogelwild07/quill` über HTTPS. Falsche Signatur oder Prüfsumme bricht ab. Vor der Installation ein Backup des Stores.
+- `make-release.sh` erzeugt Appcast bzw. Signatur automatisch; privater Schlüssel nur im Schlüsselbund, `push.sh` blockiert ihn.
+
+**Plan:**
+1. Spike in `Spikes/UpdateSpike` mit eigener Kennung (`io.github.vogelwild07.quill.updatespike`), nie der Kennung der echten App: kleine Sandbox-App mit Sparkle 2, ad hoc signiert, Version 1 und 2, Appcast lokal ausgeliefert. Kriterien: v1 findet v2, prüft die EdDSA-Signatur, ersetzt sich und startet als v2; manipuliertes Archiv wird abgelehnt; keine Rückfrage von Gatekeeper oder „App-Verwaltung“; dreimal hintereinander gleich.
+2. Entscheidung mit Begründung hier, dann Umsetzung im Modul der Wahl, Tests, Doku, voller Lauf.
+
