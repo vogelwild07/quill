@@ -484,7 +484,7 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer. Alle ge
 - Handtest offen: echtes Glas über Schreibtischbildern ansehen; „Transparenz reduzieren“ in
   den Systemeinstellungen bei offener App umschalten.
 
-### 20 Updates (PR #NR, ADR-037)
+### 20 Updates (PR #53, ADR-037)
 
 - Sparkle 2.10.0 statt eigener Abfrage der GitHub-Releases: Der Spike (`Spikes/UpdateSpike`)
   zeigt, dass Sparkle mit Ad-hoc-Signatur ersetzt und neu startet, wenn die EdDSA-Signatur
