@@ -497,6 +497,17 @@ public final class QuillPersistence {
         return folder
     }
 
+    // MARK: Updates (ADR-037)
+
+    /// Backup vor der Installation einer neuen Version, der Rückweg; `nil` bei einem Store
+    /// nur im Arbeitsspeicher. Scheitert es, installiert Quill nichts.
+    public func backupBeforeUpdate(to version: String) async throws -> URL? {
+        guard let backup else { return nil }
+        let folder = try await Task.detached(priority: .userInitiated) { try backup.backupBeforeUpdate(to: version) }.value
+        if let folder { Self.logger.notice("Backup vor dem Update: \(folder.lastPathComponent, privacy: .public)") }
+        return folder
+    }
+
     // MARK: Papierkorb (ADR-017)
 
     /// Löscht Seiten aus dem Papierkorb endgültig, in einem Schritt. Vorher ein Backup, außer der

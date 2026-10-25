@@ -29,6 +29,9 @@ public struct StoreBackup: Sendable {
         case setAside
         /// Vor dem Einschalten des Sync (ADR-029), der Rückweg. Wird nie automatisch gelöscht.
         case beforeSync
+        /// Vor der Installation einer neuen Version von Quill (ADR-037), der Rückweg. Wird nie
+        /// automatisch gelöscht.
+        case beforeUpdate(to: String)
 
         var kind: Kind {
             switch self {
@@ -40,14 +43,17 @@ public struct StoreBackup: Sendable {
             case .beforeMove: .beforeMove
             case .setAside: .setAside
             case .beforeSync: .beforeSync
+            case .beforeUpdate: .beforeUpdate
             }
         }
 
-        /// Anlass im Ordnernamen; vor einer Migration mit beiden Versionen.
+        /// Anlass im Ordnernamen; vor einer Migration mit beiden Versionen, vor einem Update
+        /// mit der neuen Version.
         var slug: String {
             let base = kind.slug ?? ""
             return switch self {
             case .beforeMigration(let from, let to): "\(base)\(from)-\(to)"
+            case .beforeUpdate(let to): "\(base)\(BackupName.safeVersion(to))"
             case .launch, .quit, .beforeEmptyingTrash, .beforeRestore, .beforeMove, .setAside, .beforeSync: base
             }
         }
@@ -60,7 +66,7 @@ public struct StoreBackup: Sendable {
 
     /// Anlass eines vorhandenen Backups, aus dem Ordnernamen gelesen.
     public enum Kind: Sendable, Equatable, CaseIterable {
-        case launch, quit, beforeMigration, beforeEmptyingTrash, beforeRestore, beforeMove, setAside, beforeSync
+        case launch, quit, beforeMigration, beforeEmptyingTrash, beforeRestore, beforeMove, setAside, beforeSync, beforeUpdate
         /// Unbekannter Anlass (z. B. von einer späteren Version).
         case other
 
@@ -77,6 +83,7 @@ public struct StoreBackup: Sendable {
             case .beforeMove: "vor-umzug"
             case .setAside: "beiseitegelegt"
             case .beforeSync: "vor-sync"
+            case .beforeUpdate: "vor-update-"
             case .other: nil
             }
         }
@@ -198,6 +205,16 @@ public struct StoreBackup: Sendable {
         return created
     }
 
+    /// Vor der Installation einer neuen Version immer ein Backup, auch ohne Änderung seit
+    /// dem letzten: Es ist der Rückweg, falls die neue Version Probleme macht (ADR-037).
+    @discardableResult
+    public func backupBeforeUpdate(to version: String) throws -> URL? {
+        guard storeExists else { return nil }
+        let created = try createBackup(reason: .beforeUpdate(to: version))
+        try prune()
+        return created
+    }
+
     /// Vor dem Einschalten des Sync immer ein Backup, auch ohne Änderung seit dem
     /// letzten: Es ist der Rückweg (ADR-029).
     @discardableResult
@@ -265,8 +282,8 @@ public struct StoreBackup: Sendable {
 
     /// Behält je das neueste Backup der letzten 7 Tage mit Backup (Tages-Backups)
     /// und davor der 4 nächstälteren Wochen mit Backup (Wochen-Backups); Backups
-    /// vor einer Migration, vor dem Umzug, vor dem Einschalten des Sync und beiseitegelegte
-    /// immer. Backups vor dem Leeren des Papierkorbs zählen
+    /// vor einer Migration, vor dem Umzug, vor dem Einschalten des Sync, vor einem Update und
+    /// beiseitegelegte immer. Backups vor dem Leeren des Papierkorbs zählen
     /// 30 Tage lang nicht mit (höchstens 10), der Stand vor dem Wiederherstellen
     /// 30 Tage lang gar nicht. Ein zum Wiederherstellen vorgemerktes Backup bleibt
     /// immer: Das Backup beim Beenden direkt danach verdrängt sonst ein Backup vom
@@ -282,7 +299,7 @@ public struct StoreBackup: Sendable {
         // Neueste zuerst: Das erste Backup eines Tages oder einer Woche ist das neueste.
         for entry in try entries() {
             if entry.isBeforeMigration || entry.kind == .beforeMove || entry.kind == .setAside || entry.kind == .beforeSync
-                || entry.name == pending {
+                || entry.kind == .beforeUpdate || entry.name == pending {
                 keep.insert(entry.url)
                 continue
             }
