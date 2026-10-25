@@ -484,6 +484,31 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer. Alle ge
 - Handtest offen: echtes Glas über Schreibtischbildern ansehen; „Transparenz reduzieren“ in
   den Systemeinstellungen bei offener App umschalten.
 
+### 20 Updates (PR #NR, ADR-037)
+
+- Sparkle 2.10.0 statt eigener Abfrage der GitHub-Releases: Der Spike (`Spikes/UpdateSpike`)
+  zeigt, dass Sparkle mit Ad-hoc-Signatur ersetzt und neu startet, wenn die EdDSA-Signatur
+  stimmt; falsche Signatur, unsignierter oder veränderter Appcast brechen ab.
+- Aus bis zur Zustimmung: einmalige Frage beim ersten Start („Nicht suchen“ Standard), Menü
+  „Quill › Nach Updates suchen …“, Einstellungen › Allgemein mit „Automatisch suchen“ und
+  „Zuletzt geprüft“, höchstens einmal am Tag, kein Systemprofil, nur
+  `github.com/vogelwild07/quill` über HTTPS; vor der Installation Backup `vor-update-<Version>`.
+- Nur der echte Store im Release-Build sucht; Tests nur gegen `UpdateTestServer` auf
+  127.0.0.1. `make-release.sh` signiert dmg und Appcast mit dem Schlüssel aus dem
+  Schlüsselbund, `push.sh` sperrt den privaten Schlüssel per Hash.
+- `SpikeIsolationTests` war im vollen Lauf rot (neue `UpdateIsolationTests` nennt
+  Automerge, ohne es zu nutzen): einzelne Ausnahme mit Begründung. `testQuitDuringSync`
+  einmal rot (Ereignis nicht zugestellt, A ohne Hänger laut Stichprobe), einzeln grün.
+- Tests: Package 811 (19 + 93 + 9 + 137 + 225 + 30 + 298), UI 77 (1 übersprungen), Synctest
+  13 Fälle, zusammen 901. Gegenproben rot wie erwartet: Planer ignoriert den Schalter,
+  Host mit github.com am Ende, Backup übersprungen, Rangfolge der Fehler, falsches Backup,
+  UI-Test mit kaputter Policy und Sperre (1 Anfrage), `push.sh` mit Schlüssel,
+  `check-release-binary.sh` mit fremden Entitlements. Nur Policy kaputt: Schalter aus weiter
+  0 Anfragen.
+- Messung siehe `docs/performance.md`, Abschnitt „Phase 20“: im Rauschen.
+- Handtest offen: Zustand „Update gefunden“ mit echtem Download erst mit dem nächsten
+  Release; Nutzer von 0.4.0 installieren 0.5.0 von Hand.
+
 ## Schlussbericht (24.10.2026)
 
 Der Autopilot hat die Mac-Roadmap ohne Phase 14 abgearbeitet: Phasen 12, 16, 15 (ohne
