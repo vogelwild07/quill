@@ -778,6 +778,19 @@ Package im Rauschen (`applyEditsMove` +1,1 %, `applyEditsReverse` +0,3 % im Mitt
 `sidebarLoad` und `pageSwitch` gleich. `sidebarReload` hat weiter zwei Lagen (rund 145 und 170 ms je Messung); in Runde 2 trifft der Median vor 19 die untere, nach 19 die obere, die Einzelwerte liegen in beiden Fällen in denselben Lagen.
 Bei eigener Stufe bekommt jede Zeile der Sidebar zusätzlich eine Textfarbe; gemessen ist der Standard „Wie System“.
 
+## Phase 20: Updates (ADR-037)
+
+Nur die App: Sparkle.framework lädt beim Start mit; das Package ist für Editor, Sidebar, Laden, Speichern und Suche unverändert. Im Schema „Quill Profiling“ startet Quill keinen Updater, gemessen ist also das Laden des Frameworks. Läufe nacheinander, `main` (`8be0701`) gegen den Branch:
+
+| Messung (ms) | vor 20 | nach 20 |
+|---|---|---|
+| App: launch | 365,9 / 391,8 / 356,1 | 346,4 / 353,3 |
+| App: sidebarLoad | 178,0 / 181,3 / 161,6 | 164,6 / 159,2 |
+| App: sidebarReload | 151,4 / 171,0 / 174,4 | 158,4 / 150,9 |
+| App: pageSwitch | 77,6 / 78,1 / 76,7 | 74,2 / 75,1 |
+
+Keine Verschlechterung. Zwei Läufe des Branches direkt nach einem Lauf von `main` scheiterten (einmal Zeitlimit, einmal „Sidebar leer“ und Verbindung zur App verloren, ohne Absturzbericht); danach lief der Branch auch direkt nach `main` grün. Beide Builds teilen den Container von „Quill Profiling“.
+
 ## Messbedingungen
 
 | | |
