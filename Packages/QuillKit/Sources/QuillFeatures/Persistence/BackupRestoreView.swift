@@ -134,6 +134,7 @@ enum BackupLabel {
         case .beforeMove: String(localized: "Vor dem Umzug des Speicherorts", bundle: .module)
         case .setAside: String(localized: "Beiseitegelegt (alter Speicherort)", bundle: .module)
         case .beforeSync: String(localized: "Vor dem Einschalten des Sync", bundle: .module)
+        case .beforeUpdate: String(localized: "Vor einem Update von Quill", bundle: .module)
         case .other: String(localized: "Sonstiges", bundle: .module)
         }
     }

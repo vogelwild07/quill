@@ -1,6 +1,6 @@
 # Quill
 
-Local-first Notizen- und Seiten-App für macOS: verschachtelte Seiten, Notizen und Aufgaben in einem nativen Block-Editor. Alle Daten bleiben auf deinem Mac.
+Local-first Notizen- und Seiten-App für macOS: verschachtelte Seiten, Notizen und Aufgaben in einem nativen Block-Editor. Alle Daten bleiben auf deinem Mac. Ins Netz geht Quill nur, wenn du nach Updates suchst (ab v0.5.0, Standard aus).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/quill-dunkel.png">
@@ -21,7 +21,9 @@ Quill ist nur ad hoc signiert und nicht von Apple notarisiert. macOS blockiert d
 4. Systemeinstellungen › Datenschutz & Sicherheit öffnen und nach unten scrollen. Im Abschnitt zur Sicherheit steht ein Hinweis zu Quill. „Dennoch öffnen“ klicken und mit Passwort oder Touch ID bestätigen.
 5. Quill erneut öffnen und in der Rückfrage das Öffnen bestätigen. Ab jetzt startet Quill normal.
 
-**Nach Updates:** Jede neue Version ist neu signiert. Eventuell musst du Schritt 3 bis 5 wiederholen. macOS kann außerdem fragen, ob Quill auf die Daten der bisherigen Version zugreifen darf. Erlaube das, sonst findet Quill deine Seiten nicht. Deine Daten bleiben bei einem Update erhalten.
+**Updates (ab v0.5.0):** Quill fragt beim ersten Start einmal, ob es selbst nach Updates suchen soll; Standard ist „Nicht suchen“. Ändern unter **Einstellungen › Allgemein › Automatisch suchen**, von Hand über **Quill › Nach Updates suchen …**. Dabei fragt Quill höchstens einmal am Tag die Liste der Versionen bei GitHub ab, ohne Angaben über dich oder deinen Mac. Ein Update lädt Quill nur von `github.com/vogelwild07/quill` über HTTPS, prüft seine Signatur (Sparkle, EdDSA) und legt vor der Installation ein Backup an; installiert wird nur, wenn du zustimmst. Das klappt nur, wenn Quill im Ordner „Programme“ liegt. Fragt macOS nach dem Neustart, ob Quill auf die Daten der bisherigen Version zugreifen darf, erlaube das.
+
+**Updates bis v0.4.0** installierst du von Hand mit der neuen .dmg. Jede neue Version ist neu signiert. Eventuell musst du Schritt 3 bis 5 wiederholen. macOS kann außerdem fragen, ob Quill auf die Daten der bisherigen Version zugreifen darf. Erlaube das, sonst findet Quill deine Seiten nicht. Deine Daten bleiben bei einem Update erhalten.
 
 **Prüfsumme (optional):** `shasum -a 256 ~/Downloads/Quill-<Version>.dmg` muss mit der Datei `Quill-<Version>.dmg.sha256` im Release übereinstimmen.
 
@@ -42,13 +44,13 @@ xcodebuild -project Quill.xcodeproj -scheme Quill -destination 'platform=macOS' 
 swift test --package-path Packages/QuillKit
 ```
 
-Release bauen: `Scripts/make-release.sh` erzeugt aus einer sauberen Arbeitskopie die ad hoc signierte, geprüfte App als `dist/Quill-<Version>.dmg` samt `.sha256` (ADR-022), mit gestaltetem Fenster und Volume-Icon (`Scripts/dmg/`, ADR-025).
+Release bauen: `Scripts/make-release.sh` erzeugt aus einer sauberen Arbeitskopie die ad hoc signierte, geprüfte App als `dist/Quill-<Version>.dmg` samt `.sha256` (ADR-022), mit gestaltetem Fenster und Volume-Icon (`Scripts/dmg/`, ADR-025), dazu den signierten Appcast `dist/appcast.xml` für Updates (ADR-037). Dafür muss der private Update-Schlüssel im Schlüsselbund liegen (Konto `io.github.vogelwild07.quill`); `Scripts/push.sh` braucht außerdem `Config/Local.update-key.sha256` (SHA-256 des Schlüssels, nicht committet) und bricht ab, sobald der Schlüssel in einem Commit steht.
 
 Darstellung prüfen ohne Bildschirmfotos: `EditorSnapshotTests` und `EmptyStateSnapshotTests` rendern Editor und Leerzustände hell und dunkel und legen PNGs in `$TMPDIR/QuillEditorSnapshots/` ab. Die Bilder oben nimmt `Scripts/readme-screenshots.sh` auf (UI-Test mit Demo-Inhalten, Store nur im Arbeitsspeicher). Die Aufnahme liest Bildschirmpixel, deshalb vorher ein neutrales Schreibtischbild einstellen, andere Fenster ausblenden und „Nicht stören“ einschalten. Das App-Icon (`App/Resources/AppIcon.icon`) wird in Icon Composer bearbeitet. Performance: `python3 Scripts/perf-package.py 3` (Package, optimiert) und `python3 Scripts/perf-ui.py` (App im Schema „Quill Profiling“); Ziele und Messwerte in `docs/performance.md`. Der letzte Stand des Editor-Spikes aus Phase 1 ist der Git-Tag `editor-spike`.
 
 ## Daten und Backups
 
-Die Datenbank liegt in `~/Library/Containers/io.github.vogelwild07.quill/Data/Library/Application Support/Quill/Store/`. Automatische Backups (beim Start höchstens einmal pro Tag, vor jeder Migration, beim Beenden nach Änderungen) liegen daneben in `Backups/` und sind über **Ablage → Backups im Finder zeigen** erreichbar. Wiederherstellen über **Ablage → Backup wiederherstellen …**: Quill beendet sich und spielt das Backup beim nächsten Start ein, der vorherige Stand bleibt als Backup erhalten. Falls Quill nicht mehr startet: [von Hand](docs/data-model.md#backup-von-hand-wiederherstellen).
+Die Datenbank liegt in `~/Library/Containers/io.github.vogelwild07.quill/Data/Library/Application Support/Quill/Store/`. Automatische Backups (beim Start höchstens einmal pro Tag, vor jeder Migration, vor einem Update, beim Beenden nach Änderungen) liegen daneben in `Backups/` und sind über **Ablage → Backups im Finder zeigen** erreichbar. Wiederherstellen über **Ablage → Backup wiederherstellen …**: Quill beendet sich und spielt das Backup beim nächsten Start ein, der vorherige Stand bleibt als Backup erhalten. Falls Quill nicht mehr startet: [von Hand](docs/data-model.md#backup-von-hand-wiederherstellen).
 
 Sync zwischen Macs über einen Ordner (z. B. in iCloud Drive) ist seit v0.4.0 als Beta dabei (Phase 11, ADR-029). Er ist aus, bis man unter **Einstellungen › Sync** einen Ordner wählt; davor legt Quill ein Backup an. Jeder Mac schreibt dort nur eigene Dateien. Für den Handtest baut `Scripts/make-synctest.sh` die Testvarianten „Quill Synctest A“ und „Quill Synctest B“, jede mit eigenem Container; beide laufen zugleich in einem Benutzerkonto. Anleitung in `docs/synctest.md`; die meisten Fälle laufen auch automatisch mit `Scripts/test-synctest-ui.sh`.
 
@@ -62,6 +64,7 @@ Alle wirken nur aus der Kommandozeile und nur in Debug-Builds (ADR-019, ADR-021)
 - `-QuillEditorTheme <id>`: Theme des Editors (`standard`, `quill`, `tinte`, `sonne`, `lagune`, `abend`, `kontrast`), nur zusammen mit einem der Test-Stores; dann liest und speichert Quill die eigene Wahl nicht.
 - `-QuillTestFocusMode YES`: Fokus-Modus beim Start, ebenso nur mit einem Test-Store.
 - `-QuillTestGlass <0 … 1>` und `-QuillTestReduceTransparency YES`: Regler für Liquid Glass ohne „Wie System“ bzw. „Transparenz reduzieren“ fest, nur mit einem Test-Store.
+- `-QuillUpdateTestFeed <Port>`: Updates bei `http://127.0.0.1:<Port>/appcast.xml` statt bei GitHub suchen, nur Debug und nur mit einem Test-Store (ohne das Argument suchen Test-Stores nie). Dazu `-QuillTestUpdateAutomatic YES` („Automatisch suchen“ an) und `-QuillTestUpdateAsk YES` (Frage beim ersten Start); Einstellungen dann nur im Speicher.
 - `-QuillSyncTestFolder <Name>`: „Ordner wählen“ im Sync nimmt ohne Dateiauswahl diesen Unterordner des temporären Ordners der App, nur mit einem Test-Store. Test-Stores speichern die Einstellungen des Sync nie in denen des Macs.
 
 ## Struktur

@@ -53,3 +53,4 @@ Design/IconDrafts/
 
 # Release-Ausgabe (Scripts/make-release.sh)
 dist/
+Config/Local.update-key.sha256

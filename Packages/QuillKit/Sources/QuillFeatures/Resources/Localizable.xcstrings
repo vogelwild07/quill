@@ -103,6 +103,9 @@
     "Abhaken" : {
 
     },
+    "Allgemein" : {
+
+    },
     "Als Seite sichern" : {
 
     },
@@ -133,6 +136,12 @@
     "Auswahl zurückholen" : {
 
     },
+    "Automatisch nach Updates suchen?" : {
+
+    },
+    "Automatisch suchen" : {
+
+    },
     "Backup bleibt vorgemerkt" : {
 
     },
@@ -152,6 +161,9 @@
 
     },
     "Backup wiederherstellen …" : {
+
+    },
+    "Backup wird angelegt …" : {
 
     },
     "Backups" : {
@@ -202,6 +214,9 @@
     "Code" : {
 
     },
+    "Danach lädt Quill das Update und prüft die Signatur." : {
+
+    },
     "Darstellung" : {
 
     },
@@ -209,6 +224,9 @@
 
     },
     "Das Backup stammt von einer neueren Quill-Version und kann hier nicht eingespielt werden." : {
+
+    },
+    "Das Backup vor der Installation ist gescheitert. Quill hat nichts installiert." : {
 
     },
     "Das Kürzel ist schon belegt, wohl von einer anderen App." : {
@@ -239,6 +257,15 @@
 
     },
     "Das lässt sich nicht rückgängig machen. Unterseiten werden mitgelöscht." : {
+
+    },
+    "Das Update ist beschädigt. Quill hat nichts installiert." : {
+
+    },
+    "Das Update ist gescheitert: %@" : {
+
+    },
+    "Das Update kommt nicht über HTTPS von github.com/vogelwild07/quill. Quill hat nichts installiert." : {
 
     },
     "Daten konnten nicht geöffnet werden" : {
@@ -304,6 +331,9 @@
     "Die Seite selbst ist nicht betroffen." : {
 
     },
+    "Die Signatur oder Prüfsumme des Updates stimmt nicht. Quill hat nichts installiert." : {
+
+    },
     "Die Spracherkennung für deine Sprache ist auf diesem Mac nicht installiert." : {
 
     },
@@ -340,7 +370,16 @@
     "Diese Version von Quill braucht ein neues Format für deine Daten. Vorher legt Quill ein Backup an. Ältere Versionen von Quill können die Daten danach nicht mehr öffnen." : {
 
     },
+    "Diese Version überspringen" : {
+
+    },
     "Dieser Mac unterstützt Apple Intelligence nicht. Die KI-Funktionen bleiben ausgeblendet." : {
+
+    },
+    "Du hast die neueste Version (%@)." : {
+
+    },
+    "Du hast Version %@. Vor der Installation legt Quill ein Backup deiner Notizen an." : {
 
     },
     "Du wählst einen leeren Ordner; der Stand aus dem Backup kommt dorthin. Der bisherige Ordner bleibt unverändert, andere Macs müssen den neuen Ordner wählen." : {
@@ -499,6 +538,9 @@
     "Getönt" : {
 
     },
+    "GitHub ist gerade nicht erreichbar. Prüf die Verbindung und versuch es später noch einmal." : {
+
+    },
     "Gleicht ab …" : {
 
     },
@@ -521,6 +563,9 @@
 
     },
     "Holt die markierten Absätze dieses Tages in die Seite zurück." : {
+
+    },
+    "Höchstens einmal am Tag fragt Quill die Liste der Versionen bei GitHub ab, ohne Angaben über dich oder deinen Mac. Installiert wird nur, wenn du zustimmst; vorher legt Quill ein Backup an. Von Hand: Quill › Nach Updates suchen …" : {
 
     },
     "Icon" : {
@@ -563,6 +608,9 @@
 
     },
     "Inhalt" : {
+
+    },
+    "Installieren" : {
 
     },
     "Jetzt abgleichen" : {
@@ -646,10 +694,16 @@
     "Mit ⌘N legst du die erste Seite an." : {
 
     },
+    "Nach Updates suchen …" : {
+
+    },
     "Neu beginnen mit neuem Ordner" : {
 
     },
     "Neu beginnen …" : {
+
+    },
+    "Neu in dieser Version" : {
 
     },
     "Neue Seite" : {
@@ -667,6 +721,12 @@
     "Nicht gespeichert" : {
 
     },
+    "Nicht suchen" : {
+
+    },
+    "Noch einmal" : {
+
+    },
     "Noch kein Text." : {
 
     },
@@ -680,6 +740,9 @@
 
     },
     "Noch nicht geladen" : {
+
+    },
+    "Noch nie" : {
 
     },
     "Notiz" : {
@@ -745,6 +808,9 @@
     "Quellen" : {
 
     },
+    "Quill %@ ist da." : {
+
+    },
     "Quill darf das Mikrofon nicht nutzen. Du kannst das in den Systemeinstellungen unter „Datenschutz & Sicherheit › Mikrofon“ ändern." : {
 
     },
@@ -757,13 +823,25 @@
     "Quill folgt der Einstellung für Liquid Glass in den Systemeinstellungen." : {
 
     },
+    "Quill fragt dann höchstens einmal am Tag die Liste der Versionen bei GitHub ab, ohne Angaben über dich oder deinen Mac. Installiert wird nur, wenn du zustimmst. Du kannst das jederzeit unter Einstellungen › Allgemein ändern." : {
+
+    },
     "Quill gleicht deine Seiten über einen Ordner ab, zum Beispiel in iCloud Drive. Jeder Mac schreibt dort nur eigene Dateien, nichts wird überschrieben." : {
 
     },
     "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
 
     },
+    "Quill ist aktuell." : {
+
+    },
     "Quill ist noch nicht bereit. Öffne Quill und versuch es noch einmal." : {
+
+    },
+    "Quill kann sich nur selbst aktualisieren, wenn es im Ordner „Programme“ liegt. Zieh Quill aus der .dmg nach „Programme“ und starte es dort." : {
+
+    },
+    "Quill ließ sich nicht beenden. Schließ offene Fragen und versuch es noch einmal." : {
 
     },
     "Quill schreibt nichts in den Ordner, bis du fortsetzt, auch nicht nach einem Neustart." : {
@@ -776,6 +854,9 @@
 
     },
     "Quill wird danach beendet. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt als Backup „Vor dem Wiederherstellen“ erhalten." : {
+
+    },
+    "Quill wird neu gestartet …" : {
 
     },
     "Quill wurde nicht beendet. Das Backup ist nicht mehr vorgemerkt, der aktuelle Stand bleibt. Wähle es bei Bedarf erneut über Ablage › Backup wiederherstellen …" : {
@@ -917,6 +998,9 @@
     "Suche in deinen Notizen …" : {
 
     },
+    "Suche nach Updates …" : {
+
+    },
     "Suche verwandte Seiten …" : {
 
     },
@@ -1028,6 +1112,18 @@
     "Unvollständiger Vorgang, Dateien liegen in: %@" : {
 
     },
+    "Update" : {
+
+    },
+    "Update nicht möglich" : {
+
+    },
+    "Update wird geladen …" : {
+
+    },
+    "Update wird geprüft …" : {
+
+    },
     "Verschieben" : {
 
     },
@@ -1050,6 +1146,9 @@
 
     },
     "Vor dem endgültigen Löschen" : {
+
+    },
+    "Vor einem Update von Quill" : {
 
     },
     "Vor einer Aktualisierung der Datenbank" : {
@@ -1140,6 +1239,9 @@
 
     },
     "Zuletzt bearbeitet" : {
+
+    },
+    "Zuletzt geprüft" : {
 
     },
     "Zum Wählen Sync fortsetzen." : {

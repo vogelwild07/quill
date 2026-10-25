@@ -413,6 +413,35 @@ Tests
   AccessibilityAuditUITests.testAuditGlass
 ```
 
+## Updates (ADR-037, Phase 20)
+
+Sparkle 2 mit eigener Oberfläche. Einziges Netz der App; aus, bis der Nutzer zustimmt.
+
+```
+QuillUpdate (einziges Modul mit Sparkle und Netz, UpdateIsolationTests)
+  UpdatePolicy        Feed-URL, einmal am Tag, nur HTTPS github.com/vogelwild07/quill/releases/…
+  UpdateSettings      Schalter, Frage beantwortet, letzter Versuch, „Zuletzt geprüft“ (UserDefaults)
+  UpdateScheduler     beim Start und stündlich: fällig? → Suche im Hintergrund
+  UpdateController    SPUUpdater ohne eigenen Zeitplan; Delegate: mayPerform (Feed erlaubt,
+                      Hintergrund nur mit Schalter an), Archiv nur von erlaubter Adresse
+  UpdateUserDriver    SPUUserDriver → UpdateModel; „Update gefunden“ → Backup → „installieren“
+  UpdateModel         Zustand des Fensters, Wahl, Fehler (ohne Sparkle, testbar)
+QuillFeatures/Update
+  AppUpdates          wer sucht (echter Store im Release; Test-Store nur mit -QuillUpdateTestFeed),
+                      Frage beim ersten Start, Fenster folgt UpdateModel
+  UpdatePrompt        NSAlert „Automatisch nach Updates suchen?“, Standard „Nicht suchen“
+  UpdateWindow/View   Fenster „Update“
+  GeneralSettingsView Einstellungen › Allgemein
+QuillPersistence.backupBeforeUpdate(to:)  Backup vor-update-<Version>
+App/Info.plist        SU-Schlüssel (öffentlicher Schlüssel, signierter Feed, keine Automatik,
+                      SUDefaultsDomain je Konfiguration)
+Scripts               make-release.sh (Appcast, Signaturen), push.sh (Schlüssel per Hash),
+                      check-release-binary.sh (nur Sparkles mach-lookup-Ausnahme)
+Tests
+  QuillUpdateTests, UpdateBackupTests, UpdateIsolationTests,
+  UpdateUITests mit UpdateTestServer (127.0.0.1), AccessibilityAuditUITests.testAuditUpdate
+```
+
 ## Sync (ADR-026, ADR-029, ab Phase 11)
 
 `QuillSync` ist das einzige Modul mit Automerge (`AutomergeIsolationTests`) und hängt nur an QuillModel:

@@ -14,6 +14,9 @@
 # Wartezeit vor dem Speichern und den Gerätenamen, der
 # Ordnername im Test-Runner, ihre Bundle-ID und jede Ausnahme in den Entitlements.
 # Ebenso das Test-Modell der KI (`TestTextModel`, nur Debug), erkannt an seiner Antwort.
+# Ebenso die Test-Schalter für Updates (nur Debug) und die Sparkle-Domain des
+# Debug-Builds (ADR-037). Einzige erlaubte Ausnahme in den Entitlements sind Sparkles
+# Dienste zum Installieren (`mach-lookup`, nur `<Kennung>-spks` und `-spki`).
 #
 # Aufruf: Scripts/check-release-binary.sh [zusätzliche xcodebuild-Einstellungen]
 # Die Einstellungen dienen nur der Gegenprobe, z. B.
@@ -69,7 +72,8 @@ found=0
 for marker in QuillSeedPages ProfilingSeed io.github.vogelwild07.quill.profiling \
   "Testbild in eigener Zwischenablage" "Fenstergröße für UI-Tests" QuillWindowsOnMainScreen QuillInMemoryStore QuillStoreDirectory QuillPasteboardName \
   QuillSyncSharedFolder QuillSyncTestFolder QuillSyncHaltBeforePage QuillSaveDelay QuillSyncDeviceName QuillSyncUITests \
-  "Antwort des Test-Modells" QuillFakeAI io.github.vogelwild07.quill.synctest; do
+  "Antwort des Test-Modells" QuillFakeAI io.github.vogelwild07.quill.synctest \
+  QuillUpdateTestFeed QuillTestUpdateAutomatic QuillTestUpdateAsk quill.debug.sparkle; do
   # LC_ALL=C: byteweise; mit UTF-8-Locale findet grep in Binärdaten keine Umlaute.
   hits=$(LC_ALL=C grep -r -l -a -F "$marker" "$copies" 2>/dev/null)
   if [ -n "$hits" ]; then
@@ -78,9 +82,23 @@ for marker in QuillSeedPages ProfilingSeed io.github.vogelwild07.quill.profiling
     found=1
   fi
 done
-# Entitlements wie ausgeliefert: keine Ausnahme aus den Testvarianten.
-if codesign -d --entitlements - "$app" 2>/dev/null | LC_ALL=C grep -q -a -F temporary-exception; then
-  echo "GEFUNDEN: Ausnahme (temporary-exception) in den Entitlements"
+# Entitlements wie ausgeliefert: keine Ausnahme aus den Testvarianten, nur die für
+# Sparkle mit genau der eigenen Kennung.
+entitlements="$derived/entitlements.plist"
+codesign -d --entitlements - --xml "$app" > "$entitlements" 2>/dev/null
+bundle_id=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$app/Contents/Info.plist")
+exceptions=$(python3 -I -c '
+import plistlib, sys
+entitlements = plistlib.load(open(sys.argv[1], "rb"))
+sparkle = "com.apple.security.temporary-exception.mach-lookup.global-name"
+services = [sys.argv[2] + "-spks", sys.argv[2] + "-spki"]
+for key, value in entitlements.items():
+    if "temporary-exception" in key and not (key == sparkle and value == services):
+        print(key)
+' "$entitlements" "$bundle_id" 2>&1)
+if [ $? -ne 0 ] || [ -n "$exceptions" ]; then
+  echo "GEFUNDEN: Ausnahme (temporary-exception) in den Entitlements:"
+  echo "$exceptions" | sed 's/^/  /'
   found=1
 fi
 bundles=$(find "$app" \( -name '*.xctest' -o -path '*/Contents/PlugIns/*' \) -print)

@@ -53,6 +53,17 @@ public final class QuillPersistence {
     /// Nur Debug, nur Test-Store: Test-Modell statt Apple Intelligence (ADR-032). Wert
     /// `available` oder ein anderer Fall von `AIAvailability`, um die Erklärung zu prüfen.
     public static let fakeAIArgument = "QuillFakeAI"
+    #if DEBUG
+    /// Nur Debug, nur Test-Store: `-QuillUpdateTestFeed <Port>` sucht Updates bei
+    /// `http://127.0.0.1:<Port>/appcast.xml` statt bei GitHub (ADR-037, `UpdateUITests`).
+    /// Ohne das Argument suchen Test-Stores nie.
+    public static let updateTestFeedArgument = "QuillUpdateTestFeed"
+    /// Nur Debug, nur Test-Store: `-QuillTestUpdateAutomatic YES` schaltet „Automatisch
+    /// suchen“ ein, nur im Speicher.
+    public static let testUpdateAutomaticArgument = "QuillTestUpdateAutomatic"
+    /// Nur Debug, nur Test-Store: `-QuillTestUpdateAsk YES` stellt die Frage beim ersten Start.
+    public static let testUpdateAskArgument = "QuillTestUpdateAsk"
+    #endif
     /// Relativ zum Benutzerordner; steht genauso in `App/QuillSynctest.entitlements`.
     public static let syncSharedFolderRoot = "Library/Containers/io.github.vogelwild07.quill.UITests.xctrunner/Data/tmp/QuillSyncUITests"
     #endif
@@ -148,6 +159,16 @@ public final class QuillPersistence {
     /// Text in Bildern für die Suche (ADR-034); Vision rechnet nur lokal, darum auch für
     /// Test-Stores.
     public private(set) lazy var imageText = ImageTextIndex(store: store, recognizer: VisionTextRecognizer())
+    #if canImport(AppKit)
+    /// Updates (ADR-037): Nur der echte Store im Release-Build sucht bei GitHub, und nur
+    /// nach Zustimmung; Test-Stores nur mit `-QuillUpdateTestFeed`, Einstellungen im Speicher.
+    public private(set) lazy var updates = AppUpdates.make(
+        isTestStore: isTestStore, test: updateTestOptions,
+        backup: { [unowned self] version in _ = try await self.backupBeforeUpdate(to: version) }
+    )
+    /// Nur für Tests: Startargumente für Updates (`configureTestHooks`).
+    private var updateTestOptions: AppUpdates.TestOptions?
+    #endif
     /// Kalender für „Heutige Termine einfügen“ (ADR-033); Test-Stores lesen nur zwei feste
     /// Termine im Speicher.
     private(set) lazy var calendar: any CalendarSource = isTestStore ? Self.testCalendar() : SystemCalendarSource()
@@ -358,6 +379,14 @@ public final class QuillPersistence {
         if let fake = value(fakeAIArgument).flatMap(AIAvailability.init(rawValue:)) {
             persistence.ai = AISettings(defaults: nil, model: TestTextModel(), availability: { fake })
         }
+        #if canImport(AppKit)
+        // Vor dem ersten Zugriff auf `updates`.
+        persistence.updateTestOptions = AppUpdates.TestOptions(
+            feed: value(updateTestFeedArgument).flatMap(UInt16.init).flatMap { URL(string: "http://127.0.0.1:\($0)/appcast.xml") },
+            automaticChecks: flag(testUpdateAutomaticArgument, in: arguments),
+            asksOnFirstLaunch: flag(testUpdateAskArgument, in: arguments)
+        )
+        #endif
         if flag(seedTimeTravelArgument, in: arguments) {
             let store = persistence.store
             Task {
@@ -494,6 +523,17 @@ public final class QuillPersistence {
         guard let backup else { return nil }
         let folder = try await Task.detached(priority: .userInitiated) { try backup.backupBeforeSync() }.value
         if let folder { Self.logger.notice("Backup vor dem Sync: \(folder.lastPathComponent, privacy: .public)") }
+        return folder
+    }
+
+    // MARK: Updates (ADR-037)
+
+    /// Backup vor der Installation einer neuen Version, der Rückweg; `nil` bei einem Store
+    /// nur im Arbeitsspeicher. Scheitert es, installiert Quill nichts.
+    public func backupBeforeUpdate(to version: String) async throws -> URL? {
+        guard let backup else { return nil }
+        let folder = try await Task.detached(priority: .userInitiated) { try backup.backupBeforeUpdate(to: version) }.value
+        if let folder { Self.logger.notice("Backup vor dem Update: \(folder.lastPathComponent, privacy: .public)") }
         return folder
     }
 

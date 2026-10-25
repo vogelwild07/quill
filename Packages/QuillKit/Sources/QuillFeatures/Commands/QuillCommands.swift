@@ -18,6 +18,14 @@ public struct QuillCommands: Commands {
     }
 
     public var body: some Commands {
+        // Updates (ADR-037); aus, wo Quill nicht suchen kann (Test-Store, Debug-Build).
+        CommandGroup(after: .appInfo) {
+            Button(String(localized: "Nach Updates suchen …", bundle: .module)) {
+                persistence?.updates.checkNow()
+            }
+            .disabled(persistence?.updates.isAvailable != true)
+        }
+
         CommandGroup(replacing: .newItem) {
             Button(String(localized: "Neue Seite", bundle: .module)) {
                 if let actions {

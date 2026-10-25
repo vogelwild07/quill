@@ -5,6 +5,10 @@
 # - die Werte aus Config/Local.push-check (E-Mail-Adressen usw., eine pro Zeile,
 #   git-ignoriert; Vorlage Config/Local.push-check.example),
 # - den eigenen Benutzerpfad ($HOME),
+# - den privaten Schlüssel für Updates (ADR-037): jede Base64-Folge in Länge eines
+#   EdDSA-Schlüssels (44 Zeichen), deren SHA-256 dem Wert in
+#   Config/Local.update-key.sha256 gleicht (git-ignoriert; der Schlüssel selbst liegt
+#   nur im Schlüsselbund und steht nirgends im Klartext),
 # in Commit-Nachrichten, Dateinamen und Dateiinhalten, auch in Bildern und anderen
 # Binärdateien. Autor und Committer müssen die noreply-Adresse aus
 # `git config user.email` tragen. Gesucht wird nach Werten, nicht nach dem Wort
@@ -60,6 +64,11 @@ while IFS= read -r line || [ -n "$line" ]; do
 done < "$private"
 [ $count -gt 0 ] || fail "Config/Local.push-check enthält keinen Wert (mindestens die private E-Mail-Adresse)"
 
+key_hash_file=$root/Config/Local.update-key.sha256
+[ -f "$key_hash_file" ] || fail "Config/Local.update-key.sha256 fehlt (SHA-256 des privaten Schlüssels für Updates, ADR-037)"
+key_hash=$(tr -d '[:space:]' < "$key_hash_file")
+[[ $key_hash =~ ^[0-9a-f]{64}$ ]] || fail "Config/Local.update-key.sha256 enthält keinen SHA-256-Wert"
+
 noreply=$(git config user.email)
 [[ $noreply == *@users.noreply.github.com ]] || fail "git config user.email ist keine noreply-Adresse"
 
@@ -73,6 +82,16 @@ scan() {
   # Genau zehn Zeichen als Wert; ein leeres `DEVELOPMENT_TEAM= NÄCHSTE_EINSTELLUNG=` zählt nicht.
   if grep -q -a -E 'DEVELOPMENT_TEAM[[:space:]]*=[[:space:]]*"?[A-Za-z0-9]{10}([^A-Za-z0-9_]|$)' "$file"; then
     hits+=("$where: DEVELOPMENT_TEAM mit Wert")
+  fi
+  # Privater Schlüssel für Updates: nur über seinen Hash erkennbar.
+  if LC_ALL=C grep -a -o -E '[A-Za-z0-9+/]{43}=' "$file" > "$tmp/tokens" 2>/dev/null; then
+    if python3 -I -c '
+import hashlib, sys
+wanted = sys.argv[1]
+sys.exit(0 if any(hashlib.sha256(line.strip().encode()).hexdigest() == wanted for line in open(sys.argv[2])) else 1)
+' "$key_hash" "$tmp/tokens"; then
+      hits+=("$where: privater Schlüssel für Updates")
+    fi
   fi
 }
 

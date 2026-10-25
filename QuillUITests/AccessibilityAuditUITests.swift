@@ -90,6 +90,9 @@ final class AccessibilityAuditUITests: XCTestCase {
         audit("Seite im festen Theme Lagune")
 
         app.typeKey(",", modifierFlags: .command)
+        XCTAssertTrue(app.descendants(matching: .any)["settings.updates.automatic"].waitForExistence(timeout: 5))
+        audit("Einstellungen › Allgemein")
+        app.toolbars.buttons["Darstellung"].click()
         XCTAssertTrue(app.descendants(matching: .any)["settings.preview"].waitForExistence(timeout: 5))
         audit("Einstellungen › Darstellung")
         app.descendants(matching: .any)["settings.theme.sonne"].click()
@@ -144,6 +147,7 @@ final class AccessibilityAuditUITests: XCTestCase {
             app.typeKey(.escape, modifierFlags: [])
 
             app.typeKey(",", modifierFlags: .command)
+            app.toolbars.buttons["Darstellung"].click()
             XCTAssertTrue(app.sliders["settings.glass.slider"].waitForExistence(timeout: 5))
             audit("Glas \(name): Einstellungen › Darstellung mit Regler")
             app.typeKey("w", modifierFlags: .command)
@@ -161,6 +165,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.typeText("\r")
         audit("Glas deckend: Sidebar und Toolbar")
         app.typeKey(",", modifierFlags: .command)
+        app.toolbars.buttons["Darstellung"].click()
         XCTAssertTrue(app.descendants(matching: .any)["settings.glass.reduceTransparency"].waitForExistence(timeout: 5))
         audit("Einstellungen › Darstellung, „Transparenz reduzieren“")
         app.typeKey("w", modifierFlags: .command)
@@ -217,6 +222,26 @@ final class AccessibilityAuditUITests: XCTestCase {
         audit("Zeitreise (heute)")
         travel.timeTravelDays.element(boundBy: 2).click()
         audit("Zeitreise (früherer Tag)")
+    }
+
+    /// Updates (ADR-037): Frage beim ersten Start und Fenster „Update“ mit Fehler (der
+    /// Testserver liefert eine unsignierte Versionsliste). Nur Test-Store, nie GitHub.
+    func testAuditUpdate() throws {
+        let server = try UpdateTestServer()
+        app.terminate()
+        app = XCUIApplication.quill(storeDirectory: storeDirectory)
+        app.launchArguments += ["-QuillUpdateTestFeed", String(try server.waitForPort()), "-QuillTestUpdateAsk", "YES"]
+        app.launch()
+        XCTAssertTrue(app.buttons["updatePrompt.no"].waitForExistence(timeout: 10))
+        audit("Frage beim ersten Start: Updates")
+        app.buttons["updatePrompt.no"].click()
+
+        app.menuBars.menuBarItems["Quill"].click()
+        app.menuBars.menuItems["Nach Updates suchen …"].click()
+        let update = app.windows["Update"]
+        XCTAssertTrue(update.buttons["update.ok"].waitForExistence(timeout: 15))
+        audit("Fenster „Update“ (Fehler)")
+        update.buttons["update.ok"].click()
     }
 
     /// Blätter der lokalen KI (16.2–16.5, ADR-032) mit Ergebnis und mit Hinweis, Test-Modell

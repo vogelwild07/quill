@@ -24,6 +24,7 @@ final class QuillUITests: XCTestCase {
         let screen = CGRect(origin: .zero, size: try XCTUnwrap(NSScreen.screens.first).frame.size)
         XCTAssertTrue(screen.contains(main.frame), "Hauptfenster \(main.frame) nicht in \(screen)")
         app.typeKey(",", modifierFlags: .command)
+        app.toolbars.buttons["Darstellung"].click()
         let settings = app.windows.containing(.any, identifier: "settings.focusMode").firstMatch
         XCTAssertTrue(settings.waitForExistence(timeout: 5), "Einstellungen nicht geöffnet")
         XCTAssertTrue(screen.contains(settings.frame), "Einstellungen \(settings.frame) nicht in \(screen)")

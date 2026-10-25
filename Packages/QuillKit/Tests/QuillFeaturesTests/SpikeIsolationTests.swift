@@ -28,6 +28,8 @@ struct SpikeIsolationTests {
         "Packages/QuillKit/Tests/QuillFeaturesTests/ThirdPartyLicensesTests.swift",
         // Nutzt nur die Importprüfung von AutomergeIsolationTests, importiert nichts.
         "Packages/QuillKit/Tests/QuillFeaturesTests/AIIsolationTests.swift",
+        // Nutzt nur die Importprüfung von AutomergeIsolationTests, importiert nichts.
+        "Packages/QuillKit/Tests/QuillFeaturesTests/UpdateIsolationTests.swift",
     ]
 
     @Test func spikeExists() {

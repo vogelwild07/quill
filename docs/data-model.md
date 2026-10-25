@@ -99,7 +99,7 @@ DatabaseView         (später)  id, name, layoutRaw (table|board|calendar), conf
 ## Speicherort und Backups
 
 - Store: `~/Library/Containers/io.github.vogelwild07.quill/Data/Library/Application Support/Quill/Store/Quill.store` (plus `-wal`, `-shm`, `.Quill_SUPPORT/` für externe Daten, `Quill.store.version`). Bis Phase 7.1 lagen diese Dateien direkt in `Quill/`; der erste Start einer neueren Version zieht sie nach einem Backup `vor-umzug` um. Gibt es `Store/` schon, kommen Reste im alten Ort in ein Backup `beiseitegelegt` (ADR-019).
-- Backups: daneben in `Backups/`, Regeln siehe ADR-010. Vor dem Einschalten des Sync immer ein Backup `vor-sync`; es wird nie automatisch gelöscht (Rückweg, ADR-029).
+- Backups: daneben in `Backups/`, Regeln siehe ADR-010. Vor dem Einschalten des Sync immer ein Backup `vor-sync`; es wird nie automatisch gelöscht (Rückweg, ADR-029). Vor der Installation eines Updates ein Backup `vor-update-<Version>` (Version nur aus `[0-9A-Za-z.-]`, sonst `unbekannt`); scheitert es, installiert Quill nichts. Auch dieses Backup wird nie automatisch gelöscht (ADR-037).
 
 ### Migration auf ein neues Schema (seit Phase 11.2, ADR-029)
 

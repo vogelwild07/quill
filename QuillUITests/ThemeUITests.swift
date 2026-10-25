@@ -25,6 +25,7 @@ final class ThemeUITests: XCTestCase {
     /// ⌘, öffnet die Einstellungen; das Label der Vorschau nennt das Theme.
     private func openSettings() -> XCUIElement {
         app.typeKey(",", modifierFlags: .command)
+        app.toolbars.buttons["Darstellung"].click()
         let preview = app.descendants(matching: .any)["settings.preview"]
         XCTAssertTrue(preview.waitForExistence(timeout: 5), "Einstellungen nicht geöffnet")
         return preview

@@ -250,7 +250,7 @@ extension DiskStoreSuites {
 
         // MARK: - Rotation
 
-        @Test func pruneKeepsMoveSetAsideAndSyncBackupsForever() throws {
+        @Test func pruneKeepsMoveSetAsideSyncAndUpdateBackupsForever() throws {
             defer { try? FileManager.default.removeItem(at: directory) }
             let now = Date(timeIntervalSince1970: 1_792_400_000)
             let backup = StoreBackup(storeURL: storeURL, backupsURL: backupsURL, schemaVersion: "1.0.0", now: { now })
@@ -264,12 +264,14 @@ extension DiskStoreSuites {
             let moved = try folder(daysAgo: 400, "vor-umzug")
             let setAside = try folder(daysAgo: 400, "beiseitegelegt")
             let beforeSync = try folder(daysAgo: 400, "vor-sync")
+            let beforeUpdate = try folder(daysAgo: 400, "vor-update-0.5.0")
             for day in 0..<60 { _ = try folder(daysAgo: Double(day), "start") }
 
             try backup.prune()
             #expect(exists(moved))
             #expect(exists(setAside))
             #expect(exists(beforeSync))
+            #expect(exists(beforeUpdate))
         }
     }
 }
