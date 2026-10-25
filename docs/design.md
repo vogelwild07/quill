@@ -129,8 +129,8 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
 - Fenster der Schnellnotiz: klein (360 × 220), schwebend, über allen Spaces, holt Quill nicht
   nach vorn. Textfeld mit Fokus, darunter grau „Die erste Zeile wird der Titel der neuen
   Seite.“ (bei einem Fehler rot, der Entwurf bleibt), Knöpfe „Abbrechen“ (Esc) und „Als Seite
-  sichern“ (⌘↩, ohne Text gesperrt). Das Fenster ist ganz aus Glas, auch unter der
-  Titelleiste (ADR-036).
+  sichern“ (⌘↩, ohne Text gesperrt). Mit aktivem Regler „Liquid Glass“ ist das Fenster
+  ganz aus Glas, auch unter der Titelleiste; bei „Wie System“ normale Fensterfläche (ADR-036).
 - Erinnerung (Format › Erinnerung …): Blatt 400 pt breit, Überschrift „Erinnerung“, darunter
   grau der Text des To-dos, Datum und Uhrzeit (Vorschlag morgen 9:00), ein Satz, dass eine
   Mitteilung auf diesem Mac erinnert (Fehler rot an derselben Stelle). Am To-do eine Glocke in

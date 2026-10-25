@@ -1,6 +1,7 @@
 #if canImport(AppKit)
 import OSLog
 import QuillEditor
+import QuillEditorCore
 import SwiftUI
 
 /// Inhalt des Fensters der Schnellnotiz (15.3, ADR-033).
@@ -8,6 +9,7 @@ struct QuickNoteView: View {
     @Bindable var note: QuickNote
     let close: () -> Void
     @State private var failed = false
+    private var glass: GlassSettings { .shared }
 
     private static let logger = Logger(subsystem: "io.github.vogelwild07.quill", category: "quicknote")
 
@@ -47,8 +49,13 @@ struct QuickNoteView: View {
         }
         .padding(16)
         .frame(minWidth: 340, minHeight: 220)
-        // Das ganze Fenster ist Glas, auch unter der Titelleiste (ADR-036).
-        .background { Color.clear.quillGlass(in: Rectangle()).ignoresSafeArea() }
+        // Mit aktivem Regler ist das ganze Fenster Glas, auch unter der Titelleiste; bei
+        // „Wie System“ bleibt die Fensterfläche (ADR-036, `QuickNoteMenuBar.applyGlass`).
+        .background {
+            if glass.isCustom {
+                Color.clear.quillGlass(in: Rectangle()).ignoresSafeArea()
+            }
+        }
     }
 
     private func save() async {
