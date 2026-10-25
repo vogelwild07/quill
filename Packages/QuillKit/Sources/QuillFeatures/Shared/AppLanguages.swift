@@ -8,7 +8,7 @@ enum AppLanguages {
     /// Sprachen der App, die vom System gewählte zuerst.
     static var codes: [String] {
         let current = Bundle.module.preferredLocalizations.first ?? "de"
-        let others = Bundle.module.localizations.filter { $0 != current && $0 != "Base" }.sorted()
+        let others = Bundle.module.localizations.filter { $0 != current }.sorted()
         return [current] + others
     }
 

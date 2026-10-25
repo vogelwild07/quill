@@ -88,8 +88,8 @@ struct TodayTests {
         ])
         let outcome = await TodayEvents(source: source).lines(now: Self.date(23, 12), locale: Self.locale, calendar: Self.calendar)
         #expect(outcome == .lines([
-            "Ganztägig: Messe", "Ganztägig: Geburtstag", "bis 6:15 Nachtzug", "7:30–8:00 Termin",
-            "9:00–10:00 Zahnarzt", "ab 21:00 Party",
+            "All day: Messe", "All day: Geburtstag", "until 6:15 Nachtzug", "7:30–8:00 Event",
+            "9:00–10:00 Zahnarzt", "from 21:00 Party",
         ]))
     }
 

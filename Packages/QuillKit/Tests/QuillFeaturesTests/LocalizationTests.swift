@@ -9,7 +9,9 @@ import Testing
 /// - in Packages jede lokalisierende API mit `bundle: .module`;
 /// - Schlüssel im Code und im Katalog decken sich (keiner fehlt, keiner veraltet);
 /// - Zahlen in Sätzen mit Pluralformen;
-/// - jeder sichtbare Info.plist-Eintrag im `InfoPlist.xcstrings`.
+/// - jeder sichtbare Info.plist-Eintrag im `InfoPlist.xcstrings`;
+/// - jeder Schlüssel mit englischer Fassung (ADR-038), Texte der Kurzbefehle in den
+///   Katalogen der App.
 @Suite("Lokalisierung: Kataloge vollständig")
 struct LocalizationTests {
     /// Ein Prosa-Literal, das bewusst nicht lokalisiert wird. `text` ist der ganze Text
@@ -24,6 +26,10 @@ struct LocalizationTests {
     }
 
     static let allowed: [Allowed] = [
+        Allowed(file: "QuillEditor/Document/SlashCommand.swift", text: "überschrift", occurrences: 3,
+                reason: "Suchwort im Slash-Menü, nie angezeigt; deutsche Namen auch in der englischen Oberfläche (ADR-038)."),
+        Allowed(file: "QuillEditor/Document/SlashCommand.swift", text: "aufzählung",
+                reason: "Suchwort im Slash-Menü, nie angezeigt; deutsche Namen auch in der englischen Oberfläche (ADR-038)."),
         Allowed(file: "QuillUpdate/UpdateController.swift", text: "Quill",
                 reason: "User-Agent der Anfrage an GitHub, nie angezeigt (ADR-037)."),
         Allowed(file: "App/ProfilingSeed.swift", text: "Seite …",
@@ -113,9 +119,22 @@ struct LocalizationTests {
         Allowed(file: "QuillFeatures/Intents/PageIntents.swift", text: "… zu … hinzufügen", reason: appIntentsReason),
     ]
 
-    /// Siri und Kurzbefehle lesen diese Texte aus den Metadaten der App, nicht aus einem
-    /// Katalog in Quill (ADR-033). Bis es eine zweite Sprache gibt, gilt die Ausgangssprache.
+    /// Siri und Kurzbefehle lesen diese Texte aus den Metadaten der App (ADR-033) und schlagen
+    /// sie im Bundle der App nach, nicht in QuillFeatures: Siri-Sätze in `AppShortcuts.xcstrings`,
+    /// alle übrigen in `Localizable.xcstrings` der App (`appIntentsAreInAppCatalogs`, ADR-038).
     static let appIntentsReason = "App Intents: Text aus den Metadaten der App (ADR-033)."
+
+    /// Siri-Sätze (mit dem Namen der App) und die übrigen Texte der Kurzbefehle, wie im Code
+    /// lesbar (Parameter als „…“).
+    static var appIntentsTexts: (phrases: Set<String>, others: Set<String>) {
+        let texts = allowed.filter { $0.reason == appIntentsReason }
+        let phrases = texts.filter { $0.file == "App/QuillAppIntents.swift" && $0.text.contains("…") }.map(\.text)
+        let others = texts.map(\.text).filter { !phrases.contains($0) }
+        return (Set(phrases), Set(others))
+    }
+
+    /// Alle Kataloge, auch die ohne Modul.
+    static let catalogs = modules.compactMap(\.catalog) + ["App/Resources/InfoPlist.xcstrings", "App/Resources/AppShortcuts.xcstrings"]
 
     /// Zahlen in diesen Sätzen brauchen keine Pluralform (Form „Wort: Zahl“, Maße,
     /// Prozent oder eine Stelle von vielen wie „Folie 1 von 1“).
@@ -209,7 +228,10 @@ struct LocalizationTests {
     func catalogMatchesCode(_ module: Module) throws {
         let scan = try SourceScan(module: module)
         let catalog = try Catalog(path: try #require(module.catalog))
-        let used = Set(scan.literals.filter(\.isLocalized).map { Catalog.normalized($0.text) })
+        var used = Set(scan.literals.filter(\.isLocalized).map { Catalog.normalized($0.text) })
+        if module.name == "App" {
+            used.formUnion(Self.appIntentsTexts.others.map { $0.replacing("…", with: "\u{1}") })
+        }
         let keys = Set(catalog.keys.map(Catalog.normalized))
         for key in used.subtracting(keys).sorted() {
             Issue.record("Fehlt im Katalog von \(module.name): \(Catalog.readable(key))")
@@ -221,6 +243,46 @@ struct LocalizationTests {
             Issue.record("Als veraltet markiert in \(module.name): \(key)")
         }
         #expect(catalog.sourceLanguage == "de")
+    }
+
+    /// Siri-Sätze stehen in `AppShortcuts.xcstrings` der App, jeder mit dem Namen der App,
+    /// auch auf Englisch (sonst verwirft das System den Satz).
+    @Test func appIntentsAreInAppCatalogs() throws {
+        let catalog = try Catalog(path: "App/Resources/AppShortcuts.xcstrings")
+        #expect(catalog.sourceLanguage == "de")
+        let expected = Self.appIntentsTexts.phrases
+        #expect(expected.count == 6)
+        #expect(Set(catalog.keys.map { Catalog.readable(Catalog.normalized($0)).dropFirst().dropLast().description }) == expected)
+        for key in catalog.keys {
+            #expect(key.contains("${applicationName}"), "Ohne Namen der App: \(key)")
+            #expect(catalog.values(key, language: "en").values.allSatisfy { $0.contains("${applicationName}") },
+                    "Englisch ohne Namen der App: \(key)")
+        }
+    }
+
+    /// Zu jedem Schlüssel eine englische Fassung im Zustand „übersetzt“, mit denselben
+    /// Platzhaltern; wo Deutsch Pluralformen hat, auch Englisch „one“ und „other“ (ADR-038).
+    @Test(arguments: catalogs)
+    func everyKeyHasEnglish(_ path: String) throws {
+        let catalog = try Catalog(path: path)
+        #expect(!catalog.keys.isEmpty)
+        for key in catalog.keys {
+            let german = catalog.values(key, language: "de")
+            let source = german.isEmpty ? ["": key] : german
+            let english = catalog.values(key, language: "en")
+            guard !english.isEmpty else {
+                Issue.record("Ohne englische Fassung in \(path): \(key)")
+                continue
+            }
+            let forms: Set<String> = source[""] == nil ? ["one", "other"] : [""]
+            #expect(forms.isSubset(of: Set(english.keys)), "Pluralformen fehlen auf Englisch: \(key)")
+            let expected = Catalog.placeholders(source["other"] ?? source[""] ?? key)
+            for (form, value) in english {
+                #expect(!value.isEmpty, "Leer auf Englisch: \(key)")
+                #expect(Catalog.placeholders(value) == expected,
+                        "Platzhalter auf Englisch (\(form.isEmpty ? "Wert" : form)) passen nicht: \(key) → \(value)")
+            }
+        }
     }
 
     /// Ganzzahlen in Sätzen haben Pluralformen („eine Seite“, „2 Seiten“).
@@ -596,9 +658,41 @@ struct Catalog {
         (sourceLocalization(key)?["stringUnit"] as? [String: Any])?["value"] as? String
     }
 
-    /// Platzhalter (`%@`, `%lld`, `%1$@` …) werden zu U+0001 wie Interpolationen im Code.
+    /// Platzhalter (`%@`, `%lld`, `%1$@` …, `${page}` der Kurzbefehle) werden zu U+0001 wie
+    /// Interpolationen im Code.
     static func normalized(_ key: String) -> String {
         key.replacing(/%(\d+\$)?(lld|llu|ld|lu|d|u|@|lf|f|g|e|c|s)/, with: "\u{1}").replacing("%%", with: "%")
+            .replacing(/\$\{\w+\}/, with: "\u{1}")
+    }
+
+    /// Werte einer Sprache im Zustand „übersetzt“: unter `""` der einzige Wert, sonst je
+    /// Pluralform einer.
+    func values(_ key: String, language: String) -> [String: String] {
+        guard let localization = (strings[key]?["localizations"] as? [String: Any])?[language] as? [String: Any] else { return [:] }
+        if let plural = (localization["variations"] as? [String: Any])?["plural"] as? [String: Any] {
+            return plural.compactMapValues(Self.translated)
+        }
+        return Self.translated(localization["stringUnit"]).map { ["": $0] } ?? [:]
+    }
+
+    private static func translated(_ unit: Any?) -> String? {
+        guard let unit = (unit as? [String: Any])?["stringUnit"] as? [String: Any] ?? unit as? [String: Any],
+              unit["state"] as? String == "translated" else { return nil }
+        return unit["value"] as? String
+    }
+
+    /// Platzhalter in der Reihenfolge der Argumente (`%2$@` zählt als zweites), dazu die
+    /// Namen der Parameter der Kurzbefehle (`${page}`) sortiert.
+    static func placeholders(_ text: String) -> [String] {
+        var positional: [Int: String] = [:]
+        var next = 1
+        for match in text.matches(of: /%(?:(\d+)\$)?(lld|llu|ld|lu|d|u|@|lf|f|g|e|c|s)/) {
+            let position = match.output.1.flatMap { Int($0) } ?? next
+            positional[position] = String(match.output.2)
+            next = position + 1
+        }
+        let names = text.matches(of: /\$\{(\w+)\}/).map { "${\($0.output.1)}" }.sorted()
+        return positional.keys.sorted().compactMap { positional[$0] } + names
     }
 
     static func readable(_ key: String) -> String {

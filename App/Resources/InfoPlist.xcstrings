@@ -10,6 +10,12 @@
             "state" : "translated",
             "value" : "Quill"
           }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill"
+          }
         }
       }
     },
@@ -18,6 +24,12 @@
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill"
+          }
+        },
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quill"
@@ -34,6 +46,12 @@
             "state" : "translated",
             "value" : "Quill liest deinen Kalender nur, wenn du die heutigen Termine in eine Seite einfügst."
           }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill reads your calendar only when you insert today’s events into a page."
+          }
         }
       }
     },
@@ -45,6 +63,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quill nutzt das Mikrofon nur, während du eine Sprachnotiz aufnimmst. Die Aufnahme wird auf diesem Mac abgeschrieben und nicht gespeichert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill uses the microphone only while you record a voice note. The recording is transcribed on this Mac and not saved."
           }
         }
       }

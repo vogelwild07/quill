@@ -20,28 +20,28 @@ struct ConflictLabelTests {
 
     @Test func blockFieldsInWords() {
         let kind = Self.conflict("kind", [ConflictVersion(value: "heading2"), ConflictVersion(value: "todo"), ConflictVersion(value: "kanban")])
-        #expect(ConflictLabel.field(kind) == "Blockart")
+        #expect(ConflictLabel.field(kind) == "Block Type")
         // Unbekannte Art einer späteren Version: der Rohwert.
-        #expect(Self.texts(kind) == ["Überschrift 2", "To-do", "kanban"])
-        #expect(Self.texts(Self.conflict("checked", [ConflictVersion(value: "false"), ConflictVersion(value: "true")])) == ["offen", "erledigt"])
-        #expect(Self.texts(Self.conflict("indent", [ConflictVersion(value: "1")])) == ["Stufe 1"])
-        #expect(Self.texts(Self.conflict("lang", [ConflictVersion(value: ""), ConflictVersion(value: "swift")])) == ["keine", "swift"])
+        #expect(Self.texts(kind) == ["Heading 2", "To-do", "kanban"])
+        #expect(Self.texts(Self.conflict("checked", [ConflictVersion(value: "false"), ConflictVersion(value: "true")])) == ["open", "done"])
+        #expect(Self.texts(Self.conflict("indent", [ConflictVersion(value: "1")])) == ["Level 1"])
+        #expect(Self.texts(Self.conflict("lang", [ConflictVersion(value: ""), ConflictVersion(value: "swift")])) == ["none", "swift"])
     }
 
     @Test func pageFieldsInWords() {
         let parent = UUID()
         let place = Self.conflict("parent", tree: true, [ConflictVersion(value: parent.uuidString), ConflictVersion(value: "null")])
-        #expect(ConflictLabel.field(place) == "Ort")
-        #expect(Self.texts(place, titles: [parent: "Arbeit"]) == ["Arbeit", "Oberste Ebene"])
-        #expect(Self.texts(Self.conflict("title", tree: true, [ConflictVersion(value: "")])) == ["Ohne Titel"])
+        #expect(ConflictLabel.field(place) == "Location")
+        #expect(Self.texts(place, titles: [parent: "Arbeit"]) == ["Arbeit", "Top Level"])
+        #expect(Self.texts(Self.conflict("title", tree: true, [ConflictVersion(value: "")])) == ["Untitled"])
     }
 
     @Test func doubledObjectsShowTheirContent() {
         let block = Self.conflict(nil, [ConflictVersion(value: "Map 1@a", summary: "Fassung A"), ConflictVersion(value: "Map 2@b", summary: " ")])
-        #expect(ConflictLabel.field(block) == "Ganzer Block")
-        #expect(Self.texts(block) == ["„Fassung A“", "Leerer Block"])
+        #expect(ConflictLabel.field(block) == "Whole Block")
+        #expect(Self.texts(block) == ["“Fassung A”", "Empty block"])
         let page = Self.conflict(nil, tree: true, [ConflictVersion(value: "Map 1@a", summary: "Notiz")])
-        #expect(ConflictLabel.field(page) == "Ganze Seite")
+        #expect(ConflictLabel.field(page) == "Whole Page")
         #expect(Self.texts(page) == ["Notiz"])
     }
 }

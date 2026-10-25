@@ -25,7 +25,7 @@ struct RestoreQuitCancelledTests {
         persistence.quitWasCancelled { title, _ in notes.append(title) }
         #expect(!backup.isRestorePending)
         #expect(backup.applyPendingRestore() == nil)
-        #expect(notes == ["Wiederherstellen abgebrochen"])
+        #expect(notes == ["Restore Canceled"])
 
         // Ohne Vormerkung kein Hinweis.
         persistence.quitWasCancelled { title, _ in notes.append(title) }

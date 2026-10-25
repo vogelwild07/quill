@@ -6,7 +6,7 @@ import Testing
 @MainActor
 @Suite("Liquid Glass: Wert des Reglers")
 struct GlassSettingsRowTests {
-    @Test(arguments: [(0.0, "Klar"), (0.25, "25 % getönt"), (0.5, "50 % getönt"), (0.75, "75 % getönt"), (1.0, "Getönt")])
+    @Test(arguments: [(0.0, "Clear"), (0.25, "25 % tinted"), (0.5, "50 % tinted"), (0.75, "75 % tinted"), (1.0, "Tinted")])
     func valueDescription(level: Double, expected: String) {
         #expect(GlassSettingsRow.valueDescription(level) == expected)
     }

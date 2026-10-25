@@ -30,18 +30,19 @@ public struct SlashCommand: Identifiable, Equatable, Sendable {
         }
     }
 
-    /// Alle Befehle in Menü-Reihenfolge. „Bild“ öffnet die Dateiauswahl.
+    /// Alle Befehle in Menü-Reihenfolge. „Bild“ öffnet die Dateiauswahl. Aliasse enthalten die
+    /// Namen auf Deutsch und Englisch, damit die Suche nach einem Sprachwechsel gleich bleibt (ADR-038).
     public static let all: [SlashCommand] = [
         .init(kind: .paragraph, title: String(localized: "Text", bundle: .module), symbol: "text.alignleft", shortcut: nil, aliases: ["text", "absatz", "paragraph"]),
-        .init(kind: .heading1, title: String(localized: "Überschrift 1", bundle: .module), symbol: "textformat.size.larger", shortcut: "#", aliases: ["h1", "heading", "titel"]),
-        .init(kind: .heading2, title: String(localized: "Überschrift 2", bundle: .module), symbol: "textformat.size", shortcut: "##", aliases: ["h2", "heading"]),
-        .init(kind: .heading3, title: String(localized: "Überschrift 3", bundle: .module), symbol: "textformat.size.smaller", shortcut: "###", aliases: ["h3", "heading"]),
-        .init(kind: .bulleted, title: String(localized: "Aufzählung", bundle: .module), symbol: "list.bullet", shortcut: "-", aliases: ["liste", "bullet", "ul"]),
-        .init(kind: .numbered, title: String(localized: "Nummerierte Liste", bundle: .module), symbol: "list.number", shortcut: "1.", aliases: ["liste", "numbered", "ol"]),
+        .init(kind: .heading1, title: String(localized: "Überschrift 1", bundle: .module), symbol: "textformat.size.larger", shortcut: "#", aliases: ["h1", "heading", "überschrift", "titel"]),
+        .init(kind: .heading2, title: String(localized: "Überschrift 2", bundle: .module), symbol: "textformat.size", shortcut: "##", aliases: ["h2", "heading", "überschrift"]),
+        .init(kind: .heading3, title: String(localized: "Überschrift 3", bundle: .module), symbol: "textformat.size.smaller", shortcut: "###", aliases: ["h3", "heading", "überschrift"]),
+        .init(kind: .bulleted, title: String(localized: "Aufzählung", bundle: .module), symbol: "list.bullet", shortcut: "-", aliases: ["aufzählung", "liste", "bullet", "ul"]),
+        .init(kind: .numbered, title: String(localized: "Nummerierte Liste", bundle: .module), symbol: "list.number", shortcut: "1.", aliases: ["nummeriert", "liste", "numbered", "ol"]),
         .init(kind: .todo, title: String(localized: "To-do", bundle: .module), symbol: "checklist", shortcut: "[]", aliases: ["aufgabe", "checkbox", "todo", "task"]),
-        .init(kind: .quote, title: String(localized: "Zitat", bundle: .module), symbol: "text.quote", shortcut: ">", aliases: ["quote", "blockquote"]),
+        .init(kind: .quote, title: String(localized: "Zitat", bundle: .module), symbol: "text.quote", shortcut: ">", aliases: ["zitat", "quote", "blockquote"]),
         .init(kind: .code, title: String(localized: "Code", bundle: .module), symbol: "chevron.left.forwardslash.chevron.right", shortcut: "```", aliases: ["code", "snippet"]),
-        .init(kind: .divider, title: String(localized: "Trenner", bundle: .module), symbol: "minus", shortcut: "---", aliases: ["divider", "linie", "hr"]),
+        .init(kind: .divider, title: String(localized: "Trenner", bundle: .module), symbol: "minus", shortcut: "---", aliases: ["trenner", "divider", "linie", "hr"]),
         .init(kind: .image, title: String(localized: "Bild", bundle: .module), symbol: "photo", shortcut: nil, aliases: ["bild", "image", "foto", "photo"]),
     ]
 

@@ -122,6 +122,55 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.typeKey("w", modifierFlags: .command)
     }
 
+    /// Hauptfenster und Einstellungen auf Englisch (ADR-038): Andere Längen der Texte dürfen
+    /// nichts abschneiden oder überdecken.
+    func testAuditEnglish() throws {
+        app.terminate()
+        app = XCUIApplication.quill(storeDirectory: storeDirectory, languages: ["en"], region: "US")
+        app.launchArguments += [
+            "-QuillPasteboardName", pasteboard.name.rawValue, "-QuillTestImage", "120x60",
+            "-QuillSyncTestFolder", "uitest-audit-sync-\(UUID().uuidString)",
+            "-QuillFakeAI", "appleIntelligenceNotEnabled",
+        ]
+        app.launch()
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
+        app.windows.firstMatch.click()
+        audit("Englisch: Fenster ohne Seite")
+
+        createPage("Content")
+        app.typeText("\r")
+        app.typeText("# Heading\rText with content\r[] Task\r\r> Quote\r\r")
+        app.typeKey("v", modifierFlags: .command)
+        window.buttons["page.favorite"].click()
+        audit("Englisch: Seite mit Inhalt, Favorit")
+        app.typeText("/")
+        audit("Englisch: Slash-Menü")
+        app.typeKey(.escape, modifierFlags: [])
+        app.typeKey("o", modifierFlags: .command)
+        audit("Englisch: Schnell öffnen (leer)", orphans: .quickOpen)
+        app.typeKey(.escape, modifierFlags: [])
+
+        app.menuBars.menuBarItems["File"].click()
+        app.menuBars.menuItems["Restore Backup…"].click()
+        XCTAssertTrue(window.sheets.firstMatch.waitForExistence(timeout: 5))
+        audit("Englisch: Backup wiederherstellen")
+        app.typeKey(.escape, modifierFlags: [])
+
+        app.typeKey(",", modifierFlags: .command)
+        XCTAssertTrue(app.descendants(matching: .any)["settings.updates.automatic"].waitForExistence(timeout: 5))
+        audit("Englisch: Einstellungen › General")
+        for (tab, element) in [
+            ("Appearance", "settings.preview"), ("Sync", "sync.enable"), ("Time Travel", "settings.imageRetention"),
+            ("AI", "settings.aiUnavailable"), ("Spotlight", "settings.spotlight"), ("Quick Note", "settings.quickNote"),
+            ("Licenses", "settings.licenses"),
+        ] {
+            app.toolbars.buttons[tab].click()
+            XCTAssertTrue(app.descendants(matching: .any)[element].waitForExistence(timeout: 5), "Reiter „\(tab)“")
+            audit("Englisch: Einstellungen › \(tab)")
+        }
+        app.typeKey("w", modifierFlags: .command)
+    }
+
     /// Glas von Quill (ADR-036) in Stellung klar und getönt: Sidebar, Toolbar, Slash-Menü,
     /// Schnell öffnen und der Regler in den Einstellungen. Der Kontrast-Check misst das
     /// echte Glas über dem Schreibtisch dieses Macs.
@@ -363,8 +412,9 @@ final class AccessibilityAuditUITests: XCTestCase {
         func frames(_ query: XCUIElementQuery) -> [CGRect] { query.allElementsBoundByIndex.map(\.frame) }
         let windows = app.windows.allElementsBoundByIndex
         let sheet = window.sheets.firstMatch
-        let header = app.textViews["editor.text"].groups["Seitenkopf"].children(matching: .group).firstMatch
-        let emoji = app.touchBars.firstMatch.popUpButtons["Emojis & Symbole"]
+        // Über Kennung und Art statt Label, damit es auch auf Englisch gilt (ADR-038).
+        let header = app.textViews["editor.text"].groups["detail.header"].children(matching: .group).firstMatch
+        let emoji = app.touchBars.firstMatch.popUpButtons.firstMatch
         return ViewState(
             layoutGroupFrames: windows.flatMap { window in
                 frames(window.children(matching: .group)) + frames(window.splitGroups.firstMatch.children(matching: .group))

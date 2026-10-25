@@ -15,16 +15,17 @@ extension XCUIApplication {
     /// `-QuillWindowsOnMainScreen YES` legt jedes Fenster auf den Hauptbildschirm
     /// (`TestWindowScreen`), damit der Kontrast-Audit mit mehreren Monitoren gleich ausfällt.
     ///
-    /// `languageArguments` legt Sprache und Region auf Deutsch fest, unabhängig vom
-    /// Testrechner; die Tests suchen Elemente auch über deutsche Texte (ADR-038).
+    /// `languages` (bevorzugte Sprachen) und `region` legen Sprache und Region fest, unabhängig
+    /// vom Testrechner; Standard Deutsch, weil die Tests Elemente auch über deutsche Texte
+    /// suchen (ADR-038).
     ///
     /// Mit `storeDirectory` liegt die Datenbank stattdessen in diesem Unterordner
     /// des temporären Ordners der App (`QuillPersistence.storeDirectoryArgument`),
     /// für Tests über Neustarts hinweg; auch dann nie die echten Daten.
-    static func quill(storeDirectory: String? = nil) -> XCUIApplication {
+    static func quill(storeDirectory: String? = nil, languages: [String] = ["de"], region: String = "DE") -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments += ["-ApplePersistenceIgnoreState", "YES"]
-        app.launchArguments += languageArguments(language: "de", region: "DE")
+        app.launchArguments += languageArguments(languages: languages, region: region)
         app.launchArguments += ["-QuillWindowsOnMainScreen", "YES"]
         if let storeDirectory {
             app.launchArguments += ["-QuillStoreDirectory", storeDirectory]
@@ -34,9 +35,9 @@ extension XCUIApplication {
         return app
     }
 
-    /// Sprache der Oberfläche und Region für Datum und Zahlen, nur für diesen Start.
-    static func languageArguments(language: String, region: String) -> [String] {
-        ["-AppleLanguages", "(\(language))", "-AppleLocale", "\(language)_\(region)"]
+    /// Bevorzugte Sprachen und Region für Datum und Zahlen, nur für diesen Start.
+    static func languageArguments(languages: [String], region: String) -> [String] {
+        ["-AppleLanguages", "(\(languages.joined(separator: ", ")))", "-AppleLocale", "\(languages[0])_\(region)"]
     }
 
     /// Öffnet die Zeitreise der ersten Seite (⌥⌘Y) und gibt das Fenster zurück, sobald

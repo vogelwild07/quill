@@ -29,7 +29,7 @@ final class PerformanceUITests: XCTestCase {
     private static func profilingApp(arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
-            + XCUIApplication.languageArguments(language: "de", region: "DE") + arguments
+            + XCUIApplication.languageArguments(languages: ["de"], region: "DE") + arguments
         return app
     }
 

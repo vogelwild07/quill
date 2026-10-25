@@ -167,7 +167,7 @@ struct ImageBlockEditorTests {
         try await insert(data, at: BlockPosition(block: 1, offset: 0))
         #expect(kinds == [.paragraph, .image, .paragraph])
         #expect(!editor.noticeView.isHidden)
-        #expect(editor.noticeView.text == "Bild wurde verkleinert")
+        #expect(editor.noticeView.text == "Image was scaled down")
     }
 
     /// Review PR #4, Punkt 7: Unlesbares kommt nicht ins Dokument, Undo holt keinen
@@ -180,7 +180,7 @@ struct ImageBlockEditorTests {
         #expect(!everInserted)
         #expect(kinds == [.paragraph, .paragraph])
         #expect(!editor.noticeView.isHidden)
-        #expect(editor.noticeView.text == "Bild konnte nicht gelesen werden")
+        #expect(editor.noticeView.text == "Couldn’t read the image")
         undo()
         #expect(kinds == [.paragraph, .paragraph])
         #expect(!editor.undoManager.canRedo)
@@ -191,7 +191,7 @@ struct ImageBlockEditorTests {
         let position = BlockPosition(block: 1, offset: 0)
         await editor.insertImages([.data(Data("kein Bild".utf8)), .data(Self.png(width: 10, height: 10))], from: position, to: position)?.value
         #expect(kinds == [.paragraph, .image, .paragraph])
-        #expect(editor.noticeView.text == "Bild konnte nicht gelesen werden")
+        #expect(editor.noticeView.text == "Couldn’t read the image")
     }
 
     /// Langsames Lesen (der Test hält es an): Nach 0,3 s erscheint an der
@@ -211,7 +211,7 @@ struct ImageBlockEditorTests {
         try await waitUntil { !editor.imageLoadingIndicators.isEmpty }
         let indicator = try #require(editor.imageLoadingIndicators.first)
         #expect(indicator.superview === editor.textView)
-        #expect(indicator.accessibilityLabel() == "Bild wird geladen")
+        #expect(indicator.accessibilityLabel() == "Loading image")
         let line = editor.textView.firstRect(forCharacterRange: NSRange(location: editor.characterLocation(of: position), length: 0), actualRange: nil)
         let indicatorOnScreen = try #require(editor.textView.window).convertToScreen(editor.textView.convert(indicator.frame, to: nil))
         #expect(abs(indicatorOnScreen.midY - line.midY) < 12, "Ladeanzeige nicht an der Einfügestelle")
@@ -242,8 +242,8 @@ struct ImageBlockEditorTests {
     /// Punkt 8: Ein Fehler beim Speichern heißt nicht „unlesbar“.
     @Test func importFailureNoticeNamesTheCause() {
         struct DiskFull: Error {}
-        #expect(BlockEditorController.importFailureNotice(for: ImageImport.Failure.unreadable) == "Bild konnte nicht gelesen werden")
-        #expect(BlockEditorController.importFailureNotice(for: DiskFull()) == "Bild konnte nicht gespeichert werden")
+        #expect(BlockEditorController.importFailureNotice(for: ImageImport.Failure.unreadable) == "Couldn’t read the image")
+        #expect(BlockEditorController.importFailureNotice(for: DiskFull()) == "Couldn’t save the image")
     }
 
     /// Punkt 6: Ein Bild, das sich nicht laden lässt, wird nicht bei jeder Änderung
