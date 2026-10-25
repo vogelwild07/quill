@@ -165,6 +165,17 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   Getönt wird mit der Hintergrundfarbe des Themes; Text auf dem Glas Schwarz bzw. Weiß,
   Nebentext mit 85 % Deckkraft. Knöpfe der Toolbar in eigenen Kapseln (8 × 5 pt Abstand).
   Vorschaubilder (Näherung) in `Design/Vorschau/`.
+- Updates (ADR-037): Einstellungen › Allgemein (`gearshape`, erster Bereich, öffnet nach dem
+  Start) mit Schalter „Automatisch suchen“ samt Erklärung (einmal am Tag, nur die Liste der
+  Versionen, Backup vorher, Menüpunkt) und „Zuletzt geprüft“ (Datum oder „Noch nie“). Menü
+  „Quill › Nach Updates suchen …“ unter „Über Quill“; aus, wo Quill nicht suchen kann. Frage
+  beim ersten Start als `NSAlert` „Automatisch nach Updates suchen?“, Knöpfe „Nicht suchen“
+  (Standard, Return und Escape) und „Automatisch suchen“. Fenster „Update“ (440 pt, kein
+  Glas): Titel in `.headline`, ein Satz darunter, Fortschrittsbalken beim Suchen, Laden und
+  Prüfen; bei „Quill 0.5.0 ist da.“ der Text der Version in einer Fläche wie die Lizenzen und
+  die Knöpfe „Diese Version überspringen“ (links), „Später“ und „Installieren“ (Standard).
+  Fehler mit „Update nicht möglich“ und einem Satz, was passiert ist und dass nichts
+  installiert wurde. Die Suche im Hintergrund zeigt nur ein gefundenes Update, nie Fehler.
 - Präsentieren (ADR-035): „Seite › Präsentieren“ (⌥⌘P) öffnet die Seite im Vollbild ohne
   Titelleiste auf dem Hintergrund des Themes. Die Folie ist der Editor im Lesemodus ohne
   Schreibmarke und ohne ＋/⋮⋮, vergrößert auf die Breite (höchstens 2,5-fach); unten rechts
