@@ -21,6 +21,8 @@ struct UpdatePolicyTests {
     @Test(arguments: [
         "http://github.com/vogelwild07/quill/releases/download/v0.5.0/Quill-0.5.0.dmg",
         "https://github.com.example.org/vogelwild07/quill/releases/download/v0.5.0/Quill.dmg",
+        "https://evilgithub.com/vogelwild07/quill/releases/download/v0.5.0/Quill.dmg",
+        "https://gist.github.com/vogelwild07/quill/releases/download/v0.5.0/Quill.dmg",
         "https://example.org/vogelwild07/quill/releases/download/v0.5.0/Quill.dmg",
         "https://github.com/someone/quill/releases/download/v0.5.0/Quill.dmg",
         "https://github.com/vogelwild07/quill-archive/releases/download/v0.5.0/Quill.dmg",
