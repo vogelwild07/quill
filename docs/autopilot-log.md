@@ -511,6 +511,34 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer. Alle ge
 - Handtest offen: Zustand „Update gefunden“ mit echtem Download erst mit dem nächsten
   Release; Nutzer von 0.4.0 installieren 0.5.0 von Hand.
 
+### 21 Englisch (PR #55, ADR-038)
+
+- Oberfläche auf Englisch als zweite Sprache: alle Kataloge (QuillFeatures, QuillEditor,
+  InfoPlist, Kurzbefehle) mit englischer Fassung, Siri-Sätze in
+  `App/Resources/AppShortcuts.xcstrings`, Texte der Kurzbefehle im Katalog der App. Kein
+  eigener Schalter: macOS wählt, je App in den Systemeinstellungen änderbar.
+- Rückfall bleibt Deutsch (Entwicklungsregion `de`); Englisch sieht, wer Englisch vor
+  Deutsch in der Liste hat oder eine andere Sprache plus Englisch.
+- Package-Tests laufen auf Englisch (Testrunner ohne Sprachen), Erwartungen umgestellt,
+  `LocalizedTextTests.packageTestsRunInEnglish` sichert das. UI-Tests fest auf Deutsch,
+  `EnglishUITests` und `testAuditEnglish` prüfen Englisch.
+- Slash-Menü findet deutsche Namen auch auf Englisch (Aliasse); Sammelseite „Tage“ und
+  Tagesseite werden in beiden Sprachen wiedergefunden, kein zweites „Days“.
+- Voller Lauf: `AccessibilityAuditUITests` lief als Klasse in die 600-s-Grenze (alle Tests
+  bis dahin grün, kein Hänger); `testAuditTimeTravel` einzeln grün, `testAuditUpdate`
+  einzeln einmal rot (Kontrast der Update-Frage, Code unverändert), danach zweimal grün.
+  Beides in `docs/roadmap.md` unter „Bekannte Probleme“.
+- Tests: Package 816 (19 + 93 + 9 + 137 + 230 + 30 + 298), UI 81 (1 übersprungen), Synctest
+  13 Fälle, zusammen 910. App-Build und Release-Build der Tests ohne Warnungen; die 4
+  Zeilen „Metadata extraction skipped“ in build-for-testing sind Protokoll des
+  `appintentsmetadataprocessor` für Test-Targets, keine Compiler-Warnungen.
+- Gegenproben rot wie erwartet: Tagesseite sucht nur in der aktuellen Sprache, falscher
+  Platzhalter im Englischen, unübersetzter Zustand, Siri-Satz ohne App-Namen, fehlender
+  Slash-Alias, UI-Tests mit Standardsprache Englisch.
+- Keine Messung: Editor, Sidebar, Laden, Speichern und Suche unverändert.
+- Handtests offen: Siri erkennt die englischen Sätze; Sprache je App in den
+  Systemeinstellungen umschalten.
+
 ## Schlussbericht (24.10.2026)
 
 Der Autopilot hat die Mac-Roadmap ohne Phase 14 abgearbeitet: Phasen 12, 16, 15 (ohne

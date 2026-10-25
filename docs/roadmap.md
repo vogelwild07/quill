@@ -173,6 +173,12 @@ Infrastruktur, nicht eingeplant:
 
 ## Bekannte Probleme
 
-- Keine offenen. Behoben in Phase 4: Inline-Code-Hintergrund in der Zeile darüber (siehe `architecture.md`, Erkenntnisse aus Phase 4).
+- `AccessibilityAuditUITests.testAuditUpdate` war im vollen Lauf von Phase 21 einmal rot
+  (Kontrast des Hinweistexts der Update-Frage), einzeln zweimal grün; Code dort unverändert.
+  Vermutlich misst der Audit, bevor das Material der Abfrage fertig gezeichnet ist. Tritt es
+  wieder auf: vor dem Audit auf das fertige Fenster warten.
+- `AccessibilityAuditUITests` braucht seit `testAuditEnglish` als Klasse mehr als 600 s;
+  im vollen Lauf die Methoden einzeln starten (je 600 s Grenze).
+- Behoben in Phase 4: Inline-Code-Hintergrund in der Zeile darüber (siehe `architecture.md`, Erkenntnisse aus Phase 4).
 
 **Signing:** Personal Team (gratis) → keine Notarisierung. Das Release ist nur ad hoc signiert und startet auf fremden Macs erst nach „Dennoch öffnen“ in Datenschutz & Sicherheit (ADR-022). Sync läuft über einen Ordner ohne CloudKit (ADR-026). iPhone-Verteilung, App Group (Widgets, Teilen-Erweiterung) und App Store brauchen den bezahlten Developer Account; Anmeldung vor Phase 13.
