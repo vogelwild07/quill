@@ -26,8 +26,8 @@ struct QuitGuardTests {
 
     @Test func alertDefaultsToCancel() {
         let alert = QuitGuard.makeAlert(for: SaveFailed())
-        #expect(alert.messageText == "Änderungen konnten nicht gespeichert werden")
-        #expect(alert.buttons.map(\.title) == ["Abbrechen", "Trotzdem beenden"])
+        #expect(alert.messageText == "Couldn’t Save Changes")
+        #expect(alert.buttons.map(\.title) == ["Cancel", "Quit Anyway"])
         #expect(alert.buttons[0].keyEquivalent == "\r")
         #expect(alert.buttons[1].keyEquivalent.isEmpty)
         #expect(alert.buttons[1].hasDestructiveAction)

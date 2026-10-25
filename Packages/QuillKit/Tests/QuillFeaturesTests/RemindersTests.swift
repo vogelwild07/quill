@@ -145,7 +145,7 @@ struct RemindersTests {
 
     @Test func notificationTitleIsOneLineWithFallback() {
         #expect(SystemReminderCenter.title("Brot\u{2028}und Milch") == "Brot und Milch")
-        #expect(SystemReminderCenter.title(" ") == "To-do ohne Text")
+        #expect(SystemReminderCenter.title(" ") == "To-do without text")
     }
 
     @Test func triggerKeepsTheSeconds() throws {

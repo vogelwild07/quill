@@ -53,6 +53,7 @@ final class PageEditorSession {
         )
         let headerView = EditorHeaderView(rootView: header.modelContext(context))
         headerView.setAccessibilityLabel(String(localized: "Seitenkopf", bundle: .module))
+        headerView.setAccessibilityIdentifier("detail.header")
         controller.header = headerView
         controller.headerShowsPlaceholder = title.isEmpty
         controller.onExitTop = { [headerFocus] in headerFocus.requestTitle() }

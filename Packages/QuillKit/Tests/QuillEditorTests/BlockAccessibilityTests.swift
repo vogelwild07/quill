@@ -72,7 +72,7 @@ struct BlockAccessibilityTests {
         let image = try #require(cells.first as? ImageAttachmentCell)
         #expect(image.isAccessibilityElement())
         #expect(image.accessibilityRole() == .image)
-        #expect(image.accessibilityLabel() == "Bild, wird geladen")
+        #expect(image.accessibilityLabel() == "Image, loading")
         // Mit geladenem Bild: natürliche Größe in der Beschriftung.
         let assetID = UUID()
         let context = CGContext(data: nil, width: 120, height: 60, bitsPerComponent: 8, bytesPerRow: 0,
@@ -81,7 +81,7 @@ struct BlockAccessibilityTests {
         let attachment = ImageAttachment(assetID: assetID)
         let loaded = ImageAttachmentCell()
         attachment.attachmentCell = loaded
-        #expect(loaded.accessibilityLabel() == "Bild, 120 × 60 Punkte")
+        #expect(loaded.accessibilityLabel() == "Image, 120 × 60 points")
         withExtendedLifetime(attachment) {}
         #expect(cells.last is DecorativeAttachmentCell)
         #expect(cells.last?.isAccessibilityElement() == false)
@@ -107,22 +107,22 @@ struct BlockAccessibilityTests {
         func attribute(_ key: NSAttributedString.Key, block: Int) -> Any? {
             text.attribute(key, at: editor.paragraphRange(ofBlock: block).location, effectiveRange: nil)
         }
-        #expect(attribute(.accessibilityCustomText, block: 0) as? [String] == ["Überschrift 1"])
-        #expect(attribute(.accessibilityCustomText, block: 1) as? [String] == ["To-do, erledigt"])
-        #expect(attribute(.accessibilityCustomText, block: 2) as? [String] == ["To-do, offen"])
+        #expect(attribute(.accessibilityCustomText, block: 0) as? [String] == ["Heading 1"])
+        #expect(attribute(.accessibilityCustomText, block: 1) as? [String] == ["To-do, done"])
+        #expect(attribute(.accessibilityCustomText, block: 2) as? [String] == ["To-do, open"])
         #expect((attribute(.accessibilityListItemPrefix, block: 1) as? NSAttributedString)?.string == "☑")
         #expect((attribute(.accessibilityListItemPrefix, block: 3) as? NSAttributedString)?.string == "1.")
         #expect((attribute(.accessibilityListItemPrefix, block: 4) as? NSAttributedString)?.string == "1.")
         #expect(attribute(.accessibilityListItemLevel, block: 4) as? Int == 1)
         #expect(attribute(.accessibilityListItemIndex, block: 4) as? Int == 3)
         #expect(attribute(.accessibilityListItemPrefix, block: 8) == nil)
-        #expect(attribute(.accessibilityCustomText, block: 6) as? [String] == ["Trennlinie"])
+        #expect(attribute(.accessibilityCustomText, block: 6) as? [String] == ["Divider Line"])
         #expect(attribute(.accessibilityCustomText, block: 8) as? [String] == ["Text"])
 
         // Ausschnitt: Attribute relativ zum Anfang des Bereichs.
         let todo = editor.paragraphRange(ofBlock: 2)
         let part = try #require(textView.accessibilityAttributedString(for: todo))
-        #expect(part.attribute(.accessibilityCustomText, at: 0, effectiveRange: nil) as? [String] == ["To-do, offen"])
+        #expect(part.attribute(.accessibilityCustomText, at: 0, effectiveRange: nil) as? [String] == ["To-do, open"])
     }
 
     @Test func headingRotorWalksHeadings() throws {

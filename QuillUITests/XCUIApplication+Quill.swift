@@ -15,12 +15,17 @@ extension XCUIApplication {
     /// `-QuillWindowsOnMainScreen YES` legt jedes Fenster auf den Hauptbildschirm
     /// (`TestWindowScreen`), damit der Kontrast-Audit mit mehreren Monitoren gleich ausfällt.
     ///
+    /// `languages` (bevorzugte Sprachen) und `region` legen Sprache und Region fest, unabhängig
+    /// vom Testrechner; Standard Deutsch, weil die Tests Elemente auch über deutsche Texte
+    /// suchen (ADR-038).
+    ///
     /// Mit `storeDirectory` liegt die Datenbank stattdessen in diesem Unterordner
     /// des temporären Ordners der App (`QuillPersistence.storeDirectoryArgument`),
     /// für Tests über Neustarts hinweg; auch dann nie die echten Daten.
-    static func quill(storeDirectory: String? = nil) -> XCUIApplication {
+    static func quill(storeDirectory: String? = nil, languages: [String] = ["de"], region: String = "DE") -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments += ["-ApplePersistenceIgnoreState", "YES"]
+        app.launchArguments += languageArguments(languages: languages, region: region)
         app.launchArguments += ["-QuillWindowsOnMainScreen", "YES"]
         if let storeDirectory {
             app.launchArguments += ["-QuillStoreDirectory", storeDirectory]
@@ -28,6 +33,11 @@ extension XCUIApplication {
             app.launchArguments += ["-QuillInMemoryStore", "YES"]
         }
         return app
+    }
+
+    /// Bevorzugte Sprachen und Region für Datum und Zahlen, nur für diesen Start.
+    static func languageArguments(languages: [String], region: String) -> [String] {
+        ["-AppleLanguages", "(\(languages.joined(separator: ", ")))", "-AppleLocale", "\(languages[0])_\(region)"]
     }
 
     /// Öffnet die Zeitreise der ersten Seite (⌥⌘Y) und gibt das Fenster zurück, sobald

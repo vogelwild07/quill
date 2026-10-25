@@ -128,6 +128,8 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer. Alle ge
   Trackpad oder Maus); Seiten im Papierkorb lassen sich präsentieren; Titel weiter aus
   `@Query` (ADR-035, Abschnitt „Review von 18.2“).
 
+- [ ] 21: Englisch als zweite Sprache ohne eigenen Schalter (macOS wählt, je App änderbar); Rückfall ohne Deutsch und Englisch in der Liste bleibt Deutsch (Englisch ginge nur mit `en` als Entwicklungsregion, dann sähen deutsche Macs Englisch); Package-Tests mit englischen Erwartungen; Slash-Menü findet die Namen beider Sprachen; was Quill in den Store schreibt („Tage“, Tagesseite), findet es in beiden Sprachen wieder, bestehende Titel bleiben (ADR-038).
+
 - [x] 19: Regler für Liquid Glass mit Boden der Deckkraft je Theme (im Dunklen beginnt „klar“ deckender); Tönung mit der Theme-Farbe, bei festen Themes der anderen Darstellung mit Standard; Text auf dem Glas Schwarz bzw. Weiß (mit Theme-Farben lag der Boden bei 82–87 %); Fläche über dem System-Glas, wo es keine API für die Tönung gibt; „Wie System“ ändert nichts; Vorschaubilder als gerechnete Näherung (ADR-036).
 
 ## Gemergt
@@ -508,6 +510,34 @@ Nicht besprochene Entscheidungen, je mit ADR. Häkchen setzt der Nutzer. Alle ge
 - Messung siehe `docs/performance.md`, Abschnitt „Phase 20“: im Rauschen.
 - Handtest offen: Zustand „Update gefunden“ mit echtem Download erst mit dem nächsten
   Release; Nutzer von 0.4.0 installieren 0.5.0 von Hand.
+
+### 21 Englisch (PR #55, ADR-038)
+
+- Oberfläche auf Englisch als zweite Sprache: alle Kataloge (QuillFeatures, QuillEditor,
+  InfoPlist, Kurzbefehle) mit englischer Fassung, Siri-Sätze in
+  `App/Resources/AppShortcuts.xcstrings`, Texte der Kurzbefehle im Katalog der App. Kein
+  eigener Schalter: macOS wählt, je App in den Systemeinstellungen änderbar.
+- Rückfall bleibt Deutsch (Entwicklungsregion `de`); Englisch sieht, wer Englisch vor
+  Deutsch in der Liste hat oder eine andere Sprache plus Englisch.
+- Package-Tests laufen auf Englisch (Testrunner ohne Sprachen), Erwartungen umgestellt,
+  `LocalizedTextTests.packageTestsRunInEnglish` sichert das. UI-Tests fest auf Deutsch,
+  `EnglishUITests` und `testAuditEnglish` prüfen Englisch.
+- Slash-Menü findet deutsche Namen auch auf Englisch (Aliasse); Sammelseite „Tage“ und
+  Tagesseite werden in beiden Sprachen wiedergefunden, kein zweites „Days“.
+- Voller Lauf: `AccessibilityAuditUITests` lief als Klasse in die 600-s-Grenze (alle Tests
+  bis dahin grün, kein Hänger); `testAuditTimeTravel` einzeln grün, `testAuditUpdate`
+  einzeln einmal rot (Kontrast der Update-Frage, Code unverändert), danach zweimal grün.
+  Beides in `docs/roadmap.md` unter „Bekannte Probleme“.
+- Tests: Package 816 (19 + 93 + 9 + 137 + 230 + 30 + 298), UI 81 (1 übersprungen), Synctest
+  13 Fälle, zusammen 910. App-Build und Release-Build der Tests ohne Warnungen; die 4
+  Zeilen „Metadata extraction skipped“ in build-for-testing sind Protokoll des
+  `appintentsmetadataprocessor` für Test-Targets, keine Compiler-Warnungen.
+- Gegenproben rot wie erwartet: Tagesseite sucht nur in der aktuellen Sprache, falscher
+  Platzhalter im Englischen, unübersetzter Zustand, Siri-Satz ohne App-Namen, fehlender
+  Slash-Alias, UI-Tests mit Standardsprache Englisch.
+- Keine Messung: Editor, Sidebar, Laden, Speichern und Suche unverändert.
+- Handtests offen: Siri erkennt die englischen Sätze; Sprache je App in den
+  Systemeinstellungen umschalten.
 
 ## Schlussbericht (24.10.2026)
 

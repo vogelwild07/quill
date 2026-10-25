@@ -2,16 +2,44 @@
   "sourceLanguage" : "de",
   "strings" : {
     "%@ von %@ wählen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose %1$@ from %2$@"
+          }
+        }
+      }
     },
     "%@ · „%@“" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · “%2$@”"
+          }
+        }
+      }
     },
     "%@–%@ %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@–%2$@ %3$@"
+          }
+        }
+      }
     },
     "%lld %% getönt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld %% tinted"
+          }
+        }
+      }
     },
     "%lld Bilder nicht zurückgeholt: Sie werden nicht mehr aufbewahrt." : {
       "localizations" : {
@@ -28,6 +56,24 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld Bilder nicht zurückgeholt: Sie werden nicht mehr aufbewahrt."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld image not brought back: It’s no longer kept."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld images not brought back: They’re no longer kept."
                 }
               }
             }
@@ -54,6 +100,24 @@
               }
             }
           }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Permanently delete %lld page?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Permanently delete %lld pages?"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -76,836 +140,2786 @@
               }
             }
           }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld place with two versions"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld places with two versions"
+                }
+              }
+            }
+          }
         }
       }
     },
     "1 Jahr" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 Year"
+          }
+        }
+      }
     },
     "30 Tage" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 Days"
+          }
+        }
+      }
     },
     "90 Tage" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "90 Days"
+          }
+        }
+      }
     },
     "Ab der ersten Bearbeitung hält Quill fest, wie die Seite am Ende jedes Tages aussah." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the first edit on, Quill records how the page looked at the end of each day."
+          }
+        }
+      }
     },
     "Abbrechen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        }
+      }
     },
     "Abgeglichen %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synced %@"
+          }
+        }
+      }
     },
     "Abgleich gescheitert: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync failed: %@"
+          }
+        }
+      }
     },
     "Abhaken" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check Off"
+          }
+        }
+      }
     },
     "Allgemein" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "General"
+          }
+        }
+      }
     },
     "Als Seite sichern" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save as Page"
+          }
+        }
+      }
     },
     "Alte Dateien beiseitegelegt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Old Files Set Aside"
+          }
+        }
+      }
     },
     "Apple Intelligence ist aus. Schalte es in den Systemeinstellungen unter „Apple Intelligence & Siri“ ein, dann erscheinen die KI-Funktionen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence is off. Turn it on in System Settings under “Apple Intelligence & Siri” and the AI features will appear."
+          }
+        }
+      }
     },
     "Aufnehmen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record"
+          }
+        }
+      }
     },
     "Aufzählung" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bulleted List"
+          }
+        }
+      }
     },
     "Aus" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
+          }
+        }
+      }
     },
     "Aus Favoriten entfernen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from Favorites"
+          }
+        }
+      }
     },
     "Ausblenden" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide"
+          }
+        }
+      }
     },
     "Ausschalten" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn Off"
+          }
+        }
+      }
     },
     "Auswahl zurückholen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring Back Selection"
+          }
+        }
+      }
     },
     "Automatisch nach Updates suchen?" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check for updates automatically?"
+          }
+        }
+      }
     },
     "Automatisch suchen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check Automatically"
+          }
+        }
+      }
     },
     "Backup bleibt vorgemerkt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backup Still Scheduled"
+          }
+        }
+      }
     },
     "Backup nicht wiederhergestellt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backup Not Restored"
+          }
+        }
+      }
     },
     "Backup vom %@ wiederherstellen?" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore the backup from %@?"
+          }
+        }
+      }
     },
     "Backup vom %@: %@ Der bisherige Stand ist unverändert und liegt in „Application Support/Quill/Store“." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backup from %1$@: %2$@ Your current data is unchanged and stays in “Application Support/Quill/Store”."
+          }
+        }
+      }
     },
     "Backup wiederhergestellt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backup Restored"
+          }
+        }
+      }
     },
     "Backup wiederherstellen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore Backup"
+          }
+        }
+      }
     },
     "Backup wiederherstellen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore Backup…"
+          }
+        }
+      }
     },
     "Backup wird angelegt …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creating backup…"
+          }
+        }
+      }
     },
     "Backups" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backups"
+          }
+        }
+      }
     },
     "Backups im Finder zeigen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Backups in Finder"
+          }
+        }
+      }
     },
     "Beantwortet vom Sprachmodell auf diesem Mac, nur aus den genannten Seiten. Prüfe die Antwort dort." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answered by the language model on this Mac, using only the pages listed. Check the answer there."
+          }
+        }
+      }
     },
     "Beenden" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quit"
+          }
+        }
+      }
     },
     "Beim Beenden" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On Quit"
+          }
+        }
+      }
     },
     "Beim Start" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On Launch"
+          }
+        }
+      }
     },
     "Beiseitegelegt (alter Speicherort)" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Aside (Old Location)"
+          }
+        }
+      }
     },
     "Bereit" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready"
+          }
+        }
+      }
     },
     "Bild" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image"
+          }
+        }
+      }
     },
     "Bild %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image %@"
+          }
+        }
+      }
     },
     "Bild fehlt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image Missing"
+          }
+        }
+      }
     },
     "Block duplizieren" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicate Block"
+          }
+        }
+      }
     },
     "Block nach oben" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Block Up"
+          }
+        }
+      }
     },
     "Block nach unten" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Block Down"
+          }
+        }
+      }
     },
     "Blockart" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Block Type"
+          }
+        }
+      }
     },
     "Code" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Code"
+          }
+        }
+      }
     },
     "Danach lädt Quill das Update und prüft die Signatur." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Then Quill downloads the update and checks its signature."
+          }
+        }
+      }
     },
     "Darstellung" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appearance"
+          }
+        }
+      }
     },
     "Das Backup gibt es nicht mehr." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The backup no longer exists."
+          }
+        }
+      }
     },
     "Das Backup stammt von einer neueren Quill-Version und kann hier nicht eingespielt werden." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The backup comes from a newer version of Quill and can’t be restored here."
+          }
+        }
+      }
     },
     "Das Backup vor der Installation ist gescheitert. Quill hat nichts installiert." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The backup before installing failed. Quill didn’t install anything."
+          }
+        }
+      }
     },
     "Das Kürzel ist schon belegt, wohl von einer anderen App." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The shortcut is already taken, probably by another app."
+          }
+        }
+      }
     },
     "Das Sprachmodell hat diesen Text abgelehnt." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The language model declined this text."
+          }
+        }
+      }
     },
     "Das Sprachmodell steht gerade nicht bereit." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The language model isn’t ready right now."
+          }
+        }
+      }
     },
     "Das Sprachmodell steht gerade nicht bereit. Die KI-Funktionen bleiben ausgeblendet." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The language model isn’t ready right now. The AI features stay hidden."
+          }
+        }
+      }
     },
     "Das Sprachmodell unterstützt die Sprache dieses Textes nicht." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The language model doesn’t support the language of this text."
+          }
+        }
+      }
     },
     "Das Sprachmodell von Apple Intelligence rechnet auf diesem Mac. Deine Notizen gehen dafür nicht ins Netz." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Apple Intelligence language model runs on this Mac. Your notes don’t go online for this."
+          }
+        }
+      }
     },
     "Das Sprachmodell wird noch geladen. Die KI-Funktionen erscheinen, sobald es bereit ist." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The language model is still loading. The AI features will appear as soon as it’s ready."
+          }
+        }
+      }
     },
     "Das ist der bisherige Ordner. Zum Neubeginnen wähle einen anderen, leeren Ordner; mit dem bisherigen führt Quill zusammen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is the previous folder. To start over, choose a different, empty folder; with the previous one, Quill merges."
+          }
+        }
+      }
     },
     "Das letzte Wiederherstellen brach vor dem Tausch ab. Der bisherige Stand ist unverändert und liegt in „Application Support/Quill/Store“." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The last restore stopped before the swap. Your current data is unchanged and stays in “Application Support/Quill/Store”."
+          }
+        }
+      }
     },
     "Das lässt sich nicht rückgängig machen. Unterseiten werden mitgelöscht." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This can’t be undone. Subpages are deleted too."
+          }
+        }
+      }
     },
     "Das Update ist beschädigt. Quill hat nichts installiert." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The update is damaged. Quill didn’t install anything."
+          }
+        }
+      }
     },
     "Das Update ist gescheitert: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The update failed: %@"
+          }
+        }
+      }
     },
     "Das Update kommt nicht über HTTPS von github.com/vogelwild07/quill. Quill hat nichts installiert." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The update doesn’t come from github.com/vogelwild07/quill over HTTPS. Quill didn’t install anything."
+          }
+        }
+      }
     },
     "Daten konnten nicht geöffnet werden" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t Open Data"
+          }
+        }
+      }
     },
     "Datenbank umstellen?" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Convert the database?"
+          }
+        }
+      }
     },
     "Deine Frage ist zu lang. Stell sie kürzer." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your question is too long. Please make it shorter."
+          }
+        }
+      }
     },
     "Den bisherigen Ordner gibt es nicht mehr oder Quill darf ihn nicht öffnen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The previous folder no longer exists, or Quill isn’t allowed to open it."
+          }
+        }
+      }
     },
     "Der Ordner stammt von einer neueren Quill-Version. Bitte Quill aktualisieren." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The folder comes from a newer version of Quill. Please update Quill."
+          }
+        }
+      }
     },
     "Der Papierkorb ist leer" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Trash Is Empty"
+          }
+        }
+      }
     },
     "Der Sync bleibt aus. Einschalten kannst du ihn jederzeit in den Einstellungen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync stays off. You can turn it on in Settings at any time."
+          }
+        }
+      }
     },
     "Der Sync wurde nicht eingeschaltet: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync wasn’t turned on: %@"
+          }
+        }
+      }
     },
     "Der vorherige Stand liegt als Backup „Vor dem Wiederherstellen“ bereit (Ablage › Backup wiederherstellen …), Ordner „Application Support/Quill/%@“." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your previous data is available as the backup “Before Restoring” (File › Restore Backup…), folder “Application Support/Quill/%@”."
+          }
+        }
+      }
     },
     "Der vorherige Stand liegt noch in „Application Support/Quill/%@“; Quill legt ihn beim nächsten Start zu den Backups." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your previous data is still in “Application Support/Quill/%@”; Quill moves it to the backups on the next launch."
+          }
+        }
+      }
     },
     "Die Antwort ist gescheitert." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The answer failed."
+          }
+        }
+      }
     },
     "Die Aufnahme ist gescheitert." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The recording failed."
+          }
+        }
+      }
     },
     "Die Dateien konnten nicht getauscht werden." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The files couldn’t be swapped."
+          }
+        }
+      }
     },
     "Die Datenbank im Backup ist beschädigt." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The database in the backup is damaged."
+          }
+        }
+      }
     },
     "Die Erinnerung konnte nicht geplant werden." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The reminder couldn’t be scheduled."
+          }
+        }
+      }
     },
     "Die Notiz konnte nicht gesichert werden. Sie bleibt hier." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The note couldn’t be saved. It stays here."
+          }
+        }
+      }
     },
     "Die Seite enthält keinen Text zum Zusammenfassen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The page has no text to summarize."
+          }
+        }
+      }
     },
     "Die Seite enthält noch keinen Text, zu dem es verwandte Seiten geben könnte." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The page doesn’t have any text yet that related pages could match."
+          }
+        }
+      }
     },
     "Die Seite für heute ließ sich nicht öffnen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t open today’s page."
+          }
+        }
+      }
     },
     "Die Seite gibt es nicht mehr." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The page no longer exists."
+          }
+        }
+      }
     },
     "Die Seite selbst ist nicht betroffen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The page itself isn’t affected."
+          }
+        }
+      }
     },
     "Die Signatur oder Prüfsumme des Updates stimmt nicht. Quill hat nichts installiert." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The update’s signature or checksum doesn’t match. Quill didn’t install anything."
+          }
+        }
+      }
     },
     "Die Spracherkennung für deine Sprache ist auf diesem Mac nicht installiert." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speech recognition for your language isn’t installed on this Mac."
+          }
+        }
+      }
     },
     "Die Spracherkennung ist auf diesem Mac gerade nicht verfügbar." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speech recognition isn’t available on this Mac right now."
+          }
+        }
+      }
     },
     "Die Stelle zum Einfügen gibt es nicht mehr. Kopiere den Text oder schließe das Blatt." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The place to insert no longer exists. Copy the text or close the sheet."
+          }
+        }
+      }
     },
     "Die Suche nach Aufgaben ist gescheitert." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The search for tasks failed."
+          }
+        }
+      }
     },
     "Die Suche nach verwandten Seiten ist gescheitert." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The search for related pages failed."
+          }
+        }
+      }
     },
     "Die Vormerkung ließ sich nicht löschen. Damit das Wiederherstellen nicht bei jedem Start erneut läuft, wurde nichts getauscht." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The scheduled restore couldn’t be removed. So the restore doesn’t run again on every launch, nothing was swapped."
+          }
+        }
+      }
     },
     "Die Vormerkung ließ sich nicht zurücknehmen. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt dann als Backup „Vor dem Wiederherstellen“." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The scheduled restore couldn’t be canceled. On the next launch the chosen backup is restored; your current data is then kept as the backup “Before Restoring”."
+          }
+        }
+      }
     },
     "Die Zeile mit dem Cursor bleibt in der Mitte, die übrigen Absätze treten zurück. Auch über Darstellung › Fokus-Modus (⇧⌘F)." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The line with the cursor stays in the middle and the other paragraphs fade back. Also under View › Focus Mode (⇧⌘F)."
+          }
+        }
+      }
     },
     "Die Zusammenfassung ist gescheitert." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The summary failed."
+          }
+        }
+      }
     },
     "Die erste Zeile wird der Titel der neuen Seite." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The first line becomes the title of the new page."
+          }
+        }
+      }
     },
     "Die markierten Absätze enthalten keinen Text." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The selected paragraphs don’t contain any text."
+          }
+        }
+      }
     },
     "Diese Version von Quill braucht ein neues Format für deine Daten. Vorher legt Quill ein Backup an. Ältere Versionen von Quill können die Daten danach nicht mehr öffnen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This version of Quill needs a new format for your data. Quill creates a backup first. Older versions of Quill can’t open the data afterward."
+          }
+        }
+      }
     },
     "Diese Version überspringen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip This Version"
+          }
+        }
+      }
     },
     "Dieser Mac unterstützt Apple Intelligence nicht. Die KI-Funktionen bleiben ausgeblendet." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac doesn’t support Apple Intelligence. The AI features stay hidden."
+          }
+        }
+      }
     },
     "Du hast die neueste Version (%@)." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You have the latest version (%@)."
+          }
+        }
+      }
     },
     "Du hast Version %@. Vor der Installation legt Quill ein Backup deiner Notizen an." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You have version %@. Before installing, Quill creates a backup of your notes."
+          }
+        }
+      }
     },
     "Du wählst einen leeren Ordner; der Stand aus dem Backup kommt dorthin. Der bisherige Ordner bleibt unverändert, andere Macs müssen den neuen Ordner wählen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You choose an empty folder; the data from the backup goes there. The previous folder stays unchanged, and other Macs need to choose the new folder."
+          }
+        }
+      }
     },
     "Durchgestrichen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strikethrough"
+          }
+        }
+      }
     },
     "Ein Abschnitt ist zu lang für das Sprachmodell." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A section is too long for the language model."
+          }
+        }
+      }
     },
     "Ein Symbol in der Menüleiste öffnet ein kleines Fenster für eine Notiz, ohne Quill nach vorn zu holen. Gesichert wird sie als neue Seite." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An icon in the menu bar opens a small window for a note without bringing Quill to the front. It’s saved as a new page."
+          }
+        }
+      }
     },
     "Ein anderes Gerät hat diesen Block gelöscht oder anders geändert, während er hier bearbeitet wurde. Quill hat ihn behalten, damit nichts verloren geht." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another device deleted or changed this block differently while it was being edited here. Quill kept it so nothing gets lost."
+          }
+        }
+      }
     },
     "Ein ruhiger Morgen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Quiet Morning"
+          }
+        }
+      }
     },
     "Eine Mitteilung auf diesem Mac erinnert dich daran." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A notification on this Mac reminds you."
+          }
+        }
+      }
     },
     "Eine andere Quill-Instanz richtet gerade die Datenbank ein." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another instance of Quill is setting up the database right now."
+          }
+        }
+      }
     },
     "Einfügen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insert"
+          }
+        }
+      }
     },
     "Eingespielt: Backup vom %@." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restored: backup from %@."
+          }
+        }
+      }
     },
     "Einzug" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indent"
+          }
+        }
+      }
     },
     "Emoji eingeben oder mit ⌃⌘Leertaste auswählen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type an emoji or choose one with ⌃⌘Space"
+          }
+        }
+      }
     },
     "Endgültig löschen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Permanently"
+          }
+        }
+      }
     },
     "Endgültig löschen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Permanently…"
+          }
+        }
+      }
     },
     "Entfernen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove"
+          }
+        }
+      }
     },
     "Entwurf fertig" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish the draft"
+          }
+        }
+      }
     },
     "Erinnern" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remind"
+          }
+        }
+      }
     },
     "Erinnerung" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminder"
+          }
+        }
+      }
     },
     "Erinnerung am %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminder on %@"
+          }
+        }
+      }
     },
     "Erinnerung entfernen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Reminder"
+          }
+        }
+      }
     },
     "Erinnerung …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminder…"
+          }
+        }
+      }
     },
     "Erkannt auf diesem Mac. Die Aufnahme wird nicht gespeichert, nur der Text kommt unter die Einfügemarke." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recognized on this Mac. The recording isn’t saved; only the text is inserted at the cursor."
+          }
+        }
+      }
     },
     "Erledigt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        }
+      }
     },
     "Erstellt vom Sprachmodell auf diesem Mac. Prüfe sie, bevor du sie verwendest." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Created by the language model on this Mac. Check it before you use it."
+          }
+        }
+      }
     },
     "Es gibt keinen Text zum Hinzufügen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There’s no text to add."
+          }
+        }
+      }
     },
     "Es ist kein Mikrofon angeschlossen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No microphone is connected."
+          }
+        }
+      }
     },
     "Export fehlgeschlagen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Failed"
+          }
+        }
+      }
     },
     "Exportieren" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export"
+          }
+        }
+      }
     },
     "Exportieren …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export…"
+          }
+        }
+      }
     },
     "Fasse zusammen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Summarizing…"
+          }
+        }
+      }
     },
     "Favorit verschieben" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Favorite"
+          }
+        }
+      }
     },
     "Favoriten" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorites"
+          }
+        }
+      }
     },
     "Fehlende Bilder: %lld" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Missing images: %lld"
+          }
+        }
+      }
     },
     "Fett" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bold"
+          }
+        }
+      }
     },
     "Fokus-Modus" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus Mode"
+          }
+        }
+      }
     },
     "Folie %lld von %lld" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slide %1$lld of %2$lld"
+          }
+        }
+      }
     },
     "Fortschritt des Abgleichs" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync Progress"
+          }
+        }
+      }
     },
     "Frag deine Notizen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask Your Notes"
+          }
+        }
+      }
     },
     "Frag deine Notizen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask Your Notes…"
+          }
+        }
+      }
     },
     "Frage" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Question"
+          }
+        }
+      }
     },
     "Fragen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask"
+          }
+        }
+      }
     },
     "Frühere Stände einer Seite enthalten keine Bilder, nur Verweise darauf. Ein Bild, das in keiner Seite mehr steht, bleibt so lange, damit die Zeitreise es zurückholen kann. Eine kürzere Frist wirkt ab dem nächsten Start." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Earlier versions of a page don’t contain images, only references to them. An image that’s no longer in any page is kept this long so Time Travel can bring it back. A shorter period takes effect on the next launch."
+          }
+        }
+      }
     },
     "Für das Backup hat Quill den Sync ausgeschaltet. Wie soll es weitergehen?" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill turned off sync for the backup. How do you want to continue?"
+          }
+        }
+      }
     },
     "Ganze Seite" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whole Page"
+          }
+        }
+      }
     },
     "Ganzer Block" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whole Block"
+          }
+        }
+      }
     },
     "Ganztägig: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All day: %@"
+          }
+        }
+      }
     },
     "Gelöschte Bilder aufbewahren" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep Deleted Images"
+          }
+        }
+      }
     },
     "Gelöschte Seiten bleiben hier 30 Tage und lassen sich wiederherstellen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deleted pages stay here for 30 days and can be restored."
+          }
+        }
+      }
     },
     "Gemeinsam: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In common: %@"
+          }
+        }
+      }
     },
     "Geschichte nicht lesbar" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "History Unreadable"
+          }
+        }
+      }
     },
     "Gestern" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yesterday"
+          }
+        }
+      }
     },
     "Getönt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tinted"
+          }
+        }
+      }
     },
     "GitHub ist gerade nicht erreichbar. Prüf die Verbindung und versuch es später noch einmal." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub can’t be reached right now. Check your connection and try again later."
+          }
+        }
+      }
     },
     "Gleicht ab …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Syncing…"
+          }
+        }
+      }
     },
     "Gute Werkzeuge treten zurück." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good tools step back."
+          }
+        }
+      }
     },
     "Hell und dunkel" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light and Dark"
+          }
+        }
+      }
     },
     "Heute" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        }
+      }
     },
     "Heute stehen keine Termine in deinem Kalender." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There are no events in your calendar today."
+          }
+        }
+      }
     },
     "Heutige Termine einfügen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insert Today’s Events"
+          }
+        }
+      }
     },
     "Hier behalten: Auf einem anderen Gerät kam die Seite in den Papierkorb, hier wurde sie bearbeitet." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kept here: On another device the page was moved to the Trash, while it was edited here."
+          }
+        }
+      }
     },
     "Holt die markierten Absätze dieses Tages in die Seite zurück." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brings the selected paragraphs from this day back into the page."
+          }
+        }
+      }
     },
     "Höchstens einmal am Tag fragt Quill die Liste der Versionen bei GitHub ab, ohne Angaben über dich oder deinen Mac. Installiert wird nur, wenn du zustimmst; vorher legt Quill ein Backup an. Von Hand: Quill › Nach Updates suchen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At most once a day, Quill fetches the list of versions from GitHub, without any information about you or your Mac. Nothing is installed unless you agree; Quill creates a backup first. Manually: Quill › Check for Updates…"
+          }
+        }
+      }
     },
     "Icon" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icon"
+          }
+        }
+      }
     },
     "Im Backup fehlt die Datenbank." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The backup is missing the database."
+          }
+        }
+      }
     },
     "Im Finder zeigen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show in Finder"
+          }
+        }
+      }
     },
     "Im Ordner fehlt „Quill/quill.json“. Wurde der Ordner verschoben oder gelöscht?" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The folder is missing “Quill/quill.json”. Was the folder moved or deleted?"
+          }
+        }
+      }
     },
     "Im Ordner liegen schon Quill-Daten, etwa von einem anderen Mac. Quill führt sie erst zusammen, wenn du zustimmst; geschrieben wurde noch nichts." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The folder already contains Quill data, perhaps from another Mac. Quill only merges it once you agree; nothing has been written yet."
+          }
+        }
+      }
     },
     "Im alten Speicherort lagen noch Datenbankdateien, obwohl es „Store“ schon gab. Quill hat sie weder verwendet noch überschrieben, sondern nach „Application Support/Quill/%@“ gelegt. Sie erscheinen unter Ablage › Backup wiederherstellen … als „Beiseitegelegt“." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The old location still had database files, even though “Store” already existed. Quill neither used nor overwrote them, but moved them to “Application Support/Quill/%@”. They appear under File › Restore Backup… as “Set Aside”."
+          }
+        }
+      }
     },
     "Im gewählten Ordner liegen schon Quill-Daten. Zum Neubeginnen braucht Quill einen leeren Ordner." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The chosen folder already contains Quill data. To start over, Quill needs an empty folder."
+          }
+        }
+      }
     },
     "Immer" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forever"
+          }
+        }
+      }
     },
     "In den Papierkorb" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move to Trash"
+          }
+        }
+      }
     },
     "In den Papierkorb legen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move to Trash"
+          }
+        }
+      }
     },
     "In den markierten Absätzen stehen keine Aufgaben." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The selected paragraphs don’t contain any tasks."
+          }
+        }
+      }
     },
     "In neuem Fenster öffnen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open in New Window"
+          }
+        }
+      }
     },
     "In neuem Tab öffnen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open in New Tab"
+          }
+        }
+      }
     },
     "Inhalt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Content"
+          }
+        }
+      }
     },
     "Installieren" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install"
+          }
+        }
+      }
     },
     "Jetzt abgleichen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync Now"
+          }
+        }
+      }
     },
     "KI" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI"
+          }
+        }
+      }
     },
     "KI-Funktionen verwenden" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use AI Features"
+          }
+        }
+      }
     },
     "Kein Seitentitel und kein Text passt zur Suche." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No page title or text matches the search."
+          }
+        }
+      }
     },
     "Kein Symbol" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Icon"
+          }
+        }
+      }
     },
     "Keine Seite ausgewählt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Page Selected"
+          }
+        }
+      }
     },
     "Keine Treffer" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Results"
+          }
+        }
+      }
     },
     "Keine andere Seite enthält die Begriffe, die das Sprachmodell in dieser Seite gefunden hat." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No other page contains the terms the language model found in this page."
+          }
+        }
+      }
     },
     "Keine offenen Konflikte." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No open conflicts."
+          }
+        }
+      }
     },
     "Keine verwandten Seiten" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Related Pages"
+          }
+        }
+      }
     },
     "Klar" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear"
+          }
+        }
+      }
     },
     "Kopieren" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy"
+          }
+        }
+      }
     },
     "Kursiv" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Italic"
+          }
+        }
+      }
     },
     "Kürzel ⌃⌥⌘N in allen Apps" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shortcut ⌃⌥⌘N in All Apps"
+          }
+        }
+      }
     },
     "Leerer Block" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empty block"
+          }
+        }
+      }
     },
     "Letzter Abgleich" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last Sync"
+          }
+        }
+      }
     },
     "Link" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link"
+          }
+        }
+      }
     },
     "Link …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link…"
+          }
+        }
+      }
     },
     "Liquid Glass" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liquid Glass"
+          }
+        }
+      }
     },
     "Lizenzen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licenses"
+          }
+        }
+      }
     },
     "Lizenztexte" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "License Texts"
+          }
+        }
+      }
     },
     "Löschen fehlgeschlagen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Failed"
+          }
+        }
+      }
     },
     "Markiere zuerst die Absätze, in denen Aufgaben stehen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First select the paragraphs that contain tasks."
+          }
+        }
+      }
     },
     "Markierter Text" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Highlighted text"
+          }
+        }
+      }
     },
     "Markierung entfernen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Highlight"
+          }
+        }
+      }
     },
     "Mit dem bisherigen Ordner „%@“. Neuere Stände aus dem Ordner kommen dabei zurück, auch solche, die das Backup zurückgesetzt hat." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With the previous folder “%@”. Newer versions from the folder come back, including ones the backup reset."
+          }
+        }
+      }
     },
     "Mit ⌘N legst du die erste Seite an." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Press ⌘N to create your first page."
+          }
+        }
+      }
     },
     "Nach Updates suchen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check for Updates…"
+          }
+        }
+      }
     },
     "Neu beginnen mit neuem Ordner" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Over with New Folder"
+          }
+        }
+      }
     },
     "Neu beginnen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Over…"
+          }
+        }
+      }
     },
     "Neu in dieser Version" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New in This Version"
+          }
+        }
+      }
     },
     "Neue Seite" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Page"
+          }
+        }
+      }
     },
     "Neue Unterseite" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Subpage"
+          }
+        }
+      }
     },
     "Neuer Tab" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Tab"
+          }
+        }
+      }
     },
     "Neues Fenster" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Window"
+          }
+        }
+      }
     },
     "Nicht gespeichert" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Saved"
+          }
+        }
+      }
     },
     "Nicht suchen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don’t Check"
+          }
+        }
+      }
     },
     "Noch einmal" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Again"
+          }
+        }
+      }
     },
     "Noch kein Text." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No text yet."
+          }
+        }
+      }
     },
     "Noch keine Backups" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Backups Yet"
+          }
+        }
+      }
     },
     "Noch keine Geschichte" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No History Yet"
+          }
+        }
+      }
     },
     "Noch keine Seiten" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Pages Yet"
+          }
+        }
+      }
     },
     "Noch nicht geladen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Loaded Yet"
+          }
+        }
+      }
     },
     "Noch nie" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Never"
+          }
+        }
+      }
     },
     "Notiz" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note"
+          }
+        }
+      }
     },
     "Notizen, die bleiben, und ein %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notes that last, and a %@"
+          }
+        }
+      }
     },
     "Nummerierte Liste" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Numbered List"
+          }
+        }
+      }
     },
     "Nur dunkel" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark Only"
+          }
+        }
+      }
     },
     "Nur hell" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light Only"
+          }
+        }
+      }
     },
     "OK" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
     },
     "Oberste Ebene" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Top Level"
+          }
+        }
+      }
     },
     "Ohne Titel" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untitled"
+          }
+        }
+      }
     },
     "Ordner" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folder"
+          }
+        }
+      }
     },
     "Ordner für den Export von „%@“ wählen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a folder for exporting “%@”"
+          }
+        }
+      }
     },
     "Ordner wählen und einschalten …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Folder and Turn On…"
+          }
+        }
+      }
     },
     "Ordner: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folder: %@"
+          }
+        }
+      }
     },
     "Ort" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location"
+          }
+        }
+      }
     },
     "Papierkorb" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trash"
+          }
+        }
+      }
     },
     "Papierkorb leeren …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empty Trash…"
+          }
+        }
+      }
     },
     "Papierkorb leeren?" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empty the Trash?"
+          }
+        }
+      }
     },
     "Pausiert" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused"
+          }
+        }
+      }
     },
     "Präsentation" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Presentation"
+          }
+        }
+      }
     },
     "Präsentation: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Presentation: %@"
+          }
+        }
+      }
     },
     "Präsentieren" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Present"
+          }
+        }
+      }
     },
     "Quellen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sources"
+          }
+        }
+      }
     },
     "Quill %@ ist da." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill %@ is available."
+          }
+        }
+      }
     },
     "Quill darf das Mikrofon nicht nutzen. Du kannst das in den Systemeinstellungen unter „Datenschutz & Sicherheit › Mikrofon“ ändern." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill isn’t allowed to use the microphone. You can change this in System Settings under “Privacy & Security › Microphone”."
+          }
+        }
+      }
     },
     "Quill darf deinen Kalender nicht lesen. Du kannst das in den Systemeinstellungen unter „Datenschutz & Sicherheit › Kalender“ ändern." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill isn’t allowed to read your calendar. You can change this in System Settings under “Privacy & Security › Calendars”."
+          }
+        }
+      }
     },
     "Quill darf keine Mitteilungen senden. Erlaube sie in den Systemeinstellungen unter „Mitteilungen“." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill isn’t allowed to send notifications. Allow them in System Settings under “Notifications”."
+          }
+        }
+      }
     },
     "Quill folgt der Einstellung für Liquid Glass in den Systemeinstellungen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill follows the Liquid Glass setting in System Settings."
+          }
+        }
+      }
     },
     "Quill fragt dann höchstens einmal am Tag die Liste der Versionen bei GitHub ab, ohne Angaben über dich oder deinen Mac. Installiert wird nur, wenn du zustimmst. Du kannst das jederzeit unter Einstellungen › Allgemein ändern." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill then fetches the list of versions from GitHub at most once a day, without any information about you or your Mac. Nothing is installed unless you agree. You can change this at any time in Settings › General."
+          }
+        }
+      }
     },
     "Quill gleicht deine Seiten über einen Ordner ab, zum Beispiel in iCloud Drive. Jeder Mac schreibt dort nur eigene Dateien, nichts wird überschrieben." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill syncs your pages through a folder, for example in iCloud Drive. Each Mac writes only its own files there; nothing is overwritten."
+          }
+        }
+      }
     },
     "Quill hat nichts verändert. Deine Backups liegen unter „Application Support/Quill/Backups“." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill didn’t change anything. Your backups are in “Application Support/Quill/Backups”."
+          }
+        }
+      }
     },
     "Quill ist aktuell." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill is up to date."
+          }
+        }
+      }
     },
     "Quill ist noch nicht bereit. Öffne Quill und versuch es noch einmal." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill isn’t ready yet. Open Quill and try again."
+          }
+        }
+      }
     },
     "Quill kann sich nur selbst aktualisieren, wenn es im Ordner „Programme“ liegt. Zieh Quill aus der .dmg nach „Programme“ und starte es dort." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill can only update itself when it’s in the Applications folder. Drag Quill from the .dmg to Applications and open it there."
+          }
+        }
+      }
     },
     "Quill ließ sich nicht beenden. Schließ offene Fragen und versuch es noch einmal." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill couldn’t quit. Close any open dialogs and try again."
+          }
+        }
+      }
     },
     "Quill schreibt nichts in den Ordner, bis du fortsetzt, auch nicht nach einem Neustart." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill doesn’t write anything to the folder until you resume, not even after a restart."
+          }
+        }
+      }
     },
     "Quill sichert die Daten beim Start und beim Beenden." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill backs up your data on launch and on quit."
+          }
+        }
+      }
     },
     "Quill steht unter der GPL-3.0-or-later. Es enthält diese Bausteine anderer:" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill is licensed under GPL-3.0-or-later. It includes these components by others:"
+          }
+        }
+      }
     },
     "Quill wird danach beendet. Beim nächsten Start wird das gewählte Backup eingespielt; der aktuelle Stand bleibt als Backup „Vor dem Wiederherstellen“ erhalten." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill then quits. On the next launch the chosen backup is restored; your current data is kept as the backup “Before Restoring”."
+          }
+        }
+      }
     },
     "Quill wird neu gestartet …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restarting Quill…"
+          }
+        }
+      }
     },
     "Quill wurde nicht beendet. Das Backup ist nicht mehr vorgemerkt, der aktuelle Stand bleibt. Wähle es bei Bedarf erneut über Ablage › Backup wiederherstellen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill didn’t quit. The backup is no longer scheduled and your current data stays. If needed, choose it again with File › Restore Backup…"
+          }
+        }
+      }
     },
     "Schließen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        }
+      }
     },
     "Schnell öffnen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Open"
+          }
+        }
+      }
     },
     "Schnell öffnen (⌘O)" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Open (⌘O)"
+          }
+        }
+      }
     },
     "Schnell öffnen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Open…"
+          }
+        }
+      }
     },
     "Schnellnotiz" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Note"
+          }
+        }
+      }
     },
     "Schnellnotiz in der Menüleiste" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Note in the Menu Bar"
+          }
+        }
+      }
     },
     "Seite" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page"
+          }
+        }
+      }
     },
     "Seite anlegen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Page"
+          }
+        }
+      }
     },
     "Seite nicht gefunden" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page Not Found"
+          }
+        }
+      }
     },
     "Seiten" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pages"
+          }
+        }
+      }
     },
     "Seiten im Papierkorb" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pages in the Trash"
+          }
+        }
+      }
     },
     "Seiten in Spotlight zeigen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Pages in Spotlight"
+          }
+        }
+      }
     },
     "Seiten und Inhalte durchsuchen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search pages and content"
+          }
+        }
+      }
     },
     "Seiten und Ordner bleiben dabei unverändert." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pages and folder stay unchanged."
+          }
+        }
+      }
     },
     "Seiten und Ordner bleiben, wie sie sind. Wählst du denselben Ordner später wieder, führt Quill zusammen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pages and folder stay as they are. If you choose the same folder again later, Quill merges."
+          }
+        }
+      }
     },
     "Seiten werden nach %lld Tagen endgültig gelöscht." : {
       "localizations" : {
@@ -926,410 +2940,1366 @@
               }
             }
           }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Pages are permanently deleted after %lld day."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Pages are permanently deleted after %lld days."
+                }
+              }
+            }
+          }
         }
       }
     },
     "Seiten: %lld · Bilder: %lld" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pages: %1$lld · Images: %2$lld"
+          }
+        }
+      }
     },
     "Seitenbaum von „%@“: Dateien fehlen seit %@." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page tree from “%1$@”: files missing since %2$@."
+          }
+        }
+      }
     },
     "Seitenkopf" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page Header"
+          }
+        }
+      }
     },
     "Seitensymbol" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page Icon"
+          }
+        }
+      }
     },
     "Seitentitel" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page Title"
+          }
+        }
+      }
     },
     "Setze die Einfügemarke in ein offenes To-do." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place the cursor in an open to-do."
+          }
+        }
+      }
     },
     "Setze die Einfügemarke in eine Seite." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place the cursor in a page."
+          }
+        }
+      }
     },
     "Sie wurde gelöscht oder liegt im Papierkorb." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It was deleted or is in the Trash."
+          }
+        }
+      }
     },
     "Sonstiges" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other"
+          }
+        }
+      }
     },
     "Sperre nicht möglich: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t lock: %@"
+          }
+        }
+      }
     },
     "Spotlight" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spotlight"
+          }
+        }
+      }
     },
     "Sprache" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language"
+          }
+        }
+      }
     },
     "Sprachnotiz" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice Note"
+          }
+        }
+      }
     },
     "Sprachnotiz einfügen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insert Voice Note"
+          }
+        }
+      }
     },
     "Sprachnotiz …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice Note…"
+          }
+        }
+      }
     },
     "Sprich jetzt …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speak now…"
+          }
+        }
+      }
     },
     "Später" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Later"
+          }
+        }
+      }
     },
     "Status" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status"
+          }
+        }
+      }
     },
     "Stell zuerst eine Frage." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask a question first."
+          }
+        }
+      }
     },
     "Stopp" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop"
+          }
+        }
+      }
     },
     "Stufe %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Level %@"
+          }
+        }
+      }
     },
     "Suche Aufgaben …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for tasks…"
+          }
+        }
+      }
     },
     "Suche in deinen Notizen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Searching your notes…"
+          }
+        }
+      }
     },
     "Suche nach Updates …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking for updates…"
+          }
+        }
+      }
     },
     "Suche verwandte Seiten …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for related pages…"
+          }
+        }
+      }
     },
     "Suchen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search"
+          }
+        }
+      }
     },
     "Symbol" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icon"
+          }
+        }
+      }
     },
     "Sync" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync"
+          }
+        }
+      }
     },
     "Sync ausschalten" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn Off Sync"
+          }
+        }
+      }
     },
     "Sync ausschalten …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn Off Sync…"
+          }
+        }
+      }
     },
     "Sync ausschalten?" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn off sync?"
+          }
+        }
+      }
     },
     "Sync ist an" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync Is On"
+          }
+        }
+      }
     },
     "Sync ist aus" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync Is Off"
+          }
+        }
+      }
     },
     "Sync nach dem Backup" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync After the Backup"
+          }
+        }
+      }
     },
     "Sync pausieren" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause Sync"
+          }
+        }
+      }
     },
     "Tage" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Days"
+          }
+        }
+      }
     },
     "Termin" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Event"
+          }
+        }
+      }
     },
     "Termine einfügen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insert Events"
+          }
+        }
+      }
     },
     "Text" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text"
+          }
+        }
+      }
     },
     "Theme" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Theme"
+          }
+        }
+      }
     },
     "Theme wählen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Theme"
+          }
+        }
+      }
     },
     "Titel" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Title"
+          }
+        }
+      }
     },
     "Titel und Text deiner Seiten kommen in den Suchindex dieses Macs, damit Spotlight sie findet. Seiten im Papierkorb nicht. Beim Ausschalten entfernt Quill alle Einträge." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The titles and text of your pages go into this Mac’s search index so Spotlight can find them. Pages in the Trash don’t. When you turn this off, Quill removes all entries."
+          }
+        }
+      }
     },
     "To-do" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To-do"
+          }
+        }
+      }
     },
     "To-do ohne Text" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To-do without text"
+          }
+        }
+      }
     },
     "To-dos einfügen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insert To-dos"
+          }
+        }
+      }
     },
     "To-dos vorschlagen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggest To-dos"
+          }
+        }
+      }
     },
     "To-dos vorschlagen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggest To-dos…"
+          }
+        }
+      }
     },
     "Trennlinie" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Divider Line"
+          }
+        }
+      }
     },
     "Trotzdem beenden" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quit Anyway"
+          }
+        }
+      }
     },
     "Umbenennen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename"
+          }
+        }
+      }
     },
     "Umstellen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Convert"
+          }
+        }
+      }
     },
     "Umzug angehalten, im Ziel liegt schon: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move stopped, the destination already contains: %@"
+          }
+        }
+      }
     },
     "Unbekanntes Gerät" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown Device"
+          }
+        }
+      }
     },
     "Ungesicherte Änderungen werden vorher gespeichert." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsaved changes are saved first."
+          }
+        }
+      }
     },
     "Ungesicherte Änderungen werden vorher gespeichert. Der Sync wird dafür ausgeschaltet; nach dem Neustart fragt Quill, wie es weitergeht." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsaved changes are saved first. Sync is turned off for this; after the restart, Quill asks how to continue."
+          }
+        }
+      }
     },
     "Unlesbare Dateien" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unreadable Files"
+          }
+        }
+      }
     },
     "Unlesbare, noch nicht geladene und fehlende Dateien bleiben unverändert; Quill versucht es bei jedem Abgleich wieder." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unreadable, not yet loaded, and missing files stay unchanged; Quill tries again with every sync."
+          }
+        }
+      }
     },
     "Unterseiten" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subpages"
+          }
+        }
+      }
     },
     "Unterseiten einschließen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Include Subpages"
+          }
+        }
+      }
     },
     "Unvollständiger Vorgang, Dateien liegen in: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incomplete operation, files are in: %@"
+          }
+        }
+      }
     },
     "Update" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update"
+          }
+        }
+      }
     },
     "Update nicht möglich" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update Not Possible"
+          }
+        }
+      }
     },
     "Update wird geladen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloading update…"
+          }
+        }
+      }
     },
     "Update wird geprüft …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifying update…"
+          }
+        }
+      }
     },
     "Verschieben" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move"
+          }
+        }
+      }
     },
     "Verwandte Seiten" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Related Pages"
+          }
+        }
+      }
     },
     "Verwandte Seiten …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Related Pages…"
+          }
+        }
+      }
     },
     "Vor dem Einschalten des Sync" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before Turning On Sync"
+          }
+        }
+      }
     },
     "Vor dem Einschalten legt Quill ein Backup an. Der Sync ist neu und noch eine Beta." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quill creates a backup before turning it on. Sync is new and still in beta."
+          }
+        }
+      }
     },
     "Vor dem Umzug des Speicherorts" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before Moving the Storage Location"
+          }
+        }
+      }
     },
     "Vor dem Wiederherstellen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before Restoring"
+          }
+        }
+      }
     },
     "Vor dem endgültigen Löschen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before Deleting Permanently"
+          }
+        }
+      }
     },
     "Vor einem Update von Quill" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before a Quill Update"
+          }
+        }
+      }
     },
     "Vor einer Aktualisierung der Datenbank" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before a Database Update"
+          }
+        }
+      }
     },
     "Vorgeschlagen vom Sprachmodell auf diesem Mac anhand gemeinsamer Begriffe." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggested by the language model on this Mac based on shared terms."
+          }
+        }
+      }
     },
     "Vorgeschlagen vom Sprachmodell auf diesem Mac. Die markierten Absätze bleiben, die To-dos kommen darunter." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggested by the language model on this Mac. The selected paragraphs stay; the to-dos go below them."
+          }
+        }
+      }
     },
     "Vorschau: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview: %@"
+          }
+        }
+      }
     },
     "Wartet auf deine Zustimmung" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for Your Approval"
+          }
+        }
+      }
     },
     "Wartet, bis der Ordner geladen ist." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for the folder to load."
+          }
+        }
+      }
     },
     "Was möchtest du wissen?" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What would you like to know?"
+          }
+        }
+      }
     },
     "Wenn du Quill jetzt beendest, gehen diese Änderungen verloren. Solange Quill geöffnet bleibt, wird das Speichern weiter versucht.\n\n%@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you quit Quill now, these changes will be lost. As long as Quill stays open, it keeps trying to save.\n\n%@"
+          }
+        }
+      }
     },
     "Wie System" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Match System"
+          }
+        }
+      }
     },
     "Wiederhergestellt nach dem Abgleich" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restored after syncing"
+          }
+        }
+      }
     },
     "Wiederherstellen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore"
+          }
+        }
+      }
     },
     "Wiederherstellen abgebrochen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore Canceled"
+          }
+        }
+      }
     },
     "Wiederherstellen und beenden" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore and Quit"
+          }
+        }
+      }
     },
     "Wiederherstellen unterbrochen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore Interrupted"
+          }
+        }
+      }
     },
     "Wiederherstellen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore…"
+          }
+        }
+      }
     },
     "Wähle einen Zeitpunkt in der Zukunft." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a time in the future."
+          }
+        }
+      }
     },
     "Wähle links eine Seite oder lege eine neue an." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a page on the left or create a new one."
+          }
+        }
+      }
     },
     "Wählen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose"
+          }
+        }
+      }
     },
     "Wählen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose…"
+          }
+        }
+      }
     },
     "Wählst du den bisherigen Ordner „%@“ wieder, führt Quill zusammen. Mit einem anderen Ordner beginnt es dort neu." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you choose the previous folder “%@” again, Quill merges. With a different folder, it starts over there."
+          }
+        }
+      }
     },
     "Zeitpunkt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time"
+          }
+        }
+      }
     },
     "Zeitreise" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time Travel"
+          }
+        }
+      }
     },
     "Zeitreise …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time Travel…"
+          }
+        }
+      }
     },
     "Zeitreise: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time Travel: %@"
+          }
+        }
+      }
     },
     "Zitat" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quote"
+          }
+        }
+      }
     },
     "Zu Favoriten hinzufügen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to Favorites"
+          }
+        }
+      }
     },
     "Zu deiner Frage habe ich keine passenden Seiten gefunden." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I couldn’t find any pages that match your question."
+          }
+        }
+      }
     },
     "Zu wenig freier Speicher: %@ nötig, %@ frei." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not enough free space: %1$@ needed, %2$@ available."
+          }
+        }
+      }
     },
     "Zu „%@“ hinzugefügt." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added to “%@”."
+          }
+        }
+      }
     },
     "Zuletzt bearbeitet" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last Edited"
+          }
+        }
+      }
     },
     "Zuletzt geprüft" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last Checked"
+          }
+        }
+      }
     },
     "Zum Wählen Sync fortsetzen." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resume sync to choose."
+          }
+        }
+      }
     },
     "Zur Stelle springen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jump to Location"
+          }
+        }
+      }
     },
     "Zurückholen gescheitert. Quill versucht es weiter." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bringing back failed. Quill keeps trying."
+          }
+        }
+      }
     },
     "Zusammenfassen …" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Summarize…"
+          }
+        }
+      }
     },
     "Zusammenfassung" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Summary"
+          }
+        }
+      }
     },
     "Zusammenführen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merge"
+          }
+        }
+      }
     },
     "Zwei Fassungen nach dem Abgleich" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two versions after syncing"
+          }
+        }
+      }
     },
     "Zwei Werte für ein Feld" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two Values for One Field"
+          }
+        }
+      }
     },
     "ab %@ %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "from %1$@ %2$@"
+          }
+        }
+      }
     },
     "bis %@ %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "until %1$@ %2$@"
+          }
+        }
+      }
     },
     "erledigt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "done"
+          }
+        }
+      }
     },
     "keine" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "none"
+          }
+        }
+      }
     },
     "nicht erreichbar" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "unreachable"
+          }
+        }
+      }
     },
     "offen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "open"
+          }
+        }
+      }
     },
     "unbekannt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "unknown"
+          }
+        }
+      }
     },
     "von %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "from %@"
+          }
+        }
+      }
     },
     "Änderungen konnten nicht gespeichert werden" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t Save Changes"
+          }
+        }
+      }
     },
     "Änderungen konnten nicht gespeichert werden. Quill versucht es automatisch erneut.\n%@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t save changes. Quill tries again automatically.\n%@"
+          }
+        }
+      }
     },
     "Öffnet die Schnellnotiz auch, wenn eine andere App vorn ist. Andere Apps bekommen das Kürzel dann nicht." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the quick note even when another app is in front. Other apps then don’t receive the shortcut."
+          }
+        }
+      }
     },
     "Überschrift 1" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heading 1"
+          }
+        }
+      }
     },
     "Überschrift 2" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heading 2"
+          }
+        }
+      }
     },
     "Überschrift 3" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heading 3"
+          }
+        }
+      }
     },
     "„%@“" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@”"
+          }
+        }
+      }
     },
     "„%@“ endgültig löschen?" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permanently delete “%@”?"
+          }
+        }
+      }
     },
     "„%@“ exportiert" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” Exported"
+          }
+        }
+      }
     },
     "„%@“ von „%@“: Dateien fehlen seit %@." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%1$@” from “%2$@”: files missing since %3$@."
+          }
+        }
+      }
     },
     "„Quill/quill.json“ ist unlesbar." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“Quill/quill.json” is unreadable."
+          }
+        }
+      }
     },
     "„Transparenz reduzieren“ ist in den Bedienungshilfen an. Das Glas in Quill ist deshalb deckend." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“Reduce transparency” is on in Accessibility settings, so the glass in Quill is opaque."
+          }
+        }
+      }
     },
     "↑↓ wählen   ↩ öffnen   ⌘↩ in neuem Tab   ⎋ schließen" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↑↓ choose   ↩ open   ⌘↩ in new tab   ⎋ close"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

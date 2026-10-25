@@ -28,7 +28,8 @@ final class PerformanceUITests: XCTestCase {
     /// Ohne gespeicherten Fensterzustand; Store im Container der Profiling-App.
     private static func profilingApp(arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"] + arguments
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
+            + XCUIApplication.languageArguments(languages: ["de"], region: "DE") + arguments
         return app
     }
 

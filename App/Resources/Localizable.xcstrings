@@ -1,7 +1,106 @@
 {
   "sourceLanguage" : "de",
   "strings" : {
-
+    "${text} zu ${page} hinzufügen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add ${text} to ${page}"
+          }
+        }
+      }
+    },
+    "Hängt jede Zeile als Block an eine Seite an. Endet die Seite mit einer Liste, wird sie fortgesetzt." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appends each line to a page as a block. If the page ends with a list, the list continues."
+          }
+        }
+      }
+    },
+    "Legt in Quill eine neue Seite an und öffnet sie." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creates a new page in Quill and opens it."
+          }
+        }
+      }
+    },
+    "Neue Seite" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Page"
+          }
+        }
+      }
+    },
+    "Seite" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page"
+          }
+        }
+      }
+    },
+    "Seite öffnen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Page"
+          }
+        }
+      }
+    },
+    "Text" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text"
+          }
+        }
+      }
+    },
+    "Titel" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Title"
+          }
+        }
+      }
+    },
+    "Was soll auf die Seite?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What should go on the page?"
+          }
+        }
+      }
+    },
+    "Zu Seite hinzufügen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to Page"
+          }
+        }
+      }
+    }
   },
   "version" : "1.0"
 }

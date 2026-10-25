@@ -261,7 +261,7 @@ final class SyncControllerTests {
         #expect(sync.pagesWithConflicts == [page])
         let devices = Dictionary(uniqueKeysWithValues: conflict.conflict.versions.map { ($0.value, sync.deviceName($0.device)) })
         #expect(devices == ["Notiz hier": "Test", "Notiz dort": "Anderer"])
-        #expect(sync.deviceName(nil) == "Unbekanntes Gerät")
+        #expect(sync.deviceName(nil) == "Unknown Device")
         let theirs = try #require(conflict.conflict.versions.first { $0.value == "Notiz dort" })
 
         // Pausiert: keine Wahl, nichts im Ordner.

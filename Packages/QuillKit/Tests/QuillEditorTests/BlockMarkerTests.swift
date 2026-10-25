@@ -37,7 +37,7 @@ struct BlockMarkerTests {
         #expect(elements.map(\.blockID) == [restored.id, plain.id])
         #expect(elements.map { $0.accessibilityIdentifier() } == ["editor.marker.restored", "editor.marker.conflict"])
         #expect(elements.allSatisfy { $0.accessibilityRole() == .button && $0.isAccessibilityEnabled() })
-        #expect(elements.last?.accessibilityLabel() == "Zwei Fassungen nach dem Abgleich, zum Wählen klicken: Umstritten")
+        #expect(elements.last?.accessibilityLabel() == "Two versions after syncing, click to choose: Umstritten")
         #expect(zip(elements, markers).allSatisfy { $0 === $1 })
         // Ein Konflikt geht vor „wiederhergestellt“.
         editor.conflictBlocks = [restored.id]
@@ -48,7 +48,7 @@ struct BlockMarkerTests {
     @Test func reminderMarkerComesLast() throws {
         editor.reminderBlocks = [restored.id, plain.id]
         #expect(markers.map { $0.accessibilityIdentifier() } == ["editor.marker.restored", "editor.marker.reminder"])
-        #expect(markers.last?.accessibilityLabel() == "Erinnerung geplant, zum Ansehen klicken: Umstritten")
+        #expect(markers.last?.accessibilityLabel() == "Reminder scheduled, click to view: Umstritten")
         #expect(try drawnMarkers() == [.restored, .reminder, nil])
         editor.conflictBlocks = [plain.id]
         #expect(markers.map { $0.accessibilityIdentifier() } == ["editor.marker.restored", "editor.marker.conflict"])
@@ -86,7 +86,7 @@ struct BlockMarkerTests {
         editor.clearRestored(blockID: restored.id)
         #expect(editor.document[0].isRestored == false)
         #expect(markers.isEmpty)
-        #expect(textView.undoManager?.undoActionName == "Markierung entfernen")
+        #expect(textView.undoManager?.undoActionName == "Remove Highlight")
         textView.undoManager?.undo()
         #expect(editor.document[0].isRestored == true)
         #expect(editor.document[0].text == "Behalten")

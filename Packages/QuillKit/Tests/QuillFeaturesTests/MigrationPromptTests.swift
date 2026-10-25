@@ -55,7 +55,7 @@ struct MigrationPromptTests {
     @Test func quitIsTheDefaultAndMigrateNeedsAClick() throws {
         let alert = MigrationPrompt.makeAlert()
         #expect(alert.buttons.map { $0.accessibilityIdentifier() } == ["migration.quit", "migration.migrate"])
-        #expect(alert.buttons.map(\.title) == ["Beenden", "Umstellen"])
+        #expect(alert.buttons.map(\.title) == ["Quit", "Convert"])
         // Return löst „Beenden“ aus (Escape siehe unten); „Umstellen“ hat kein Kürzel.
         #expect(alert.buttons[0].keyEquivalent == "\r")
         #expect(alert.buttons[1].keyEquivalent.isEmpty)

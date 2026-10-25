@@ -1,0 +1,66 @@
+{
+  "sourceLanguage" : "de",
+  "strings" : {
+    "${target} in ${applicationName} öffnen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open ${target} in ${applicationName}"
+          }
+        }
+      }
+    },
+    "In ${applicationName} zu ${page} hinzufügen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to ${page} with ${applicationName}"
+          }
+        }
+      }
+    },
+    "Neue Seite in ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New page in ${applicationName}"
+          }
+        }
+      }
+    },
+    "Neue Seite mit ${applicationName} anlegen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a new page with ${applicationName}"
+          }
+        }
+      }
+    },
+    "Zu ${page} in ${applicationName} hinzufügen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to ${page} in ${applicationName}"
+          }
+        }
+      }
+    },
+    "Öffne ${target} in ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show ${target} in ${applicationName}"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

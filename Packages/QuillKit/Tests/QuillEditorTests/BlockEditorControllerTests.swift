@@ -508,7 +508,7 @@ struct BlockActionTests {
         let handle = h.editor.textView.handle
         handle.characterOffset = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 0))
         let menu = handle.makeMenu()
-        #expect(menu.items.map(\.title) == ["Löschen", "Duplizieren", "", "Umwandeln in"])
+        #expect(menu.items.map(\.title) == ["Delete", "Duplicate", "", "Turn Into"])
         #expect(menu.items[1].keyEquivalent == "d")
         let submenu = try #require(menu.items[3].submenu)
         #expect(submenu.items.map(\.title) == BlockConversion.commands.map(\.title))
@@ -529,7 +529,7 @@ struct BlockActionTests {
         let h = abc()
         let handle = h.editor.textView.handle
         let names = (handle.accessibilityCustomActions() ?? []).map(\.name)
-        #expect(names == ["Nach oben verschieben", "Nach unten verschieben", "Duplizieren", "Löschen"])
+        #expect(names == ["Move Up", "Move Down", "Duplicate", "Delete"])
         handle.characterOffset = h.editor.characterLocation(of: BlockPosition(block: 2, offset: 0))
         _ = handle.accessibilityCustomActions()?.first?.handler?()
         #expect(h.texts == ["A", "C", "Bb"])
@@ -720,7 +720,7 @@ struct InsertButtonTests {
         #expect(button.accessibilityPerformPress())
         #expect(h.kinds == [.paragraph, .divider, .paragraph, .paragraph])
         #expect(h.texts == ["Eins", "", "/", "Zwei"])
-        #expect(button.accessibilityLabel() == "Block einfügen")
+        #expect(button.accessibilityLabel() == "Insert Block")
     }
 }
 

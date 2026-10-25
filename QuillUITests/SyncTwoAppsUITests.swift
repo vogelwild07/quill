@@ -538,7 +538,7 @@ private final class Device {
             "-QuillSyncSharedFolder", "\(run)-\(folder)", "-QuillPasteboardName", pasteboard.name.rawValue,
             // Beide laufen auf demselben Mac; sonst hießen beide Geräte gleich (11.6).
             "-QuillSyncDeviceName", "Gerät \(name)",
-        ] + (image.map { ["-QuillTestImage", $0] } ?? []) + extra
+        ] + XCUIApplication.languageArguments(languages: ["de"], region: "DE") + (image.map { ["-QuillTestImage", $0] } ?? []) + extra
         app.launch()
         XCTAssertTrue(window.waitForExistence(timeout: 15), "\(name) ohne Fenster")
     }

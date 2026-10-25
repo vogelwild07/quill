@@ -5,9 +5,9 @@ import Testing
 @Suite struct PageLabelTests {
     @Test func titleAndPathFallBackToUntitled() {
         #expect(PageLabel.title("Reise") == "Reise")
-        #expect(PageLabel.title("") == "Ohne Titel")
+        #expect(PageLabel.title("") == "Untitled")
         #expect(PageLabel.path([]) == "")
-        #expect(PageLabel.path(["Projekte", "", "Quill"]) == "Projekte › Ohne Titel › Quill")
+        #expect(PageLabel.path(["Projekte", "", "Quill"]) == "Projekte › Untitled › Quill")
     }
 
     @Test func trashRetentionIsThirtyDays() {
