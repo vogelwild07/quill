@@ -27,9 +27,22 @@
 		A10000000000000000000023 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = Config/Base.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A10000000000000000000032 /* Exceptions for "App" folder in "Quill" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A10000000000000000000100 /* Quill */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A10000000000000000000030 /* App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A10000000000000000000032 /* Exceptions for "App" folder in "Quill" target */,
+			);
 			path = App;
 			sourceTree = "<group>";
 		};
@@ -373,6 +386,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Quill;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Quill liest deinen Kalender nur, wenn du die heutigen Termine in eine Seite einfügst.";
@@ -384,6 +398,7 @@
 				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.vogelwild07.quill;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				QUILL_UPDATE_DEFAULTS_DOMAIN = io.github.vogelwild07.quill.debug.sparkle;
 			};
 			name = Debug;
 		};
@@ -400,6 +415,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Quill;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Quill liest deinen Kalender nur, wenn du die heutigen Termine in eine Seite einfügst.";
@@ -411,6 +427,7 @@
 				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.vogelwild07.quill;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				QUILL_UPDATE_DEFAULTS_DOMAIN = io.github.vogelwild07.quill.sparkle;
 			};
 			name = Release;
 		};
@@ -428,6 +445,7 @@
 				ENABLE_PREVIEWS = YES;
 				EXCLUDED_SOURCE_FILE_NAMES = InfoPlist.xcstrings;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Quill Profiling";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Quill liest deinen Kalender nur, wenn du die heutigen Termine in eine Seite einfügst.";
@@ -439,6 +457,7 @@
 				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.vogelwild07.quill.profiling;
 				PRODUCT_NAME = "Quill Profiling";
+				QUILL_UPDATE_DEFAULTS_DOMAIN = "$(PRODUCT_BUNDLE_IDENTIFIER).sparkle";
 			};
 			name = Profiling;
 		};
@@ -456,6 +475,7 @@
 				ENABLE_PREVIEWS = YES;
 				EXCLUDED_SOURCE_FILE_NAMES = InfoPlist.xcstrings;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Quill Synctest A";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Quill liest deinen Kalender nur, wenn du die heutigen Termine in eine Seite einfügst.";
@@ -467,6 +487,7 @@
 				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.vogelwild07.quill.synctest.a;
 				PRODUCT_NAME = "Quill Synctest A";
+				QUILL_UPDATE_DEFAULTS_DOMAIN = "$(PRODUCT_BUNDLE_IDENTIFIER).sparkle";
 			};
 			name = SynctestA;
 		};
@@ -484,6 +505,7 @@
 				ENABLE_PREVIEWS = YES;
 				EXCLUDED_SOURCE_FILE_NAMES = InfoPlist.xcstrings;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Quill Synctest B";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Quill liest deinen Kalender nur, wenn du die heutigen Termine in eine Seite einfügst.";
@@ -495,12 +517,14 @@
 				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.vogelwild07.quill.synctest.b;
 				PRODUCT_NAME = "Quill Synctest B";
+				QUILL_UPDATE_DEFAULTS_DOMAIN = "$(PRODUCT_BUNDLE_IDENTIFIER).sparkle";
 			};
 			name = SynctestB;
 		};
 		A10000000000000000000221 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = QuillUITests/QuillUITests.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 4;

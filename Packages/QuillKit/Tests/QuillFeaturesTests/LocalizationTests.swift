@@ -24,6 +24,8 @@ struct LocalizationTests {
     }
 
     static let allowed: [Allowed] = [
+        Allowed(file: "QuillUpdate/UpdateController.swift", text: "Quill",
+                reason: "User-Agent der Anfrage an GitHub, nie angezeigt (ADR-037)."),
         Allowed(file: "App/ProfilingSeed.swift", text: "Seite …",
                 reason: "Testbestand, nur im Schema „Quill Profiling“ (QUILL_PROFILING)."),
         Allowed(file: "App/ProfilingSeed.swift", text: "Seite …, Absatz …: Quill speichert lokal, startet schnell und hält den Text im Mittelpunkt.",
@@ -156,6 +158,8 @@ struct LocalizationTests {
         // Lokale KI ohne Oberfläche (16.1); Texte stehen in QuillFeatures.
         Module(name: "QuillAI", sources: "Packages/QuillKit/Sources/QuillAI", catalog: nil, isPackage: true),
         Module(name: "QuillDesign", sources: "Packages/QuillKit/Sources/QuillDesign", catalog: nil, isPackage: true),
+        // Updates ohne Oberfläche (ADR-037); Texte des Fensters stehen in QuillFeatures.
+        Module(name: "QuillUpdate", sources: "Packages/QuillKit/Sources/QuillUpdate", catalog: nil, isPackage: true),
     ]
 
     /// Jedes Modul unter `Sources` ist hier aufgeführt; ein neues fiele sonst durch.

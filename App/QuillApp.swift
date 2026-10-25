@@ -110,6 +110,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         try? persistence?.get().history.start()
         // Gleicht nur ab, wenn der Nutzer den Sync eingeschaltet hat (ADR-029).
         try? persistence?.get().sync.start()
+        // Updates: Frage beim ersten Start, danach nur mit Zustimmung (ADR-037).
+        try? persistence?.get().updates.start()
         #if DEBUG
         TestWindowSize.applyToFirstWindow()
         TestWindowScreen.start()

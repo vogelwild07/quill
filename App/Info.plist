@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>SUFeedURL</key>
+	<string>https://github.com/vogelwild07/quill/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>TAF7zBkkl7w/uX1MK9EW5mJmyld09w3lBPpedaU8dxs=</string>
+	<key>SURequireSignedFeed</key>
+	<true/>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<false/>
+	<key>SUAllowsAutomaticUpdates</key>
+	<false/>
+	<key>SUAutomaticallyUpdate</key>
+	<false/>
+	<key>SUEnableSystemProfiling</key>
+	<false/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
+	<key>SUDefaultsDomain</key>
+	<string>$(QUILL_UPDATE_DEFAULTS_DOMAIN)</string>
+</dict>
+</plist>

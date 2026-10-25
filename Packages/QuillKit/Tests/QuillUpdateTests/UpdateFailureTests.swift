@@ -18,9 +18,12 @@ struct UpdateFailureTests {
     }
 
     @Test func nestedAndOwnErrors() {
-        let own = UpdateController.notAllowed("Archiv")
+        let own = UpdateController.notAllowed()
         let wrapped = NSError(domain: SUSparkleErrorDomain, code: 4005, userInfo: [NSUnderlyingErrorKey: own])
         #expect(UpdateUserDriver.failure(for: wrapped) == .notAllowed)
+        // So meldet Sparkle einen manipulierten oder unsignierten Appcast (Spike, ADR-037).
+        let badFeed = NSError(domain: SUSparkleErrorDomain, code: 1000, userInfo: [NSUnderlyingErrorKey: NSError(domain: SUSparkleErrorDomain, code: 3002)])
+        #expect(UpdateUserDriver.failure(for: badFeed) == .badSignature)
         let offline = NSError(domain: SUSparkleErrorDomain, code: 9999, userInfo: [NSUnderlyingErrorKey: NSError(domain: NSURLErrorDomain, code: NSURLErrorNotConnectedToInternet)])
         #expect(UpdateUserDriver.failure(for: offline) == .network)
         #expect(UpdateUserDriver.failure(for: NSError(domain: "x", code: 1, userInfo: [NSLocalizedDescriptionKey: "Text"])) == .other("Text"))

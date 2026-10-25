@@ -67,8 +67,9 @@ public final class UpdateController: NSObject {
         scheduler?.tick()
     }
 
-    nonisolated static func notAllowed(_ what: String) -> NSError {
-        NSError(domain: notAllowedDomain, code: notAllowedCode, userInfo: [NSLocalizedDescriptionKey: "\(what) nicht von github.com/vogelwild07/quill über HTTPS"])
+    /// Ohne Text: Das Fenster zeigt für diese Domain einen eigenen (`Failure.notAllowed`).
+    nonisolated static func notAllowed() -> NSError {
+        NSError(domain: notAllowedDomain, code: notAllowedCode)
     }
 }
 
@@ -81,7 +82,10 @@ extension UpdateController: SPUUpdaterDelegate {
     public nonisolated func updater(_ updater: SPUUpdater, mayPerform updateCheck: SPUUpdateCheck) throws {
         try MainActor.assumeIsolated {
             let feed = testFeed ?? UpdatePolicy.feedURL
-            guard UpdatePolicy.isAllowed(feed, allowsTestServer: testFeed != nil) else { throw Self.notAllowed("Versionsliste") }
+            guard UpdatePolicy.isAllowed(feed, allowsTestServer: testFeed != nil) else {
+                Self.logger.error("Versionsliste von anderswo abgelehnt")
+                throw Self.notAllowed()
+            }
             if updateCheck == .updatesInBackground, !settings.automaticChecks {
                 throw NSError(domain: Self.notAllowedDomain, code: Self.switchedOffCode)
             }
@@ -96,7 +100,7 @@ extension UpdateController: SPUUpdaterDelegate {
         try MainActor.assumeIsolated {
             guard let url = updateItem.fileURL, UpdatePolicy.isAllowed(url, allowsTestServer: testFeed != nil) else {
                 Self.logger.error("Archiv von anderswo abgelehnt")
-                throw Self.notAllowed("Archiv")
+                throw Self.notAllowed()
             }
         }
     }

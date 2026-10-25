@@ -25,6 +25,7 @@ final class GlassUITests: XCTestCase {
     /// ⌘, öffnet die Einstellungen; liefert den Schalter „Wie System“.
     private func openSettings() -> XCUIElement {
         app.typeKey(",", modifierFlags: .command)
+        app.toolbars.buttons["Darstellung"].click()
         let toggle = app.descendants(matching: .any)["settings.glass.followsSystem"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5), "Einstellungen nicht geöffnet")
         return toggle

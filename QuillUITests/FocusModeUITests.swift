@@ -26,6 +26,7 @@ final class FocusModeUITests: XCTestCase {
     /// ⌘, öffnet die Einstellungen; liefert den Schalter für den Fokus-Modus.
     private func openSettings() -> XCUIElement {
         app.typeKey(",", modifierFlags: .command)
+        app.toolbars.buttons["Darstellung"].click()
         let toggle = app.descendants(matching: .any)["settings.focusMode"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5), "Einstellungen nicht geöffnet")
         return toggle

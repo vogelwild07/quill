@@ -5,20 +5,27 @@ import QuillEditorCore
 import SwiftData
 import SwiftUI
 
-/// Einstellungen (⌘,): Darstellung, Sync, Zeitreise, KI, Spotlight, Schnellnotiz, Lizenzen.
+/// Einstellungen (⌘,): Allgemein, Darstellung, Sync, Zeitreise, KI, Spotlight, Schnellnotiz, Lizenzen.
 public struct SettingsView: View {
-    private enum Pane: Hashable { case appearance, sync, timeTravel, ai, spotlight, quickNote, licenses }
+    private enum Pane: Hashable { case general, appearance, sync, timeTravel, ai, spotlight, quickNote, licenses }
 
     private let persistence: QuillPersistence?
-    /// Eigene Auswahl: Die Einstellungen öffnen nach jedem Start mit „Darstellung“.
-    @State private var pane = Pane.appearance
+    /// Eigene Auswahl: Die Einstellungen öffnen nach jedem Start mit „Allgemein“ (ohne
+    /// Datenbank mit „Darstellung“).
+    @State private var pane: Pane
 
     public init(persistence: QuillPersistence?) {
         self.persistence = persistence
+        _pane = State(initialValue: persistence == nil ? .appearance : .general)
     }
 
     public var body: some View {
         TabView(selection: $pane) {
+            if let persistence {
+                Tab(String(localized: "Allgemein", bundle: .module), systemImage: "gearshape", value: .general) {
+                    GeneralSettingsView(updates: persistence.updates)
+                }
+            }
             Tab(String(localized: "Darstellung", bundle: .module), systemImage: "paintpalette", value: .appearance) {
                 AppearanceSettingsView()
             }

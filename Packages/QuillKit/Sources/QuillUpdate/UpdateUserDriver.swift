@@ -93,21 +93,21 @@ final class UpdateUserDriver: NSObject, SPUUserDriver {
 
     /// Fehler von Sparkle (Codes aus `SUErrors.h`) oder von Quill selbst, auch verschachtelt.
     nonisolated static func failure(for error: any Error) -> UpdateModel.Failure {
+        var chain: [NSError] = []
         var current: NSError? = error as NSError
-        while let error = current {
-            if error.domain == UpdateController.notAllowedDomain { return .notAllowed }
-            if error.domain == NSURLErrorDomain { return .network }
-            if error.domain == SUSparkleErrorDomain {
-                switch Int(error.code) {
-                case 1003, 1005: return .notInApplications
-                case 3001, 3002: return .badSignature
-                case 3000: return .damaged
-                case 1000, 1002, 2001: return .network
-                case 3: return .notAllowed
-                default: break
-                }
-            }
+        while let error = current, chain.count < 10 {
+            chain.append(error)
             current = error.userInfo[NSUnderlyingErrorKey] as? NSError
+        }
+        let sparkleCodes = chain.filter { $0.domain == SUSparkleErrorDomain }.map { Int($0.code) }
+        // Sicherheit zuerst: Sparkle meldet einen falsch signierten Appcast als Fehler beim
+        // Laden (1000) mit der Signatur (3002) darunter (Spike, ADR-037).
+        if chain.contains(where: { $0.domain == UpdateController.notAllowedDomain }) || sparkleCodes.contains(3) { return .notAllowed }
+        if sparkleCodes.contains(where: { [3001, 3002].contains($0) }) { return .badSignature }
+        if sparkleCodes.contains(3000) { return .damaged }
+        if sparkleCodes.contains(where: { [1003, 1005].contains($0) }) { return .notInApplications }
+        if chain.contains(where: { $0.domain == NSURLErrorDomain }) || sparkleCodes.contains(where: { [1000, 1002, 2001].contains($0) }) {
+            return .network
         }
         return .other((error as NSError).localizedDescription)
     }

@@ -21,22 +21,32 @@ struct SynctestVariantTests {
         return BuildSettings.configurations(in: project).filter { $0.settings["INFOPLIST_KEY_CFBundleDisplayName"] != nil }
     }
 
-    /// Die echte App: Sandbox, Mikrofon, Lesezeichen, vom Nutzer gewählte Ordner, Kalender, sonst nichts.
+    /// Die echte App: Sandbox, Mikrofon, Lesezeichen, vom Nutzer gewählte Ordner, Kalender,
+    /// Netz und fremde Bibliothek für Sparkle samt seinen Diensten (ADR-037), sonst nichts.
     static let realEntitlements = [
         "com.apple.security.app-sandbox",
+        // Sparkle lädt sein Framework mit Ad-hoc-Signatur (ADR-037).
+        "com.apple.security.cs.disable-library-validation",
         // Nur während einer Sprachnotiz (17.2, ADR-034).
         "com.apple.security.device.audio-input",
         "com.apple.security.files.bookmarks.app-scope",
         "com.apple.security.files.user-selected.read-write",
+        // Nur Sparkle: Versionsliste und Update von GitHub (ADR-037).
+        "com.apple.security.network.client",
         // Nur gelesen, nur auf Klick: „Heutige Termine einfügen“ (15.5, ADR-033).
         "com.apple.security.personal-information.calendars",
     ]
     static let exceptionKey = "com.apple.security.temporary-exception.files.home-relative-path.read-write"
+    /// Einzige weitere Ausnahme der echten App: Sparkles Dienste zum Installieren aus der
+    /// Sandbox heraus (ADR-037), nur mit der eigenen Kennung.
+    static let sparkleKey = "com.apple.security.temporary-exception.mach-lookup.global-name"
+    static let sparkleServices = ["$(PRODUCT_BUNDLE_IDENTIFIER)-spks", "$(PRODUCT_BUNDLE_IDENTIFIER)-spki"]
 
     @Test func realAppEntitlementsAreUnchanged() throws {
         let real = try Self.entitlements("App/Quill.entitlements")
-        #expect(real.keys.sorted() == Self.realEntitlements)
+        #expect(real.keys.sorted() == (Self.realEntitlements + [Self.sparkleKey]).sorted())
         for key in Self.realEntitlements { #expect(real[key] as? Bool == true, "\(key)") }
+        #expect(real[Self.sparkleKey] as? [String] == Self.sparkleServices)
 
         for configuration in try Self.appConfigurations() {
             let expected = configuration.name.hasPrefix("Synctest") ? "App/QuillSynctest.entitlements" : "App/Quill.entitlements"
@@ -59,7 +69,8 @@ struct SynctestVariantTests {
 
     @Test func synctestVariantsGetExactlyOneFolderException() throws {
         let synctest = try Self.entitlements("App/QuillSynctest.entitlements")
-        #expect(synctest.keys.sorted() == (Self.realEntitlements + [Self.exceptionKey]).sorted())
+        #expect(synctest.keys.sorted() == (Self.realEntitlements + [Self.sparkleKey, Self.exceptionKey]).sorted())
+        #expect(synctest[Self.sparkleKey] as? [String] == Self.sparkleServices)
         #if DEBUG
         // Genau der Ordner, den `-QuillSyncSharedFolder` nimmt, im temporären Ordner des Test-Runners.
         #expect(synctest[Self.exceptionKey] as? [String] == ["/\(QuillPersistence.syncSharedFolderRoot)/"])
