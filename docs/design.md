@@ -145,7 +145,7 @@ Skalierung über eigenen Faktor (⌘+ / ⌘−).
   Systems). Fehlt die Einfügemarke, der Zugriff auf den Kalender oder ein Termin, sagt das eine
   Meldung „Heute“ in einem Satz. Rückfrage des Systems: „Quill liest deinen Kalender nur, wenn
   du die heutigen Termine in eine Seite einfügst.“
-- Kurzbefehle: Titel und Siri-Sätze auf Deutsch, Antwort von „Zu Seite hinzufügen“ in einem
+- Kurzbefehle: Titel und Siri-Sätze auf Deutsch und Englisch, Antwort von „Zu Seite hinzufügen“ in einem
   Satz mit dem Titel der Seite.
 - Text in Bildern (ADR-034): In „Schnell öffnen“ stehen Bilder unter „Inhalt“ wie Treffer im
   Text, der Ausschnitt aus dem erkannten Text mit SF Symbol `photo` davor; Bedienungshilfen
@@ -312,3 +312,9 @@ gebauten Bundle über `Assets.car`. Anpassen nur in Icon Composer.
         │ ↩ öffnen   ⌘↩ in neuem Tab   ⎋ schließen   │
         └────────────────────────────────────────────┘
 ```
+
+## Englisch (ADR-038)
+
+- Englische Texte im Stil von macOS: Menüs, Knöpfe und Titel in Title Case („Check for Updates…“, „Move to Trash“), Sätze in normaler Schreibung; Auslassungspunkte ohne Leerzeichen („Export…“), Anführungszeichen “…”, Apostroph ’.
+- Menüpfade in Texten mit den englischen Namen von macOS: „File › Restore Backup…“, „View › Focus Mode“, „Settings › General“, „System Settings › Privacy & Security“.
+- Ansprache „you“ wie im Deutschen „du“, kurz und direkt.

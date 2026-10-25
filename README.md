@@ -1,6 +1,6 @@
 # Quill
 
-Local-first Notizen- und Seiten-App für macOS: verschachtelte Seiten, Notizen und Aufgaben in einem nativen Block-Editor. Alle Daten bleiben auf deinem Mac. Ins Netz geht Quill nur, wenn du nach Updates suchst (ab v0.5.0, Standard aus).
+Local-first Notizen- und Seiten-App für macOS: verschachtelte Seiten, Notizen und Aufgaben in einem nativen Block-Editor. Alle Daten bleiben auf deinem Mac. Oberfläche auf Deutsch oder Englisch, je nach Sprache des Macs (ändern pro App unter Systemeinstellungen › Allgemein › Sprache & Region). Ins Netz geht Quill nur, wenn du nach Updates suchst (ab v0.5.0, Standard aus).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/quill-dunkel.png">
