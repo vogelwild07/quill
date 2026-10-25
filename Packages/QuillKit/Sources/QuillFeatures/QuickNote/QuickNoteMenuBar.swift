@@ -2,6 +2,7 @@
 import AppKit
 import Carbon.HIToolbox
 import Observation
+import QuillEditorCore
 import SwiftUI
 
 /// Symbol in der Menüleiste, Kürzel ⌃⌥⌘N und schwebendes Fenster der Schnellnotiz
@@ -19,10 +20,13 @@ public final class QuickNoteMenuBar: NSObject {
         follow()
     }
 
-    /// Wendet die Schalter an und folgt ihren Änderungen.
+    /// Wendet die Schalter an und folgt ihren Änderungen, auch dem Regler für Liquid Glass.
     private func follow() {
         withObservationTracking {
             apply(enabled: note.isEnabled, shortcut: note.wantsShortcut)
+            // Immer lesen, auch ohne Fenster, damit die Beobachtung den Regler erfasst.
+            let glass = GlassSettings.shared.isCustom
+            if let panel { Self.applyGlass(glass, to: panel) }
         } onChange: { [weak self] in
             Task { @MainActor in self?.follow() }
         }
@@ -89,14 +93,11 @@ public final class QuickNoteMenuBar: NSObject {
     private func makePanel() -> NSPanel {
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 360, height: 220),
-            styleMask: [.titled, .closable, .resizable, .nonactivatingPanel, .fullSizeContentView],
+            styleMask: [.titled, .closable, .resizable, .nonactivatingPanel],
             backing: .buffered, defer: false
         )
         panel.title = String(localized: "Schnellnotiz", bundle: .module)
-        // Glas statt Fensterfläche (ADR-036): Das Glas zeichnet `QuickNoteView`.
-        panel.titlebarAppearsTransparent = true
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
+        Self.applyGlass(GlassSettings.shared.isCustom, to: panel)
         panel.isFloatingPanel = true
         panel.level = .floating
         panel.hidesOnDeactivate = false
@@ -106,6 +107,19 @@ public final class QuickNoteMenuBar: NSObject {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.setAccessibilityIdentifier("quicknote.panel")
         return panel
+    }
+
+    /// Mit aktivem Regler ist das ganze Fenster Glas, auch unter der Titelleiste; das Glas
+    /// zeichnet `QuickNoteView`. Bei „Wie System“ die Fensterfläche wie vor Phase 19 (ADR-036).
+    static func applyGlass(_ glass: Bool, to panel: NSPanel) {
+        if glass {
+            panel.styleMask.insert(.fullSizeContentView)
+        } else {
+            panel.styleMask.remove(.fullSizeContentView)
+        }
+        panel.titlebarAppearsTransparent = glass
+        panel.isOpaque = !glass
+        panel.backgroundColor = glass ? .clear : .windowBackgroundColor
     }
 }
 #endif
