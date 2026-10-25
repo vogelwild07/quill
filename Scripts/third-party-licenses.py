@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Erzeugt Packages/QuillKit/Sources/QuillFeatures/Resources/ThirdPartyLicenses.txt.
 
+Am Ende Sparkle für Updates (ADR-037), Lizenz aus seinem Checkout.
+
 Liest die Rust-Pakete im vorgebauten Automerge-Kern von automerge-swift (ADR-029):
 alle normalen Abhängigkeiten von `uniffi_automerge` für macOS und iOS, auch solche nur
 zum Übersetzen (Makros), lieber eine Lizenz zu viel. Gleiche Lizenztexte stehen nur
 einmal. Pakete ohne Lizenzdatei bekommen den Text aus dem Repo ihres Projekts.
 
 Braucht `cargo` (rustup, siehe docs/decisions.md, ADR-029 „Lizenzen“) und den Checkout
-von automerge-swift unter Packages/QuillKit/.build/checkouts (einmal `swift build`).
+von automerge-swift und Sparkle unter Packages/QuillKit/.build/checkouts (einmal `swift build`).
 Arbeitet in einem temporären Ordner, im Repo entsteht nur die Lizenzdatei.
 
 Aufruf: python3 Scripts/third-party-licenses.py
@@ -28,6 +30,8 @@ OUTPUT = os.path.join(ROOT, "Packages/QuillKit/Sources/QuillFeatures/Resources/T
 CARGO = shutil.which("cargo") or os.path.expanduser("~/.cargo/bin/cargo")
 TARGETS = ["aarch64-apple-darwin", "aarch64-apple-ios"]
 SWIFT_VERSION = "0.7.2"
+SPARKLE_CHECKOUT = os.path.join(ROOT, "Packages/QuillKit/.build/checkouts/Sparkle")
+SPARKLE_VERSION = "2.10.0"
 
 # Pakete ohne Lizenzdatei im veröffentlichten Paket: Text aus dem Repo, gleiche Version.
 UPSTREAM = {
@@ -49,6 +53,8 @@ def run(args, cwd):
 def main():
     if not os.path.exists(CARGO):
         sys.exit("cargo fehlt (rustup, siehe ADR-029)")
+    if not os.path.isfile(os.path.join(SPARKLE_CHECKOUT, "LICENSE")):
+        sys.exit("Checkout von Sparkle fehlt: zuerst swift build --package-path Packages/QuillKit")
     if not os.path.isdir(os.path.join(CHECKOUT, "rust")):
         sys.exit("Checkout von automerge-swift fehlt: zuerst swift build --package-path Packages/QuillKit")
     with tempfile.TemporaryDirectory() as temp:
@@ -108,6 +114,9 @@ def main():
     ]
     for text, sources in sorted(groups.values(), key=lambda group: group[1][0]):
         lines += ["=" * 72, *sources, "-" * 72, text, ""]
+    with open(os.path.join(SPARKLE_CHECKOUT, "LICENSE")) as handle:
+        sparkle_license = handle.read().strip()
+    lines += ["=" * 72, f"Sparkle {SPARKLE_VERSION} (Updates)", "https://github.com/sparkle-project/Sparkle", "", sparkle_license, ""]
     with open(OUTPUT, "w") as handle:
         handle.write("\n".join(lines).rstrip() + "\n")
     print(f"{len(packages)} Pakete, {len(groups)} Lizenztexte → {os.path.relpath(OUTPUT, ROOT)}")
