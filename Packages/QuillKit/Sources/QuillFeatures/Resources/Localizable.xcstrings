@@ -1035,7 +1035,14 @@
 
     },
     "Tage" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Days"
+          }
+        }
+      }
     },
     "Termin" : {
 
